@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+
+# Let's be group-writable by default.
+# Keep near top of bashrc because I may change this on some systems.
+umask 002
+
+# Please no more false mail messages
+unset MAILCHECK
+
+# check the window size after each command and, if necessary,
+# update the values of LINES and COLUMNS.
+shopt -s checkwinsize
+
+# make less more friendly for non-text input files, see lesspipe(1)
+[ -x /usr/bin/lesspipe ] && eval "$(SHELL=/bin/sh lesspipe)"
+
+###################################################
+### Basic PCDS environment setup for all logins ###
+###################################################
+if [ -f "${HOME}/.pcds_setup.sh" ]; then
+    source "${HOME}/.pcds_setup.sh"
+fi
+
+source /reg/g/pcds/setup/pcds_shortcuts.sh
+
+########################################
+### Specific PCDS environment logins ###
+########################################
+alias epicsenv='. /reg/g/pcds/setup/epicsenv-3.14.12.sh'
+alias ana_env='. /reg/g/psdm/etc/ana_env.sh'
+alias plc_env='. /reg/g/pcds/setup/plcenv.sh'
+
