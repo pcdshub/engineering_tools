@@ -1,0 +1,27 @@
+" Split navigations
+nnoremap <C-J> <C-W><C-J>
+nnoremap <C-K> <C-W><C-K>
+nnoremap <C-L> <C-W><C-L>
+nnoremap <C-H> <C-W><C-H>
+
+" Disable beep if enabled
+set noerrorbells visualbell t_vb=
+
+" Line numbers
+set number
+
+" Enable folding
+set foldmethod=indent
+set foldlevel=99
+
+" Python settings
+au FileType python
+    \ set tabstop=4
+    \     softtabstop=4
+    \     shiftwidth=4
+    \     textwidth=79
+    \     expandtab
+    \     autoindent
+    \     fileformat=unix
+    \     encoding=utf-8
+
