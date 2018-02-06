@@ -27,6 +27,6 @@ source /reg/g/pcds/setup/pcds_shortcuts.sh
 ### Specific PCDS environment logins ###
 ########################################
 alias epicsenv='. /reg/g/pcds/setup/epicsenv-3.14.12.sh'
-alias ana_env='. /reg/g/psdm/etc/ana_env.sh'
+alias ana_env='source /reg/g/psdm/psconda.sh'
 alias plc_env='. /reg/g/pcds/setup/plcenv.sh'
 
