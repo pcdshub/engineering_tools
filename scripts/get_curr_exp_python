@@ -1,0 +1,87 @@
+#!/reg/g/pcds/package/python-2.5.2/bin/python
+import RegDB.experiment_info
+import argparse
+import socket
+import os
+import sys
+
+parser = argparse.ArgumentParser()
+parser.add_argument("--run", help="get last run", action='store_true')
+parser.add_argument("--exp", help="get experiment name", action='store_true')
+parser.add_argument("--live", help="ongoing?", action='store_true')
+parser.add_argument("--ended", help="ended", action='store_true')
+parser.add_argument("--hutch", help="get experiment for hutch xxx")
+args = parser.parse_args()
+
+hutches=['amo','sxr','xpp','xcs','mfx','cxi','mec']
+foundHutch=False
+hutch=''
+if args.hutch:
+    hutch=args.hutch
+    if hutch in hutches:
+        hutch=hutch.upper()
+    else:
+        for ihutch in hutches:
+            if hutch.find(ihutch.upper())>=0:
+                hutch=ihutch.upper()
+                foundHutch=True
+                break
+        if not foundHutch:
+            print 'xxx'
+            sys.exit()
+else:
+    hostname=socket.gethostname()
+    for ihutch in hutches:
+        if hostname.find(ihutch)>=0:
+            hutch=ihutch.upper()
+            foundHutch=True
+            break
+    if not foundHutch and hostname.find('psusr')>=0:
+        if hostname.find('psusr11')>=0:
+            hutch='AMO'
+        elif hostname.find('psusr12')>=0:
+            hutch='SXR'
+        elif hostname.find('psusr13')>=0:
+            hutch='XPP'
+        elif hostname.find('psusr21')>=0:
+            hutch='XCS'
+        elif hostname.find('psusr22')>=0:
+            hutch='CXI'
+        elif hostname.find('psusr23')>=0:
+            hutch='MEC'
+        elif hostname.find('psusr24')>=0:
+            hutch='MFX'
+        if hutch!='':
+            foundHutch=True
+    else:
+        #then check current path
+        path=os.getcwd()
+        for ihutch in hutches:
+            if path.find(ihutch)>=0:
+                hutch=ihutch.upper()
+                foundHutch=True
+                break
+        if not foundHutch:
+            #then ask.....outside of python
+            print 'xxx'
+            sys.exit()
+
+if args.exp:
+    print RegDB.experiment_info.active_experiment(hutch)[1]
+if args.run:
+    try:
+        if args.ended:
+            if RegDB.experiment_info.experiment_runs(hutch)[-1]['end_time_unix'] is not None:
+                print RegDB.experiment_info.experiment_runs(hutch)[-1]['num']
+            else:
+                runLive = RegDB.experiment_info.experiment_runs(hutch)[-1]['num']
+                print int(runLive)-1
+        else:
+            print RegDB.experiment_info.experiment_runs(hutch)[-1]['num']
+            if args.live:
+                if RegDB.experiment_info.experiment_runs(hutch)[-1]['end_time_unix'] is None:
+                    print 'live'
+                else:
+                    print 'ended'
+    except:
+        print 'no runs yet'

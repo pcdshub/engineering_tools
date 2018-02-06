@@ -1,0 +1,211 @@
+#!/bin/bash
+
+cd /reg/g/pcds/controls/pycaqt/ipimb
+export STRIPTOOL=/reg/g/pcds/package/epics/3.14/extensions/R3.14.12/bin/rhel6-x86_64/StripTool
+export LD_LIBRARY_PATH=/reg/common/package/python/2.5.5/lib:/reg/common/package/qt/4.6.2/lib/x86_64-linux:/reg/g/pcds/package/epics/3.14/base/current/lib/linux-x86_64:/reg/g/pcds/package/epics/3.14/extensions/current/lib/linux-x86_64
+export PATH=/reg/g/pcds/package/epics/3.14/base/current/bin/linux-x86_64:/reg/g/pcds/package/epics/3.14/extensions/current/bin/linux-x86_64:/reg/common/package/python/2.5.5/bin:/reg/common/package/qt/4.6.2/bin:/bin:/usr/bin
+export EPICS_CA_MAX_ARRAY_BYTES=8388608
+ulimit -c unlimited
+
+xcsIpm='decmono ipmmono diomono pim3 pim3m ipm4 pim4 ipm1 ipm2 ipm3 ipm5 pim5 ipmgonLD ipmlamLD'
+xppIpm='diomono decmono ipm2 ipm3 pim3 diodeU ipm1'
+
+ipmList()
+{
+if [ $hutch == 'xcs' ]; then
+   for box in $xcsIpm; do echo $box; done
+elif [ $hutch == 'xpp' ]; then
+   for box in $xppIpm; do echo $box; done
+else
+    echo 'hutch cannot be determined, quit'
+    exit
+fi
+}
+
+ipmSetEnvPars()
+{
+if [ $# -lt 1 ]; then
+    echo 'need one arguments: boxname'
+    exit
+fi
+
+if [ $hutch == 'xcs' ]; then
+    if [ $1 == 'decmono' ]; then
+	BASE="HFX:MON:IMB:03"
+	IOC="XCS:R38:IOC:43"
+	EVR="XCS:R38:EVR:43"
+    elif [ $1 == 'diomono' ]; then
+	BASE="HFX:MON:IMB:02"
+	IOC="XCS:R38:IOC:43"
+	EVR="XCS:R38:EVR:43"
+    elif [ $1 == 'ipmmono' ]; then
+	BASE="HFX:MON:IMB:01"
+	IOC="XCS:R38:IOC:43"
+	EVR="XCS:R38:EVR:43"
+    elif [ $1 == 'pim3' ]; then
+	BASE="HFX:DG3:IMB:04"
+	IOC="XCS:R38:IOC:43"
+	EVR="XCS:R38:EVR:43"
+    elif [ $1 == 'pim3m' ]; then
+	BASE="HFX:DG3:IMB:02"
+	IOC="XCS:R38:IOC:43"
+	EVR="XCS:R38:EVR:43"
+    elif [ $1 == 'ipm1' ]; then
+	BASE="XCS:DG1:IMB:01"
+	IOC="XCS:R04:IOC:34"
+	EVR="XCS:R04:EVR:34"
+    elif [ $1 == 'ipm2' ]; then
+	BASE="HFX:DG2:IMB:01"
+	IOC="XCS:R38:IOC:43"
+	EVR="XCS:R38:EVR:43"
+    elif [ $1 == 'ipm3' ]; then
+	BASE="XCS:DG3:IMB:03"
+	IOC="XCS:R38:IOC:43"
+	EVR="XCS:R38:EVR:43"
+    elif [ $1 == 'ipm4' ]; then
+	BASE="XCS:SB1:IMB:01"
+	IOC="IOC:XCS:IPM"
+	EVR="XCS:R44:EVR:01"
+    elif [ $1 == 'pim4' ]; then
+	BASE="XCS:SB1:IMB:02"
+	IOC="IOC:XCS:IPM"
+	EVR="XCS:R44:EVR:01"
+    elif [ $1 == 'ipm5' ]; then
+	BASE="XCS:SB2:IMB:01"
+	IOC="IOC:XCS:IPM"
+	EVR="XCS:R44:EVR:01"
+    elif [ $1 == 'pim5' ]; then
+	BASE="XCS:SB2:IMB:02"
+	IOC="IOC:XCS:IPM"
+	EVR="XCS:R44:EVR:01"
+    elif [ $1 == 'ipmgonLD' ]; then
+	BASE="XCS:USR:IMB:01"
+	IOC="IOC:XCS:USR:IPM"
+	EVR="XCS:R42:EVR:01"
+    elif [ $1 == 'ipmlamLD' ]; then
+	BASE="XCS:LAM:IMB:02"
+	IOC="IOC:XCS:IPM"
+	EVR="XCS:R44:EVR:01"
+    elif [ $1 == 'snddio' ]; then
+	IOC="IOC:XCS:SND"
+	BASE='XCS:SND:DIO'
+	EVR='XCS:SND:EVR'
+	WAVE8='snddio'
+    fi
+elif [ $hutch == 'xpp' ]; then
+    if [ $1 == 'diomono' ]; then
+	IOC="IOC:XPP:IPM"
+	BASE='XPP:MON:IPM:02'
+	EVR='XPP:IPM:EVR'
+    elif [ $1 == 'decmono' ]; then
+	IOC="IOC:XPP:IPM"
+	BASE='XPP:MON:IPM:01'
+	EVR='XPP:IPM:EVR'
+    elif [ $1 == 'ipm2' ]; then
+	IOC="IOC:XPP:IPM"
+	BASE='XPP:SB2:IPM:01'
+	EVR='XPP:IPM:EVR'
+    elif [ $1 == 'ipm3' ]; then
+	IOC="IOC:XPP:IPM"
+	BASE='XPP:SB3:IPM:01'
+	EVR='XPP:IPM:EVR'
+    elif [ $1 == 'pim3' ]; then
+	IOC="IOC:XPP:IPM"
+	BASE='XPP:SB3:IPM:02'
+	EVR='XPP:IPM:EVR'
+    elif [ $1 == 'diodeU' ]; then
+	IOC="IOC:XPP:IPM"
+	BASE='XPP:USR:IPM:01'
+	EVR='XPP:IPM:EVR'
+    elif [ $1 == 'ipm1' ]; then
+	IOC="IOC:HX2:BMMON"
+	BASE='WV8:HX2:BMMON'
+	EVR='EVR:HX2:BMMON'
+	WAVE8='ipm1'
+    fi
+
+    if [ ${#BASE} == 0 ]
+    then    
+	usage
+	exit
+    fi
+fi
+} 
+
+ipmGUI(){
+    if [ ${#WAVE8} -gt 0 ]; then
+    	/reg/g/pcds/pyps/apps/wave8/latest/wave8 --base $BASE --evr $EVR --ioc $IOC
+    else
+    	./ipimb.py --base $BASE --ioc $IOC --evr $EVR --dir /reg/g/pcds/controls/pycaqt/ipimb	
+    fi
+}
+
+get_hutch(){
+    hutch=`/reg/g/xpp/scripts/get_hutch_name`
+    if [ $hutch = unknown_hutch ]; then
+	echo 'unknown hutch, cannot use ipmConfigEpics script'
+	exit 1
+    fi
+    HUTCH=${hutch^^}
+}
+
+usage()
+{
+echo 'in usage'
+cat << EOF
+usage: $0 options
+
+we are starting an ipm GUI
+
+OPTIONS:
+-b : boxname out of:
+-d: fix issues with Bld Damage (likely camera IOC w/plugins on same machine)
+EOF
+get_hutch
+ipmList
+}
+
+helpBld(){
+    if [ $hutch == 'xcs' ]; then 
+	if  [[ $BOXNAME == 'ipm3'  ||  $BOXNAME == 'dio3' ]]; then
+	    caput XCS:DG3:CVV:02:Stat2:EnableCallbacks 0
+	    caput HFX:DG3:CVV:01:Stat2:EnableCallbacks 0
+	fi
+    fi
+}
+
+BOXNAME=''
+HELPDAQBLD=0
+while getopts "b:dh" OPTION
+do
+    case $OPTION in
+	h)
+	    usage
+	    exit 1
+	    ;;
+	b)
+	    BOXNAME=$OPTARG
+	    ;;
+	d) 
+	    HELPDAQBLD=1
+	    ;;
+	?)
+	    usage
+	    exit
+	    ;;
+	esac
+done
+
+
+get_hutch
+if [ ${#BOXNAME} == 0 ]; then    
+    ipmList $hutch
+    printf 'Enter box name from list:\n'; read BOXNAME
+fi
+
+ipmSetEnvPars $BOXNAME
+if [ $HELPDAQBLD -gt 0 ]; then
+    helpBld
+else
+    ipmGUI
+fi

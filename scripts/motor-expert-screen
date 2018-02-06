@@ -1,0 +1,151 @@
+#!/bin/bash
+
+OLD_VERSION='R2.5.0'
+
+usage()
+{
+cat << EOF
+usage: $0 options <motor_pv_basename>
+
+Start an EDM for the specified motor.
+Attempts to choose the correct type.
+
+OPTIONS:
+-h shows the usage information
+EOF
+}
+
+while getopts "onh" OPTION
+do
+    case $OPTION in
+    h)
+        usage
+        exit 1
+        ;;
+	esac
+done
+
+shift $(($OPTIND - 1))
+
+# Setup edm environment
+source /reg/g/pcds/setup/epicsenv-3.14.12.sh
+export DEVICE_CONFIG_TEMPLATE_DIR=/reg/g/pcds/controls/device_config/ims_templates
+export DEVICE_CONFIG_TEMPLATE_DEFAULT=ims_config.tmp
+export DEVICE_CONFIG_DIR=/reg/neh/operator/xppopr/device_config/ims
+export PATH=$PATH:/reg/g/pcds/controls/device_config
+export PCDS_EDMS=/reg/g/pcds/package/epics/3.14/screens/edm
+#export EDMDATAFILES=.:${PCDS_EDMS}/xps8:${PCDS_EDMS}/ims  # normal EDMDATAFILES line
+export EDMDATAFILES=.:${PCDS_EDMS}/xps8:/reg/neh/home/dhzhang/ims_edms:${PCDS_EDMS}/ims
+# add Dehong's home directory for now... until official release of ims motor expert screen
+
+
+# xdotool is used to move the new window to the mouse location
+# if xdotool is not installed, the move window commands will skip
+
+# this ldpathmunge gives access to xdotool for xpp-control, xpp-daq
+source /reg/g/pcds/setup/pathmunge.sh
+ldpathmunge /usr/local/lib
+
+# Choose title so we can move the right window.
+# If this script hangs later, titles probably changed.
+rtyp=`caget -t $1.RTYP` > /dev/null 2>&1
+if [ "${rtyp}" == 'xps8p' ]; then
+    title='Newport XPS Positioner'
+elif [ "${rtyp}" == 'ims' ]; then
+    title='IMS Motor Control -- Main'
+elif [ "${rtyp}" == 'motor' ]; then
+    title='Aerotech motor'
+else
+    caget "$1.PN" > /dev/null 2>&1 
+    if [ $? -eq 0 ]; then
+        title='IMS Motor Control -- Main'
+    else
+        title='IMS Motor Control'
+    fi
+fi
+
+# Check already open windows
+oldwins=`xdotool search --onlyvisible --maxdepth 2 --all --name "$title" 2> /dev/null`
+
+# Open new window
+if [ "${rtyp}" == 'xps8p' ]; then
+    # If we have a Newport motor, we need to parse the PV to get the macro
+    # substitutions for the edm screen
+    base=`echo $1 | cut -d':' -f 1,2,3`
+    num=`echo $1 | cut -d':' -f 4`
+    if [ "$num" -ge 1 ] && [ "$num" -le 8 ]; then
+        ext=0108
+    elif [ "$num" -ge 9 ] && [ "$num" -le 16 ]; then
+        ext=0916
+    elif [ "$num" -ge 17 ] && [ "$num" -le 24 ]; then
+        ext=1724
+    elif [ "$num" -ge 25 ] && [ "$num" -le 32 ]; then
+        ext=2532
+    elif [ "$num" -ge 33 ] && [ "$num" -le 40]; then
+        ext=3340
+    else
+        # If something went wrong we'll be missing some boring things
+        ext=0000
+    fi
+    edm -x -eolc -m "CNAME=${base}_${ext},POS=$1" XPS8_Positioner.edl > /dev/null 2>&1 &
+elif [ "${rtyp}" == 'motor' ]; then
+    cd /reg/neh/home/klg/epics/ioc/common/aerotech/current/motorScreens
+    #cd /reg/neh/home4/mcbrowne/trunk2/ioc/common/aerotech/current/motorScreens
+    edm -x -eolc -m "MOTOR=${1}" ens_main.edl >& /dev/null &
+else
+    caget "$1.PN" > /dev/null 2>&1 
+    if [ $? -eq 0 ]; then
+        #cd "${EPICS_SITE_TOP}/screens/edm/ims"
+        edm -x -eolc -m "MOTOR=$1" ims_main.edl > /dev/null 2>&1 &
+    else
+        /reg/g/pcds/package/epics/3.14//modules/pcds_motion/${OLD_VERSION}/launch-motor.sh "$1" > /dev/null 2>&1 &
+    fi
+fi
+
+##put exit here until the naming convetion of the edm screens is better.
+#exit
+
+# Accumulate all windows
+sleep 2 # Crudely give the new window enough time to load
+newwins=`xdotool search --onlyvisible --maxdepth 2 --all --sync --name "$title" 2> /dev/null`
+
+# Find the id of the new window
+for new in $newwins; do
+    foundMatch=0
+    for old in $oldwins; do
+        if [ $new == $old ]; then
+            foundMatch=1
+            break
+        fi
+    done
+    if [ $foundMatch == 0 ]; then
+        id=$new
+        break
+    fi
+done
+
+# Get window location, dimensions
+geom=`xdotool getwindowgeometry $id 2> /dev/null` 
+locxy=${geom#*Position: }
+locxy=${locxy%% *}
+winx=${locxy%,*}
+winy=${locxy#*,}
+sizexy=${geom#*Geometry: }
+sizexy=${sizexy%% *}
+xwidth=${sizexy%x*}
+ywidth=${sizexy#*x}
+
+# Get mouse position
+read x y s w <<<$(xdotool getmouselocation 2> /dev/null)
+xpos=`echo $x | cut -d':' -f 2`
+ypos=`echo $y | cut -d':' -f 2`
+
+# Check if mouse is already on the window. In this case, we wouldn't move it.
+if [ "$xpos" -lt "$winx" ] || [ "$xpos" -gt $(( ${winx} + ${xwidth}  )) ] || [ "$ypos" -lt "$winy" ] || [ "$ypos" -gt $(( ${winy} + ${ywidth} )) ]; then
+    # Adjust xpos and ypos so center of window aligns with cursor.
+    xpos=$(( ${xpos} - ( ${xwidth} / 2 ) ))
+    ypos=$(( ${ypos} - ( ${ywidth} / 2 ) ))
+    # Finally, move the window to our cursor.
+    xdotool windowmove $id $xpos $ypos 2> /dev/null
+fi
+

@@ -1,0 +1,180 @@
+#! /bin/bash
+
+usage()
+{
+cat << EOF
+usage: $0 options
+
+Make a pedestal file for offline use
+
+OPTIONS:
+-u user (needs to be able to log into the psananeh/feh)
+-r runnumber for pedestal
+-e <expname> in case you do not want pedestals for the ongoing experiment
+-J make pedestals for Jungfrau (default only cspad/EPIX detectors)
+-O make pedestals for Opals (default only cspad/EPIX detectors)
+-Z make pedestals for Zyla (default only cspad/EPIX detectors)
+-c <evtcode x> use events with eventcode <x> set
+-n # : if you have created a noise file, then write pixel mask file for pixels with noise above #sigma
+-N # : use this number of events (default 1000)
+-D : dark run for XTCAV
+-L : lasing off run for XTCAV
+-v <str>: validity range (if not run#-end, e.g. 123-567 or 123-end)
+-l: do NOT send to batch queue
+-C # : if noise filecreated, write pixel mask file for pixels with noise below xxx (currently integer only...)
+-m # : write pixel mask file for pixels with pedestal below xxx (currently integer only...)
+-x # : write pixel mask file for pixels with pedestal above xxx (currently integer only...)
+-i start calibman. -r 0: show all darks, -r n: show runs (n-25) - 25
+-d give path for alternative calibdir
+EOF
+}
+
+USER=`whoami`
+RUN=0
+EXP='xxx'
+RUNLOCAL=0
+GETFFBNODE=0
+RUNFFBNODE=0
+FFBNODE=psana1509
+VALSTR='xxx'
+NUMEVT=1000
+SPEC_ARG=''
+INTERACTIVE=0
+
+while getopts "u:r:e:n:p:c:v:N:m:x:d:C:DLZOJiltfgh" OPTION
+do
+    case $OPTION in
+	h)
+	    usage
+	    exit 1
+	    ;;
+	u)
+	    USER=$OPTARG
+	    ;;
+	r)
+	    RUN=$OPTARG
+	    ;;
+	e)
+	    EXP=$OPTARG
+	    ;;
+	c)
+	    SPEC_ARG=$SPEC_ARG' -c '$OPTARG
+	    ;;
+	d)
+	    SPEC_ARG=$SPEC_ARG' -d '$OPTARG
+	    ;;
+	n)
+	    SPEC_ARG=$SPEC_ARG' -n '$OPTARG
+	    ;;
+	v)
+	    VALSTR=$OPTARG
+	    ;;
+	N)
+	    NUMEVT=$OPTARG
+	    ;;
+	D)
+	    SPEC_ARG=$SPEC_ARG' -D '
+	    ;;
+	L)
+	    SPEC_ARG=$SPEC_ARG' -L '
+	    ;;
+	i)
+	    SPEC_ARG=$SPEC_ARG' -i '
+	    ;;
+	Z)
+	    SPEC_ARG=$SPEC_ARG' -Z '
+	    ;;
+	O)
+	    SPEC_ARG=$SPEC_ARG' -O '
+	    ;;
+	J)
+	    SPEC_ARG=$SPEC_ARG' -J '
+	    ;;
+	l)
+	    SPEC_ARG=$SPEC_ARG' -l '
+	    ;;
+	t)
+	    SPEC_ARG=$SPEC_ARG' -t '
+	    ;;
+	f)
+	    RUNFFBNODE=1
+	    SPEC_ARG=$SPEC_ARG' -l '
+	    ;;
+	p)
+	    RUNFFBNODE=1
+	    SPEC_ARG=$SPEC_ARG' -l '
+	    FFBNODE=$OPTARG
+	    ;;
+	g) 
+	    GETFFBNODE=1
+	    SPEC_ARG=$SPEC_ARG' -l '
+	    ;;
+	C)
+	    SPEC_ARG=$SPEC_ARG' -C '$OPTARG
+	    ;;
+	m)
+	    SPEC_ARG=$SPEC_ARG' -m '$OPTARG
+	    ;;
+	x)
+	    SPEC_ARG=$SPEC_ARG' -x '$OPTARG
+	    ;;
+	?)
+	    usage
+	    exit
+	    ;;
+    esac
+ done
+
+if [[ $USER =~ "opr" ]]; then
+     printf "Please enter user name (cannot run as from operator account): \n"; read USER
+ fi
+
+ if [ $GETFFBNODE -eq 1 ]; then
+     FFBNODE_LINE=`ssh -Y $USER@psdev ssh -Y psana "bhosts psnehfarm | grep ok | tail -n1 "`
+     FFBNODE=`echo $FFBNODE_LINE |  awk '{print $1}'`
+     echo 'for interactive sessions, use: '$FFBNODE
+     if [ $RUNFFBNODE -ne 1 ]; then
+	 echo 'do not want to run on ffb node, so I will QUIT here '
+	 exit
+     fi
+ fi
+
+ if [ $RUN == 0 ]; then
+    if [ $INTERACTIVE -ne 1 ]; then
+	printf "Please enter a run number: \n"; read RUN
+    fi
+fi
+
+COMMAND_ARGS=' -r '$RUN' -N '$NUMEVT
+if [ $EXP != 'xxx' ]; then
+    COMMAND_ARGS=$COMMAND_ARGS' -e '$EXP
+    HUTCH=${EXP:0:3}
+else
+    HUTCH=`/reg/g/xpp/scripts/get_hutch_name`
+    COMMAND_ARGS=$COMMAND_ARGS' -H '$HUTCH
+    EXP=`/reg/g/xpp/scripts/get_curr_exp $HUTCH`
+fi
+
+if [ $VALSTR != 'xxx' ]; then
+    COMMAND_ARGS=$COMMAND_ARGS' -v '$VALSTR
+fi
+
+COMMAND_ARGS=$COMMAND_ARGS$SPEC_ARG
+
+WORKDIR=/reg/neh/operator/${HUTCH}opr/experiments/$EXP/pedestals
+if [ ! -d $WORKDIR ]; then
+    echo 'created <hutch>opr based working directory as fallback'
+    mkdir -p $WORKDIR
+fi
+
+if [ $RUNFFBNODE -ne 0 ]; then
+    echo calling:  /reg/g/xpp/scripts/makepeds_psana $COMMAND_ARGS
+    ssh -Y $USER@psdev ssh -Y $FFBNODE "/reg/g/xpp/scripts/makepeds_psana $COMMAND_ARGS"
+else
+    echo calling:  /reg/g/xpp/scripts/makepeds_psana $COMMAND_ARGS
+    if [[ $HOSTNAME =~ "psana" ]]; then
+	/reg/g/xpp/scripts/makepeds_psana $COMMAND_ARGS
+    else
+	ssh -Y $USER@psdev ssh -Y psana "/reg/g/xpp/scripts/makepeds_psana $COMMAND_ARGS"
+    fi
+fi

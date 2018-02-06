@@ -1,0 +1,274 @@
+#! /bin/bash
+
+gige_num_to_name()
+{
+if [ $# -lt 2 ]; then
+    echo 'need two arguments: hutch & number'
+fi
+HUTCH=${1^^}
+hutch=${1,,}
+VIEWERCFG=/reg/g/pcds/pyps/config/$hutch/camviewer.cfg
+printf -v GIGENUM "%02d" $2
+GIGEBASE=$HUTCH:GIGE:$GIGENUM
+
+echo `grep $GIGEBASE $VIEWERCFG | grep -v '#' | awk 'BEGIN { FW = "," }; {print $4}' | sed s/,//g`
+}
+
+gige_name_to_num()
+{
+if [ $# -lt 2 ]; then
+    echo 'need two arguments: hutch & name'
+fi
+HUTCH=${1^^}
+hutch=${1,,}
+VIEWERCFG=/reg/g/pcds/pyps/config/$hutch/camviewer.cfg
+
+NUMSTRING=`grep $2 $VIEWERCFG | grep -v '#' | head -n 1 | awk 'BEGIN { FS = "," }; {print $2}' | awk 'BEGIN { FS = ":" }; {print $3}'` 
+NUM=`expr $NUMSTRING + 0`
+echo $NUM
+}
+
+list_gige()
+{
+if [ $# -lt 1 ]; then
+    echo 'need one arguments: hutch '
+fi
+HUTCH=${1^^}
+hutch=${1,,}
+VIEWERCFG=/reg/g/pcds/pyps/config/$hutch/camviewer.cfg
+GIGEBASE=$HUTCH:GIGE:
+
+for gige_cam in `grep $GIGEBASE $VIEWERCFG | grep -v '#' | awk 'BEGIN { FW = "," }; {print $4 "\n" }' | sed s/,//g`; do
+    echo $gige_cam
+done
+
+}
+
+isNum(){
+if [ $# -lt 1 ]; then
+    return 2
+fi
+
+case $1 in
+    ''|*[!0-9]*) return 1;;
+    *) return 0;;
+esac
+}
+
+usage()
+{
+cat << EOF
+usage: $0 options
+
+OPTIONS:
+-c cam# or name
+-m main edm screen
+-w waittime in hours before asking the renewal (1 hour increments only). Default is to ask after 1h for 1 or 9 ext
+-n nudge the IOC (no viewer)
+-r restart the IOC
+-g gain
+-e exposure period
+-t exposure time
+-s sync input (0: free run, 1: trigger, 5: fixed rate)
+-d test if cam updates (print the array counter 3 times w. 1sec interval) - no viewer
+-u update rate (default 5 Hz, 0 means start google_chrome to look at the mjpg)
+-q quit w/o viewer
+-l list gige cameras
+EOF
+}
+
+GAIN=-1
+EXPTIME=-1.0
+EXPPER=-1.0
+RESTART=0
+NUDGE=0
+VIEW=1
+WAIT=15
+CHECK=0
+MAINSCREEN=0
+RATE=-1
+SYNC=-1
+LIST=0
+
+hutch=`/reg/g/xpp/scripts/get_hutch_name`
+if [ $hutch = unknown_hutch ]; then
+    echo 'unknown hutch, cannot use gige script'
+    exit 1
+fi
+HUTCH=${hutch^^}
+
+while getopts "c:g:e:t:w:u:s:rnqmldh" OPTION
+do
+    case $OPTION in
+	h)
+	    usage
+	    exit 1
+	    ;;
+	c)  
+	    CAM=$OPTARG
+	    ;;
+	g)
+	    GAIN=$OPTARG
+	    ;;
+	e)
+	    EXPPER=$OPTARG
+	    ;;
+	t)
+	    EXPTIME=$OPTARG
+	    ;;
+	r)
+	    RESTART=1
+	    ;;
+	w)
+	    WAIT=$OPTARG
+	    ;;
+	u)
+	    RATE=$OPTARG
+	    ;;
+	s)
+	    SYNC=$OPTARG
+	    ;;
+	n)
+	    NUDGE=1
+	    ;;
+	d)
+	    CHECK=1
+	    ;;
+	m)
+	    MAINSCREEN=1
+	    ;;
+	q)
+	    VIEW=0
+	    ;;
+	l)
+	    LIST=1
+	    ;;
+	?)
+	    usage
+	    exit
+	    ;;
+	esac
+done
+
+#setup for common directory names, used in newer screens.
+if [ -e /reg/g/pcds/pyps/config/common_dirs.sh ]; then
+	source /reg/g/pcds/pyps/config/common_dirs.sh
+else
+	source /afs/slac/g/pcds/config/common_dirs.sh
+fi
+
+if [ -d $CAM ] ; then
+    echo 'enter the #/name of the gige cam in question as -c option'
+    list_gige $HUTCH
+    exit
+fi
+
+if [ $LIST -gt 0 ]; then
+    list_gige $HUTCH
+    exit
+fi
+
+
+if isNum $CAM; then
+    CAMNUM=$CAM
+    printf -v CAMPV "%02d" $CAMNUM
+    CAMPVFULL=$HUTCH:GIGE:$CAMPV
+    CAMNAME=`gige_num_to_name $HUTCH $CAM`
+else
+    CAMNAME=$CAM
+    CAMNUM=`gige_name_to_num $HUTCH $CAM`
+    printf -v CAMPV "%02d" $CAMNUM
+    CAMPVFULL=$HUTCH:GIGE:$CAMPV
+fi
+echo 'got vars setup' $CAMNAME $CAMPVFULL
+if [ $CAMNUM -eq 0 ]; then
+    echo 'this camera does not exist, please select one of these:'
+    list_gige $HUTCH    
+    exit
+fi
+
+if [ -d $CAMPV ] ; then
+    echo 'enter the #/name of the gige cam in question as -c option'
+    list_gige $HUTCH
+else
+    echo 'now try to work with gige...'
+    if [ $GAIN -gt 0 ]; then
+	echo caput $CAMPVFULL:Gain $GAIN
+	caput $CAMPVFULL:Gain $GAIN
+    fi
+    if [ $(echo "$EXPPER > 0" | bc) -gt 0 ]; then
+	echo caput $CAMPVFULL:AcquirePeriod $EXPPER
+	caput $CAMPVFULL:AcquirePeriod $EXPPER
+    fi
+    if [ $(echo "$EXPTIME > 0" | bc) -gt 0 ]; then
+	echo caput $CAMPVFULL:AcquireTime $EXPTIME
+	caput $CAMPVFULL:AcquireTime $EXPTIME
+    fi
+    if [ $SYNC -ge 0 ]; then
+	echo caput $CAMPVFULL:TriggerMode $SYNC
+	caput $CAMPVFULL:TriggerMode $SYNC
+    fi
+    if [ $NUDGE -gt 0 ]; then
+	echo 'Nudging cam (have patience and try several times):'$CAM
+	caput $CAMPVFULL:AsynIO.CNCT 0
+	sleep 2
+	caput $CAMPVFULL:AsynIO.CNCT 1
+	sleep 2
+	caput $CAMPVFULL:Acquire 0
+	sleep 2
+	caput $CAMPVFULL:Acquire 1
+	sleep 2
+	caput $CAMPVFULL:Acquire 1
+	exit
+    fi
+    if [ $CHECK -gt 0 ]; then
+	echo 'AcquireTime:   ' `caget $CAMPVFULL:AcquireTime_RBV`
+	echo 'AcquirePeriod: ' `caget $CAMPVFULL:AcquirePeriod_RBV`
+	echo 'Gain:          ' `caget $CAMPVFULL:Gain_RBV`
+	echo 'TriggerMode:   ' `caget $CAMPVFULL:TriggerMode_RBV`
+	echo 'ArrayRate:     ' `caget $CAMPVFULL:ArrayRate_RBV`
+	echo 'Image ArrayRate:     ' `caget $CAMPVFULL:IMAGE1:ArrayRate_RBV`
+	exit
+    fi
+    if [ $RESTART -gt 0 ]; then
+	echo 'Rebooting: caput $HUTCH:IOC:GIGE'$CAMPV':SYSRESET 1'
+	caput IOC:$HUTCH:GIGE:$CAMPV:SYSRESET 1
+	exit
+    fi
+    if [ $MAINSCREEN -gt 0 ]; then
+	echo 'now try to work with gige... - main screen ' $MAINSCREEN
+	cmdName=`caget -St $CAMPVFULL:LAUNCH_EDM`
+	echo calling edm main screen from $cmdName
+	$cmdName
+	exit
+    fi
+
+    if [ $VIEW -gt 0 ]; then
+	echo 'now try to work with gige... - viewer ' $CAMPVFULL
+	#echo `cainfo $CAMPVFULL:IMAGE1:ArrayData | grep State`
+	#echo `cainfo $CAMPVFULL:IMAGE1:ArrayData | grep State | grep never | wc | awk {'print $1'}`
+	CAMHERE=`cainfo $CAMPVFULL:IMAGE1:ArrayData | grep State | grep never | wc | awk {'print $1'}`
+	echo 'open viewer..' $CAMHERE
+	if [ $CAMHERE -eq 0 ]; then
+	    if [ $RATE -eq 0 ]; then
+		CALLBACK=`caget -n $CAMPVFULL:MJPG1:EnableCallbacks | awk {'print $2'}`
+		if [ $CALLBACK -eq 0 ]; then
+		    caput $CAMPVFULL:MJPG1:EnableCallbacks 1
+		    caput $CAMPVFULL:MJPG1:NDArrayPort 'CC1'
+		fi
+		CAMHOST=`cainfo $CAMPVFULL:IMAGE1:ArrayData | grep Host | awk {'print $2'} | sed s/.pcdsn//g | awk 'BEGIN { FS = ":"}; {print $1}'`
+		echo 'start browser pointing to mjpg stream of gige camera '$CAM
+		firefox http://$CAMHOST:780$CAM/MJPG1.mjpg &
+	    else
+		echo 'start camEpics  pointing to gige camera '$CAMNAME
+		echo /reg/g/xpp/scripts/camViewer -c $CAMNAME -w $WAIT -r $RATE
+		/reg/g/xpp/scripts/camViewer -c $CAMNAME -w $WAIT -r $RATE
+		#echo /reg/g/xpp/scripts/camViewer_test -w $WAIT -r $RATE -c $CAMNAME
+		#/reg/g/xpp/scripts/camViewer_test -w $WAIT -r $RATE -c $CAMNAME
+	    fi
+	else
+	    echo 'gige '$CAM' is not connected, please restart IOC or use other camera'
+	    echo 'or this viewer is outdated compared to the IOC....'
+	fi
+    fi
+fi

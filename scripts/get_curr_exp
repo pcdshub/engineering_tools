@@ -1,0 +1,16 @@
+#!/bin/bash
+. /reg/g/psdm/etc/sit_env.sh
+CURR_EXP=`python /reg/g/xpp/scripts/get_curr_exp_python --exp`
+if [ $# == 1 ]; then
+    CURR_EXP=`python /reg/g/xpp/scripts/get_curr_exp_python --hutch ${1^^} --exp`
+elif [ $CURR_EXP == 'xxx' ]; then
+    echo 'Cannot autodetermine hutch, for which hutch would you like to get this information? '
+    read -t 5 hutch
+    if [ $hutch == '' ]; then 
+	echo 'no response, will quit'
+	exit 1
+    fi
+    CURR_EXP=`python /reg/g/xpp/scripts/get_curr_exp_python --hutch ${hutch^^} --exp`
+fi
+ 
+echo $CURR_EXP
