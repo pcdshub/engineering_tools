@@ -1,0 +1,183 @@
+#! /bin/bash
+
+ips_from_ip(){
+if [ $# -lt 1 ]; then
+    echo 'need arguments: input IP'
+fi
+INIP=$1
+if [ $HUTCH == 'xpp' ]; then
+    if [[ $INIP == *'172.21.38'* ]]; then
+	SRVIP=$INIP
+	SRVIPFEZ=`echo $INIP | sed s/.38./.22./g `
+    elif [[ $INIP == *'172.21.22'* ]]; then
+	SRVIPFEZ=$INIP
+	SRVIP=`echo $INIP | sed s/.22./.38./g `
+    else
+	echo 'IP not FEZ or CDS'
+    fi
+elif [ $HUTCH == 'xcs' ]; then
+    if [[ $INIP == *'172.21.43'* ]]; then
+	SRVIP=$INIP
+	SRVIPFEZ=`echo $INIP | sed s/.43./.25./g `
+    elif [[ $INIP == *'172.21.25'* ]]; then
+	SRVIPFEZ=$INIP
+	SRVIP=`echo $INIP | sed s/.25./.43./g `
+    else
+	echo 'IP not FEZ or CDS'
+    fi
+elif [ $HUTCH == 'mfx' ]; then
+    if [[ $INIP == *'172.21.62'* ]]; then
+	SRVIP=$INIP
+	SRVIPFEZ=`echo $INIP | sed s/.62./.24./g `
+    elif [[ $INIP == *'172.21.24'* ]]; then
+	SRVIPFEZ=$INIP
+	SRVIP=`echo $INIP | sed s/.24./.62./g `
+    else
+	echo 'IP not FEZ or CDS'
+    fi
+elif [ $HUTCH == 'cxi' ]; then
+    if [[ $INIP == *'172.21.68'* ]]; then
+	SRVIP=$INIP
+	SRVIPFEZ=`echo $INIP | sed s/.68./.26./g `
+    elif [[ $INIP == *'172.21.26'* ]]; then
+	SRVIPFEZ=$INIP
+	SRVIP=`echo $INIP | sed s/.26./.68./g `
+    else
+	echo 'IP not FEZ or CDS'
+    fi
+elif [ $HUTCH == 'mec' ]; then
+    if [[ $INIP == *'172.21.45'* ]]; then
+	SRVIP=$INIP
+	SRVIPFEZ=`echo $INIP | sed s/.45./.27./g `
+    elif [[ $INIP == *'172.21.27'* ]]; then
+	SRVIPFEZ=$INIP
+	SRVIP=`echo $INIP | sed s/.27./.45./g `
+    else
+	echo 'IP not FEZ or CDS'
+    fi
+elif [ $HUTCH == 'sxr' ]; then
+    if [[ $INIP == *'172.21.39'* ]]; then
+	SRVIP=$INIP
+	SRVIPFEZ=`echo $INIP | sed s/.39./.21./g `
+    elif [[ $INIP == *'172.21.21'* ]]; then
+	SRVIPFEZ=$INIP
+	SRVIP=`echo $INIP | sed s/.21./.39./g `
+    else
+	echo 'IP not FEZ or CDS'
+    fi
+elif [ $HUTCH == 'amo' ]; then
+    if [[ $INIP == *'172.21.37'* ]]; then
+	SRVIP=$INIP
+	SRVIPFEZ=`echo $INIP | sed s/.37./.20./g `
+    elif [[ $INIP == *'172.21.20'* ]]; then
+	SRVIPFEZ=$INIP
+	SRVIP=`echo $INIP | sed s/.20./.37./g `
+    else
+	echo 'IP not FEZ or CDS'
+    fi
+fi
+}
+
+HUTCH=`get_hutch_name`
+for name in "amo" "sxr" "xpp" "xcs" "mfx" "cxi" "mec"; do
+    if [[ $DEV == *$name* ]]; then
+	HUTCH=$name
+	break
+    fi
+done
+#echo 'NAME: '$NAME
+
+if [[ $# < 2 ]]
+then
+    if [[ $1 != 'cycle' ]] && [[ $1 != 'off' ]] && [[ $1 != 'on' ]] && [[ $1 != 'status' ]]; then
+	CMD='status'
+	DEV=$1
+    else
+	echo "power <server name> cycle|off|on|status"
+	exit
+    fi
+else
+    if [[ $2 != 'cycle' ]] && [[ $2 != 'off' ]] && [[ $2 != 'on' ]] && [[ $2 != 'status' ]]; then
+	DEV=$2
+	CMD=$1
+    else
+	DEV=$1
+	CMD=$2
+    fi
+fi
+NAME=$DEV
+  
+if [[ $NAME == *'172.21'* ]]; then
+    ISSRV=1
+    ips_from_ip $DEV
+    NAME=`netconfig search $SRVIP --brief | awk {'print $1'}`
+    echo $NAME
+else
+    ISSRV=`netconfig search $NAME | grep 'Found' | awk {'print $2'}`
+fi
+#exit
+
+if  [[ $NAME == *rec* ]]; then
+    if [[ $CMD == "off" ]] || [[ $CMD == "cycle" ]]; then
+	printf "This is a recorder, better not to power cycle unless necessary, quit? " "$NAME" "$CMD"; read ANSWER		
+	if [[ $ANSWER != 'y' ]] &&  [[ $ANSWER != 'Y' ]] && [[ $ANSWER != 'yes' ]]; then  
+	    printf 'quit now\n'
+	    exit
+	fi
+    fi
+fi
+    
+#check if this is a DAQ device
+if [[ $ISSRV -lt 1 ]]; then
+    if [[  $DEV == *'event'* ]]; then
+	DSSNODES=`grep dss_nodes /reg/g/pcds/dist/pds/${HUTCH}/scripts/${HUTCH}.cnf | grep -v '#' | head -n1`
+	i=$((${#DEV}-1));NEV=`echo "${DEV:$i:1}"`;AWKNUM=$(($NEV+4))
+	NAME=`echo $DSSNODES | awk -v temp=$AWKNUM {'print $temp'}  |  sed s/,// | sed s/_/-/g`
+    else
+	NAME=`grep $DEV /reg/g/pcds/dist/pds/${HUTCH}/scripts/${HUTCH}.cnf | grep -v '#' | grep host | awk {'print $1'} | sed s/{host://g | sed s/,// | sed s/_/-/g`
+    fi
+    ISSRV=`netconfig search $NAME | grep 'Found' | awk {'print $2'}`
+    if [[ $ISSRV -lt 1 ]]; then
+	#after this is done, move head of first way ot getting NAME
+	echo 'does not have ipmi, is not DAQ device.'
+	exit
+    fi
+
+    SRVIP=`netconfig search $NAME | grep IP: | awk {'print $2'}`
+    ips_from_ip $SRVIP
+    echo 'server for ' $DEV ' is: ' $NAME 
+else
+    SRVIP=`netconfig search $DEV | grep IP: | awk {'print $2'}`
+    ips_from_ip $SRVIP
+fi
+
+
+NAMEIPMI=`echo $NAME'-ipmi'`
+if [[ $CMD == "off" ]]; then
+    ipmitool -U ADMIN -P ipmia8min -H $NAMEIPMI power off
+elif [[ $CMD == "on" ]]; then
+    ipmitool -U ADMIN -P ipmia8min -H $NAMEIPMI power on
+elif [[ $CMD == "cycle" ]]; then
+    ipmitool -U ADMIN -P ipmia8min -H $NAMEIPMI power off
+    sleep 10
+    ipmitool -U ADMIN -P ipmia8min -H $NAMEIPMI power on
+    sleep 5
+    ipmitool -U ADMIN -P ipmia8min -H $NAMEIPMI power status
+else
+    ipmitool -U ADMIN -P ipmia8min -H $NAMEIPMI power status
+
+    PNG=`ping -c 1 $SRVIP | grep transmitted | awk '{print $4}'`
+    IFUP=0
+    if [[ $NAME == *daq* ]]; then
+	PNGFEZ=`ping -c 1 $SRVIPFEZ | grep transmitted | awk '{print $4}'`
+	echo 'with IP: ' $SRVIP ' (ping: ' $PNG '), ' $SRVIPFEZ ' (ping' $PNGFEZ ')'
+	if [[ $(($PNG+$PNGFEZ)) -gt 1 ]]; then
+	    echo 'cds&fez interfaces are up'
+	fi
+    else
+	echo $DEV ' is a server with IP: ' $SRVIP ' (ping: ' $PNG ')'
+	if [ $PNG -gt 0 ]; then
+	    echo 'cds interfaces is up'
+	fi
+    fi
+fi

@@ -1,0 +1,171 @@
+#!/bin/bash
+usage()
+{
+cat << EOF
+usage: $0 options
+
+OPTIONS:
+-w sort windows after start
+-p select partition (same as used last)
+-s silent (do not email jana)
+EOF
+}
+
+AIMHOST=$HOSTNAME
+SELPART=''
+DOWIN=''
+#make it silent for now until done with testing and jana has been warned
+SILENT=1
+while getopts "m:pwsh" OPTION
+do
+    case $OPTION in
+	p)
+	    SELPART='Select Partition'
+	    ;;
+	w)
+	    DOWIN='Sort Windows'
+	    ;;
+	s)
+	    SILENT=1
+	    ;;
+	m) 
+	    AIMHOST=$OPTARG
+	    ;;
+	h)
+	    usage
+	    exit
+	    ;;
+	?)
+	    usage
+	    exit 1
+	    ;;
+
+	esac
+done
+
+
+HUTCH=`get_hutch_name`
+if [[ $HUTCH == 'xpp' ]]; then
+    FEZ='172.21.22'
+elif [[ $HUTCH == 'xcs' ]]; then
+    FEZ='172.21.25'
+elif [[ $HUTCH == 'sxr' ]]; then
+    FEZ='172.21.21'
+elif [[ $HUTCH == 'mec' ]]; then
+    FEZ='172.21.27'
+fi
+IS_DAQ_HOST=`/sbin/ifconfig | grep inet | grep $FEZ | wc -l`
+
+#IS_DAQ_HOST=0
+#for HOST in $HOSTS
+#do
+#    if [ $AIMHOST != $HOST ]; then
+#	IS_DAQ_HOST=1
+#    fi
+#done
+
+if [ $IS_DAQ_HOST == 0 ]; then
+    echo $AIMHOST does not have FEZ, please choose $HOSTS to run the DAQ:
+    echo '\"restartdaq <machine_with_FEZ>\"'
+    exit
+fi
+
+#go to the operator home, so that pid.txt gets created where expected
+cd /reg/g/pcds/dist/pds/$HUTCH/scripts/
+
+#/reg/g/xpp/scripts/stopdaq
+DAQHOST=`wheredaq`
+if [[ $DAQHOST != 'DAQ is not running' ]]; then
+    echo stop the DAQ on $DAQHOST from $HOSTNAME
+    T="$(date +%s%N)"
+    source /reg/g/pcds/dist/pds/$HUTCH\/scripts/shutdown_$HUTCH\_daq.csh
+
+    DAQ_RUN_STALE=`find /reg/g/pcds/dist/pds/$HUTCH\/scripts/p1.cnf.running | wc | awk '{print $1}'`
+    if [ $DAQ_RUN_STALE -gt 0 ]; then
+	echo 'the DAQ did not stop properly, exit now and call Silke and/or try again or use  xpprestartdaq_old'
+	exit
+    fi
+    T2="$(($(date +%s%N)-T))"
+    S="$((T2/1000000000))"
+    M="$((T2/1000000))"
+    echo 'it took '$S'.'$M' for stopping the DAQ'
+else
+    echo DAQ is currently not running
+fi
+
+#start DAQ on AIMHOST
+T="$(date +%s%N)"
+echo start DAQ on $AIMHOST
+if [ $HOSTNAME == $AIMHOST ]; then
+    source /reg/g/pcds/dist/pds/$HUTCH\/scripts/start_$HUTCH\_daq.csh
+else
+    ssh -Y $AIMHOST /reg/g/pcds/dist/pds/$HUTCH\/scripts/start_$HUTCH\_daq.csh
+fi
+
+DAQHOST=`wheredaq`
+if [[ $DAQHOST == 'DAQ is not running' ]]; then
+    echo 'we tried restarting the DAQ, but $HUTCH\wheredaq does not return a host!'
+    exit
+else
+    echo the DAQ is now running on $DAQHOST
+    T2="$(($(date +%s%N)-T))"
+    S="$((T2/1000000000))"
+    M="$((T2/1000000))"
+    echo 'and '$S'.'$M' for starting the DAQ'
+fi
+
+if [ ${#DOWIN} != 0 ] ||  [ ${#SELPART} != 0 ]; then
+    if  [ $HUTCH  == 'xpp' ]; then
+	if  [ ! -f /usr/local/bin/xdotool ]; then
+	    echo 'xdotool not installed, ask Omar to do so'
+	    DOWIN=0
+	    SELPART=0
+	fi
+    elif [ $HUTCH  == 'xcs' ]; then
+	if  [ ! -f /usr/bin/xdotool ]; then
+	    echo 'xdotool not installed, ask Omar to do so'
+	    DOWIN=0
+	    SELPART=0
+	fi
+    fi
+    if [ ! /reg/neh/operator/$HUTCH\opr/bin/$HUTCH\_cleanup_windows_daq ]; then
+	DOWIN=0
+    fi
+fi
+
+if [ ${#DOWIN} != 0 ]; then    
+    T="$(date +%s%N)"
+    if [ $HUTCH == 'xpp' ]; then
+	test=`xdotool search --sync --onlyvisible --name 'ProcStat'` 
+    fi
+    if [ $HUTCH == 'xcs' ]; then
+	sleep 2
+    fi
+    echo 'resorting the windows now using: /reg/neh/operator/'$HUTCH'opr/bin/'$HUTCH'_cleanup_windows_daq'
+    /reg/neh/operator/$HUTCH\opr/bin/$HUTCH\_cleanup_windows_daq
+    Tdinter="$(($(date +%s%N)-T))"
+    Sinter="$((Tdinter/1000000000))"
+    Minter="$((Tdinter/1000000))"
+    echo 'and '$Sinter'.'$Minter' extra seconds for windows'
+fi
+
+if [ ${#SELPART} != 0 ]; then    
+    DAQC=`xdotool search  --onlyvisible --name 'DAQ Control'`
+    #echo $DAQC
+    xdotool mousemove --sync --window $DAQC 80 230
+    xdotool windowfocus $DAQC
+    xdotool click 1 
+    
+    PARTSEL=`xdotool search  --onlyvisible --sync --name 'Partition Selection'`
+    YLOW=`xdotool search --name 'Partition Selection' getwindowgeometry %@ | grep Geometry | awk '{print $2}' | sed s/x/" "/g | awk '{print $2}'`
+        #echo $PARTSEL
+    xdotool mousemove --sync --window $PARTSEL 80 $(($YLOW-28)) 
+    xdotool click 1 
+fi
+
+if [ ${SILENT} == 0 ];then
+    /reg/g/pcds/dist/pds/scripts/txtjana.sh
+    printf 'email jana that we restarted the DAQ\n'
+fi
+
+exit

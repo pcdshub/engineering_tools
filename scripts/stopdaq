@@ -1,0 +1,23 @@
+#!/bin/bash
+HUTCH=`get_hutch_name`
+DAQHOST=`wheredaq`
+
+if [[ $DAQHOST != 'DAQ is not running' ]]; then
+    T="$(date +%s%N)"
+    echo stop the DAQ from $HOSTNAME
+    /reg/g/pcds/dist/pds/tools/procmgr/procmgr stop \
+	/reg/g/pcds/dist/pds/$HUTCH/scripts/$HUTCH.cnf 
+    #source /reg/g/pcds/dist/pds/$HUTCH\/scripts/stop_$HUTCH\_daq.csh
+
+    PLATFORM=`grep 'if not platform' /reg/g/pcds/dist/pds/$HUTCH/scripts/$HUTCH.cnf | awk '{print $NF}' | sed s/\'//g`
+    if [ -f /reg/g/pcds/dist/pds/$HUTCH/scripts/p$PLATFORM.cnf.running ]; then
+	echo 'the DAQ did not stop properly, exit now and try again or call Silke or the DAQ phone'
+	exit
+    fi
+    T2="$(($(date +%s%N)-T))"
+    S="$((T2/1000000000))"
+    M="$((T2/1000000))"
+    echo 'it took '$S'.'$M' for stopping the DAQ'
+else
+    echo DAQ is currently not running
+fi

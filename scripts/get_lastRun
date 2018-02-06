@@ -1,0 +1,60 @@
+#!/bin/bash
+. /reg/g/psdm/etc/sit_env.sh
+
+usage()
+{
+cat << EOF
+usage: $0 options
+
+OPTIONS:
+-l add live status
+EOF
+}
+AskLive=0
+Ended=0
+while getopts "hle" OPTION
+do
+    case $OPTION in
+	h)
+	    usage
+	    exit 1
+	    ;;
+	l) 
+	    AskLive=1
+	    ;;
+	e) 
+	    Ended=1
+	    ;;
+	?)
+	    usage
+	    exit
+	    ;;
+	esac
+done
+
+if [ $AskLive -eq 1 ]; then
+    CURR_EXP=`python /reg/g/xpp/scripts/get_curr_exp_python --run --live`    
+    if [[ $CURR_EXP == *'xxx'* ]]; then
+	echo 'For which hutch would you like to get this information (XPP/XCS)? '
+	read hutch
+	CURR_EXP=`python /reg/g/xpp/scripts/get_curr_exp_python --hutch $hutch --run --live`
+    fi
+elif [ $Ended -eq 1 ]; then
+    CURR_EXP=`python /reg/g/xpp/scripts/get_curr_exp_python --run --ended`    
+    if [[ $CURR_EXP == *'xxx'* ]]; then
+	echo 'For which hutch would you like to get this information (XPP/XCS)? '
+	read hutch
+	CURR_EXP=`python /reg/g/xpp/scripts/get_curr_exp_python --hutch $hutch --run --ended`
+    fi
+else
+    CURR_EXP=`python /reg/g/xpp/scripts/get_curr_exp_python --run`
+    NUM_RET_WORD=`echo $CURR_EXP | wc | awk {'print $2'}`
+    if [ $NUM_RET_WORD == 1 ]; then
+	if [ $CURR_EXP == 'xxx' ]; then
+	    echo 'For which hutch would you like to get this information (XPP/XCS)? '
+	    read hutch
+	    CURR_EXP=`python /reg/g/xpp/scripts/get_curr_exp_python --hutch $hutch --run`
+	fi
+    fi
+fi
+echo $CURR_EXP

@@ -1,0 +1,36 @@
+#! /usr/bin/env bash
+
+HUTCH=`get_hutch_name`
+DAQHOST=`wheredaq`
+RESCNT=`echo $DAQHOST |wc| awk {'print $2'}`
+if [ $RESCNT -eq 1 ]; then
+    if [ $HOSTNAME == $DAQHOST ]; then
+        #running on the DAQ host, this will restart the ami_client!
+	read -p "Do you really intend to stop the ami_client on $DAQHOST where the daq is running? (y/n)"
+	if [ "$REPLY" == "y" ];then
+	    echo "Restarting the ami_client...";
+	    /reg/g/pcds/dist/pds/tools/procmgr/procmgr stop \
+		/reg/g/pcds/dist/pds/$HUTCH/scripts/$HUTCH.cnf ami_client 
+	fi
+    fi
+fi
+
+AMI_PROCID=`ps -ef | grep online_ami | grep current | awk {'print $2'}`
+HAVE_ID=`echo $AMI_PROCID | wc | awk {'print $2'}`
+if [ $HAVE_ID -gt 0 ]; then
+    for id in $AMI_PROCID; do
+	echo 'killing ' $id
+	kill $id
+    done
+fi
+
+sleep 2
+
+AMI_PROCID=`ps -ef | grep online_ami | grep current | awk {'print $2'}`
+HAVE_ID=`echo $AMI_PROCID | wc | awk {'print $2'}`
+if [ $HAVE_ID -gt 0 ]; then
+    for id in $AMI_PROCID; do
+	echo 'kill -9 ' $id
+	kill -9 $id
+    done
+fi
