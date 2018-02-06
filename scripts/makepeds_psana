@@ -179,9 +179,9 @@ fi
 #using the request exp name (default: current exp)
 if [ $EXP == 'xxx' ]; then
     if [ $HUTCH != 'xxx' ]; then
-	EXP=`/reg/g/xpp/scripts/get_curr_exp $HUTCH`
+	EXP=`get_info --exp --hutch $HUTCH`
     else
-	EXP=`/reg/g/xpp/scripts/get_curr_exp`
+	EXP=`get_info --exp`
     fi
 fi
 

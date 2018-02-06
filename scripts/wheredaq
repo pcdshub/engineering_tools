@@ -1,5 +1,5 @@
 #!/bin/bash
-HUTCH=`get_hutch_name`
+HUTCH=`get_info --gethutch`
 if [ $HUTCH == 'xpp' ]; then
    HOSTS="xpp-daq xpp-control xpp-hutch01"
 elif  [ $HUTCH == 'xcs' ]; then

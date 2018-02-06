@@ -1,5 +1,4 @@
 #!/bin/bash
-. /reg/g/psdm/etc/sit_env.sh
 
 usage()
 {
@@ -32,28 +31,29 @@ do
 	esac
 done
 
+INFOSCRIPT=/reg/neh/home/snelson/gitMaster_engineeringtools/engineering_tools/scripts/get_info
 if [ $AskLive -eq 1 ]; then
-    CURR_EXP=`python /reg/g/xpp/scripts/get_curr_exp_python --run --live`    
+    CURR_EXP=`get_info --run --live`    
     if [[ $CURR_EXP == *'xxx'* ]]; then
 	echo 'For which hutch would you like to get this information (XPP/XCS)? '
 	read hutch
-	CURR_EXP=`python /reg/g/xpp/scripts/get_curr_exp_python --hutch $hutch --run --live`
+	CURR_EXP=`get_info --hutch $hutch --run --live`
     fi
 elif [ $Ended -eq 1 ]; then
-    CURR_EXP=`python /reg/g/xpp/scripts/get_curr_exp_python --run --ended`    
+    CURR_EXP=`get_info --run --ended`    
     if [[ $CURR_EXP == *'xxx'* ]]; then
 	echo 'For which hutch would you like to get this information (XPP/XCS)? '
 	read hutch
-	CURR_EXP=`python /reg/g/xpp/scripts/get_curr_exp_python --hutch $hutch --run --ended`
+	CURR_EXP=`get_info --hutch $hutch --run --ended`
     fi
 else
-    CURR_EXP=`python /reg/g/xpp/scripts/get_curr_exp_python --run`
+    CURR_EXP=`get_info --run`
     NUM_RET_WORD=`echo $CURR_EXP | wc | awk {'print $2'}`
     if [ $NUM_RET_WORD == 1 ]; then
 	if [ $CURR_EXP == 'xxx' ]; then
 	    echo 'For which hutch would you like to get this information (XPP/XCS)? '
 	    read hutch
-	    CURR_EXP=`python /reg/g/xpp/scripts/get_curr_exp_python --hutch $hutch --run`
+	    CURR_EXP=`get_info --hutch $hutch --run`
 	fi
     fi
 fi
