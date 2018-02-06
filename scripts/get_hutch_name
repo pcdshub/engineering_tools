@@ -1,0 +1,51 @@
+#!/bin/bash
+#Parse hostname to get which hutch's machine we're on
+for name in "amo" "sxr" "xpp" "xcs" "mfx" "cxi" "mec" "xrt"; do
+    echo $HOSTNAME | grep "$name" > /dev/null
+    if [ $? == 0 ]; then
+        echo "$name"
+        exit
+    fi
+done
+
+#psusr machines have a predictable pattern
+echo $HOSTNAME | grep "psusr" > /dev/null
+if [ $? == 0 ]; then
+    psnum=`echo $HOSTNAME | cut -c 6-7`
+    case $psnum in
+        11) echo "amo"
+            exit
+            ;;
+        12) echo "sxr"
+            exit
+            ;;
+        13) echo "xpp"
+            exit
+            ;;
+        21) echo "xcs"
+            exit
+            ;;
+        22) echo "cxi"
+            exit
+            ;;
+        23) echo "mec"
+            exit
+            ;;
+        24) echo "mfx"
+            exit
+            ;;
+    esac
+fi
+
+for name in "amo" "sxr" "xpp" "xcs" "mfx" "cxi" "mec"; do
+    if [[ $PWD == *"$name"* ]]; then
+	echo $name
+	exit
+    fi
+done
+
+echo unknown_hutch
+#echo "Script could not automatically find hutch, please enter a hutch:"
+#read hutch
+#echo ${hutch,,}
+
