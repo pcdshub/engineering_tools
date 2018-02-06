@@ -169,12 +169,12 @@ COMMAND_ARGS=$COMMAND_ARGS$SPEC_ARG
 
 if [ $RUNFFBNODE -ne 0 ]; then
     echo calling:  makepeds_psana $COMMAND_ARGS
-    ssh -Y $USER@psdev ssh -Y $FFBNODE "makepeds_psana $COMMAND_ARGS"
+    ssh -Y $USER@psdev ssh -Y $FFBNODE "/reg/g/pcds/engineering_tools/$HUTCH/scripts/makepeds_psana $COMMAND_ARGS"
 else
     echo calling:  makepeds_psana $COMMAND_ARGS
     if [[ $HOSTNAME =~ "psana" ]]; then
 	makepeds_psana $COMMAND_ARGS
     else
-	ssh -Y $USER@psdev ssh -Y psana "makepeds_psana $COMMAND_ARGS"
+	ssh -Y $USER@psdev ssh -Y psana "/reg/g/pcds/engineering_tools/$HUTCH/scripts/makepeds_psana $COMMAND_ARGS"
     fi
 fi
