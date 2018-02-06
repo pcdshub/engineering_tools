@@ -1,5 +1,5 @@
 #!/bin/bash
-HUTCH=`get_hutch_name`
+HUTCH=`get_info --gethutch`
 DAQHOST=`wheredaq`
 
 if [[ $DAQHOST != 'DAQ is not running' ]]; then

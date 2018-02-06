@@ -150,9 +150,9 @@ if [ $EXP != 'xxx' ]; then
     COMMAND_ARGS=$COMMAND_ARGS' -e '$EXP
     HUTCH=${EXP:0:3}
 else
-    HUTCH=`/reg/g/xpp/scripts/get_hutch_name`
+    HUTCH=`get_info --gethutch`
     COMMAND_ARGS=$COMMAND_ARGS' -H '$HUTCH
-    EXP=`/reg/g/xpp/scripts/get_curr_exp $HUTCH`
+    EXP=`get_info --exp --hutch $HUTCH`
 fi
 
 if [ $VALSTR != 'xxx' ]; then
@@ -161,20 +161,20 @@ fi
 
 COMMAND_ARGS=$COMMAND_ARGS$SPEC_ARG
 
-WORKDIR=/reg/neh/operator/${HUTCH}opr/experiments/$EXP/pedestals
-if [ ! -d $WORKDIR ]; then
-    echo 'created <hutch>opr based working directory as fallback'
-    mkdir -p $WORKDIR
-fi
+#WORKDIR=/reg/neh/operator/${HUTCH}opr/experiments/$EXP/pedestals
+#if [ ! -d $WORKDIR ]; then
+#    echo 'created <hutch>opr based working directory as fallback'
+#    mkdir -p $WORKDIR
+#fi
 
 if [ $RUNFFBNODE -ne 0 ]; then
-    echo calling:  /reg/g/xpp/scripts/makepeds_psana $COMMAND_ARGS
-    ssh -Y $USER@psdev ssh -Y $FFBNODE "/reg/g/xpp/scripts/makepeds_psana $COMMAND_ARGS"
+    echo calling:  makepeds_psana $COMMAND_ARGS
+    ssh -Y $USER@psdev ssh -Y $FFBNODE "makepeds_psana $COMMAND_ARGS"
 else
-    echo calling:  /reg/g/xpp/scripts/makepeds_psana $COMMAND_ARGS
+    echo calling:  makepeds_psana $COMMAND_ARGS
     if [[ $HOSTNAME =~ "psana" ]]; then
-	/reg/g/xpp/scripts/makepeds_psana $COMMAND_ARGS
+	makepeds_psana $COMMAND_ARGS
     else
-	ssh -Y $USER@psdev ssh -Y psana "/reg/g/xpp/scripts/makepeds_psana $COMMAND_ARGS"
+	ssh -Y $USER@psdev ssh -Y psana "makepeds_psana $COMMAND_ARGS"
     fi
 fi

@@ -89,13 +89,13 @@ old_grab()
     exit
 }
 
-hutch=`/reg/g/xpp/scripts/get_hutch_name`
+hutch=`get_info --gethutch`
 if [ $hutch == 'unknown_hutch' ]; then
     echo 'I cannot determine the current hutch and thus not the current experiment. Try another machine (control room/psusr) or different directory like /reg/d/psdm/<hutch>/..... Will quit.'
     exit
 fi
 HUTCH=${hutch^^}
-USERNAME=`/reg/g/xpp/scripts/get_hutch_name`opr
+USERNAME=`get)info --gethutch`opr
 EXPNAME=current
 
 while getopts "e:u:hxyot" OPTION

@@ -141,7 +141,7 @@ ipmGUI(){
 }
 
 get_hutch(){
-    hutch=`/reg/g/xpp/scripts/get_hutch_name`
+    hutch=`get_info --gethutch`
     if [ $hutch = unknown_hutch ]; then
 	echo 'unknown hutch, cannot use ipmConfigEpics script'
 	exit 1

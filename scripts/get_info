@@ -1,4 +1,4 @@
-#!/reg/g/pcds/package/python-2.5.2/bin/python
+#!/reg/g/psdm/sw/conda/inst/miniconda2-prod-rhel6/envs/ana-1.3.17/bin/python
 import RegDB.experiment_info
 import argparse
 import socket
@@ -11,6 +11,8 @@ parser.add_argument("--exp", help="get experiment name", action='store_true')
 parser.add_argument("--live", help="ongoing?", action='store_true')
 parser.add_argument("--ended", help="ended", action='store_true')
 parser.add_argument("--hutch", help="get experiment for hutch xxx")
+parser.add_argument("--getHutch", help="get hutch (uppercase)", action='store_true')
+parser.add_argument("--gethutch", help="get hutch (lowercase)", action='store_true')
 args = parser.parse_args()
 
 hutches=['amo','sxr','xpp','xcs','mfx','cxi','mec']
@@ -27,7 +29,7 @@ if args.hutch:
                 foundHutch=True
                 break
         if not foundHutch:
-            print 'xxx'
+            print 'unknown_hutch'
             sys.exit()
 else:
     hostname=socket.gethostname()
@@ -63,8 +65,14 @@ else:
                 break
         if not foundHutch:
             #then ask.....outside of python
-            print 'xxx'
+            print 'unknown_hutch'
             sys.exit()
+    if args.getHutch:
+        print hutch
+        sys.exit()
+    if args.gethutch:
+        print hutch.lower()
+        sys.exit()
 
 if args.exp:
     print RegDB.experiment_info.active_experiment(hutch)[1]
