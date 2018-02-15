@@ -70,8 +70,8 @@ OPTIONS:
 -e exposure period
 -t exposure time
 -s sync input (0: free run, 1: trigger, 5: fixed rate)
--d test if cam updates (print the array counter 3 times w. 1sec interval) - no viewer
--u update rate (default 5 Hz, 0 means start google_chrome to look at the mjpg)
+-i print camera settings, including image rate
+-u update rate (default 5 Hz)
 -q quit w/o viewer
 -l list gige cameras
 EOF
@@ -90,6 +90,10 @@ RATE=-1
 SYNC=-1
 LIST=0
 
+DIRTMP=`dirname  "${BASH_SOURCE[0]}"`
+DIR="$( cd $DIRTMP && pwd -P )"
+PATH=$PATH:$DIR
+
 hutch=`get_info --gethutch`
 if [ $hutch = unknown_hutch ]; then
     echo 'unknown hutch, cannot use gige script'
@@ -97,7 +101,7 @@ if [ $hutch = unknown_hutch ]; then
 fi
 HUTCH=${hutch^^}
 
-while getopts "c:g:e:t:w:u:s:rnqmldh" OPTION
+while getopts "c:g:e:t:w:u:s:rnqmlih" OPTION
 do
     case $OPTION in
 	h)

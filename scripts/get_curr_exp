@@ -1,5 +1,9 @@
 #!/bin/bash
 
+DIRTMP=`dirname  "${BASH_SOURCE[0]}"`
+DIR="$( cd $DIRTMP && pwd -P )"
+PATH=$PATH:$DIR
+
 CURR_EXP=`get_info --exp`
 if [ $# == 1 ]; then
     CURR_EXP=`get_info --hutch ${1^^} --exp`
