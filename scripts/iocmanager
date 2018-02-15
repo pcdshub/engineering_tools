@@ -1,0 +1,23 @@
+#!/bin/bash
+ulimit -c unlimited
+
+source /reg/g/pcds/setup/pathmunge.sh
+ldpathmunge /usr/local/lib
+
+if [ "$#" -ne 1 ]; then
+    HUTCH=`/reg/g/xpp/scripts/get_hutch_name`
+else
+    HUTCH=$1
+fi
+
+/reg/g/pcds/pyps/config/${HUTCH}/iocmanager/IocManager --hutch $HUTCH > /dev/null &
+
+if [ `whoami` == "xppopr" ]; then
+    window_id=`xdotool search --sync --onlyvisible --name 'IocManager'` 
+    if [ "xpp-control"  == "$HOSTNAME" ]; then
+	wmctrl -v -i -r "$window_id" -e 0,3310,1100,530,1000
+    elif [ "xpp-daq" == "$HOSTNAME" ]; then
+	wmctrl -v -i -r "$window_id" -e 0,3310,1100,530,1000
+    fi
+    wmctrl -v -i -r "$window_id" -b add,sticky
+fi
