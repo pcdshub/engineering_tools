@@ -4,8 +4,13 @@ ulimit -c unlimited
 source /reg/g/pcds/setup/pathmunge.sh
 ldpathmunge /usr/local/lib
 
+DIRTMP=`dirname  "${BASH_SOURCE[0]}"`
+DIR="$( cd $DIRTMP && pwd -P )"
+pathmunge $DIR
+#PATH=$PATH:$DIR
+
 if [ "$#" -ne 1 ]; then
-    HUTCH=`/reg/g/xpp/scripts/get_hutch_name`
+    HUTCH=`get_hutch_name`
 else
     HUTCH=$1
 fi

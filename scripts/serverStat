@@ -26,12 +26,15 @@ elif [ $HUTCH == 'xcs' ]; then
 	echo 'IP not FEZ or CDS'
     fi
 elif [ $HUTCH == 'mfx' ]; then
+    echo 'DEBUG in MFX...'
     if [[ $INIP == *'172.21.62'* ]]; then
 	SRVIP=$INIP
 	SRVIPFEZ=`echo $INIP | sed s/.62./.24./g `
     elif [[ $INIP == *'172.21.24'* ]]; then
+	echo 'DEBUG in MFZ GIVEN FEZ '
 	SRVIPFEZ=$INIP
 	SRVIP=`echo $INIP | sed s/.24./.62./g `
+	echo 'DEBUG ' $INIP $SRVIP
     else
 	echo 'IP not FEZ or CDS'
     fi
@@ -78,6 +81,11 @@ elif [ $HUTCH == 'amo' ]; then
 fi
 }
 
+
+DIRTMP=`dirname  "${BASH_SOURCE[0]}"`
+DIR="$( cd $DIRTMP && pwd -P )"
+PATH=$PATH:$DIR
+
 HUTCH=`get_hutch_name`
 for name in "amo" "sxr" "xpp" "xcs" "mfx" "cxi" "mec"; do
     if [[ $DEV == *$name* ]]; then
@@ -86,6 +94,10 @@ for name in "amo" "sxr" "xpp" "xcs" "mfx" "cxi" "mec"; do
     fi
 done
 #echo 'NAME: '$NAME
+
+HOST_HAS_FEZ=`netconfig search $HOSTNAME-fez --brief | wc -l`
+let HOST_HAS_FEZ-=1
+echo DEBUG HOST_HAS FEZ $HOST_HAS_FEZ
 
 if [[ $# < 2 ]]
 then
@@ -109,6 +121,7 @@ NAME=$DEV
   
 if [[ $NAME == *'172.21'* ]]; then
     ISSRV=1
+    echo DEBUG given an IP $NAME $DEV
     ips_from_ip $DEV
     NAME=`netconfig search $SRVIP --brief | awk {'print $1'}`
     echo $NAME
@@ -134,7 +147,15 @@ if [[ $ISSRV -lt 1 ]]; then
 	i=$((${#DEV}-1));NEV=`echo "${DEV:$i:1}"`;AWKNUM=$(($NEV+4))
 	NAME=`echo $DSSNODES | awk -v temp=$AWKNUM {'print $temp'}  |  sed s/,// | sed s/_/-/g`
     else
-	NAME=`grep $DEV /reg/g/pcds/dist/pds/${HUTCH}/scripts/${HUTCH}.cnf | grep -v '#' | grep host | awk {'print $1'} | sed s/{host://g | sed s/,// | sed s/_/-/g`
+	NDEV=`grep $DEV /reg/g/pcds/dist/pds/${HUTCH}/scripts/${HUTCH}.cnf | grep -v '#' | grep host | wc -l`
+	if [ $NDEV -eq 1 ]; then
+	    NAME=`grep $DEV /reg/g/pcds/dist/pds/${HUTCH}/scripts/${HUTCH}.cnf | grep -v '#' | grep host | awk {'print $1'} | sed s/{host://g | sed s/,// | sed s/_/-/g`
+	elif  [ $NDEV -eq 0 ]; then
+	    echo 'no device of this name found, exit'
+	    exit
+	else
+	    NAME=`grep "$DEV'" /reg/g/pcds/dist/pds/${HUTCH}/scripts/${HUTCH}.cnf | grep -v '#' | grep host | awk {'print $1'} | sed s/{host://g | sed s/,// | sed s/_/-/g`
+	fi
     fi
     ISSRV=`netconfig search $NAME | grep 'Found' | awk {'print $2'}`
     if [[ $ISSRV -lt 1 ]]; then
@@ -164,20 +185,31 @@ elif [[ $CMD == "cycle" ]]; then
     sleep 5
     ipmitool -U ADMIN -P ipmia8min -H $NAMEIPMI power status
 else
-    ipmitool -U ADMIN -P ipmia8min -H $NAMEIPMI power status
+    ISON=`ipmitool -U ADMIN -P ipmia8min -H $NAMEIPMI power status | awk 'NF>=2 {print $(NF)}'`
+    if [ $ISON == *off* ]; then
+	echo $DEV is powered off
+	exit
+    fi
 
     PNG=`ping -c 1 $SRVIP | grep transmitted | awk '{print $4}'`
     IFUP=0
     if [[ $NAME == *daq* ]]; then
-	PNGFEZ=`ping -c 1 $SRVIPFEZ | grep transmitted | awk '{print $4}'`
-	echo 'with IP: ' $SRVIP ' (ping: ' $PNG '), ' $SRVIPFEZ ' (ping' $PNGFEZ ')'
-	if [[ $(($PNG+$PNGFEZ)) -gt 1 ]]; then
-	    echo 'cds&fez interfaces are up'
+	if [[ $HOST_HAS_FEZ -ge 1 ]]; then
+	    PNGFEZ=`ping -c 1 $SRVIPFEZ | grep transmitted | awk '{print $4}'`
+	    echo 'with IP: ' $SRVIP ' (ping: ' $PNG '), ' $SRVIPFEZ ' (ping' $PNGFEZ ')'
+	    if [[ $(($PNG+$PNGFEZ)) -gt 1 ]]; then
+		echo 'cds&fez interfaces are up'
+	    fi
+	else
+	    echo $DEV ' is a server with IP: ' $SRVIP ' (ping: ' $PNG '), ' $SRVIPFEZ ' (cannot ping from machine without fez )'
+	    if [ $PNG -gt 0 ]; then
+		echo 'cds interface is up'
+	    fi	    
 	fi
     else
 	echo $DEV ' is a server with IP: ' $SRVIP ' (ping: ' $PNG ')'
 	if [ $PNG -gt 0 ]; then
-	    echo 'cds interfaces is up'
+	    echo 'cds interface is up'
 	fi
     fi
 fi

@@ -1,5 +1,9 @@
 #! /bin/bash
 
+DIRTMP=`dirname  "${BASH_SOURCE[0]}"`
+DIR="$( cd $DIRTMP && pwd -P )"
+PATH=$PATH:$DIR
+
 usage()
 {
 cat << EOF
