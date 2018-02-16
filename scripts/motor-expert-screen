@@ -29,15 +29,9 @@ shift $(($OPTIND - 1))
 
 # Setup edm environment
 source /reg/g/pcds/setup/epicsenv-3.14.12.sh
-export DEVICE_CONFIG_TEMPLATE_DIR=/reg/g/pcds/controls/device_config/ims_templates
-export DEVICE_CONFIG_TEMPLATE_DEFAULT=ims_config.tmp
-export DEVICE_CONFIG_DIR=/reg/neh/operator/xppopr/device_config/ims
-export PATH=$PATH:/reg/g/pcds/controls/device_config
 export PCDS_EDMS=/reg/g/pcds/package/epics/3.14/screens/edm
 #export EDMDATAFILES=.:${PCDS_EDMS}/xps8:${PCDS_EDMS}/ims  # normal EDMDATAFILES line
-export EDMDATAFILES=.:${PCDS_EDMS}/xps8:/reg/neh/home/dhzhang/ims_edms:${PCDS_EDMS}/ims
-# add Dehong's home directory for now... until official release of ims motor expert screen
-
+export EDMDATAFILES=.:${PCDS_EDMS}/xps8:/reg/g/pcds/package/epics/3.14/ioc/common/ims/R2.2.3/imsScreens
 
 # xdotool is used to move the new window to the mouse location
 # if xdotool is not installed, the move window commands will skip
