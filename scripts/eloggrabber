@@ -95,7 +95,7 @@ if [ $hutch == 'unknown_hutch' ]; then
     exit
 fi
 HUTCH=${hutch^^}
-USERNAME=`get)info --gethutch`opr
+USERNAME=`get_info --gethutch`opr
 EXPNAME=current
 
 while getopts "e:u:hxyot" OPTION
