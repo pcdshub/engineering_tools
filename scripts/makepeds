@@ -1,6 +1,6 @@
 #! /bin/bash
 
-DIRTMP=`dirname  "${BASH_SOURCE[0]}"`
+DIRTMP=$(dirname  "$(readlink -f "${BASH_SOURCE[0]}")")
 DIR="$( cd $DIRTMP && pwd -P )"
 PATH=$PATH:$DIR
 
