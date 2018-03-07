@@ -214,10 +214,9 @@ fi
 ###########
 # setup work directory - always!
 ###########
-    
 BASEWORKDIR=/reg/d/psdm/${HUTCH}/$EXP/calib/pedestal_workdir
 UserName=`whoami`
-WORKDIR="$BASEWORKDIR"_"$UserName"
+WORKDIR="$BASEWORKDIR"_"$UserName"   
 if [ ! -d $WORKDIR ]; then
     DIR=/reg/d/psdm/${HUTCH}/$EXP/calib/
     if [ -d $DIR ]; then
@@ -290,19 +289,16 @@ if [[ ( $HAVE_JUNGFRAU -ge 1 ) && ( $WANT_JUNGFRAU -ge 1 ) ]]; then
     let RUN2=RUN+2
     DSNAME='exp='$EXP':run='$RUN','$RUN1','$RUN2':smd:stream=0-79'
     if [ $FFB -eq 1 ]; then
-	DSNAME=$DSNAME':dir=/reg/d/ffb/'$HUTCH'/'$EXP'/xtc/'
+	      DSNAME=$DSNAME':dir=/reg/d/ffb/'$HUTCH'/'$EXP'/xtc/'
     fi   
 
     #detector names. This will only for for a single JF
-    DETLIST=`detnames exp=${EXP}:run=${RUN} | grep Jungfrau | awk  'BEGIN { FS = "|"}; {print $1}'`
+    DETNAMES=`detnames exp=${EXP}:run=${RUN} | grep Jungfrau | awk  'BEGIN { FS = "|"}; {print $1}' | paste -d " " -s`
 
-    echo ----- Jungfrau detectors:
-    echo ----- $DETLIST
-    echo -------------------- START JUNGFRAU PEDESTALS at $(date +"%T") ----------------------------
     #default arguments.
     JFARG=' -d '$DSNAME' -n '$NUMEVT
     if [ $DEPLOY == 1 ]; then
-    JFARG=$JFARG' -u '
+        JFARG=$JFARG' -u '
     fi
 
     #specify parameters for status bits in pixel mask
@@ -312,62 +308,44 @@ if [[ ( $HAVE_JUNGFRAU -ge 1 ) && ( $WANT_JUNGFRAU -ge 1 ) ]]; then
     NOISESIGMIN=0.001
     #NOISESIGMIN=1 #my script cannot deal with floats
     if [ $MYNOISESIGMIN -ne -1 ]; then
-    NOISESIGMIN=$MYNOISESIGMIN
+	      NOISESIGMIN=$MYNOISESIGMIN
     fi
     if [ $MYNOISESIGMAX -ne -1 ]; then
-    NOISESIGMAx=$MYNOISESIGMAX
+	      NOISESIGMAx=$MYNOISESIGMAX
     fi
     if [ $MYADUMIN -ne -1 ]; then
-    ADUMIN=$MYADUMIN
+	      ADUMIN=$MYADUMIN
     fi
     if [ $MYADUMAX -ne -1 ]; then
-    ADUMAX=$MYADUMAX
+	      ADUMAX=$MYADUMAX
     fi
     JFARG=$JFARG' --intlow='$ADUMIN' --inthig='$ADUMAX' --rmslow='$NOISESIGMIN' --rmshig='$NOISESIGMAX
 
+    echo -------------------- START JUNGFRAU PEDESTALS at $(date +"%T") ----------------------------
+
     #now finally call the command
     if [ $RUNLOCAL -ne 1 ]; then
-        NDETS=`echo $DETLIST | wc -w`
-        # jungfrau_ndarr_dark_proc currently only works for one detector
-        # Force to run as loop the same as local when more than one detector in data
-        if [ $NDETS -eq 1 ]; then
-            #DETNAME=`echo $DETLIST | sed "s| |,|g"`
-            DETNAME=$DETLIST
-            echo -- START $DETNAME PEDESTALS at $(date +"%T")
-            JFARGDET=$JFARG' -s '$DETNAME
-            jfCmd=`echo bsub -q $QUEUE -o $WORKDIR/jungfrau_${EXP}_RUN${RUN}_%J.out jungfrau_ndarr_dark_proc $JFARGDET`
-            echo 'run in queue: ' $jfCmd
-            #SUBMISSION=`bsub -q $QUEUE -o $WORKDIR/jungfrau_${EXP}_RUN${RUN}_%J.out jungfrau_ndarr_dark_proc $JFARGDET`
-            SUBMISSION=`$jfCmd`
-            echo $SUBMISSION
-            JOBNR=`echo $SUBMISSION | awk {'print $2'} | sed s/'<'//g | sed s/'>'//g`
-            echo '  '$JUBNR
-            echo "start to peek on jungfrau job after waiting for 30 seconds "
-            echo "please ctrl-c once job is finished"
-            sleep 30
-            bpeek -f $JOBNR
-            exit
-        else
-            # Loop over jungfrau detectors
-            for DETNAME in $DETLIST; do
-                echo -- START $DETNAME PEDESTALS at $(date +"%T")
-                JFARGDET=$JFARG' -s '$DETNAME
-                cmd='jungfrau_ndarr_dark_proc '$JFARGDET
-                echo $cmd
-                $cmd
-                echo -- END $DETNAME PEDESTALS at $(date +"%T")
-            done
-        fi
+        tmpScript=$(mktemp -p $WORKDIR jungfrau_multi_tmpXXXXX.sh)
+        trap "rm -f $tmpScript" EXIT
+        chmod u+x $tmpScript
+        printf '#!/bin/bash\nfor DET in %s\ndo jungfrau_ndarr_dark_proc %s -s $DET\ndone\n' "$DETNAMES" "$JFARG" > $tmpScript
+        echo "contents of $tmpScript:"
+        cat $tmpScript
+        jfCmd=`echo bsub -q $QUEUE -o $WORKDIR/jungfrau_${EXP}_RUN${RUN}_%J.out $tmpScript`
+        echo 'run in queue: ' $jfCmd
+        #SUBMISSION=`bsub -q $QUEUE -o $WORKDIR/jungfrau_${EXP}_RUN${RUN}_%J.out jungfrau_ndarr_dark_proc $JFARG`
+        SUBMISSION=`$jfCmd`
+        echo $SUBMISSION
+        JOBNR=`echo $SUBMISSION | awk {'print $2'} | sed s/'<'//g | sed s/'>'//g`
+        echo "start to peek on jungfrau job after waiting for 30 seconds "
+        echo "please ctrl-c once job is finished"
+        sleep 30
+        bpeek -f $JOBNR
+        exit
     else
-        # Loop over jungfrau detectors
-        for DETNAME in $DETLIST; do
-            echo -- START $DETNAME PEDESTALS at $(date +"%T")
-            JFARGDET=$JFARG' -s '$DETNAME
-            cmd='jungfrau_ndarr_dark_proc '$JFARGDET
-            echo $cmd
-            $cmd
-            echo -- END $DETNAME PEDESTALS at $(date +"%T")
-        done
+        cmd=`echo 'for DET in '$DETNAMES'; do jungfrau_ndarr_dark_proc '$JFARG' -s $DET; done'`
+        echo $cmd
+        bash -c "$cmd"
     fi
     echo -------------------- END JUNGFRAU PEDESTALS at $(date +"%T") ----------------------------
 fi
