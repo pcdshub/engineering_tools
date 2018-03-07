@@ -177,7 +177,7 @@ if [ $RUNFFBNODE -ne 0 ]; then
 else
     echo calling:  makepeds_psana $COMMAND_ARGS
     if [[ $HOSTNAME =~ "psana" ]]; then
-	makepeds_psana $COMMAND_ARGS
+	    $DIR/makepeds_psana $COMMAND_ARGS
     else
 	ssh -Y $USER@psdev ssh -Y psana "$DIR/makepeds_psana $COMMAND_ARGS"
     fi
