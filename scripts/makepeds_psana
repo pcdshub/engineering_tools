@@ -292,7 +292,8 @@ if [[ ( $HAVE_JUNGFRAU -ge 1 ) && ( $WANT_JUNGFRAU -ge 1 ) ]]; then
     fi   
 
     #detector names. This will only for for a single JF
-    DETNAME=`detnames exp=${EXP}:run=${RUN} | grep Jungfrau | awk  'BEGIN { FS = "|"}; {print $1}'`
+    DETLIST=`detnames exp=${EXP}:run=${RUN} | grep Jungfrau | awk  'BEGIN { FS = "|"}; {print $1}'`
+    DETNAME=`echo $DETLIST | sed "s| |,|g"`
 
     #default arguments.
     JFARG=' -d '$DSNAME' -n '$NUMEVT' -s '$DETNAME
