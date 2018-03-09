@@ -214,9 +214,7 @@ fi
 ###########
 # setup work directory - always!
 ###########
-BASEWORKDIR=/reg/d/psdm/${HUTCH}/$EXP/calib/pedestal_workdir
-UserName=`whoami`
-WORKDIR="$BASEWORKDIR"_"$UserName"   
+WORKDIR=/reg/d/psdm/${HUTCH}/$EXP/calib/pedestal_workdir
 if [ ! -d $WORKDIR ]; then
     DIR=/reg/d/psdm/${HUTCH}/$EXP/calib/
     if [ -d $DIR ]; then
