@@ -7,16 +7,18 @@ usage: $0 options
 
 OPTIONS:
 -l add live status
+-i/H information for hutch (override autodetection)
 EOF
 }
 AskLive=0
 Ended=0
+INSTRUMENT='xxx'
 
 DIRTMP=`dirname  "${BASH_SOURCE[0]}"`
 DIR="$( cd $DIRTMP && pwd -P )"
 PATH=$PATH:$DIR
 
-while getopts "hle" OPTION
+while getopts "H:i:hle" OPTION
 do
     case $OPTION in
 	h)
@@ -29,6 +31,12 @@ do
 	e) 
 	    Ended=1
 	    ;;
+	i) 
+	    INSTRUMENT=$OPTARG
+	    ;;
+	H) 
+	    INSTRUMENT=$OPTARG
+	    ;;
 	?)
 	    usage
 	    exit
@@ -37,21 +45,33 @@ do
 done
 
 if [ $AskLive -eq 1 ]; then
-    CURR_EXP=`get_info --run --live`    
-    if [[ $CURR_EXP == *'xxx'* ]]; then
-	echo 'For which hutch would you like to get this information? '
-	read hutch
-	CURR_EXP=`get_info --hutch $hutch --run --live`
+    if [ $INSTRUMENT != 'xxx' ]; then
+	CURR_EXP=`get_info --hutch $INSTRUMENT --run --live`    
+    else
+	CURR_EXP=`get_info --run --live`    
+	if [[ $CURR_EXP == *'xxx'* ]]; then
+	    echo 'For which hutch would you like to get this information? '
+	    read hutch
+	    CURR_EXP=`get_info --hutch $hutch --run --live`
+	fi
     fi
 elif [ $Ended -eq 1 ]; then
-    CURR_EXP=`get_info --run --ended`    
-    if [[ $CURR_EXP == *'xxx'* ]]; then
-	echo 'For which hutch would you like to get this information? '
-	read hutch
-	CURR_EXP=`get_info --hutch $hutch --run --ended`
+    if [ $INSTRUMENT != 'xxx' ]; then
+	CURR_EXP=`get_info --hutch $INSTRUMENT --run --ended`    
+    else
+	CURR_EXP=`get_info --run --ended`    
+	if [[ $CURR_EXP == *'xxx'* ]]; then
+	    echo 'For which hutch would you like to get this information? '
+	    read hutch
+	    CURR_EXP=`get_info --hutch $hutch --run --ended`
+	fi
     fi
 else
-    CURR_EXP=`get_info --run`
+    if [ $INSTRUMENT != 'xxx' ]; then
+	CURR_EXP=`get_info --hutch $INSTRUMENT --run`    
+    else
+	CURR_EXP=`get_info --run`
+    fi
     NUM_RET_WORD=`echo $CURR_EXP | wc | awk {'print $2'}`
     if [ $NUM_RET_WORD == 1 ]; then
 	if [ $CURR_EXP == 'xxx' ]; then
