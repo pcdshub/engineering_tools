@@ -13,6 +13,9 @@ parser.add_argument("--ended", help="ended", action='store_true')
 parser.add_argument("--hutch", help="get experiment for hutch xxx")
 parser.add_argument("--getHutch", help="get hutch (uppercase)", action='store_true')
 parser.add_argument("--gethutch", help="get hutch (lowercase)", action='store_true')
+parser.add_argument("--files_for_run", help="get xtc files for run")
+parser.add_argument("--nfiles_for_run", help="get xtc files for run")
+parser.add_argument("--setExp", help="set experiment name")
 args = parser.parse_args()
 
 hutches=['amo','sxr','xpp','xcs','mfx','cxi','mec']
@@ -76,6 +79,7 @@ else:
 
 if args.exp:
     print RegDB.experiment_info.active_experiment(hutch)[1]
+
 if args.run:
     try:
         if args.ended:
@@ -93,3 +97,32 @@ if args.run:
                     print 'ended'
     except:
         print 'no runs yet'
+
+if args.files_for_run or args.nfiles_for_run:
+    if args.files_for_run:
+        run = int(args.files_for_run)
+    if args.nfiles_for_run:
+        run = int(args.nfiles_for_run)
+
+    if args.setExp:
+        exp=args.setExp
+    else:
+        exp=RegDB.experiment_info.active_experiment(hutch)[1]
+    expNum = RegDB.experiment_info.name2id(exp)
+
+    runLast = RegDB.experiment_info.experiment_runs(hutch, exp)[-1]['num']
+    if run > runLast:
+        print 'run %d not taken yet, last run is'%(run,runLast)
+    else:
+        file_list = RegDB.experiment_info.get_open_files(expNum,run)
+        if args.files_for_run:
+            for tfile in file_list:
+                print tfile['dirpath'].replace('/u2/pcds/pds','/reg/d/psdm')
+        elif args.nfiles_for_run:
+            #look at files, remove stream 80, only first chunk, return number.
+            nFiles=0
+            for tfile in file_list:
+                tfilename = tfile['dirpath'].replace('/u2/pcds/pds','/reg/d/psdm')
+                if tfilename.find('c00')>=0 and tfilename.find('-s8')<0:
+                    nFiles=nFiles+1
+            print '%d %d'%(nFiles,len(file_list))

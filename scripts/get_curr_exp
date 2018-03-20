@@ -1,20 +1,54 @@
 #!/bin/bash
 
+usage()
+{
+cat << EOF
+usage: $0 options
+
+OPTIONS:
+-l add live status
+-i/H information for hutch (override autodetection)
+EOF
+}
+INSTRUMENT='xxx'
+
+while getopts "H:i:hle" OPTION
+do
+    case $OPTION in
+	h)
+	    usage
+	    exit 1
+	    ;;
+	i) 
+	    INSTRUMENT=$OPTARG
+	    ;;
+	H) 
+	    INSTRUMENT=$OPTARG
+	    ;;
+	?)
+	    usage
+	    exit
+	    ;;
+	esac
+done
+
 DIRTMP=`dirname  "${BASH_SOURCE[0]}"`
 DIR="$( cd $DIRTMP && pwd -P )"
 PATH=$PATH:$DIR
 
-CURR_EXP=`get_info --exp`
-if [ $# == 1 ]; then
-    CURR_EXP=`get_info --hutch ${1^^} --exp`
-elif [ $CURR_EXP == 'xxx' ]; then
-    echo 'Cannot autodetermine hutch, for which hutch would you like to get this information? '
-    read -t 5 hutch
-    if [ $hutch == '' ]; then 
-	echo 'no response, will quit'
-	exit 1
+if [ $INSTRUMENT != 'xxx' ]; then
+    CURR_EXP=`get_info --hutch ${INSTRUMENT^^} --exp`
+else
+    CURR_EXP=`get_info --exp`
+    if [ $CURR_EXP == 'unknown_hutch' ]; then
+	echo 'Cannot autodetermine hutch, for which hutch would you like to get this information? '
+	read -t 5 hutch
+	if [ $hutch == '' ]; then 
+	    echo 'no response, will quit'
+	    exit 1
+	fi
+	CURR_EXP=`get_info --hutch ${hutch^^} --exp`
     fi
-    CURR_EXP=`get_info --hutch ${hutch^^} --exp`
 fi
  
 echo $CURR_EXP
