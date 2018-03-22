@@ -81,6 +81,32 @@ elif [ $HUTCH == 'amo' ]; then
 fi
 }
 
+isCam(){
+    ISCAM=`grep $DEV /reg/g/pcds/pyps/config/*/camviewer.cfg | grep -v '#' | wc -l`
+    if [ $ISCAM -gt 0 ]; then
+	ISGIGE=`grep $DEV /reg/g/pcds/pyps/config/*/camviewer.cfg | grep -v '#' | grep GIGE | wc -l`
+	if [ $ISGIGE -gt 0 ]; then
+	    read -p 'This is a gige camera, start the maim edm screen? (y/n)'
+	    if [ "$REPLY"=="y" ]; then
+		gige -c $DEV -m 
+	    else
+		read -p 'Do you want to restart acqisition (y/n)'
+		if [ "$REPLY"=="y" ]; then
+		    gige -c $DEV -n
+		else
+		    read -p 'Do you want to reboot the IOC (y/n)'
+		    if [ "$REPLY"=="y" ]; then
+			gige -c $DEV -r
+		    fi
+		fi
+	    fi
+	    exit
+	else
+	    echo 'this is a non-gige camera, go to the IOC manager to reboot/check status'
+	    exit
+	fi
+    fi
+}
 
 DIRTMP=`dirname  "${BASH_SOURCE[0]}"`
 DIR="$( cd $DIRTMP && pwd -P )"
@@ -150,8 +176,9 @@ if [[ $ISSRV -lt 1 ]]; then
 	if [ $NDEV -eq 1 ]; then
 	    NAME=`grep $DEV /reg/g/pcds/dist/pds/${HUTCH}/scripts/${HUTCH}.cnf | grep -v '#' | grep host | awk {'print $1'} | sed s/{host://g | sed s/,// | sed s/_/-/g`
 	elif  [ $NDEV -eq 0 ]; then
-	    #add stuff to check if we have camera in camviewer&point to gige/camviewer script.
-	    #NCAM=`grep $DEV /reg/g/pcd`
+	    #check if we have a camera, will exit if yes.
+	    isCam
+	    #was not a camera, will quit
 	    echo 'no device of this name found, exit'
 	    exit
 	else
