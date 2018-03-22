@@ -97,7 +97,6 @@ done
 
 HOST_HAS_FEZ=`netconfig search $HOSTNAME-fez --brief | wc -l`
 let HOST_HAS_FEZ-=1
-echo DEBUG HOST_HAS FEZ $HOST_HAS_FEZ
 
 if [[ $# < 2 ]]
 then
@@ -151,6 +150,8 @@ if [[ $ISSRV -lt 1 ]]; then
 	if [ $NDEV -eq 1 ]; then
 	    NAME=`grep $DEV /reg/g/pcds/dist/pds/${HUTCH}/scripts/${HUTCH}.cnf | grep -v '#' | grep host | awk {'print $1'} | sed s/{host://g | sed s/,// | sed s/_/-/g`
 	elif  [ $NDEV -eq 0 ]; then
+	    #add stuff to check if we have camera in camviewer&point to gige/camviewer script.
+	    #NCAM=`grep $DEV /reg/g/pcd`
 	    echo 'no device of this name found, exit'
 	    exit
 	else
