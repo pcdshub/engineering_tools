@@ -1,0 +1,3 @@
+#!/bin/bash
+HUTCH=`get_info --gethutch`
+/reg/g/pcds/pyps/config/${HUTCH}/pmgr/pmgr --type ims_motor --hutch ${HUTCH} &
