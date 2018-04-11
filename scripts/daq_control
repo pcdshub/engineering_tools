@@ -1,0 +1,974 @@
+#!/bin/bash
+#
+# daq_control <command> <target>
+#
+# <command> : { start, stop, restart, status }
+# <target>  : { daq, ami }
+#
+# <command> : ami
+# <target>  : { [0], 1 }
+#
+# <command> : config
+# <target>  : { shared }
+#
+# <command> : configdb
+# <target>  : { [view], edit, expname, current }
+#
+# <command> : hosts 
+# <target>  : { }
+#
+# <command> : release 
+# <target>  : { }
+#
+# <command> : logcheck
+#
+
+input_cmd=$@
+bin_path=$0
+echo $bin_path
+
+if [[ "$1" ]]; then
+    command=$1
+    shift 
+    if [[ $1 ]]; then  
+      if [ ${1:0:1} != '-' ]; then  
+        target=$1
+        shift 
+      fi
+    fi 
+else
+    printhelp=1
+fi
+
+# make shutdown an alias for stop
+[[ $command == 'shutdown' ]] && command=stop
+
+while getopts ":a:c:e:i:m:vh" opt; do
+  case $opt in
+    a)
+      authorized_host=$OPTARG
+      ;;
+    c)
+      cnf_base=$OPTARG
+      ;;
+    i)
+      echo "-i use instrument = $OPTARG" >&2
+      instrument=$OPTARG
+      ;;
+    m)
+      COMMENT=$OPTARG
+      ;;
+    v)
+      printverbose=1
+      ;;
+    e)
+      expname=$OPTARG
+      ;;
+    h)
+      printhelp=1
+      ;;
+    :)
+      echo "Option -$OPTARG requires an argument." >&2
+      exit 1
+      ;;
+  esac
+done
+
+: ${instrument:=`get_info --gethutch`}
+daq_user=$instrument"opr"
+#INSTRUMENT=`echo $instrument | awk '{print toupper($0)}'`
+
+# one_daq mode depricated for cxi and mfx, which now always have two daqs available
+case $instrument in
+  cxi|mfx)
+    DAQ_MODE='two_daqs'   
+    ;;
+  *)
+    DAQ_MODE='one_daqs'   
+    ;;
+esac
+
+scripts_path="/reg/g/pcds/dist/pds/$instrument/scripts/"
+
+prim_host="$instrument-daq"
+secn_host="$instrument-monitor"
+
+onedaq_base="$instrument"
+primal_base="$instrument"_0
+second_base="$instrument"_1
+
+: ${INSTRUMENT:=`get_info --getinstrument`}
+: ${cnf_base:=`get_info --getbase`}
+: ${LOGFOLDER:=$cnf_base}
+
+case $DAQ_MODE in
+  two_daqs)
+    case "$HOSTNAME" in
+      "$secn_host")
+#          : ${cnf_base:=$second_base}
+          : ${authorized_host:="$secn_host"}
+#          INSTRUMENT=$INSTRUMENT:1
+#          LOGFOLDER=$instrument'_1'
+          ;;
+      *)
+#          : ${cnf_base:=$primal_base}
+          : ${authorized_host:="$prim_host"}
+#          INSTRUMENT=$INSTRUMENT:0
+#          LOGFOLDER=$instrument'_0'
+          ;;
+    esac
+    ;;
+  *)
+#          : ${cnf_base:=$onedaq_base}
+          : ${authorized_host:="$prim_host"}
+#          LOGFOLDER=$instrument
+    ;;
+esac
+
+pds_path='/reg/g/pcds/dist/pds'
+scripts_dir="/reg/g/pcds/dist/pds/$instrument/scripts"
+
+make_cnf_definition(){
+    declare_name="$1"
+    declare_value=`grep "^$1[[:space:]]*=" "$scripts_dir/$cnf_base.cnf" | tail -n 1 | awk '{split($0,a," "); print a[3]}' | sed s/\'//g`
+    if [[ "declare_value" ]]; then
+        export $declare_name="$declare_value"
+        echo "       $declare_name = $declare_value"
+    else
+        echo $declare_name not defined in $scripts_dir/$cnf_base.cnf
+    fi
+}
+
+# Set base_path and bin definitions from appropriate cnf file
+echo "Definitions from $scripts_dir/$cnf_base.cnf"
+make_cnf_definition daq_base_path
+make_cnf_definition ami_base_path
+make_cnf_definition configdb_path
+make_cnf_definition ami_bin
+make_cnf_definition ami_lib
+make_cnf_definition pdsapp_bin
+make_cnf_definition procmgr_path
+
+# Now make path definitions similarly to what is in the cnf file
+pdsapp_path="$daq_base_path$pdsapp_bin"
+ami_path="$ami_base_path$ami_bin"
+amilib_path="$ami_base_path$ami_lib"
+
+CurrentReleaseDAQ=`ls -ld "$daq_base_path" | awk '{split($0,a,"-> "); print a[2]}' | cut -d '/' -f2`
+CurrentReleaseAMI=`ls -ld "$ami_base_path" | awk '{split($0,a,"-> "); print a[2]}' | cut -d '/' -f2`
+
+controls_machines=`grep 'controls_machines'  "$scripts_dir/$cnf_base.cnf"  | cut -d '=' -f2 | tr -d '[' | tr -d ']' | sed 's/,/ /g' | sed 's/_/-/g'`
+mon_nodes=`grep '^mon_nodes'  "$scripts_dir/$cnf_base.cnf"  | cut -d '=' -f2 | tr -d '[' | tr -d ']' | sed 's/,/ /g' | sed 's/_/-/g'`
+ffb_nodes=`grep 'ffb_nodes'  "$scripts_dir/$cnf_base.cnf"  | cut -d '=' -f2 | tr -d '[' | tr -d ']' | sed 's/,/ /g'`
+dss_nodes=`grep '^dss_nodes'  "$scripts_dir/$cnf_base.cnf" | cut -d '=' -f2 | tr -d '[' | tr -d ']' | sed 's/,/ /g' | sed 's/_/-/g'`
+
+: ${expname:=`$pdsapp_path/currentexp $INSTRUMENT | awk '{print $2}'`}
+echo "Current $INSTRUMENT Experiment:  $expname"
+[[ "$COMMENT" ]] && echo "Comment:  $COMMENT"
+
+workdir="/reg/d/psdm/$instrument/$expname/scratch/ana/work"
+
+ami_proc="ami0_client "
+for i in {0..2}; do
+    ami_proc="$ami_proc ami_proxy$i"
+    ami_proc="$ami_proc ami$i"_coll_0
+    for j in {0..7}; do
+        ami_proc="$ami_proc ami$i"_0_"$j"
+    done
+done
+
+host_check(){
+    if [ "$HOSTNAME" != "$1" ]; then
+    echo "$0 $2 $3 - can only be executed from $1"
+    exit 1
+    fi
+}
+
+get_host_list(){
+    RETURN_LIST=''
+    HOST_LIST=`grep "^$1" $scripts_dir/$cnf_base.cnf`
+    IFS=$'\n'
+    for host_item in $HOST_LIST; do
+        RETURN_LIST+=' '`echo $host_item | awk '{print $1}' | sed 's\_\-\g'`
+    done
+    unset IFS
+    echo $RETURN_LIST
+}
+
+exec_procmgr(){
+    cmd=$1
+    daq_base=$2
+    cnf_file="$scripts_dir/$daq_base.cnf"
+    log_dir="/reg/g/pcds/pds/$daq_base/logfiles"
+    shift 2
+    echo "Executing:  $procmgr_path/procmgr $cmd $cnf_file $* -o $log_dir -c 2000000000"
+    $procmgr_path/procmgr $cmd $cnf_file $* -o $log_dir -c 2000000000
+}
+
+exec_online_ami(){
+  daq_base=$1
+case $HOSTNAME in
+    "$instrument-daq")
+        mon_proxy_name="mon_proxy_daq"
+    ;;
+    "$instrument-monitor")
+        mon_proxy_name="mon_proxy_monitor"
+    ;;
+    "$instrument-control")
+        mon_proxy_name="mon_proxy_control"
+    ;;
+    "$instrument-console")
+        mon_proxy_name="mon_proxy_other"
+    ;;
+    *)
+        mon_proxy_name="mon_proxy_other"
+    ;;
+  esac    
+  mon_proxy=`grep "$mon_proxy_name[[:space:]]" "$scripts_dir/$daq_base.cnf" | grep -v '#' | grep daq_ | awk '{split($0,a," "); print a[3]}'`
+  eval declare AMIPROXY=`grep "$mon_proxy[[:space:]]*=" "$scripts_dir/$daq_base.cnf" | awk '{split($0,a," "); print a[3]}' | sed 's/172.21.26/172.21.68/g' `
+  export HOSTSUBNET=`gethostip -d $HOSTNAME | cut -d '.' -f3`
+  export PROXYSUBNET=`echo $AMIPROXY | cut -d '.' -f3`
+  if [ $HOSTSUBNET = $PROXYSUBNET ]
+  then
+    echo "Connect to proxy $AMIPROXY ($mon_proxy) from $HOSTNAME"
+    exec "$ami_path/online_ami" -I eth0 -i eth0 -s $AMIPROXY -f ~"$daq_user" -C 1 &
+  else
+   echo "You must be on the CXI subnet to monitor data!"
+  fi 
+}
+
+elogPost(){
+    User=$daq_user
+    INST=`echo $instrument | awk '{print toupper($0)}'`
+    LogExp=$1
+    shift
+    case $LogExp in 
+      "amo"|"sxr"|"xpp"|"xcs"|"mfx"|"cxi"|"mec")
+        INST=`echo $LogExp | awk '{print toupper($0)}'`
+        Experiment="$INST Instrument"
+        Instrument=NEH
+      ;;
+      "current")
+        Experiment=$expname
+        Instrument=$INST
+      ;;
+      "instrument")
+        Experiment="$INST Instrument"
+        Instrument=NEH
+      ;;
+      *)
+        Experiment=$LogExp
+        Instrument=$INST
+      ;;
+    esac
+    echo "posting to $Experiment $instrument for $LogExp $expname"
+    Message="$1"
+    shift
+    Options=$@
+    if [ -f /usr/bin/python2.7 ]; then 
+      export PYTHONPATH=/reg/g/pcds/pds/grabber/lib/python2.7/site-packages/
+      BINPATH=/usr/bin/python2.7
+    else
+      export PYTHONPATH=/reg/g/pcds/pds/grabber/lib/python2.6/site-packages/
+      BINPATH=/usr/bin/python2.6
+    fi
+    PYCMD=/reg/g/pcds/pds/grabber/bin/LogBookPost_self.py
+    echo $BINPATH $PYCMD -i "$Instrument" -w https://pswww.slac.stanford.edu/ws-auth -u "$User" -e "$Experiment" -m "$Message" $@ &
+    $BINPATH $PYCMD -i "$Instrument" -w https://pswww.slac.stanford.edu/ws-auth -u "$User" -e "$Experiment" -m "$Message" "$@" &
+
+#  -i <instrument> -e current      -w <web-service-url> -u <web-service-user> -p <web-service-password> -m <message2rost> -a <file2attach> -t <tag>
+}
+
+ana_env(){
+    uname -a
+    PYTHONPATH=''
+    LD_LIBRARY_PATH=''
+    echo "Setting up analysis environment:  source /reg/g/psdm/etc/psconda.sh"
+    source /reg/g/psdm/etc/psconda.sh
+}
+
+afs_env(){
+    echo "Setting up AFS tokens: . /usr/bin/kinit"
+    /afs/slac/package/heimdal/bin/kinit  
+    echo "Setting up AFS token: . /usr/bin/aklog"
+    /usr/bin/aklog
+}
+
+get_username(){
+    UserName=`whoami`
+    if [[ $UserName == $daq_user ]]; then 
+        if [[ $2 ]]; then
+            UserName=$2
+        else
+            echo "Pedestal script cannot be run as $daq_user.  Enter user name."
+            read UserName
+        fi
+    fi
+}
+
+start_ipmi(){
+    UserName=`whoami`
+    if [[ $UserName == 'root' ]]; then 
+        /sbin/service ipmi start
+        HOST=`echo $HOSTNAME |  awk '{split($0,a, "."); print a[1]}'`
+        IPLINE=`netconfig search $HOST-ipmi | grep 'IP: 172'`
+        IP=`echo $IPLINE | awk '{split($0,a, " "); print a[2]}' | sed s/' '/''/g`
+        ipmitool -I open lan set 1 ipaddr $IP
+    else
+        echo "Need to be root to start ipmi"
+    fi
+}
+
+IPMI_TOOL(){
+  # This script will use ipmi control to reset server
+  # From  ~paiser/scripts/epimpi.sh
+  SERVER=$1
+  MINARGS=1
+
+  if [ $# -ne $MINARGS ] ; then
+     echo -e ""
+     echo -e "Usage:   "$0" <server_name>"
+     echo -e ""
+     exit 0
+  fi
+
+  #echo -e "Server name ${SERVER}"
+  echo -e "================================================================="
+  echo -e "                              1    print lan info "
+  echo -e "                              2    power status   "
+  echo -e "                              3    power reset    "
+  echo -e "                              4    power off      "
+  echo -e "                              5    power on       "
+  echo -e "                              6    power cycle    "
+  echo -e "================================================================="
+  echo -e ""
+  echo -e "   Select action for ${SERVER} ('.' to exit): "
+  read InputKey;
+
+  case $InputKey in
+      1) ipmi_cmd="lan print 1";;
+      2) ipmi_cmd="power status";;
+      3) ipmi_cmd="power reset";;
+      4) ipmi_cmd="power off";;
+      5) ipmi_cmd="power on";;
+      6) ipmi_cmd="power cycle";;
+      .) exit 0
+  esac
+#  echo -e ipmitool -I lanplus -U ADMIN -P ipmia8min -H "${SERVER}-ipmi" ${ipmi_cmd}
+#  echo -e ""
+  ipmitool -I lanplus -U ADMIN -P ipmia8min -H "${SERVER}-ipmi" ${ipmi_cmd}
+
+  exit 0
+}
+export IPMI_TOOL
+
+RETVAL=0
+
+# Change to directory containing the script
+#homepath=`dirname $bin_path`
+#cd $homepath
+# Change directory to /tmp so that core files will be dumped there.
+[[ -e /tmp ]] && cd /tmp
+
+case "$command" in
+    ipmi_start)
+        start_ipmi
+        ;;
+    post)
+        elogPost "$target" $@
+        ;;
+    edit)
+        vim $bin_path
+        ;;
+    stop|start|restart|status)
+        echo "$target"
+        : ${target:=daq} 
+        case $target in
+          daq)
+            host_check $authorized_host $* 
+            node_list="$controls_machines $mon_nodes"
+            dateext=`date +%F_%T`
+            echo $node_list
+            echo "Executing ami dumps with $ami_path/amidump for:" 
+#            for node in $node_list; do 
+#              ssh -X "$node" '/usr/bin/env -i /reg/g/pcds/dist/pds/cxi/ami-current/build/ami/bin/x86_64-linux-opt/amidump' >> "/tmp/amidump.$node.$dateext"  
+#              echo " - $node >> /tmp/amidump.$node.$dateext"
+#            done
+            exec_procmgr $command $cnf_base
+            echo exec_procmgr $command $cnf_base
+          ;;
+          ami)
+            host_check $authorized_host $* 
+            exec_procmgr $command $cnf_base $ami_proc
+          ;;
+          *)
+        echo $"Usage: $bin_path $command {daq|ami}"
+        RETVAL=2
+          ;;
+        esac    
+    ;;
+    viewer)
+        /reg/g/pcds/config/$instrument/camviewer.sh &
+        ;;
+    recorder)
+        /reg/g/pcds/config/$instrument/camrecord.sh &
+        ;;
+    ami)
+        : ${target:=0} 
+        if [[ ${HOSTNAME:0:5} == psana ]]; then
+#          if on a psana machine run offline_ami
+           if [[ $target == 'dia' ]]; then  
+              expname="diacxi13"
+              instrument="dia"
+           elif [[ $target != 0 ]]; then  
+              nexpgrep=`ls /reg/d/psdm/cxi | grep -ic $target`
+              [[ $nexpgrep == 1 ]] && expname=`ls /reg/d/psdm/cxi | grep -i $target`
+           fi
+           echo $ami_path/offline_ami -p /reg/d/psdm/$instrument/$expname -L $amilib_path/libtimetool.so
+           $ami_path/offline_ami -p /reg/d/psdm/$instrument/$expname -R -L $amilib_path/libtimetool.so
+        elif [[ ${HOSTNAME:0:3} == ioc ]]; then
+#          if on ioc machine assume it is a recording node and run offline_ami
+           $ami_path/offline_ami -p /u2/REC/$daq_user
+        elif [[ ${target:0:3} == rec ]]; then
+#          if target starts with rec, then ssh to the recording node and run offline_ami
+           [[ $target == rec ]] && target=rec01
+           ssh -X ioc-$instrument-$target $ami_path/offline_ami -p /u2/REC/$daq_user
+        elif [[ $target == live ]]; then
+#          if target starts with rec, then ssh to the recording node and run offline_ami
+           ssh -X ioc-cxi-rec01 $ami_path/offline_ami -l -p /u2/REC/$daq_user
+        elif [ "$HOSTNAME" = "$prim_host" ]; then 
+#          do not try to launch proxy on primary daq host
+           [ $DAQ_MODE = "two_daqs" ] && exec_online_ami $second_base
+        else
+           if [ $target = "0" ]; then  
+              exec_online_ami $primal_base
+           else
+              exec_online_ami $second_base
+           fi 
+        fi
+        ;;
+    
+    ipsana)
+        monreqserver=`ps aux | grep proc | grep monreqserver`
+        if [[ ${monreqserver:0:6} == "$daq_user" ]]; then
+            echo "Starting interactive psana using PyDatasource package"
+            ana_env
+            idatasource --exp=$expname
+        else
+            echo $monreqserver
+            echo "No psana shared memory server avialable"
+        fi
+      ;;
+ 
+    calibman)
+        if [[ ${HOSTNAME:0:5} == psana ]]; then
+            cd $workdir
+            ana_env
+            afs_env
+            calibman
+        else
+            echo "ssh to psana first"
+        fi
+        ;;
+    dark)
+        RunNumber=$target
+        if [[ ! $RunNumber ]]; then
+            echo "Usage: "
+            echo "  $0 RunNumber [UserName]"
+        else
+            get_username
+            echo ssh -X $UserName@psdev ssh -X psana $bin_path pedestal $RunNumber -e $expname
+            ssh -X $UserName@psdev ssh -X psana $bin_path pedestal $RunNumber -e $expname
+            #ssh -X $UserName@psdev ssh -X psana $scripts_path"/daq_control" pedestal $RunNumber -e $expname
+            elogMessage="DARK" 
+            echo "Press n if you do not want to post an e-log message."
+            echo "Otherwise add additional message to append to the following e-log message:"
+            echo $elogMessage
+            read InputKey
+            if [[ $InputKey == 'n' ]]; then
+               echo "No e-log message posted for DARK Run $target."
+            else
+               elogMessage+=" $InputKey"
+               echo elogPost current "$elogMessage" -t DARK -r $target
+               elogPost current "$elogMessage" -t DARK -r $target
+            fi
+        fi
+        ;;
+    pedestal)
+        if [[ ${HOSTNAME:0:5} == psana || ${HOSTNAME:0:11} == daq-cxi-mon ]]; then 
+            ana_env
+            UserName=`whoami`
+            userworkdir="$workdir/$UserName"
+            ### Use this to make a common calibrun work output directory 
+            ### -- but permission issue if someone else tries to redo a run created by someone else.
+            #if [[ ! -a $userworkdir ]];  then
+            #    userworkdir="$workdir/common"
+            #fi
+            if [[ ! -a $userworkdir ]];  then
+                echo mkdir -p $userworkdir
+                mkdir -p $userworkdir
+                #echo chmod a+rwx $logpath
+            fi
+            ### Old calibrun method to pass noise threshold
+            #thr_rms=7.5
+            #thr_rms=15.0
+            #pedcmd="calibrun --exp=$expname --run=$target --detector=CSPAD,CSPAD2x2,OPAL1000,OPAL2000,TM6740 --thr_rms=$thr_rms --workdir=$userworkdir --process --deploy --calibdir=/reg/d/psdm/cxi/$expname/calib"
+            #echo "Make pedestals and masks all pixels with noise >$thr_rms ADU rms"
+            ### Changing to auto-threshold in latest calibrun script ###
+            pedcmd="calibrun --exp=$expname --run=$target --detector=CSPAD,CSPAD2x2,OPAL1000,OPAL2000,TM6740,Epix100a --workdir=$userworkdir --process --deploy --calibdir=/reg/d/psdm/cxi/$expname/calib"
+            #pedcmd="calibrun --exp=$expname --run=$target --detector=CSPAD,CSPAD2x2,OPAL1000,OPAL2000,TM6740,Epix100a --workdir=$userworkdir --process --deploy --calibdir=/reg/d/psdm/cxi/$expname/calib --xtcdir=/reg/d/ffb/cxi/$expname/xtc"
+            echo "Executing:  $pedcmd"
+            echo "Make pedestals and masks all pixels with auto noise threshold"
+            $pedcmd
+#            elogMessage="DARK Run $target with $thr_rms bad pixel rms threshold. From psana run: daq_control $input_cmd.   $COMMENT"
+        else
+            echo "Currently logged into $HOSTNAME -- need to login to psana"
+        fi
+      ;;
+    bdark)
+        if [[ ${HOSTNAME:0:5} == psana ]]; then 
+            thr_rms=7.5
+            ana_env
+            pedcmd="calibrun --exp=$expname --run=$target --detector=CSPAD,CSPAD2x2,OPAL1000,OPAL2000,TM6740,Epix100a --thr_rms=$thr_rms --workdir=$workdir --process --deploy --calibdir=/reg/d/psdm/cxi/$expname/calib --xtcdir /reg/d/ffb/cxi/$expname/xtc"
+            echo "Executing:  $pedcmd"
+            echo "Make pedestals and masks all pixels with noise >$thr_rms ADU rms"
+            $pedcmd
+            elogMessage="DARK Run $target with $thr_rms bad pixel rms threshold. ran from psana batch: daq_control $input_cmd, which executes $pedcmd:   $COMMENT"
+            echo "Press n if you do not want to post an e-log message."
+            echo "Otherwise add additional message to append to the following e-log message:"
+            echo $elogMessage
+            read InputKey
+            if [[ $InputKey == 'n' ]]; then
+               echo "No e-log message posted for DARK Run $target."
+            else
+               elogMessage+=" $InputKey"
+               elogPost current "$elogMessage" -t DARK -r $target
+            fi
+        else
+            echo "Currently logged into $HOSTNAME -- need to login to psana"
+        fi
+      ;;
+ 
+    configdb)
+        : ${target:='view'}
+        base_cmd="$pdsapp_path/configdb_gui --db $configdb_path"
+        case "$target" in
+            edit)
+                base_cmd="$base_cmd --edit"
+                $base_cmd & 
+                ;;
+            view)
+                $base_cmd & 
+                ;;
+            help)
+               echo "view:  view the configdb without edit priviledges [default]"
+               echo "edit:  edit the configdb -- cannot run daq and edit at same time"
+               echo "expname:  view the configdb for runs already created for the experiment expname (must be on psana)"
+               echo "current:  view the configdb for runs already created for $expname (must be on psana)"
+               echo "execute the following (unless on psana):  "
+               echo "  ->  $base_cmd"
+               ;;
+            amo|sxr|xpp|xcs|mfx|cxi|mec)
+               base_cmd="$pdsapp_path/configdb_gui --db /reg/g/pcds/dist/pds/$target/misc/.configdbrc" 
+               ;;            
+            *)
+                [[ $target=="current" ]] && target="$expname"
+                base_cmd="$daq_base_path/build/pdsapp/bin/x86_64-linux-opt/configdb_readxtc /reg/d/psdm/cxi/$target/"
+                if [[ ${HOSTNAME:0:5} == psana ]]; then  
+                    $base_cmd & 
+                else
+                    echo "Currently logged into $HOSTNAME -- need to login to psana"
+                fi
+                ;;
+        esac
+        echo "Command:  $base_cmd"
+        ;;
+    config)
+        host_check $authorized_host $* 
+        case "$target" in
+            shared) 
+                log_dir="/reg/g/pcds/pds/$cnf_base/logfiles"
+                logpath=`date +"$log_dir/%Y/%m"`
+                if [[ ! -a $logpath ]];  then
+                    echo mkdir -p $logpath
+                    echo chmod a+rwx $logpath
+                fi
+                logfile=`date +"$log_dir/%Y/%m/%d_%T_bldipimbclient.log"`
+                $pdsapp_path/bldipimbclient -p 5727 -H daq-cxi-master -c $configdb_path >& $logfile &
+                ;;
+        *)
+            echo $"Usage: $bin_path $command {shared}"
+                RETVAL=2
+        esac
+        ;;
+    emacs|vi|vim|gedit)
+        cp "$scripts_dir/$cnf_base.cnf" "/tmp/$cnf_base.cnf.tmp"
+        $command $target "$scripts_dir/$cnf_base.cnf"
+        cnf_diff_file="/tmp/$cnf_base_cnf_diff.txt"
+        echo "***"  > $cnf_diff_file 
+        date +"# Changes made to $cnf_base.cnf on %Y/%m/%d %T"  >> $cnf_diff_file 
+        echo "# Current $INSTRUMENT Experiment:  $expname"  >> $cnf_diff_file 
+        [[ "$COMMENT" ]] && echo "# Comment:  $COMMENT"  >> $cnf_diff_file 
+        ndifflines=`diff "/tmp/$cnf_base.cnf.tmp" "$scripts_dir/$cnf_base.cnf" | wc -l`
+        if [[ $ndifflines -gt 1 ]]; then 
+            diff "/tmp/$cnf_base.cnf.tmp" "$scripts_dir/$cnf_base.cnf" >> $cnf_diff_file 
+            echo "Changes made to $scripts_dir/$cnf_base.cnf:"
+            cat $cnf_diff_file 
+            elogDiffMessage=`cat $cnf_diff_file` 
+            echo "Press n if you do NOT want to post an e-log message with these changes."
+            echo "Otherwise add additional message to comment on these changes:"
+            read elogMessage 
+            if [[ $elogMessage == 'n' ]]; then
+               echo "No e-log message posted for edit to $scripts_dir/$cnf_base.cnf."
+            else
+               elogPost instrument "$elogMessage.  $elogDiffMessage" -t cnf 
+            fi
+        else
+            echo "No changes made to $scripts_dir/$cnf_base.cnf"
+        fi
+        ;;
+    less|more|cat|tail)
+        $command "$scripts_dir/$cnf_base.cnf"
+        ;;
+    grep)
+        $input_cmd "$scripts_dir/$cnf_base.cnf"
+        ;;
+    ffb)
+#  To check the dss--ffb mapping (from e.g., pslogin or psdev) 
+#     reg/g/pcds/pds/datamvrpull/bin/mvr_showprocs -f -i cxi
+# Here just check the ffb memory
+#        if [[ ${HOSTNAME:0:5} == psana ] -o [ ${HOSTNAME:0:5} == psusr ]]; then
+        if [[ ${HOSTNAME:0:5} == psana ]] || [[ ${HOSTNAME:0:5} == psdev ]] ; then
+           echo "Checking free memory of each host with 'free' unix command"
+           printf '%-20s %-10s %-10s %-10s %-10s %-10s %-10s \n' "Node"   "total" " used" " free"  "shared"  "buffers" "cached" 
+           printf '%-20s %-10s %-10s %-10s %-10s %-10s %-10s \n' " " "[MB]"  "[MB]" "[MB]" "[MB]" "[MB]" "[MB]" 
+#           ffb_nodes=`grep 'ffb_nodes ='  "$scripts_dir/$cnf_base.cnf" | sed 's/ffb_nodes =//g' | tr -d '#' | tr -d ' ' | sed 's/\[//g' | sed 's/\]//g' | sed 's/,/ /g'`
+           for node in $ffb_nodes; do 
+               FreeMemoryString=`ssh -X $node free -tm 2>/dev/null | grep 'Mem' | sed 's/Mem://g'`
+               printf '%-20s %-10s %-10s %-10s %-10s %-10s %-10s \n'  $node $FreeMemoryString
+           done
+           echo "Checking free swap space of each host with 'free' unix command"
+           printf '%-20s %-10s %-10s %-10s \n' "Node"  "total" "used" " free" 
+           printf '%-20s %-10s %-10s %-10s \n' " " "[MB]"  "[MB]" "[MB]"  
+           for node in $ffb_nodes; do 
+               FreeMemoryString=`ssh -X $node free -tm 2>/dev/null | grep 'Swap' | sed 's/Swap://g'`
+               printf '%-20s %-10s %-10s %-10s \n'  $node $FreeMemoryString
+           done
+           printf '%-13s %-20s %-6s %-6s %-6s %-5s %-15s \n' Node Filesystem Size Used Avail Use% "Mounted on"
+           for node in $ffb_nodes; do 
+               dfstring=`ssh -X $node df -h 2>/dev/null | grep ' /brick1'`
+               printf '%-13s %-20s %-6s %-6s %-6s %-5s %-15s \n'  $node $dfstring
+           done
+        else
+           echo "Currently logged into $HOSTNAME -- need to login to psana"
+        fi
+        ;;
+    memory|free)
+        echo "Checking free memory of each host with 'free' unix command"
+        printf '%-23s %-10s %-10s %-10s %-10s \n' Node  "total [MB]" " used [MB]" " free [MB]" 
+        CXIHOST_LIST="$controls_machines "`get_host_list daq_$instrument`
+        for node in $CXIHOST_LIST; do
+            #FreeMemoryString=`ssh -X $node free -tm | grep Total | sed 's/Total\://'`
+            FreeMemoryString=`ssh -X $node free -tm | grep Mem | sed 's/Mem\://'`
+            printf '%-20s %-10s %-10s %-10s \n'  "$node" "$FreeMemoryString" 
+        done
+        ;;
+    source)
+        echo "Checking which host has the source process"
+        CXIHOST_LIST="$controls_machines "`get_host_list daq_$instrument`
+        for node in $CXIHOST_LIST; do
+            echo "Checking for source on $node"
+            ssh -X $node ps aux | grep source | grep 'procServ'
+            #SourceString=`ssh -X $node ps aux | grep source`
+            #printf '%-20s %-80s \n'  "$node" "$FreeMemoryString" 
+        done
+        ;;
+    mon)
+        echo "Checking mon process on each host"
+        CXIHOST_LIST=`get_host_list daq_$instrument_mon`
+        for node in $CXIHOST_LIST; do
+            echo "Checking $node: $message"
+            ssh -X $node ls -l /reg/d/psdm/$instrument/$expname/calib/ 
+            #[[ `ssh -X $node ls -l /reg/d/psdm/$instrument/$expname/calib/ | grep 'No such file or directory'` ]] && message='NO calib' || message='OK calib'
+        done
+        ;;
+    monit)
+        echo "Checking monit process on each host"
+        printf '%-23s %-10s %-10s %-10s %-10s \n' Node  "total [MB]" " used [MB]" " free [MB]" 
+        CXIHOST_LIST="$controls_machines "`get_host_list daq_$instrument`
+        for node in $CXIHOST_LIST; do
+            MonitString=`ssh -X $node ps aux | grep '/usr/bin/monit' | grep -v grep`
+            printf '%-20s %-10s %-10s %-10s \n'  "$node" "$MonitString" 
+#            if [[ $target == 'kill' ]] && [[ $MonitString ]]; then
+#                pid=`echo $MonitString | cut -d ' ' -f2`
+#                printf 'kill it %-20s\n' "$pid"
+#                sudo ssh -X $node kill -9 $pid
+#            fi 
+        done
+        ;;
+    df)
+        : ${target:='u2'}
+        dfpath='% /'$target
+        case "$target" in
+            u2) 
+                node_list=$dss_nodes
+                ;;
+            *) 
+                node_list="$controls_machines "`get_host_list daq_$instrument`
+                ;;
+        esac
+        printf '%-13s %-20s %-6s %-6s %-6s %-5s %-15s \n' Node Filesystem Size Used Avail Use% "Mounted on"
+        for node in $node_list; do 
+            dfstring=`ssh -X $node df -h | grep "$dfpath"`
+            printf '%-13s %-20s %-6s %-6s %-6s %-5s %-15s \n'  $node $dfstring
+        done
+#        node_list=$ffb_nodes
+#        printf '%-13s %-20s %-6s %-6s %-6s %-5s %-15s \n' Node Filesystem Size Used Avail Use% "Mounted on"
+#        for node in $node_list; do 
+#            #dfstring=`ssh psdev ssh -X $node df -h | grep /brick`
+#            ssh psdev ssh -X $node df -h &> /tmp/df.txt
+#            dfstring=`grep /brick /tmp/df.txt`
+#            printf '%-13s %-20s %-6s %-6s %-6s %-5s %-15s \n'  $node $dfstring
+#        done
+#        if [[ $target == 'xtc' ]]; then
+#          for node in $dss_nodes; do 
+#            echo $node
+#            ssh -X $node /u2/pcds/pds/$instrument/*/*.xtc -latr
+#          done
+#        fi
+        ;;
+    uptime)
+        case "$target" in
+            ioc)
+                HOST_LIST=`/reg/common/tools/bin/netconfig search ioc-$instrument* --brief | grep -v ipmi | grep -v "\-ana"`
+            ;;
+            *)
+                cnf_file="$scripts_dir/$cnf_base.cnf"
+                HOST_LIST=`grep "^daq_$instrument" $cnf_file`
+            ;;
+        esac
+        IFS=$'\n'
+        printf "%-20s %-15s %-15s %-15s\n" "HOST" "t_host" "t_local" "uptime"
+        echo "-----------------------------------------------------------------"
+        for host_item in $HOST_LIST; do
+          HOST=`echo $host_item | awk '{print $1}' | sed 's\_\-\g'`
+          thost=`ssh -X $HOST uptime | cut -d ' ' -f2`
+          tup=`ssh -X $HOST uptime | cut -d ' ' -f3-5`
+          tlocal=`uptime | cut -d ' ' -f2`
+          printf "%-20s %-15s %-15s %-15s\n" "$HOST" "$thost" "$tlocal" "$tup"
+        done
+        unset IFS
+        ;;
+    uname)
+        cnf_file="$scripts_dir/$cnf_base.cnf"
+        HOST_LIST=`grep "^daq_$instrument" $cnf_file`
+        IFS=$'\n'
+        for host_item in $HOST_LIST; do
+          HOST=`echo $host_item | awk '{print $1}' | sed 's\_\-\g'`
+          message=`ssh -X $HOST uname -a`
+          printf "%-80s \n" "$message"
+        done
+        unset IFS
+        ;;
+    nic)
+        cnf_file="$scripts_dir/$cnf_base.cnf"
+        HOST_LIST=`grep "^daq_$instrument" $cnf_file`
+        IFS=$'\n'
+        for host_item in $HOST_LIST; do
+          HOST=`echo $host_item | awk '{print $1}' | sed 's\_\-\g'`
+          fezip=`echo $host_item | awk '{print $3}' | tr -d ' ' | tr -d "'"`
+          message=`ssh -X $HOST /sbin/lspci | grep 'Solarflare\|MYRICOM\|Gigabit Ethernet Controller'`
+          printf "%-20s %-15s %-5s %-80s \n" "$HOST" "$fezip" 'fez' "$message"
+          message=`ssh -X $HOST /sbin/ifconfig | grep -B 1 $fezip | head -n 1`
+          printf "%-20s %-15s %-5s %-80s \n" "$HOST" "$fezip" 'fez' "$message"
+        done
+        unset IFS
+        ;;
+    hosts)
+        cnf_file="$scripts_dir/$cnf_base.cnf"
+        Username=`whoami`
+        [[ $(which netconfig) ]] &>/dev/null && lNetconfig=1 || echo '***Netconfig not accessible by '$Username
+        echo looking at $cnf_file
+        grep "^daq_$instrument" $cnf_file | while read line; do
+          HOST=`echo $line | cut -d '=' -f1 | sed 's\_\-\g' | tr -d ' '`
+          cdsip=`echo $line | cut -d '=' -f2 | tr -d ' ' | tr -d "'" | sed 's/\.26\./\.68\./g'`
+          HOST_IPMI="$HOST-ipmi"
+          HostStatus=''
+          if [[ $lNetconfig == 1 ]]; then
+            ipmiip=`netconfig view $HOST-ipmi | grep 'IP: ' | sed 's/IP: //g' | tr -d '[:space:]'`
+            if [[ $ipmiip == '' ]]; then
+              HostStatus='NA'
+            fi
+            netip=`netconfig view $HOST | grep 'IP: ' | sed 's/IP://g'`
+            ipnum=`echo $cdsip  | sed 's/\.//g'`
+            netipnum=`echo $netip  | sed 's/\.//g'`
+            if [[ $ipnum -ne $netipnum ]]; then
+              printf "%-20s %-15s %-15s %-80s \n" "$HOST" "$cdsip" 'cds' "Not consistent with netconfig ip:  $netip"
+            fi
+          fi
+          : ${HostStatus:=`ipmitool -I lanplus -U ADMIN -P ipmia8min -H "$HOST_IPMI" power status`}
+          : ${ipmiip:=''}
+#          message=`nmap -sP $cdsip | grep 'Host' | sed 's/Host //g'`
+          [[ `ping -c 1 -t 1 $cdsip | grep -c ' 0% packet loss'` = 1 ]] && message='Up' || message='Down'
+#          if [ $message == Down ]; then
+#            cdsip=`echo $line | cut -d '=' -f2 | tr -d ' ' | tr -d "'" | sed 's/\.26\./\.68\./g'`
+##            [[ `ping -c 1 -t 1 $cdsip | grep -c ' 0% packet loss'` = 1 ]] && message='Up' || message='Down'
+#          fi
+          printf "%-20s %-15s %-5s %-80s \n" "$HOST" "$ipmiip" 'ipmi' "$HostStatus"
+          printf "%-20s %-15s %-5s %-80s \n" "$HOST" "$cdsip" 'cds' "$message"
+          fezip=`echo $line | cut -d '=' -f2 | tr -d ' ' | tr -d "'"`
+#          message=`nmap -sP $fezip | grep 'Host' | sed 's/Host //g'`
+          [[ `ping -c 1 -t 1 $fezip | grep -c ' 0% packet loss'` = 1 ]] && message='Up' || message='Down'
+          printf "%-20s %-15s %-5s %-80s \n" "$HOST" "$fezip" 'fez' "$message"
+        done
+        ;;
+    releases)
+        echo "DAQ Releases:"
+        ls -latr $daq_base_path/../ | grep ' [0-9]\.[0-9]'  | sed "s/$CurrentReleaseDAQ/$CurrentReleaseDAQ --> current/g"
+        echo "                    -------------------------------------------------" 
+        echo "                    The current $instrument DAQ release is $CurrentReleaseDAQ"
+        echo "AMI Releases:"
+        ls -latr $daq_base_path/../ | grep 'ami-[0-9]\.[0-9]' | sed "s/$CurrentReleaseAMI/$CurrentReleaseAMI --> current/g"
+        echo "                    -------------------------------------------------" 
+        echo "                    The current $instrument AMI release is $CurrentReleaseAMI"
+        ;;
+    daqrelease|release|amirelease)
+#       Make this a general function for either daq or ami releases (release and daqrelase are the same)
+        case "$command" in
+            daqrelease|release)
+                ReleaseType=DAQ
+                base_path=$daq_base_path
+                CurrentRelease=$CurrentReleaseDAQ
+                ;;
+            amirelease)
+                ReleaseType=AMI
+                base_path=$ami_base_path
+                CurrentRelease=$CurrentReleaseAMI
+                ;;
+        esac
+        NewRelease=$target
+        if [[ $NewRelease == '' ]]; then
+          echo "The current $ReleaseType release is $CurrentRelease"
+          echo "Usage to change the $ReleaseType release soft link $base_path: "
+          echo "  $0 $command [NewReleaseNumber]" 
+        elif [[ "$CurrentRelease" == "$NewRelease" ]]; then
+          echo "The new $Releasetype release $NewRelease you have selected is already the $CurrentRelease.  No action necessary"
+        elif  [[ -e $base_path/../$NewRelease ]]; then 
+          case "$command" in
+            daqrelease|release)
+              if [[ ${NewRelease:0:3} == 'ami' ]]; then 
+                 echo 'Usually only an AMI release begins with "ami".'
+                 echo "$NewRelease looks like an AMI release not a DAQ release."
+              fi
+              ;;
+            amirelease)
+              if [[ ${NewRelease:0:3} != 'ami' ]]; then 
+                 echo 'Usually an AMI release begins with "ami".'
+                 echo "$NewRelease looks like a DAQ release not an AMI release."
+              fi
+              ;;
+          esac
+          echo "Do you want to change the $ReleaseType release from $CurrentRelease to $NewRelease? [y/N]"
+          read InputKey
+          if [[ $InputKey == 'y' ]]; then
+            CurrentSoftLink=`echo $base_path | tr '/' ' ' | awk '{print $(NF)}'`
+            cd $base_path/..
+            echo "Removing the old soft link."
+#            echo "First removing the old soft link -- confirm that you want to do this"
+            ls -la $CurrentSoftLink
+#            rm -i $base_path
+            rm $base_path
+            if [[ -e $CurrentSoftLink ]]; then
+              echo "The old soft link $CurrentSoftLink has not been deleted so a new link cannot be made"
+            else
+              echo "Making soft link for ../$NewRelease to current" 
+              ln -s ../$NewRelease $CurrentSoftLink
+              cd $homepath
+              echo "New $ReleaseType Release is now $NewRelease"
+              elogPost "$instrument" "$ReleaseType release changed from $CurrentRelease to $NewRelease in soft link, $base_path, using the command $input_cmd.  $COMMENT"
+            fi
+          else
+            echo "No change made:  $ReleaseType release remains at $CurrentRelease"
+          fi
+        else 
+          echo "$NewRelease is not a valid $ReleaseType release"
+        fi
+        ;;
+    logcheck|checklog)
+#        logcheckscript='/reg/neh/home/jana/utils/logcheck.py'
+        logcheckscript='/reg/g/pcds/dist/pds/current/tools/scripts/logcheck.py'
+        echo "Checking logfiles in /reg/g/pcds/pds/$LOGFOLDER with"
+        echo "--> python $logcheckscript -e $cnf_base --xsumm" 
+#        $daq_base_path/tools/scripts/logcheck.py -e $INSTRUMENT -s 
+        python $logcheckscript -e $cnf_base --xsumm 
+        ;;
+    pgp)
+        HOST_LIST=`get_host_list daq_$instrument_cspad`
+        for HOST in $HOST_LIST; do
+          pgpfiles=`ssh -X $HOST  ls /dev/pgpcard_*_16`
+          echo ""
+          for pgpfile in $pgpfiles; do 
+            echo "******** $HOST:  start $pgpfile  *********"
+            #ssh -X $HOST  ~jackp/pgpcard/trunk/software/app/xstatus $pgpfile 
+            ssh -X $HOST  ~jackp/pgpcard/app/xstatus $pgpfile 
+            echo "******** $HOST:  end $pgpfile  *********"
+          done
+        done
+        ;;
+    cam)
+    HOST_LIST=`get_host_list daq_$instrument_cam`" "`get_host_list daq_$instrument_usrcam`
+    echo $HOST_LIST
+        for HOST in $HOST_LIST; do
+#          echo "******** $HOST:  EDT cards  *********"
+      items="$HOST: EDT card: "`ssh -X $HOST /opt/EDTpdv/pciload`
+          echo $items 
+#          echo "******** $HOST:  leutron cards  *********"
+      items="$HOST: Leutron card: "`ssh -X $HOST /sbin/lspci -tv | grep Leutron` 
+          echo $items
+        done
+        ;; 
+    ipmi)
+        IPMI_TOOL $target
+        ;;
+    detinfo)
+        more $daq_base_path/build/pdsdata/include/pdsdata/xtc/DetInfo.hh 
+        ;;
+    amidump)
+        AMIHOST_LIST="$instrument-daq "`get_host_list daq_$instrument_mon`
+        for node in $AMIHOST_LIST; do
+            echo $ami_path/amidump $node
+            $ami_path/amidump $node
+        done
+        ;;
+    infiniband)
+        # To turn on/off infiband on a DSS node
+        case $target in
+            "on") sudo /sbin/modprobe mlx4_ib mlx4_en mlx4_core
+                ;;
+            "off") sudo /sbin/rmmod mlx4_ib mlx4_en mlx4_core
+                ;;
+        esac
+        ;;
+    sudo)
+        # sudo and set display propery for x forwarding -- default sudo su instrument opr account
+        : ${target:=$daq_user}
+#        xauth list | grep $HOSTNAME | grep unix`echo $DISPLAY | cut -c10-12` > /tmp/xauth
+        disp=`echo $DISPLAY | cut -c10-12`
+        xdisplay=`xauth list | grep $HOSTNAME | grep unix$disp`
+        echo "To enable X windows make the following command:"
+        echo xauth add $xdisplay
+        sudo su $target
+        #xauth add $xdisplay
+        #xauth add `cat /tmp/xauth` 
+        ;;
+    *)
+        echo $"Usage: $bin_path {stop|start|restart|mode|ami|config|configdb|daqrelease|amirelease|releases|logcheck|hosts}"
+        echo $"To edit config file: $bin_path {emacs|vi|vim|gedit|less} {shared}"
+        RETVAL=2
+        ;;
+esac
+
+cd -
+
+exit $RETVAL
+
