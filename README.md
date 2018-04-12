@@ -20,7 +20,7 @@ cd R{Tag}
 git checkout tags/R{tag}
 
 
-##Updating latest
+## Updating latest
 ### Go to latest checkout
 cd engineering_tools
 ### Pull latest from master branch
