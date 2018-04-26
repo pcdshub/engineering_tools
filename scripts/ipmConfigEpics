@@ -91,7 +91,6 @@ if [ $hutch == 'xcs' ]; then
 	BASE='XCS:SND:DIO'
 	EVR='XCS:SND:EVR'
 	WAVE8='snddio'
-    fi
     elif [ $1 == 'sb2bmmon' ]; then
 	IOC="IOC:XCS:SB2"
 	BASE='XCS:SB2:BMMON'
