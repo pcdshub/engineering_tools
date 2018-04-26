@@ -92,6 +92,13 @@ if [ $hutch == 'xcs' ]; then
 	EVR='XCS:SND:EVR'
 	WAVE8='snddio'
     fi
+    elif [ $1 == 'sb2bmmon' ]; then
+	IOC="IOC:XCS:SB2"
+	BASE='XCS:SB2:BMMON'
+	EVR='XCS:SB2:EVR'
+	WAVE8='sb2bmmon'
+    fi
+
 elif [ $hutch == 'xpp' ]; then
     if [ $1 == 'diomono' ]; then
 	IOC="IOC:XPP:IPM"
