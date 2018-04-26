@@ -24,6 +24,11 @@ input_cmd=$@
 bin_path=$0
 echo $bin_path
 
+# launch emacs without GUI
+function emacsnw(){
+    emacs -nw $1;
+}
+
 SOURCE="${BASH_SOURCE[0]}"
 # resolve $SOURCE until the file is no longer a symlink
 while [ -h "$SOURCE" ]; do 
@@ -571,7 +576,7 @@ case "$command" in
         esac
         echo "Command:  $base_cmd"
         ;;
-    emacs|vi|vim|gedit)
+    emacs|emacsnw|vi|vim|gedit)
         cp "$scripts_dir/$cnf_base.cnf" "/tmp/$cnf_base.cnf.tmp"
         $command $target "$scripts_dir/$cnf_base.cnf"
         cnf_diff_file="/tmp/$cnf_base_cnf_diff.txt"
@@ -933,7 +938,7 @@ case "$command" in
         ;;
     *)
         echo $"Usage: $bin_path {stop|start|restart|mode|ami|config|configdb|daqrelease|amirelease|releases|logcheck|hosts}"
-        echo $"To edit config file: $bin_path {emacs|vi|vim|gedit|less}"
+        echo $"To edit config file: $bin_path {emacs|emacsnw|vi|vim|gedit|less}"
         RETVAL=2
         ;;
 esac
