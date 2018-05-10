@@ -1,4 +1,6 @@
 #!/bin/bash
+# Use this script to register development packages so that they will be
+# available when you source pydev_env
 usage="pydev_register <path> <module or bin>"
 if [ -z "${1}" ]; then
   echo "${usage}"
