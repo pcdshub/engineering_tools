@@ -1,0 +1,5 @@
+#!/bin/bash
+source /reg/g/pcds/pyps/conda/py36env.sh
+PYDEV="${HOME}/pydev"
+export PATH="${PYDEV}/bin:${PATH}"
+export PYTHONPATH="${PYDEV}:${PYTHONPATH}"
