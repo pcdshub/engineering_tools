@@ -1,0 +1,21 @@
+#!/bin/bash
+# Use this script to register development packages so that they will be
+# available when you source pydev_env
+usage="pydev_register <path> <module or bin>"
+if [ -z "${1}" ]; then
+  echo "${usage}"
+  return
+fi
+PYDEV_DIR=~/pydev
+full_path="$(readlink -f $1)"
+if [ "${2}" == "module" ]; then
+  link="${PYDEV_DIR}"
+elif [ "${2}" == "bin" ]; then
+  link="${PYDEV_DIR}/bin"
+else
+  echo "Invalid input."
+  echo "${usage}"
+  return
+fi
+mkdir -p "${PYDEV_DIR}/bin"
+ln -s "${full_path}" "${link}"

@@ -1,0 +1,7 @@
+#!/bin/bash
+# Source this file to activate a development environment based on the latest
+# shared environment and on past calls to pydev_register
+source /reg/g/pcds/pyps/conda/py36env.sh
+PYDEV="${HOME}/pydev"
+export PATH="${PYDEV}/bin:${PATH}"
+export PYTHONPATH="${PYDEV}:${PYTHONPATH}"
