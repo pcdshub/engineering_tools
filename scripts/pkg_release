@@ -1,0 +1,42 @@
+#!/bin/bash
+# Checks out a package from the pcdshub github at a particular tag.
+# Make sure your tag exists.
+usage="pkg_release <package> <tag>"
+if [ -z "${2}" ]; then
+  echo "${usage}"
+  exit
+fi
+PACKAGE="${1}"
+TAG="${2}"
+URL="https://github.com/pcdshub/${PACKAGE}"
+TEMP="pkg_release_tempdir"
+if [ -d "${TEMP}" ]; then
+  echo "Removing leftover ${TEMP} directory..."
+  rm -rf "${TEMP}"
+fi
+echo "Checking that repo exists..."
+curl -s --head "${URL}" | head -n 1 | grep "HTTP/1.[01] [23].." >/dev/null
+if [ "${?}" == "1" ]; then
+  echo "Error: could not reach repo at URL ${URL}. Aborting."
+  exit
+fi
+set -e  # Catch error in git clone
+git clone "${URL}" "${TEMP}"
+set +e
+echo "Checking out tag..."
+pushd "${TEMP}"
+git tag -l | grep "${TAG}" >/dev/null
+if [ "${?}" == "1" ]; then
+  echo "Error: could not find tag "${TAG}". Aborting."
+  echo "Available tags:"
+  git tag -l
+  exit
+fi
+set -e  # Catch error in git checkout
+git checkout "${TAG}"
+popd
+echo "Renaming "${TEMP}" directory to ${TAG}"
+mv "${TEMP}" "${TAG}"
+echo "Write-protecting directory..."
+chmod -R a-w "${TAG}"
+echo "Created $(readlink -f ${TAG})"
