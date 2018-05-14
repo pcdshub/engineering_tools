@@ -1,6 +1,7 @@
 #!/bin/bash
 # Checks out a package from the pcdshub github at a particular tag.
-# Make sure your tag exists.
+# Does not update "latest" softlinks, these are inconsistent between packages.
+# Make sure your tag exists before running.
 usage="pkg_release <package> <tag>"
 if [ -z "${2}" ]; then
   echo "${usage}"
