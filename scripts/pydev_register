@@ -4,7 +4,7 @@
 usage="pydev_register <path> <module or bin>"
 if [ -z "${1}" ]; then
   echo "${usage}"
-  return
+  exit
 fi
 PYDEV_DIR=~/pydev
 full_path="$(readlink -f $1)"
