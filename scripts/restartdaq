@@ -59,6 +59,8 @@ elif [[ $HUTCH == 'cxi' ]]; then
     FEZ='172.21.26'
 elif [[ $HUTCH == 'amo' ]]; then
     FEZ='172.21.20'
+elif [[ $HUTCH == 'det' ]]; then
+    FEZ='172.21.59'
 fi
 IS_DAQ_HOST=`/sbin/ifconfig | grep inet | grep $FEZ | wc -l`
 
