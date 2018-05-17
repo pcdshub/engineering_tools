@@ -12,6 +12,8 @@ elif  [ $HUTCH == 'sxr' ]; then
    HOSTS="sxr-daq sxr-monitor sxr-console"
 elif  [ $HUTCH == 'mec' ]; then
    HOSTS="mec-daq mec-console"
+elif  [ $HUTCH == 'det' ]; then
+   HOSTS="det-console daq-det-standalone"
 else
    echo 'could not determine hutch or hutch not implemented, quit'
    exit

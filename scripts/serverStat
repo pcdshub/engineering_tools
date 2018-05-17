@@ -78,6 +78,16 @@ elif [ $HUTCH == 'amo' ]; then
     else
 	echo 'IP not FEZ or CDS'
     fi
+elif [ $HUTCH == 'det' ]; then
+    if [[ $INIP == *'172.21.58'* ]]; then
+	SRVIP=$INIP
+	SRVIPFEZ=`echo $INIP | sed s/.58./.59./g `
+    elif [[ $INIP == *'172.21.59'* ]]; then
+	SRVIPFEZ=$INIP
+	SRVIP=`echo $INIP | sed s/.59./.58./g `
+    else
+	echo 'IP not FEZ or CDS'
+    fi
 fi
 }
 
@@ -113,7 +123,7 @@ DIR="$( cd $DIRTMP && pwd -P )"
 PATH=$PATH:$DIR
 
 HUTCH=`get_hutch_name`
-for name in "amo" "sxr" "xpp" "xcs" "mfx" "cxi" "mec"; do
+for name in "amo" "sxr" "xpp" "xcs" "mfx" "cxi" "mec" "det"; do
     if [[ $DEV == *$name* ]]; then
 	HUTCH=$name
 	break

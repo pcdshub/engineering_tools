@@ -252,7 +252,7 @@ elogPost(){
     LogExp=$1
     shift
     case $LogExp in 
-      "amo"|"sxr"|"xpp"|"xcs"|"mfx"|"cxi"|"mec")
+      "amo"|"sxr"|"xpp"|"xcs"|"mfx"|"cxi"|"mec"|"det")
         INST=`echo $LogExp | awk '{print toupper($0)}'`
         Experiment="$INST Instrument"
         Instrument=NEH
@@ -561,7 +561,7 @@ case "$command" in
                echo "execute the following (unless on psana):  "
                echo "  ->  $base_cmd"
                ;;
-            amo|sxr|xpp|xcs|mfx|cxi|mec)
+            amo|sxr|xpp|xcs|mfx|cxi|mec|det)
                base_cmd="$pdsapp_path/configdb_gui --db /reg/g/pcds/dist/pds/$target/misc/.configdbrc" 
                ;;            
             *)
