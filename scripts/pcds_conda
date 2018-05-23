@@ -1,0 +1,20 @@
+#!/bin/bash
+# Source this to activate a pcds conda environment.
+# By default, this activates the latest environment.
+# use export PCDS_CONDA_VER=<version> before running to pick a different env
+unset LD_LIBRARY_PATH
+unset PYTHONPATH
+CONDA_ROOT="/reg/g/pcds/pyps/conda/py36"
+source "${CONDA_ROOT}/etc/profile.d/conda.sh"
+# Activate base env first so things like conda build are available
+conda activate
+if [ -z "${PCDS_CONDA_VER}" ]; then
+  # Default to latest pcds release
+  conda activate "$(ls ${CONDA_ROOT}/envs | grep pcds- | sort | tail -1)"
+elif [ -z "${PCDS_CONDA_VER##*-*}" ]; then
+  # If you had a dash, assume this is a full environment name
+  conda activate "${PCDS_CONDA_VER}"
+else
+  # Otherwise, assume pcds- prefix
+  conda activate "pcds-${PCDS_CONDA_VER}"
+fi
