@@ -1,7 +1,7 @@
 #!/bin/bash
 # Source this to activate a pcds conda environment.
 # By default, this activates the latest environment.
-# use export PCDS_CONDA_VER=<version> before running to pick a different env
+# Use export PCDS_CONDA_VER=<version> before running to pick a different env.
 unset LD_LIBRARY_PATH
 unset PYTHONPATH
 CONDA_ROOT="/reg/g/pcds/pyps/conda/py36"
