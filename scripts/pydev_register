@@ -18,4 +18,4 @@ else
   return
 fi
 mkdir -p "${PYDEV_DIR}/bin"
-ln -s "${full_path}" "${link}"
+ln -sf "${full_path}" "${link}"
