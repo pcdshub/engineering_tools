@@ -1,0 +1,37 @@
+#!/bin/bash
+###################################################
+# GREP SEARCHES THROUGH ALL IOCs IN /reg/d/iocData/
+# FOR PVs THAT MATCH GIVEN KEYWORD/HANDLE.
+###################################################
+KEYWORD=$1
+
+while getopts "h" o; do
+    case "${o}" in
+	h )
+	    echo "Grep searches through IOC dirs in /reg/d/iocData/ for PVs that match keyword"
+	    echo "Usage: $0 <PV or PV keyword>"
+	    exit 1
+	    ;;
+    esac
+done
+
+if [[ -n $1 ]]; then
+    cd /reg/d/iocData/
+    for i in ioc-*; do 
+	cd /reg/d/iocData/$i
+	if [ -e ./iocInfo/ ] ; then
+     	    cd iocInfo
+	    if [ -e ./IOC.pvlist ] ; then
+		if grep -q $KEYWORD IOC.pvlist
+		then 
+		    pwd
+		    grep $KEYWORD IOC.pvlist;
+		    echo ""
+		else
+		    :
+		fi
+	    fi 
+	fi
+	cd ../../
+    done
+fi
