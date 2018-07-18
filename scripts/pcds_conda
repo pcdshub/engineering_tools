@@ -10,7 +10,7 @@ source "${CONDA_ROOT}/etc/profile.d/conda.sh"
 conda activate
 if [ -z "${PCDS_CONDA_VER}" ]; then
   # Default to latest pcds release
-  conda activate "$(/bin/ls ${CONDA_ROOT}/envs | grep pcds- | sort | tail -1)"
+  conda activate "$(/bin/ls ${CONDA_ROOT}/envs | /bin/grep pcds- | /bin/tail -1)"
 elif [ -z "${PCDS_CONDA_VER##*-*}" ]; then
   # If you had a dash, assume this is a full environment name
   conda activate "${PCDS_CONDA_VER}"
