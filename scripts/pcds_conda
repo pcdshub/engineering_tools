@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Source this to activate a pcds conda environment.
 # By default, this activates the latest environment.
 # Use export PCDS_CONDA_VER=<version> before running to pick a different env.
@@ -10,7 +10,7 @@ source "${CONDA_ROOT}/etc/profile.d/conda.sh"
 conda activate
 if [ -z "${PCDS_CONDA_VER}" ]; then
   # Default to latest pcds release
-  conda activate "$(/bin/ls ${CONDA_ROOT}/envs | /bin/grep pcds- | tail -1)"
+  conda activate "$(command ls ${CONDA_ROOT}/envs | command grep pcds- | command tail -1)"
 elif [ -z "${PCDS_CONDA_VER##*-*}" ]; then
   # If you had a dash, assume this is a full environment name
   conda activate "${PCDS_CONDA_VER}"
