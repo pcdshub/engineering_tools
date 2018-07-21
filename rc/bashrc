@@ -23,6 +23,8 @@ fi
 
 source /reg/g/pcds/setup/pcds_shortcuts.sh
 
+export PATH=$PATH:/reg/g/pcds/engineering_tools/latest/scripts/
+
 ########################################
 ### Specific PCDS environment logins ###
 ########################################
