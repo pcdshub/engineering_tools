@@ -1,0 +1,18 @@
+#!/bin/bash
+
+USAGE="grep_ioc <Keyword> <Hutch name(lower case)> greps hutches iocmanager config file for keyword"
+
+if [[ -z $1 ]] | [[ -z $2 ]]; then
+    echo $USAGE
+    exit
+fi
+for hutchname in "amo" "sxr" "xpp" "xcs" "cxi" "mfx" "mec"; do 
+    if [[ "${2}" == $hutchname ]]; then
+	HUTCH="${2}"
+    fi
+done
+if [[ -z $HUTCH ]]; then
+    echo "incorrect hutch name given.  Enter hutch name in lower case (example: xpp)"
+else
+    grep "${1}" /reg/g/pcds/pyps/config/${HUTCH}/iocmanager.cfg
+fi
