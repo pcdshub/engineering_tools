@@ -83,17 +83,16 @@ if [ "${rtyp}" == 'xps8p' ]; then
     fi
     edm -x -eolc -m "CNAME=${base}_${ext},POS=$1" XPS8_Positioner.edl > /dev/null 2>&1 &
 elif [ "${rtyp}" == 'motor' ]; then
-    cd /reg/neh/home/klg/epics/ioc/common/aerotech/current/motorScreens
-    #cd /reg/neh/home4/mcbrowne/trunk2/ioc/common/aerotech/current/motorScreens
-    edm -x -eolc -m "MOTOR=${1}" ens_main.edl >& /dev/null &
-else
-    caget "$1.PN" > /dev/null 2>&1 
+    caget "$1:PN" > /dev/null 2>&1
     if [ $? -eq 0 ]; then
-        #cd "${EPICS_SITE_TOP}/screens/edm/ims"
-        edm -x -eolc -m "MOTOR=$1" ims_main.edl > /dev/null 2>&1 &
-    else
         /reg/g/pcds/package/epics/3.14//modules/pcds_motion/${OLD_VERSION}/launch-motor.sh "$1" > /dev/null 2>&1 &
+    else
+        cd /reg/neh/home/klg/epics/ioc/common/aerotech/current/motorScreens
+        #cd /reg/neh/home4/mcbrowne/trunk2/ioc/common/aerotech/current/motorScreens
+        edm -x -eolc -m "MOTOR=${1}" ens_main.edl >& /dev/null &
     fi
+else
+    edm -x -eolc -m "MOTOR=$1" ims_main.edl > /dev/null 2>&1 &
 fi
 
 ##put exit here until the naming convetion of the edm screens is better.
