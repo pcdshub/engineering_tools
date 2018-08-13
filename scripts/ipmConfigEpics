@@ -7,7 +7,7 @@ export PATH=/reg/g/pcds/package/epics/3.14/base/current/bin/linux-x86_64:/reg/g/
 export EPICS_CA_MAX_ARRAY_BYTES=8388608
 ulimit -c unlimited
 
-xcsIpm='decmono ipmmono diomono pim3 pim3m ipm4 pim4 ipm1 ipm2 ipm3 ipm5 pim5 ipmgonLD ipmlamLD'
+xcsIpm='decmono ipmmono diomono pim3 pim3m ipm4 pim4 ipm1 ipm2 ipm3 ipm5 pim5 ipmgonLD ipmlamLD snddio'
 xppIpm='diomono decmono ipm2 ipm3 pim3 diodeU ipm1'
 
 ipmList()
@@ -63,17 +63,19 @@ if [ $hutch == 'xcs' ]; then
 	IOC="XCS:R38:IOC:43"
 	EVR="XCS:R38:EVR:43"
     elif [ $1 == 'ipm4' ]; then
-	BASE="XCS:SB1:IMB:01"
-	IOC="IOC:XCS:IPM"
-	EVR="XCS:R44:EVR:01"
+	IOC="IOC:XCS:SB1:BMMON"
+	BASE='XCS:SB1:BMMON'
+	EVR='XCS:SB1:BMMON:EVR'
+	WAVE8='sb1bmmon'
     elif [ $1 == 'pim4' ]; then
 	BASE="XCS:SB1:IMB:02"
 	IOC="IOC:XCS:IPM"
 	EVR="XCS:R44:EVR:01"
     elif [ $1 == 'ipm5' ]; then
-	BASE="XCS:SB2:IMB:01"
-	IOC="IOC:XCS:IPM"
-	EVR="XCS:R44:EVR:01"
+	IOC="IOC:XCS:SB2:BMMON"
+	BASE='XCS:SB2:BMMON'
+	EVR='XCS:SB2:BMMON:EVR'
+	WAVE8='sb2bmmon'
     elif [ $1 == 'pim5' ]; then
 	BASE="XCS:SB2:IMB:02"
 	IOC="IOC:XCS:IPM"
@@ -87,15 +89,10 @@ if [ $hutch == 'xcs' ]; then
 	IOC="IOC:XCS:IPM"
 	EVR="XCS:R44:EVR:01"
     elif [ $1 == 'snddio' ]; then
-	IOC="IOC:XCS:SND"
+	IOC="IOC:XCS:SND:DIO"
 	BASE='XCS:SND:DIO'
-	EVR='XCS:SND:EVR'
+	EVR='XCS:SND:DIO:EVR'
 	WAVE8='snddio'
-    elif [ $1 == 'sb2bmmon' ]; then
-	IOC="IOC:XCS:SB2"
-	BASE='XCS:SB2:BMMON'
-	EVR='XCS:SB2:EVR'
-	WAVE8='sb2bmmon'
     fi
 
 elif [ $hutch == 'xpp' ]; then
@@ -108,13 +105,15 @@ elif [ $hutch == 'xpp' ]; then
 	BASE='XPP:MON:IPM:01'
 	EVR='XPP:IPM:EVR'
     elif [ $1 == 'ipm2' ]; then
-	IOC="IOC:XPP:IPM"
-	BASE='XPP:SB2:IPM:01'
-	EVR='XPP:IPM:EVR'
+	IOC="IOC:XPP:SB2:BMMON"
+	BASE='XPP:SB2:BMMON'
+	EVR='XPP:SB2:BMMON:EVR'
+	WAVE8='sb2bmmon'
     elif [ $1 == 'ipm3' ]; then
-	IOC="IOC:XPP:IPM"
-	BASE='XPP:SB3:IPM:01'
-	EVR='XPP:IPM:EVR'
+	IOC="IOC:XPP:SB3:BMMON"
+	BASE='XPP:SB3:BMMON'
+	EVR='XPP:SB3:BMMON:EVR'
+	WAVE8='sb3bmmon'
     elif [ $1 == 'pim3' ]; then
 	IOC="IOC:XPP:IPM"
 	BASE='XPP:SB3:IPM:02'
@@ -124,9 +123,9 @@ elif [ $hutch == 'xpp' ]; then
 	BASE='XPP:USR:IPM:01'
 	EVR='XPP:IPM:EVR'
     elif [ $1 == 'ipm1' ]; then
-	IOC="IOC:HX2:BMMON"
-	BASE='WV8:HX2:BMMON'
-	EVR='EVR:HX2:BMMON'
+	IOC="IOC:HX2:SB1:BMMON"
+	BASE='HX2:SB1:BMMON'
+	EVR='HX2:SB1:BMMON:EVR'
 	WAVE8='ipm1'
     fi
 
