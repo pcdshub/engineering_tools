@@ -6,8 +6,8 @@ import os
 import sys
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--run", help="get last run", action='store_true')
-parser.add_argument("--exp", help="get experiment name", action='store_true')
+parser.add_argument("--run", help="get last run")
+parser.add_argument("--exp", help="get experiment name")
 parser.add_argument("--live", help="ongoing?", action='store_true')
 parser.add_argument("--ended", help="ended", action='store_true')
 parser.add_argument("--hutch", help="get experiment for hutch xxx")
@@ -21,7 +21,7 @@ parser.add_argument("--getcnf", help="get cnf file name)", action='store_true')
 parser.add_argument("--files_for_run", help="get xtc files for run")
 parser.add_argument("--nfiles_for_run", help="get xtc files for run")
 parser.add_argument("--setExp", help="set experiment name")
-args = parser.parse_args()
+args = parser.parse_ar
 
 hutches=['amo','sxr','xpp','xcs','mfx','cxi','mec', 'det']
 foundHutch=False
