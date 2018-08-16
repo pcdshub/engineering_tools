@@ -21,7 +21,7 @@ parser.add_argument("--getcnf", help="get cnf file name)", action='store_true')
 parser.add_argument("--files_for_run", help="get xtc files for run")
 parser.add_argument("--nfiles_for_run", help="get xtc files for run")
 parser.add_argument("--setExp", help="set experiment name")
-args = parser.parse_arg
+args = parser.parse_args()
 
 hutches=['amo','sxr','xpp','xcs','mfx','cxi','mec', 'det']
 foundHutch=False
