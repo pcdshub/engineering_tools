@@ -6,8 +6,8 @@ import os
 import sys
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--run", help="get last run")
-parser.add_argument("--exp", help="get experiment name")
+parser.add_argument("--run", help="get last run", action='store_true')
+parser.add_argument("--exp", help="get experiment name", action='store_true')
 parser.add_argument("--live", help="ongoing?", action='store_true')
 parser.add_argument("--ended", help="ended", action='store_true')
 parser.add_argument("--hutch", help="get experiment for hutch xxx")
