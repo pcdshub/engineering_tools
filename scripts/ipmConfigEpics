@@ -9,6 +9,7 @@ ulimit -c unlimited
 
 xcsIpm='decmono ipmmono diomono pim3 pim3m ipm4 pim4 ipm1 ipm2 ipm3 ipm5 pim5 ipmgonLD ipmlamLD snddio'
 xppIpm='diomono decmono ipm2 ipm3 pim3 diodeU ipm1'
+cxiIpm='dg2ipm dg3ipm'
 
 ipmList()
 {
@@ -16,6 +17,8 @@ if [ $hutch == 'xcs' ]; then
    for box in $xcsIpm; do echo $box; done
 elif [ $hutch == 'xpp' ]; then
    for box in $xppIpm; do echo $box; done
+elif [ $hutch == 'cxi' ]; then
+   for box in $cxiIpm; do echo $box; done
 else
     echo 'hutch cannot be determined, quit'
     exit
