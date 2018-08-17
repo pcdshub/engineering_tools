@@ -94,7 +94,18 @@ if [ $hutch == 'xcs' ]; then
 	EVR='XCS:SND:DIO:EVR'
 	WAVE8='snddio'
     fi
-
+elif [ $hutch == 'cxi' ]; then
+    if [ $1 == 'dg2ipm' ]; then
+	IOC="IOC:CXI:DG2:BMMON"
+	BASE='CXI:DG2:BMMON'
+	EVR='CXI:DG2:BMMON:EVR'
+	WAVE8='dg2ipm'
+    elif [ $1 == 'dg3ipm' ]; then
+	IOC="IOC:CXI:DG3:BMMON"
+	BASE='CXI:DG3:BMMON'
+	EVR='CXI:DG3:BMMON:EVR'
+	WAVE8='dg3ipm'
+    fi
 elif [ $hutch == 'xpp' ]; then
     if [ $1 == 'diomono' ]; then
 	IOC="IOC:XPP:IPM"
