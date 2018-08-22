@@ -7,9 +7,10 @@ export PATH=/reg/g/pcds/package/epics/3.14/base/current/bin/linux-x86_64:/reg/g/
 export EPICS_CA_MAX_ARRAY_BYTES=8388608
 ulimit -c unlimited
 
-xcsIpm='decmono ipmmono diomono pim3 pim3m ipm4 pim4 ipm1 ipm2 ipm3 ipm5 pim5 ipmgonLD ipmlamLD snddio'
+xcsIpm='decmono ipmmono diomono pim3 pim3m pim4 ipm1 ipm2 ipm3 ipm5 pim5 ipmgonLD ipmlamLD snddio sb1ipm sb2ipm'
 xppIpm='diomono decmono ipm2 ipm3 pim3 diodeU ipm1'
 cxiIpm='dg2ipm dg3ipm'
+mfxIpm='dg1ipm dg2ipm'
 
 ipmList()
 {
@@ -19,6 +20,8 @@ elif [ $hutch == 'xpp' ]; then
    for box in $xppIpm; do echo $box; done
 elif [ $hutch == 'cxi' ]; then
    for box in $cxiIpm; do echo $box; done
+elif [ $hutch == 'mfx' ]; then
+   for box in $mfxIpm; do echo $box; done
 else
     echo 'hutch cannot be determined, quit'
     exit
@@ -96,6 +99,16 @@ if [ $hutch == 'xcs' ]; then
 	BASE='XCS:SND:DIO'
 	EVR='XCS:SND:DIO:EVR'
 	WAVE8='snddio'
+    elif [ $1 == 'sb1ipm' ]; then
+	IOC="IOC:XCS:SB1:BMMON"
+	BASE='XCS:SB1:BMMON'
+	EVR='XCS:SB1:BMMON:EVR'
+	WAVE8='sb1ipm'
+    elif [ $1 == 'sb2ipm' ]; then
+	IOC="IOC:XCS:SB2:BMMON"
+	BASE='XCS:SB2:BMMON'
+	EVR='XCS:SB2:BMMON:EVR'
+	WAVE8='sb2ipm'
     fi
 elif [ $hutch == 'cxi' ]; then
     if [ $1 == 'dg2ipm' ]; then
@@ -108,6 +121,18 @@ elif [ $hutch == 'cxi' ]; then
 	BASE='CXI:DG3:BMMON'
 	EVR='CXI:DG3:BMMON:EVR'
 	WAVE8='dg3ipm'
+    fi
+elif [ $hutch == 'mfx' ]; then
+    if [ $1 == 'dg1ipm' ]; then
+	IOC="IOC:MFX:DG1:BMMON"
+	BASE='MFX:DG1:BMMON'
+	EVR='MFX:DG1:BMMON:EVR'
+	WAVE8='dg1ipm'
+    elif [ $1 == 'dg2ipm' ]; then
+	IOC="IOC:MFX:DG2:BMMON"
+	BASE='MFX:DG2:BMMON'
+	EVR='MFX:DG2:BMMON:EVR'
+	WAVE8='dg2ipm'
     fi
 elif [ $hutch == 'xpp' ]; then
     if [ $1 == 'diomono' ]; then
