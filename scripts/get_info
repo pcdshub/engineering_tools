@@ -23,7 +23,7 @@ parser.add_argument("--nfiles_for_run", help="get xtc files for run")
 parser.add_argument("--setExp", help="set experiment name")
 args = parser.parse_args()
 
-hutches=['amo','sxr','xpp','xcs','mfx','cxi','mec', 'det']
+hutches=['amo','sxr','xpp','xcs','mfx','cxi','mec', 'det', 'fee']
 foundHutch=False
 hutch=''
 if args.hutch:
@@ -71,12 +71,15 @@ else:
                 hutch=ihutch.upper()
                 foundHutch=True
                 break
+        if not foundHutch and path.find('xrt')+hostname.find('xrt')>=-1:
+            hutch='FEE'
+            foundHutch=True
         if not foundHutch:
             #then ask.....outside of python
             print 'unknown_hutch'
             sys.exit()
     if args.getHutch:
-        print hutch
+        print hutch.upper()
         sys.exit()
     if args.gethutch:
         print hutch.lower()

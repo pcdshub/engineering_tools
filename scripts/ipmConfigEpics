@@ -11,6 +11,7 @@ xcsIpm='decmono ipmmono diomono pim3 pim3m pim4 ipm1 ipm2 ipm3 ipm5 pim5 ipmgonL
 xppIpm='diomono decmono ipm2 ipm3 pim3 diodeU ipm1'
 cxiIpm='dg2ipm dg3ipm'
 mfxIpm='dg1ipm dg2ipm'
+hfxIpm='hfxipm1'
 
 ipmList()
 {
@@ -22,6 +23,8 @@ elif [ $hutch == 'cxi' ]; then
    for box in $cxiIpm; do echo $box; done
 elif [ $hutch == 'mfx' ]; then
    for box in $mfxIpm; do echo $box; done
+elif [ $hutch == 'fee' ]; then
+   for box in $hfxIpm; do echo $box; done
 else
     echo 'hutch cannot be determined, quit'
     exit
@@ -133,6 +136,13 @@ elif [ $hutch == 'mfx' ]; then
 	BASE='MFX:DG2:BMMON'
 	EVR='MFX:DG2:BMMON:EVR'
 	WAVE8='dg2ipm'
+    fi
+elif [ $hutch == 'xtod' ]; then
+    if [ $1 == 'hfxipm1' ]; then
+	IOC="IOC:HFX:DG2:BMMON"
+	BASE='HFX:DG2:BMMON'
+	EVR='HFX:DG2:BMMON:EVR'
+	WAVE8='hfxipm1'
     fi
 elif [ $hutch == 'xpp' ]; then
     if [ $1 == 'diomono' ]; then
