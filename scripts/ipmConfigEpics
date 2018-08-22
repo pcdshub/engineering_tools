@@ -137,7 +137,7 @@ elif [ $hutch == 'mfx' ]; then
 	EVR='MFX:DG2:BMMON:EVR'
 	WAVE8='dg2ipm'
     fi
-elif [ $hutch == 'xtod' ]; then
+elif [ $hutch == 'fee' ]; then
     if [ $1 == 'hfxipm1' ]; then
 	IOC="IOC:HFX:DG2:BMMON"
 	BASE='HFX:DG2:BMMON'
