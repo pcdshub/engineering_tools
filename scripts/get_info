@@ -71,7 +71,7 @@ else:
                 hutch=ihutch.upper()
                 foundHutch=True
                 break
-        if not foundHutch and path.find('xrt')+hostname.find('xrt')>=-1:
+        if not foundHutch and path.find('xrt')+hostname.find('xtod')>=-1:
             hutch='FEE'
             foundHutch=True
         if not foundHutch:
