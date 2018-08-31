@@ -23,9 +23,7 @@ new_grab()
 	-e $1 \
 	-u $USERNAME \
 	-p pcds \
-	-w https://pswww.slac.stanford.edu/ws-auth \
-	-f config-pars.txt \
-	-c "ls -l"
+	-w https://pswww.slac.stanford.edu/ws-auth
     exit
 }
 
