@@ -1,3 +1,4 @@
+#!/reg/g/pcds/pyps/conda/py36/envs/pcds-1.2.4/bin/python
 import sys
 from psdm_qs_cli import QuestionnaireClient
 from deviceDicts import deviceDict
@@ -10,6 +11,27 @@ class QuestionnaireTools():
         self.exp_dict = self.qc.getExpName2URAWIProposalIDs()
         dd = deviceDict()
         self.deviceDict = dd.getDeviceDict()
+        self.allowedLocations=["Hutch-main experimental",
+                               "Hutch-downbeam area",
+                               "XPP goniometer",
+                               "XPP robot",
+                               "XPP SB4",
+                               "XPP alcove",
+                               "XCS goniometer",
+                               "XCS LADM",
+                               "MFX detector table",
+                               "MFX sample table",
+                               "MFX robot",
+                               "MFX DG3",
+                               "CXI SC1",
+                               "CXI SC2",
+                               "CXI SC3",
+                               "CXI DSA",
+                               "CXI DSB",
+                               "CXI DG3",
+                               "CXI DG4",
+                               "MEC chamber"]
+
 
     def _propRun_from_expname(self, expname):
         try:
@@ -37,6 +59,20 @@ class QuestionnaireTools():
             except:
                 pass        
         return proposalList
+
+    def _getExperimentList(self, runs=[17], instrument=None):
+        proposalList=[]
+        for key in self.exp_dict.keys():
+            try:
+                runNo = int(key[-2:])
+                if runNo not in runs:
+                    continue
+                if instrument is not None and keys[:3]!=instrument.lower():
+                    continue
+                proposalList.append(key)
+            except:
+                pass        
+        return proposalList
     
     def _getProposalDetails(self, proposal, run_no,  keyFilter=['pcdssetup']):
         if isinstance(run_no, int):
@@ -58,53 +94,82 @@ class QuestionnaireTools():
     def _setProposalDetails(self, runNo, proposal, detailDict):
         for key in detailDict:
             try:
-                print('update attribute %s to %s for proposal %s in %s'%(key, detailDict[key], proposal, run_no))
+                print('update attribute %s to %s for proposal %s in %s'%(key, detailDict[key], proposal, runNo))
                 self.qc.updateProposalAttribute(runNo, proposal, key, detailDict[key])
             except:
-                print('failed to update attribute %s to %s for proposal %s in %s'%(key, detailDict[key], proposal, run_no))
+                print('failed to update attribute %s to %s for proposal %s in %s'%(key, detailDict[key], proposal, runNo))
 
     def copyProposal(self, expnameIn, expnameOut):
         try:
             proposalIn, runNoIn = self._propRun_from_expname(expnameIn)
         except:
             print('could not find experiment %s in database'%expnameIn)
+            sys.exit()
         try:
             proposalOut, runNoOut = self._propRun_from_expname(expnameOut)
         except:
             print('could not find experiment %s in database'%expnameOut)
+            sys.exit()
 
         proposalInDetails = self._getProposalDetails(proposalIn, runNoIn)
         self._setProposalDetails(runNoOut, proposalOut, proposalInDetails)
 
-    def addDeviceToProposal(self, expname, devicename):
+    def _parseDeviceName(self, inputDevice):
+        device={}
+        deviceInfo = inputDevice.split(',')
+        device['name']=deviceInfo.pop(0)
+        for info in deviceInfo:
+            try:
+                field,value = info.split('-')
+                device[field]=value
+            except:
+                print('I cannot parse this, will ignore %s'%info)
+        return device
+
+    def addDeviceToProposal(self, expname, devicename, location=None):
         try:
             proposal, runNo = self._propRun_from_expname(expname)
         except:
             print('could not find experiment %s in database'%expname)
             return
 
-        if devicename not in self.deviceDict.keys():
+        deviceSetup = self._parseDeviceName(devicename)
+        if deviceSetup['name'] not in self.deviceDict.keys():
             print('device %s is not in predefined device list, available are:'%devicename)
             print(self.deviceDict.keys)
 
+        addDevice = self.deviceDict[deviceSetup['name']]
 
-        addDevice = self.deviceDict[devicename]
         #get current pcds fields from proposal.
         proposalDetails = self._getProposalDetails(proposal, runNo)
 
+        if location is not None:
+            print(location); print(location in self.allowedLocations)
+
         for lineItem in addDevice.keys():
             #first find last kind of this device in current list.
-            numNewDevice=-1
+            numNewDevice=0
             for detail in proposalDetails.keys():
                 if detail.find(lineItem)==0:
                     numDev = int(detail.replace('%s-'%lineItem,'').split('-')[0])
                     if numDev>numNewDevice: numNewDevice=numDev+1
 
-            for field in addDevice[lineItem].keys():
-                fieldValue = addDevice[lineItem][field]
-                fieldName = '%s-%d-%s'%(lineItem,numNewDevice,field)
-                print('update field %s to %s for proposal %s in run %s'%(fieldName, fieldValue,proposal, runNo))
-                self.qc.updateProposalAttribute(runNo, proposal, fieldName, fieldValue)
+            for item in addDevice[lineItem]:
+                if lineItem=='pcdssetup-motors-setup' and 'pvbase' not in item.keys():
+                    item['pvbase']='%s:USR:MMS:'%(expname[:3].upper())
+                if 'location' in deviceSetup.keys() and \
+                   deviceSetup['location'] in self.allowedLocations and \
+                   (lineItem=='pcdssetup-motors-setup' or lineItem=='pcdssetup-areadet-setup') \
+                   and 'location' not in item.keys():
+                    item['location']=location
+                if 'basename' in deviceSetup.keys():
+                    item['name']='%s_%s'%(deviceSetup['basename'],item['item'])
+                for field in item.keys():
+                    fieldValue = item[field]
+                    fieldName = '%s-%d-%s'%(lineItem,numNewDevice,field)
+                    print('update field %s to %s for proposal %s in run %s'%(fieldName, fieldValue,proposal, runNo))
+                    self.qc.updateProposalAttribute(runNo, proposal, fieldName, fieldValue)                    
+                numNewDevice=numNewDevice+1
                 
 parser = argparse.ArgumentParser()
 parser.add_argument("-f","--fromExp", help="experiment to copy from")
@@ -112,15 +177,18 @@ parser.add_argument("-t","--toExp", help="experiment to copy to")
 parser.add_argument("-r","--readExp", help="experiment to read CDS tag from")
 parser.add_argument("-c","--copy_CDS", help="copy data from CDS tab", action='store_true')
 parser.add_argument("-d","--add_device", help="name of device to be added")
-parser.add_argument("--print_device", help="name of device to be added")
 parser.add_argument("-l","--list_devices", help="list device to be added", action='store_true')
+parser.add_argument("-p","--print_device", help="print data for device")
 parser.add_argument("--dev", help="connect to dev database", action='store_true')
+parser.add_argument("--propList", help="list of proposals", action='store_true')
 args = parser.parse_args()
 
 
 if args.list_devices:
     dd = deviceDict()    
-    print('list of available devices: ',dd.getDeviceDict().keys())
+    print('List of available devices: ')
+    for key in dd.getDeviceDict().keys():
+        print(key)
     if args.toExp is None:
         sys.exit()
 
@@ -131,10 +199,13 @@ if args.print_device is not None:
         print('device %s is not present in device list, avaiable devices are:'%args.print_device)
         print(devd.keys())
     else:
-        print(devd[args.print_device])
+        devDict = devd[args.print_device]
+        for key in devDict:
+            print('add to section %s'%key)
+            for item in devDict[key]:
+                print(item)
     if args.toExp is None:
         sys.exit()
-
 
 kerb_url = 'https://pswww.slac.stanford.edu/ws-kerb/questionnaire/'
 kerb_url_dev = 'https://pswww-dev.slac.stanford.edu/ws-kerb/questionnaire/'
@@ -145,6 +216,15 @@ if args.dev:
 else:
     qs =  QuestionnaireTools(url=kerb_url)
 
+
+
+if args.propList:
+    print(qs._getProposalList(runs=[17,16,15], instrument=None))
+    print(qs._getExperimentList(runs=[17,16,15], instrument=None))
+    #print('---------------------------')
+    #print(qs._getProposalList(runs=[17], instrument=None))
+    #print(qs._getExperimentList(runs=[17], instrument=None))
+    sys.exit()
 
 if args.readExp is not None:
     p,r=qs._propRun_from_expname(args.readExp)
@@ -160,7 +240,14 @@ else:
     toExp = args.toExp
 
 if args.add_device:
-    qs.addDeviceToProposal(toExp, devicename=args.add_device)
+    deviceLoc = args.add_device.split(',')
+    device = deviceLoc[0]
+    if len(deviceLoc)>1: 
+        location=deviceLoc[1].replace('\'','\"')
+        print('a location is given:',location)
+        qs.addDeviceToProposal(toExp, devicename=device, location=location)
+    else:
+        qs.addDeviceToProposal(toExp, devicename=device)
 
 if args.copy_CDS:
     if args.fromExp is None:
