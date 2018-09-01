@@ -7,7 +7,7 @@ export PATH=/reg/g/pcds/package/epics/3.14/base/current/bin/linux-x86_64:/reg/g/
 export EPICS_CA_MAX_ARRAY_BYTES=8388608
 ulimit -c unlimited
 
-xcsIpm='decmono ipmmono diomono pim3 pim3m pim4 ipm1 ipm2 ipm3 ipm5 pim5 ipmgonLD ipmlamLD snddio'
+xcsIpm='decmono ipmmono diomono pim3 pim3m pim4 ipm1 ipm2 ipm3 ipm4 ipm5 pim5 ipmgonLD ipmlamLD snddio'
 xppIpm='diomono decmono ipm2 ipm3 pim3 diodeU ipm1'
 cxiIpm='dg2ipm dg3ipm'
 mfxIpm='dg1ipm dg2ipm'
