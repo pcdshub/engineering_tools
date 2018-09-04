@@ -28,7 +28,7 @@ foundHutch=False
 hutch=''
 
 #populate hutch-specific subnets here:
-hutch_subnets={'amo': ['37'],'sxr': ['39'],'xpp': ['38','46'],'xcs': ['25', '43'],'mfx': ['62','24'],'cxi': ['68','26'] ,'mec': ['45'],'det': [],'fee': ['36']}
+hutch_subnets={'amo': ['37','20'],'sxr': ['39','21'],'xpp': ['38','46'],'xcs': ['25', '43'],'mfx': ['62','24'],'cxi': ['68','26'] ,'mec': ['45','27'],'det': ['58'],'fee': ['36']}
 
 if args.hutch:
     hutch=args.hutch
