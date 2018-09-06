@@ -100,7 +100,7 @@ class QuestionnaireTools():
                 pass        
         return proposalList
     
-    def _getProposalDetails(self, proposal, run_no,  keyFilter=['pcdssetup']):
+    def _getProposalDetails(self, proposal, run_no,  keyFilter=['pcdssetup','hutch-be']):
         if isinstance(run_no, int):
             run_no='run%02d'%run_no
         if not self._isPropname(proposal):
