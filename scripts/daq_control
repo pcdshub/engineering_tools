@@ -233,17 +233,36 @@ case $HOSTNAME in
         mon_proxy_name="mon_proxy_other"
     ;;
   esac    
+  export HOSTIP=`netconfig search $HOSTNAME | grep IP | awk '{split($0,a, " "); print a[2]}' | sed s/' '/''/g`
+  export HOSTIPFEZ=`netconfig search $HOSTNAME-fez | grep IP | awk '{split($0,a, " "); print a[2]}' | sed s/' '/''/g`
   mon_proxy=`grep "$mon_proxy_name[[:space:]]" "$scripts_dir/$daq_base.cnf" | grep -v '#' | grep daq_ | awk '{split($0,a," "); print a[3]}'`
-  eval declare AMIPROXY=`grep "$mon_proxy[[:space:]]*=" "$scripts_dir/$daq_base.cnf" | awk '{split($0,a," "); print a[3]}' | sed 's/172.21.26/172.21.68/g' `
-  export HOSTSUBNET=`gethostip -d $HOSTNAME | cut -d '.' -f3`
+  #eval declare AMIPROXY=`grep "$mon_proxy[[:space:]]*=" "$scripts_dir/$daq_base.cnf" | awk '{split($0,a," "); print a[3]}' | sed 's/172.21.26/172.21.68/g' `
+  eval declare AMIPROXYIP=`grep "$mon_proxy[[:space:]]*=" "$scripts_dir/$daq_base.cnf" | awk '{split($0,a," "); print a[3]}' `
+  case $instrument in
+      "cxi")
+          eval declare AMIPROXY=`echo $AMIPROXYIP | sed 's/172.21.26/172.21.68/g' `
+      ;;
+      "mfx")
+          eval declare AMIPROXY=`echo $AMIPROXYIP | sed 's/172.21.24/172.21.62/g' `
+      ;;
+  esac
+  #gethostip not on rhel7 -- use netconfig instead
+  #export HOSTSUBNET=`gethostip -d $HOSTNAME | cut -d '.' -f3`
+  export HOSTSUBNET=`echo $HOSTIP | cut -d '.' -f3`
+  export ETHNAME=`/sbin/ifconfig | grep $HOSTIP -B 1 | head -n 1 | awk '{split($0,a, ":"); print a[1]}' | sed s/' '/''/g`
   export PROXYSUBNET=`echo $AMIPROXY | cut -d '.' -f3`
-  if [ $HOSTSUBNET = $PROXYSUBNET ]
-  then
+#  if [ $HOSTSUBNET = $PROXYSUBNET ]
+#  then
     echo "Connect to proxy $AMIPROXY ($mon_proxy) from $HOSTNAME"
-    exec "$ami_path/online_ami" -I eth0 -i eth0 -s $AMIPROXY -f ~"$daq_user" -C 1 &
-  else
-   echo "You must be on the CXI subnet to monitor data!"
-  fi 
+    echo "$ami_path/online_ami" -s $AMIPROXY -f ~"$daq_user" -C 0 &
+    exec "$ami_path/online_ami" -s $AMIPROXY -f ~"$daq_user" -C 0 &
+#  else
+#   echo $HOSTIP
+#   echo $HOSTSUBNET
+#   echo $PROXYSUBNET
+#   echo $ETHNAME
+#   echo "You must be on the $instrument subnet to monitor data!"
+#  fi 
 }
 
 elogPost(){
