@@ -1,4 +1,15 @@
 #!/bin/bash
+
+name_to_pv()
+{
+if [ $# -lt 1 ]; then
+    echo 'need a name as input to return camera basePV'
+fi
+VIEWERCFG=/reg/g/pcds/pyps/config/*/camviewer.cfg
+echo `grep $1 $VIEWERCFG | grep -v '#' | head -n 1 | awk 'BEGIN { FS = "," }; { print $2 }' | awk 'BEGIN { FS = ";" }; {print $2}' | sed s/,//g`
+exit
+}
+
 gige_num_to_name()
 {
 if [ $# -lt 2 ]; then
@@ -32,11 +43,22 @@ fi
 HUTCH=${1^^}
 hutch=${1,,}
 VIEWERCFG=/reg/g/pcds/pyps/config/$hutch/camviewer.cfg
-GIGEBASE=$HUTCH:GIGE:
+VIEWERCFGFEE=/reg/g/pcds/pyps/config/fee/camviewer.cfg
+VIEWERCFGXRT=/reg/g/pcds/pyps/config/xrt/camviewer.cfg
+
+for gige_cam in `grep -v '#' $VIEWERCFGFEE | awk 'BEGIN { FW = "," }; {print $4 "\n" }' | sed s/,//g`; do
+    echo $gige_cam
+done
 
 for gige_cam in `grep -v '#' $VIEWERCFG | awk 'BEGIN { FW = "," }; {print $4 "\n" }' | sed s/,//g`; do
     echo $gige_cam
 done
+
+if  [ $hutch != 'amo' ] && [ $hutch != 'sxr' ]; then
+    for gige_cam in `grep -v '#' $VIEWERCFGXRT | awk 'BEGIN { FW = "," }; {print $4 "\n" }' | sed s/,//g`; do
+	echo $gige_cam
+    done
+fi
 
 }
 
@@ -52,8 +74,7 @@ OPTIONS:
 -l print list of cameras
 -w # (wait for # hours to ask to renew, default 2 and 12 for GIGEs)
 -r # update rate limit (default 5)
--t look at XTCAV
--s look at the FEE spectrometer
+-m bring up the edm screen
 -H hutch: use a specific hutches camviewer config file
 EOF
 }
@@ -67,6 +88,7 @@ fi
 CAMNUM=0
 WAIT=0
 RATE=-1
+MAINSCREEN=0
 
 EXE=/reg/g/pcds/pyps/config/$hutch/camviewer/run_viewer.csh
 #EXE='/reg/g/pcds/pyps/apps/camviewer/latest/run_viewer.csh'
@@ -75,7 +97,7 @@ CAMNUM=0
 WAIT=0
 RATE=-1
 
-while getopts "c:w:r:H:hlts" OPTION
+while getopts "c:w:r:H:hlm" OPTION
 do
     case $OPTION in
 	h)
@@ -96,12 +118,6 @@ do
 		CAMNUM=-1
 	    fi
 	    ;;
-	t)
-	    CAMNAME=xtcav
-	    ;;
-	s)
-	    CAMNAME=fee_spec
-	    ;;
 	w)
 	    WAIT=$OPTARG
 	    ;;	    
@@ -110,6 +126,9 @@ do
 	    ;;	    
 	H)
 	    hutch=$OPTARG
+	    ;;
+	m)
+	    MAINSCREEN=1
 	    ;;
 	esac
 done
@@ -136,7 +155,17 @@ if [ `echo $CAMNAME | wc -w` -gt 1 ]; then
     read -r CAMNAME
 fi
 echo cameraname: $CAMNAME
-#exit
+
+if [ $MAINSCREEN -gt 0 ]; then
+    echo 'try to get the main screen for: ' $CAMNAME
+    CAMPVFULL=`name_to_pv $CAMNAME`
+    echo 'start the main screen ' $CAMPVFULL
+    cmdName=`caget -St $CAMPVFULL:LAUNCH_EDM`
+    echo calling edm main screen from: $cmdName
+    $cmdName
+    exit
+fi
+
 if [ $WAIT -gt 0 ]; then
     if [ $RATE -gt 0 ]; then
 	echo $EXE --camera $CAMNAME --instrument $hutch --pvlist $PVLIST --idle $WAIT --rate $RATE&
