@@ -254,8 +254,8 @@ case $HOSTNAME in
 #  if [ $HOSTSUBNET = $PROXYSUBNET ]
 #  then
     echo "Connect to proxy $AMIPROXY ($mon_proxy) from $HOSTNAME"
-    echo "$ami_path/online_ami" -s $AMIPROXY -f ~"$daq_user" -C 0 &
-    exec "$ami_path/online_ami" -s $AMIPROXY -f ~"$daq_user" -C 0 &
+    echo "$ami_path/online_ami" -s $AMIPROXY -f ~"$daq_user" -C 1 &
+    exec "$ami_path/online_ami" -s $AMIPROXY -f ~"$daq_user" -C 1 &
 #  else
 #   echo $HOSTIP
 #   echo $HOSTSUBNET
