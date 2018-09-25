@@ -6,7 +6,7 @@ if [[ -z $1 ]] | [[ -z $2 ]]; then
     echo $USAGE
     exit
 fi
-for hutchname in "amo" "sxr" "xpp" "xcs" "cxi" "mfx" "mec"; do 
+for hutchname in "amo" "sxr" "xpp" "xcs" "cxi" "mfx" "mec" "xrt"; do 
     if [[ "${2}" == $hutchname ]]; then
 	HUTCH="${2}"
     fi

@@ -1,0 +1,280 @@
+#!/reg/g/pcds/pyps/conda/py36/envs/pcds-1.2.5/bin/python
+import sys
+from psdm_qs_cli import QuestionnaireClient
+from deviceDicts import deviceDict
+import argparse
+
+class QuestionnaireTools():
+
+    def __init__(self, **kwargs):
+        self.qc = QuestionnaireClient(**kwargs)
+        self.exp_dict = self.qc.getExpName2URAWIProposalIDs()
+        dd = deviceDict()
+        self.deviceDict = dd.getDeviceDict()
+        self.allowedLocations=["Hutch-main experimental",
+                               "Hutch-downbeam area",
+                               "XPP goniometer",
+                               "XPP robot",
+                               "XPP SB4",
+                               "XPP alcove",
+                               "XCS goniometer",
+                               "XCS LADM",
+                               "MFX detector table",
+                               "MFX sample table",
+                               "MFX robot",
+                               "MFX DG3",
+                               "CXI SC1",
+                               "CXI SC2",
+                               "CXI SC3",
+                               "CXI DSA",
+                               "CXI DSB",
+                               "CXI DG3",
+                               "CXI DG4",
+                               "MEC chamber"]
+
+    def _propRun_from_name(self, name):
+        if len(name)<=4:        
+            try:
+                proposal, runNo = self._propRun_from_propname(name)
+            except:
+                print('could not find experiment %s in database'%name)
+                sys.exit()
+        else:
+            try:
+                proposal, runNo = self._propRun_from_expname(name)
+            except:
+                print('could not find experiment %s in database'%name)
+                sys.exit()
+        return proposal, runNo
+
+
+    def _propRun_from_propname(self, propname):
+        runStrs=['run17', 'run16', 'run15']
+        for runStr in runStrs:
+            if propname in self.qc.getProposalsListForRun(runStr).keys():
+                return propname, runStr
+
+    def _propRun_from_expname(self, expname):
+        try:
+            propDict=self.qc.lookupByExperimentName(expname)
+            if propDict!={}:
+                return propDict['proposal_id'],propDict['run_period']
+        except:
+            try:
+                return self.exp_dict[expname],'run%02d'%int(expname[-2:])
+            except KeyError:	
+                err = '{} is not a valid experiment name'
+                raise ValueError(err.format(expname))
+
+    def _isPropname(self, propname):
+        for key in self.exp_dict.keys():
+            if self.exp_dict[key] == propname:
+                return True
+        return False
+
+    def _getProposalList(self, runs=[17], instrument=None):
+        proposalList=[]
+        for key in self.exp_dict.keys():
+            try:
+                runNo = int(key[-2:])
+                if runNo not in runs:
+                    continue
+                if instrument is not None and keys[:3]!=instrument.lower():
+                    continue
+                proposalList.append(self.exp_dict[key])
+            except:
+                pass        
+        return proposalList
+
+    def _getExperimentList(self, runs=[17], instrument=None):
+        proposalList=[]
+        for key in self.exp_dict.keys():
+            try:
+                runNo = int(key[-2:])
+                if runNo not in runs:
+                    continue
+                if instrument is not None and keys[:3]!=instrument.lower():
+                    continue
+                proposalList.append(key)
+            except:
+                pass        
+        return proposalList
+    
+    def _getProposalDetails(self, proposal, run_no,  keyFilter=['pcdssetup','hutch-be']):
+        if isinstance(run_no, int):
+            run_no='run%02d'%run_no
+        if not self._isPropname(proposal):
+            print('This is not a proposal %s'%proposal)
+            return
+        raw = self.qc.getProposalDetailsForRun(run_no, proposal)
+        if keyFilter==[]:
+            return raw
+
+        filteredDict = {}
+        for field in raw.keys():
+            for desiredKey in keyFilter:
+                if field.find(desiredKey)>=0:
+                    filteredDict[field]=raw[field]
+        return filteredDict
+
+    def _setProposalDetails(self, runNo, proposal, detailDict):
+        for key in detailDict:
+            try:
+                print('update attribute %s to %s for proposal %s in %s'%(key, detailDict[key], proposal, runNo))
+                self.qc.updateProposalAttribute(runNo, proposal, key, detailDict[key])
+            except:
+                print('failed to update attribute %s to %s for proposal %s in %s'%(key, detailDict[key], proposal, runNo))
+
+    def copyProposal(self, expnameIn, expnameOut):
+        proposalIn, runNoIn = self._propRun_from_name(expnameIn)
+        proposalOut, runNoOut = self._propRun_from_name(expnameOut)
+
+        proposalInDetails = self._getProposalDetails(proposalIn, runNoIn)
+        self._setProposalDetails(runNoOut, proposalOut, proposalInDetails)
+
+    def _parseDeviceName(self, inputDevice):
+        device={}
+        deviceInfo = inputDevice.split(',')
+        device['name']=deviceInfo.pop(0)
+        for info in deviceInfo:
+            try:
+                field,value = info.split('-')
+                device[field]=value
+            except:
+                print('I cannot parse this, will ignore %s'%info)
+        return device
+
+    def addDeviceToProposal(self, expname, devicename, location=None):
+        proposal, runNo = _propRun_from_name(self, expname)
+
+        deviceSetup = self._parseDeviceName(devicename)
+        if deviceSetup['name'] not in self.deviceDict.keys():
+            print('device %s is not in predefined device list, available are:'%devicename)
+            print(self.deviceDict.keys)
+
+        addDevice = self.deviceDict[deviceSetup['name']]
+
+        #get current pcds fields from proposal.
+        proposalDetails = self._getProposalDetails(proposal, runNo)
+
+        if location is not None:
+            print(location); print(location in self.allowedLocations)
+
+        for lineItem in addDevice.keys():
+            #first find last kind of this device in current list.
+            numNewDevice=0
+            for detail in proposalDetails.keys():
+                if detail.find(lineItem)==0:
+                    numDev = int(detail.replace('%s-'%lineItem,'').split('-')[0])
+                    if numDev>numNewDevice: numNewDevice=numDev+1
+
+            for item in addDevice[lineItem]:
+                if lineItem=='pcdssetup-motors-setup' and 'pvbase' not in item.keys():
+                    item['pvbase']='%s:USR:MMS:'%(expname[:3].upper())
+                if 'location' in deviceSetup.keys() and \
+                   deviceSetup['location'] in self.allowedLocations and \
+                   (lineItem=='pcdssetup-motors-setup' or lineItem=='pcdssetup-areadet-setup') \
+                   and 'location' not in item.keys():
+                    item['location']=location
+                if 'basename' in deviceSetup.keys():
+                    item['name']='%s_%s'%(deviceSetup['basename'],item['item'])
+                for field in item.keys():
+                    fieldValue = item[field]
+                    fieldName = '%s-%d-%s'%(lineItem,numNewDevice,field)
+                    print('update field %s to %s for proposal %s in run %s'%(fieldName, fieldValue,proposal, runNo))
+                    self.qc.updateProposalAttribute(runNo, proposal, fieldName, fieldValue)                    
+                numNewDevice=numNewDevice+1
+                
+parser = argparse.ArgumentParser()
+parser.add_argument("-f","--fromExp", help="experiment to copy from")
+parser.add_argument("-t","--toExp", help="experiment to copy to")
+parser.add_argument("-r","--readExp", help="experiment to read CDS tag from")
+parser.add_argument("-c","--copy_CDS", help="copy data from CDS tab", action='store_true')
+parser.add_argument("-d","--add_device", help="name of device to be added")
+parser.add_argument("-l","--list_devices", help="list device to be added", action='store_true')
+parser.add_argument("-p","--print_device", help="print data for device")
+parser.add_argument("--dev", help="connect to dev database", action='store_true')
+parser.add_argument("--experimentList", help="list of experiments", action='store_true')
+parser.add_argument("--propList", help="list of proposals", action='store_true')
+args = parser.parse_args()
+
+
+if args.list_devices:
+    dd = deviceDict()    
+    print('List of available devices: ')
+    for key in dd.getDeviceDict().keys():
+        print(key)
+    if args.toExp is None:
+        sys.exit()
+
+if args.print_device is not None:
+    dd = deviceDict()    
+    devd = dd.getDeviceDict()
+    if args.print_device not in devd.keys():
+        print('device %s is not present in device list, avaiable devices are:'%args.print_device)
+        print(devd.keys())
+    else:
+        devDict = devd[args.print_device]
+        for key in devDict:
+            print('add to section %s'%key)
+            for item in devDict[key]:
+                print(item)
+    if args.toExp is None:
+        sys.exit()
+
+kerb_url = 'https://pswww.slac.stanford.edu/ws-kerb/questionnaire/'
+kerb_url_dev = 'https://pswww-dev.slac.stanford.edu/ws-kerb/questionnaire/'
+
+#qs =  QuestionnaireTools()
+if args.dev:
+    qs =  QuestionnaireTools(url=kerb_url_dev)
+else:
+    qs =  QuestionnaireTools(url=kerb_url)
+
+
+
+if args.propList:
+    print('please be aware that this script takes experiment, not proposal names')
+    print(qs._getProposalList(runs=[17,16,15], instrument=None))
+    #print('---------------------------')
+    #print(qs._getProposalList(runs=[17], instrument=None))
+    #print(qs._getExperimentList(runs=[17], instrument=None))
+    sys.exit()
+
+if args.experimentList:
+    print(qs._getExperimentList(runs=[17,16,15], instrument=None))
+    #print('---------------------------')
+    #print(qs._getProposalList(runs=[17], instrument=None))
+    #print(qs._getExperimentList(runs=[17], instrument=None))
+    sys.exit()
+
+if args.readExp is not None:
+    p,r=qs._propRun_from_name(args.readExp)    
+    cdsDict = qs._getProposalDetails(p,r)
+    for entry in cdsDict.keys():
+        print('%s: \t %s'%(entry, cdsDict[entry]))
+    if args.toExp is None:
+        sys.exit()
+
+if args.toExp is None:
+    toExp=input('we need an experiment to update the questionnaire for')
+else:
+    toExp = args.toExp
+
+if args.add_device:
+    deviceLoc = args.add_device.split(',')
+    device = deviceLoc[0]
+    if len(deviceLoc)>1: 
+        location=deviceLoc[1].replace('\'','\"')
+        print('a location is given:',location)
+        qs.addDeviceToProposal(toExp, devicename=device, location=location)
+    else:
+        qs.addDeviceToProposal(toExp, devicename=device)
+
+if args.copy_CDS:
+    if args.fromExp is None:
+        fromExp = input('experiment to copy CDS data from:')
+    else:
+        fromExp=args.fromExp
+    
+    qs.copyProposal(fromExp, toExp)
