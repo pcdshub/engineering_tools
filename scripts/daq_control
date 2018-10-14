@@ -293,7 +293,12 @@ elogPost(){
     Message="$1"
     shift
     Options=$@
-    if [ -f /usr/bin/python2.7 ]; then 
+    
+    if [[ $instrument == 'mfx' ]]; then
+      # simplejson not availble on mfx- machines /usr/bin/python2.7 so use a recent psana release of python for rhel7
+      export PYTHONPATH=/reg/g/pcds/pds/grabber/lib/python2.7/site-packages/
+      BINPATH=/reg/g/psdm/sw/conda/inst/miniconda2-prod-rhel7/envs/ana-1.3.63/bin/python
+    elif [ -f /usr/bin/python2.7 ]; then 
       export PYTHONPATH=/reg/g/pcds/pds/grabber/lib/python2.7/site-packages/
       BINPATH=/usr/bin/python2.7
     else
@@ -502,8 +507,8 @@ case "$command" in
             echo "  $0 RunNumber [UserName]"
         else
             get_username
-            echo ssh -X $UserName@psdev ssh -X psana $bin_path pedestal $RunNumber -e $expname
-            ssh -X $UserName@psdev ssh -X psana $bin_path pedestal $RunNumber -e $expname
+            echo ssh -X $UserName@psdev ssh -X psana $bin_path pedestal $RunNumber -e $expname -c $cnf_base 
+            ssh -X $UserName@psdev ssh -X psana $bin_path pedestal $RunNumber -e $expname -c $cnf_base
             elogMessage="DARK" 
             echo "Press n if you do not want to post an e-log message."
             echo "Otherwise add additional message to append to the following e-log message:"
@@ -529,7 +534,7 @@ case "$command" in
                 echo mkdir -p $userworkdir
                 mkdir -p $userworkdir
             fi
-            pedcmd="calibrun --exp=$expname --run=$target --detector=CSPAD,CSPAD2x2,OPAL1000,OPAL2000,TM6740,Epix100a --workdir=$userworkdir --process --deploy --calibdir=/reg/d/psdm/$instrument/$expname/calib"
+            pedcmd="calibrun --exp=$expname --run=$target --detector=CSPAD,CSPAD2x2,OPAL1000,OPAL2000,TM6740,Epix100a,Rayonix --workdir=$userworkdir --process --deploy --calibdir=/reg/d/psdm/$instrument/$expname/calib"
             echo "Executing:  $pedcmd"
             echo "Make pedestals and masks all pixels with auto noise threshold"
             $pedcmd
