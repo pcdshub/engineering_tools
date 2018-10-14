@@ -541,7 +541,7 @@ case "$command" in
         if [[ ${HOSTNAME:0:5} == psana ]]; then 
             thr_rms=7.5
             ana_env
-            pedcmd="calibrun --exp=$expname --run=$target --detector=CSPAD,CSPAD2x2,OPAL1000,OPAL2000,TM6740,Epix100a --thr_rms=$thr_rms --workdir=$workdir --process --deploy --calibdir=/reg/d/psdm/$instrument/$expname/calib --xtcdir /reg/d/ffb/$instrument/$expname/xtc"
+            pedcmd="calibrun --exp=$expname --run=$target --detector=CSPAD,CSPAD2x2,OPAL1000,OPAL2000,TM6740,Epix100a,Rayonix --thr_rms=$thr_rms --workdir=$workdir --process --deploy --calibdir=/reg/d/psdm/$instrument/$expname/calib --xtcdir /reg/d/ffb/$instrument/$expname/xtc"
             echo "Executing:  $pedcmd"
             echo "Make pedestals and masks all pixels with noise >$thr_rms ADU rms"
             $pedcmd
