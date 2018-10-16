@@ -36,7 +36,7 @@ def launcher_lines(conda_setup_path, conda_env, launcher,
     lines.append('conda activate {}\n'.format(conda_env))
     if pythonpath:
         lines.append('export PYTHONPATH="{}:$PYTHONPATH"\n'.format(pythonpath))
-    lines.append(launcher + '\n')
+    lines.append(launcher + ' $@\n')
     return lines
 
 
