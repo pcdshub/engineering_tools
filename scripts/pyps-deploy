@@ -103,7 +103,7 @@ def main():
         with open(args.app, 'w') as fd:
             fd.writelines(lines)
         st = os.stat(args.app)
-        os.chmod(args.app, st.st_mode | 0111)
+        os.chmod(args.app, st.st_mode | 0o111)
         os.chdir(app_folder)
         print('Write-protecting the release...')
         subprocess.call(['chmod', '-R', 'a-w', args.release])
