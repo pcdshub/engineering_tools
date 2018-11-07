@@ -27,14 +27,13 @@ done
 
 shift $(($OPTIND - 1))
 
+PREFIX=`echo $1 | cut -d . -f 1`
+
 # Setup edm environment
 source /reg/g/pcds/setup/epicsenv-3.14.12.sh
 export PCDS_EDMS=/reg/g/pcds/package/epics/3.14/screens/edm
 #export EDMDATAFILES=.:${PCDS_EDMS}/xps8:${PCDS_EDMS}/ims  # normal EDMDATAFILES line
 export EDMDATAFILES=.:${PCDS_EDMS}/xps8:/reg/g/pcds/package/epics/3.14/ioc/common/ims/R2.2.3/imsScreens
-
-# xdotool is used to move the new window to the mouse location
-# if xdotool is not installed, the move window commands will skip
 
 # this ldpathmunge gives access to xdotool for xpp-control, xpp-daq
 source /reg/g/pcds/setup/pathmunge.sh
@@ -42,7 +41,7 @@ ldpathmunge /usr/local/lib
 
 # Choose title so we can move the right window.
 # If this script hangs later, titles probably changed.
-rtyp=`caget -t $1.RTYP` > /dev/null 2>&1
+rtyp=`caget -t $PREFIX.RTYP` > /dev/null 2>&1
 if [ "${rtyp}" == 'xps8p' ]; then
     title='Newport XPS Positioner'
 elif [ "${rtyp}" == 'ims' ]; then
@@ -50,13 +49,16 @@ elif [ "${rtyp}" == 'ims' ]; then
 elif [ "${rtyp}" == 'motor' ]; then
     title='Aerotech motor'
 else
-    caget "$1.PN" > /dev/null 2>&1 
+    caget "$PREFIX.PN" > /dev/null 2>&1
     if [ $? -eq 0 ]; then
         title='IMS Motor Control -- Main'
     else
         title='IMS Motor Control'
     fi
 fi
+
+# xdotool is used to move the new window to the mouse location
+# if xdotool is not installed, the move window commands will skip
 
 # Check already open windows
 oldwins=`xdotool search --onlyvisible --maxdepth 2 --all --name "$title" 2> /dev/null`
@@ -65,8 +67,8 @@ oldwins=`xdotool search --onlyvisible --maxdepth 2 --all --name "$title" 2> /dev
 if [ "${rtyp}" == 'xps8p' ]; then
     # If we have a Newport motor, we need to parse the PV to get the macro
     # substitutions for the edm screen
-    base=`echo $1 | cut -d':' -f 1,2,3`
-    num=`echo $1 | cut -d':' -f 4`
+    base=`echo $PREFIX | cut -d':' -f 1,2,3`
+    num=`echo $PREFIX | cut -d':' -f 4`
     if [ "$num" -ge 1 ] && [ "$num" -le 8 ]; then
         ext=0108
     elif [ "$num" -ge 9 ] && [ "$num" -le 16 ]; then
@@ -81,18 +83,18 @@ if [ "${rtyp}" == 'xps8p' ]; then
         # If something went wrong we'll be missing some boring things
         ext=0000
     fi
-    edm -x -eolc -m "CNAME=${base}_${ext},POS=$1" XPS8_Positioner.edl > /dev/null 2>&1 &
+    edm -x -eolc -m "CNAME=${base}_${ext},POS=$PREFIX" XPS8_Positioner.edl > /dev/null 2>&1 &
 elif [ "${rtyp}" == 'motor' ]; then
-    caget "$1:PN" > /dev/null 2>&1
+    caget "$PREFIX:PN" > /dev/null 2>&1
     if [ $? -eq 0 ]; then
-        /reg/g/pcds/package/epics/3.14//modules/pcds_motion/${OLD_VERSION}/launch-motor.sh "$1" > /dev/null 2>&1 &
+        /reg/g/pcds/package/epics/3.14//modules/pcds_motion/${OLD_VERSION}/launch-motor.sh "$PREFIX" > /dev/null 2>&1 &
     else
         cd /reg/neh/home/klg/epics/ioc/common/aerotech/current/motorScreens
         #cd /reg/neh/home4/mcbrowne/trunk2/ioc/common/aerotech/current/motorScreens
-        edm -x -eolc -m "MOTOR=${1}" ens_main.edl >& /dev/null &
+        edm -x -eolc -m "MOTOR=${PREFIX}" ens_main.edl >& /dev/null &
     fi
 else
-    edm -x -eolc -m "MOTOR=$1" ims_main.edl > /dev/null 2>&1 &
+    edm -x -eolc -m "MOTOR=$PREFIX" ims_main.edl > /dev/null 2>&1 &
 fi
 
 ##put exit here until the naming convetion of the edm screens is better.
@@ -133,12 +135,13 @@ read x y s w <<<$(xdotool getmouselocation 2> /dev/null)
 xpos=`echo $x | cut -d':' -f 2`
 ypos=`echo $y | cut -d':' -f 2`
 
+if [ -z $xpos ]; then
+  exit
 # Check if mouse is already on the window. In this case, we wouldn't move it.
-if [ "$xpos" -lt "$winx" ] || [ "$xpos" -gt $(( ${winx} + ${xwidth}  )) ] || [ "$ypos" -lt "$winy" ] || [ "$ypos" -gt $(( ${winy} + ${ywidth} )) ]; then
+elif [ "$xpos" -lt "$winx" ] || [ "$xpos" -gt $(( ${winx} + ${xwidth}  )) ] || [ "$ypos" -lt "$winy" ] || [ "$ypos" -gt $(( ${winy} + ${ywidth} )) ]; then
     # Adjust xpos and ypos so center of window aligns with cursor.
     xpos=$(( ${xpos} - ( ${xwidth} / 2 ) ))
     ypos=$(( ${ypos} - ( ${ywidth} / 2 ) ))
     # Finally, move the window to our cursor.
     xdotool windowmove $id $xpos $ypos 2> /dev/null
 fi
-
