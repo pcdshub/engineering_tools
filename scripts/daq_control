@@ -233,17 +233,36 @@ case $HOSTNAME in
         mon_proxy_name="mon_proxy_other"
     ;;
   esac    
+  export HOSTIP=`netconfig search $HOSTNAME | grep IP | awk '{split($0,a, " "); print a[2]}' | sed s/' '/''/g`
+  export HOSTIPFEZ=`netconfig search $HOSTNAME-fez | grep IP | awk '{split($0,a, " "); print a[2]}' | sed s/' '/''/g`
   mon_proxy=`grep "$mon_proxy_name[[:space:]]" "$scripts_dir/$daq_base.cnf" | grep -v '#' | grep daq_ | awk '{split($0,a," "); print a[3]}'`
-  eval declare AMIPROXY=`grep "$mon_proxy[[:space:]]*=" "$scripts_dir/$daq_base.cnf" | awk '{split($0,a," "); print a[3]}' | sed 's/172.21.26/172.21.68/g' `
-  export HOSTSUBNET=`gethostip -d $HOSTNAME | cut -d '.' -f3`
+  #eval declare AMIPROXY=`grep "$mon_proxy[[:space:]]*=" "$scripts_dir/$daq_base.cnf" | awk '{split($0,a," "); print a[3]}' | sed 's/172.21.26/172.21.68/g' `
+  eval declare AMIPROXYIP=`grep "$mon_proxy[[:space:]]*=" "$scripts_dir/$daq_base.cnf" | awk '{split($0,a," "); print a[3]}' `
+  case $instrument in
+      "cxi")
+          eval declare AMIPROXY=`echo $AMIPROXYIP | sed 's/172.21.26/172.21.68/g' `
+      ;;
+      "mfx")
+          eval declare AMIPROXY=`echo $AMIPROXYIP | sed 's/172.21.24/172.21.62/g' `
+      ;;
+  esac
+  #gethostip not on rhel7 -- use netconfig instead
+  #export HOSTSUBNET=`gethostip -d $HOSTNAME | cut -d '.' -f3`
+  export HOSTSUBNET=`echo $HOSTIP | cut -d '.' -f3`
+  export ETHNAME=`/sbin/ifconfig | grep $HOSTIP -B 1 | head -n 1 | awk '{split($0,a, ":"); print a[1]}' | sed s/' '/''/g`
   export PROXYSUBNET=`echo $AMIPROXY | cut -d '.' -f3`
-  if [ $HOSTSUBNET = $PROXYSUBNET ]
-  then
+#  if [ $HOSTSUBNET = $PROXYSUBNET ]
+#  then
     echo "Connect to proxy $AMIPROXY ($mon_proxy) from $HOSTNAME"
-    exec "$ami_path/online_ami" -I eth0 -i eth0 -s $AMIPROXY -f ~"$daq_user" -C 1 &
-  else
-   echo "You must be on the CXI subnet to monitor data!"
-  fi 
+    echo "$ami_path/online_ami" -s $AMIPROXY -f ~"$daq_user" -C 1 &
+    exec "$ami_path/online_ami" -s $AMIPROXY -f ~"$daq_user" -C 1 &
+#  else
+#   echo $HOSTIP
+#   echo $HOSTSUBNET
+#   echo $PROXYSUBNET
+#   echo $ETHNAME
+#   echo "You must be on the $instrument subnet to monitor data!"
+#  fi 
 }
 
 elogPost(){
@@ -274,7 +293,12 @@ elogPost(){
     Message="$1"
     shift
     Options=$@
-    if [ -f /usr/bin/python2.7 ]; then 
+    
+    if [[ $instrument == 'mfx' ]]; then
+      # simplejson not availble on mfx- machines /usr/bin/python2.7 so use a recent psana release of python for rhel7
+      export PYTHONPATH=/reg/g/pcds/pds/grabber/lib/python2.7/site-packages/
+      BINPATH=/reg/g/psdm/sw/conda/inst/miniconda2-prod-rhel7/envs/ana-1.3.63/bin/python
+    elif [ -f /usr/bin/python2.7 ]; then 
       export PYTHONPATH=/reg/g/pcds/pds/grabber/lib/python2.7/site-packages/
       BINPATH=/usr/bin/python2.7
     else
@@ -483,8 +507,8 @@ case "$command" in
             echo "  $0 RunNumber [UserName]"
         else
             get_username
-            echo ssh -X $UserName@psdev ssh -X psana $bin_path pedestal $RunNumber -e $expname
-            ssh -X $UserName@psdev ssh -X psana $bin_path pedestal $RunNumber -e $expname
+            echo ssh -X $UserName@psdev ssh -X psana $bin_path pedestal $RunNumber -e $expname -c $cnf_base 
+            ssh -X $UserName@psdev ssh -X psana $bin_path pedestal $RunNumber -e $expname -c $cnf_base
             elogMessage="DARK" 
             echo "Press n if you do not want to post an e-log message."
             echo "Otherwise add additional message to append to the following e-log message:"
@@ -510,7 +534,7 @@ case "$command" in
                 echo mkdir -p $userworkdir
                 mkdir -p $userworkdir
             fi
-            pedcmd="calibrun --exp=$expname --run=$target --detector=CSPAD,CSPAD2x2,OPAL1000,OPAL2000,TM6740,Epix100a --workdir=$userworkdir --process --deploy --calibdir=/reg/d/psdm/$instrument/$expname/calib"
+            pedcmd="calibrun --exp=$expname --run=$target --detector=CSPAD,CSPAD2x2,OPAL1000,OPAL2000,TM6740,Epix100a,Rayonix --workdir=$userworkdir --process --deploy --calibdir=/reg/d/psdm/$instrument/$expname/calib"
             echo "Executing:  $pedcmd"
             echo "Make pedestals and masks all pixels with auto noise threshold"
             $pedcmd
@@ -522,7 +546,7 @@ case "$command" in
         if [[ ${HOSTNAME:0:5} == psana ]]; then 
             thr_rms=7.5
             ana_env
-            pedcmd="calibrun --exp=$expname --run=$target --detector=CSPAD,CSPAD2x2,OPAL1000,OPAL2000,TM6740,Epix100a --thr_rms=$thr_rms --workdir=$workdir --process --deploy --calibdir=/reg/d/psdm/$instrument/$expname/calib --xtcdir /reg/d/ffb/$instrument/$expname/xtc"
+            pedcmd="calibrun --exp=$expname --run=$target --detector=CSPAD,CSPAD2x2,OPAL1000,OPAL2000,TM6740,Epix100a,Rayonix --thr_rms=$thr_rms --workdir=$workdir --process --deploy --calibdir=/reg/d/psdm/$instrument/$expname/calib --xtcdir /reg/d/ffb/$instrument/$expname/xtc"
             echo "Executing:  $pedcmd"
             echo "Make pedestals and masks all pixels with noise >$thr_rms ADU rms"
             $pedcmd
