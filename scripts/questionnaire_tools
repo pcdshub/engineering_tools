@@ -1,4 +1,4 @@
-#!/reg/g/pcds/pyps/conda/py36/envs/pcds-1.2.4/bin/python
+#!/reg/g/pcds/pyps/conda/py36/envs/pcds-1.2.5/bin/python
 import sys
 from psdm_qs_cli import QuestionnaireClient
 from deviceDicts import deviceDict
@@ -32,13 +32,39 @@ class QuestionnaireTools():
                                "CXI DG4",
                                "MEC chamber"]
 
+    def _propRun_from_name(self, name):
+        if len(name)<=4:        
+            try:
+                proposal, runNo = self._propRun_from_propname(name)
+            except:
+                print('could not find experiment %s in database'%name)
+                sys.exit()
+        else:
+            try:
+                proposal, runNo = self._propRun_from_expname(name)
+            except:
+                print('could not find experiment %s in database'%name)
+                sys.exit()
+        return proposal, runNo
+
+
+    def _propRun_from_propname(self, propname):
+        runStrs=['run17', 'run16', 'run15']
+        for runStr in runStrs:
+            if propname in self.qc.getProposalsListForRun(runStr).keys():
+                return propname, runStr
 
     def _propRun_from_expname(self, expname):
         try:
-            return self.exp_dict[expname],'run%02d'%int(expname[-2:])
-        except KeyError:	
-            err = '{} is not a valid experiment name'
-            raise ValueError(err.format(expname))
+            propDict=self.qc.lookupByExperimentName(expname)
+            if propDict!={}:
+                return propDict['proposal_id'],propDict['run_period']
+        except:
+            try:
+                return self.exp_dict[expname],'run%02d'%int(expname[-2:])
+            except KeyError:	
+                err = '{} is not a valid experiment name'
+                raise ValueError(err.format(expname))
 
     def _isPropname(self, propname):
         for key in self.exp_dict.keys():
@@ -74,7 +100,7 @@ class QuestionnaireTools():
                 pass        
         return proposalList
     
-    def _getProposalDetails(self, proposal, run_no,  keyFilter=['pcdssetup']):
+    def _getProposalDetails(self, proposal, run_no,  keyFilter=['pcdssetup','hutch-be']):
         if isinstance(run_no, int):
             run_no='run%02d'%run_no
         if not self._isPropname(proposal):
@@ -100,16 +126,8 @@ class QuestionnaireTools():
                 print('failed to update attribute %s to %s for proposal %s in %s'%(key, detailDict[key], proposal, runNo))
 
     def copyProposal(self, expnameIn, expnameOut):
-        try:
-            proposalIn, runNoIn = self._propRun_from_expname(expnameIn)
-        except:
-            print('could not find experiment %s in database'%expnameIn)
-            sys.exit()
-        try:
-            proposalOut, runNoOut = self._propRun_from_expname(expnameOut)
-        except:
-            print('could not find experiment %s in database'%expnameOut)
-            sys.exit()
+        proposalIn, runNoIn = self._propRun_from_name(expnameIn)
+        proposalOut, runNoOut = self._propRun_from_name(expnameOut)
 
         proposalInDetails = self._getProposalDetails(proposalIn, runNoIn)
         self._setProposalDetails(runNoOut, proposalOut, proposalInDetails)
@@ -127,11 +145,7 @@ class QuestionnaireTools():
         return device
 
     def addDeviceToProposal(self, expname, devicename, location=None):
-        try:
-            proposal, runNo = self._propRun_from_expname(expname)
-        except:
-            print('could not find experiment %s in database'%expname)
-            return
+        proposal, runNo = _propRun_from_name(self, expname)
 
         deviceSetup = self._parseDeviceName(devicename)
         if deviceSetup['name'] not in self.deviceDict.keys():
@@ -180,6 +194,7 @@ parser.add_argument("-d","--add_device", help="name of device to be added")
 parser.add_argument("-l","--list_devices", help="list device to be added", action='store_true')
 parser.add_argument("-p","--print_device", help="print data for device")
 parser.add_argument("--dev", help="connect to dev database", action='store_true')
+parser.add_argument("--experimentList", help="list of experiments", action='store_true')
 parser.add_argument("--propList", help="list of proposals", action='store_true')
 args = parser.parse_args()
 
@@ -219,7 +234,14 @@ else:
 
 
 if args.propList:
+    print('please be aware that this script takes experiment, not proposal names')
     print(qs._getProposalList(runs=[17,16,15], instrument=None))
+    #print('---------------------------')
+    #print(qs._getProposalList(runs=[17], instrument=None))
+    #print(qs._getExperimentList(runs=[17], instrument=None))
+    sys.exit()
+
+if args.experimentList:
     print(qs._getExperimentList(runs=[17,16,15], instrument=None))
     #print('---------------------------')
     #print(qs._getProposalList(runs=[17], instrument=None))
@@ -227,7 +249,7 @@ if args.propList:
     sys.exit()
 
 if args.readExp is not None:
-    p,r=qs._propRun_from_expname(args.readExp)
+    p,r=qs._propRun_from_name(args.readExp)    
     cdsDict = qs._getProposalDetails(p,r)
     for entry in cdsDict.keys():
         print('%s: \t %s'%(entry, cdsDict[entry]))
