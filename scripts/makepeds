@@ -44,6 +44,7 @@ VALSTR='xxx'
 NUMEVT=1000
 SPEC_ARG=''
 INTERACTIVE=0
+elogMessage="DARK" 
 
 while getopts "u:r:e:n:p:c:v:N:m:x:d:C:DLZOJiltfgh" OPTION
 do
@@ -78,21 +79,26 @@ do
 	    ;;
 	D)
 	    SPEC_ARG=$SPEC_ARG' -D '
+	    elogMessage="DARK for XTCAV" 
 	    ;;
 	L)
 	    SPEC_ARG=$SPEC_ARG' -L '
+	    elogMessage="Lasing Off for XTCAV" 
 	    ;;
 	i)
 	    SPEC_ARG=$SPEC_ARG' -i '
 	    ;;
 	Z)
 	    SPEC_ARG=$SPEC_ARG' -Z '
+	    elogMessage="DARK for Zyla" 
 	    ;;
 	O)
 	    SPEC_ARG=$SPEC_ARG' -O '
+	    elogMessage="DARK for Opal" 
 	    ;;
 	J)
 	    SPEC_ARG=$SPEC_ARG' -J '
+	    elogMessage="DARK for jungfrau, also next two runs." 
 	    ;;
 	l)
 	    SPEC_ARG=$SPEC_ARG' -l '
@@ -182,4 +188,22 @@ else
     else
 	ssh -Y $USER@psdev ssh -Y psana "$DIR/makepeds_psana $COMMAND_ARGS"
     fi
+fi
+
+read -p "Press n if you do not want to post an e-log message, otherwise add additional message to append to the following e-log message ($elogMessage):"
+if [[ $InputKey == 'n' ]]; then
+    echo "No e-log message posted for DARK Run $target."
+else
+    elogMessage+=" $InputKey"
+
+    export PYTHONPATH=/reg/g/pcds/pds/grabber/lib/python2.7/site-packages/
+    BINPATH=/reg/g/psdm/sw/conda/inst/miniconda2-prod-rhel7/envs/ana-1.3.63/bin/python
+    PYCMD=/reg/g/pcds/pds/grabber/bin/LogBookPost_self.py
+    if [[ `whoami` =~ "opr" ]]; then
+	echo $BINPATH $PYCMD -i "${HUTCH^^}" -w https://pswww.slac.stanford.edu/ws-auth -u `whoami` -e "$EXP"  -t DARK  -r $RUN -m "$elogMessage"
+	$BINPATH $PYCMD -i "${HUTCH^^}" -w https://pswww.slac.stanford.edu/ws-auth -u `whoami` -p pcds -e "$EXP"  -t DARK  -r $RUN -m "$elogMessage"&
+    else
+	echo $BINPATH $PYCMD -i "${HUTCH^^}" -w https://pswww.slac.stanford.edu/ws-kerb -u "$USER" -e "$EXP"  -t DARK -r $RUN -m "$elogMessage"
+	$BINPATH $PYCMD -i "${HUTCH^^}" -w https://pswww.slac.stanford.edu/ws-kerb -u "$USER" -e "$EXP" -t DARK -r $RUN -m "$elogMessage"&
+    fi	
 fi
