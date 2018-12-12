@@ -364,13 +364,14 @@ HAVE_EPIX10K=`detnames exp=${EXP}:run=${RUN} | grep Epix10ka2M | wc -l`
 if [[ ( $HAVE_EPIX10K -ge 1 ) && ( $WANT_EPIX10K -ge 1 ) ]]; then
     echo -------------------- START EPIX10K PEDESTALS at $(date +"%T") ----------------------------
     source /reg/g/psdm/etc/psconda.sh
-    source conda_setup --reldir /reg/neh/home/cpo/ana-1.3.80
     EPIX10K=`detnames exp=${EXP}:run=${RUN} | grep Epix10ka2M | awk {'print $3'}`
-    echo $EPIX10K
-    CMD=`echo epix10ka_pedestals_calibration -d $EPIX10K -e $EXP -r $RUN`
-    echo $CMD
-    $CMD
-    CMD=`echo epix10ka_deploy_constants -D -d $EPIX10K -e $EXP -r $RUN`
+    echo Epix10ka2M name for $EXP is: $EPIX10K
+    for calibcycle in {0..2}; do
+	CMD=`echo epix10ka_pedestals_calibration -d $EPIX10K -e $EXP -r $RUN -c $calibcycle -o /reg/d/psdm/$HUTCH/$EXP/results/calib_work`
+	echo $CMD
+	$CMD
+    done
+    CMD=`echo epix10ka_deploy_constants -D -d $EPIX10K -e $EXP -r $RUN -o /reg/d/psdm/$HUTCH/$EXP/results/calib_work`
     echo $CMD
     $CMD
     echo -------------------- STOP EPIX10K PEDESTALS at $(date +"%T") ----------------------------
