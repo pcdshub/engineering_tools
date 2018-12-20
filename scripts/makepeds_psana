@@ -210,7 +210,8 @@ if [ $FFB -ne 1 ]; then
     QUEUE=psanaq
 fi
 
-ARG=' -n '$NUMEVT
+#(hopefully) effectively turn off relative cuts for status bits. Defaults to 6.
+ARG=' -n '$NUMEVT' -D 1000000 -U 1000000 -L 1000000 -H 1000000 '
 if [ $VALSTR != 'xxx' ]; then
     ARG=$ARG' -v '$VALSTR
 fi
