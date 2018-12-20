@@ -210,8 +210,8 @@ if [ $FFB -ne 1 ]; then
     QUEUE=psanaq
 fi
 
-#(hopefully) effectively turn off relative cuts for status bits. Defaults to 6.
-ARG=' -n '$NUMEVT' -D 1000000 -U 1000000 -L 1000000 -H 1000000 '
+#(hopefully) effectively turn off relative cuts for status bits. Defaults to 6. used in calibrun
+ARG=' -n '$NUMEVT' -Z 1000000 -U 1000000 -z 1000000 -u 1000000 '
 if [ $VALSTR != 'xxx' ]; then
     ARG=$ARG' -v '$VALSTR
 fi
@@ -303,7 +303,7 @@ if [[ ( $HAVE_JUNGFRAU -ge 1 ) && ( $WANT_JUNGFRAU -ge 1 ) ]]; then
     DETNAMES=`detnames exp=${EXP}:run=${RUN} | grep Jungfrau | awk  'BEGIN { FS = "|"}; {print $1}' | paste -d " " -s`
 
     #default arguments.
-    JFARG=' -d '$DSNAME' -n '$NUMEVT
+    JFARG=' -d '$DSNAME' -n '$NUMEVT' -D 1000000 -U 1000000 -L 1000000 -H 1000000 '
     if [ $DEPLOY == 1 ]; then
         JFARG=$JFARG' -u '
     fi
