@@ -78,10 +78,11 @@ start the viewer for controls cameras
 
 OPTIONS:
 -c camera name as in camera list or gige #
+-m bring up the edm screen
+-r reboot the IOC
 -l print list of cameras
 -w # (wait for # hours to ask to renew, default 2 and 12 for GIGEs)
 -u # update rate limit (default 5)
--m bring up the edm screen
 -H hutch: use a specific hutches camviewer config file
 EOF
 }
