@@ -58,38 +58,39 @@ else:
                 hutch=ihutch.upper()
                 foundHutch=True
                 break
-    if not foundHutch and hostname.find('psusr')>=0:
-        if hostname.find('psusr11')>=0:
-            hutch='AMO'
-        elif hostname.find('psusr12')>=0:
-            hutch='SXR'
-        elif hostname.find('psusr13')>=0:
-            hutch='XPP'
-        elif hostname.find('psusr21')>=0:
-            hutch='XCS'
-        elif hostname.find('psusr22')>=0:
-            hutch='CXI'
-        elif hostname.find('psusr23')>=0:
-            hutch='MEC'
-        elif hostname.find('psusr24')>=0:
-            hutch='MFX'
-        if hutch!='':
-            foundHutch=True
-    else:
-        #then check current path
-        path=os.getcwd()
-        for ihutch in hutches:
-            if path.find(ihutch)>=0:
-                hutch=ihutch.upper()
+    if not foundHutch:
+        if hostname.find('psusr')>=0:
+            if hostname.find('psusr11')>=0:
+                hutch='AMO'
+            elif hostname.find('psusr12')>=0:
+                hutch='SXR'
+            elif hostname.find('psusr13')>=0:
+                hutch='XPP'
+            elif hostname.find('psusr21')>=0:
+                hutch='XCS'
+            elif hostname.find('psusr22')>=0:
+                hutch='CXI'
+            elif hostname.find('psusr23')>=0:
+                hutch='MEC'
+            elif hostname.find('psusr24')>=0:
+                hutch='MFX'
+            if hutch!='':
                 foundHutch=True
-                break
-        if not foundHutch and path.find('xrt')+hostname.find('xrt')>=-1 or path.find('xtod')+hostname.find('xtod')>=-1:
-            hutch='FEE' #because we have so many names for the same subnet.
-            foundHutch=True
-        if not foundHutch:
-            #then ask.....outside of python
-            print 'unknown_hutch'
-            sys.exit()
+        else:
+            #then check current path
+            path=os.getcwd()
+            for ihutch in hutches:
+                if path.find(ihutch)>=0:
+                    hutch=ihutch.upper()
+                    foundHutch=True
+                    break
+            if not foundHutch and path.find('xrt')+hostname.find('xrt')>=-1 or path.find('xtod')+hostname.find('xtod')>=-1:
+                hutch='FEE' #because we have so many names for the same subnet.
+                foundHutch=True
+    if not foundHutch:
+        #then ask.....outside of python
+        print 'unknown_hutch'
+        sys.exit()
     if args.getHutch:
         print hutch.upper()
         sys.exit()
