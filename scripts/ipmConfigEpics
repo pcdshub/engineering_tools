@@ -1,6 +1,5 @@
 #!/bin/bash
 
-cd /reg/g/pcds/controls/pycaqt/ipimb
 export STRIPTOOL=/reg/g/pcds/package/epics/3.14/extensions/R3.14.12/bin/rhel6-x86_64/StripTool
 export LD_LIBRARY_PATH=/reg/common/package/python/2.5.5/lib:/reg/common/package/qt/4.6.2/lib/x86_64-linux:/reg/g/pcds/package/epics/3.14/base/current/lib/linux-x86_64:/reg/g/pcds/package/epics/3.14/extensions/current/lib/linux-x86_64
 export PATH=/reg/g/pcds/package/epics/3.14/base/current/bin/linux-x86_64:/reg/g/pcds/package/epics/3.14/extensions/current/bin/linux-x86_64:/reg/common/package/python/2.5.5/bin:/reg/common/package/qt/4.6.2/bin:/bin:/usr/bin:/reg/g/pcds/engineering_tools/xpp/scripts
@@ -180,7 +179,7 @@ ipmGUI(){
     if [ ${#WAVE8} -gt 0 ]; then
     	/reg/g/pcds/pyps/apps/wave8/latest/wave8 --base $BASE --evr $EVR --ioc $IOC
     else
-    	./ipimb.py --base $BASE --ioc $IOC --evr $EVR --dir /reg/g/pcds/controls/pycaqt/ipimb	
+    	/reg/g/pcds/controls/pycaqt/ipimb/ipimb.py --base $BASE --ioc $IOC --evr $EVR --dir /reg/g/pcds/controls/pycaqt/ipimb	
     fi
 }
 
