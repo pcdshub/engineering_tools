@@ -13,7 +13,7 @@ if [ $HUTCH == 'xpp' ]; then
 	SRVIPFEZ=$INIP
 	SRVIP=`echo $INIP | sed s/.22./.38./g `
     else
-	echo 'IP not FEZ or CDS'
+	echo 'IP not FEZ or CDS for xpp'
     fi
 elif [ $HUTCH == 'xcs' ]; then
     if [[ $INIP == *'172.21.43'* ]]; then
@@ -23,20 +23,19 @@ elif [ $HUTCH == 'xcs' ]; then
 	SRVIPFEZ=$INIP
 	SRVIP=`echo $INIP | sed s/.25./.43./g `
     else
-	echo 'IP not FEZ or CDS'
+	echo 'IP not FEZ or CDS for xcs'
     fi
 elif [ $HUTCH == 'mfx' ]; then
-    echo 'DEBUG in MFX...'
     if [[ $INIP == *'172.21.62'* ]]; then
 	SRVIP=$INIP
 	SRVIPFEZ=`echo $INIP | sed s/.62./.24./g `
     elif [[ $INIP == *'172.21.24'* ]]; then
-	echo 'DEBUG in MFZ GIVEN FEZ '
+	echo 'DEBUG in MFX GIVEN FEZ '
 	SRVIPFEZ=$INIP
 	SRVIP=`echo $INIP | sed s/.24./.62./g `
 	echo 'DEBUG ' $INIP $SRVIP
     else
-	echo 'IP not FEZ or CDS'
+	echo 'IP not FEZ or CDS for mfx'
     fi
 elif [ $HUTCH == 'cxi' ]; then
     if [[ $INIP == *'172.21.68'* ]]; then
@@ -46,7 +45,7 @@ elif [ $HUTCH == 'cxi' ]; then
 	SRVIPFEZ=$INIP
 	SRVIP=`echo $INIP | sed s/.26./.68./g `
     else
-	echo 'IP not FEZ or CDS'
+	echo 'IP not FEZ or CDS for cxi'
     fi
 elif [ $HUTCH == 'mec' ]; then
     if [[ $INIP == *'172.21.45'* ]]; then
@@ -56,7 +55,7 @@ elif [ $HUTCH == 'mec' ]; then
 	SRVIPFEZ=$INIP
 	SRVIP=`echo $INIP | sed s/.27./.45./g `
     else
-	echo 'IP not FEZ or CDS'
+	echo 'IP not FEZ or CDS for mec'
     fi
 elif [ $HUTCH == 'sxr' ]; then
     if [[ $INIP == *'172.21.39'* ]]; then
@@ -66,7 +65,7 @@ elif [ $HUTCH == 'sxr' ]; then
 	SRVIPFEZ=$INIP
 	SRVIP=`echo $INIP | sed s/.21./.39./g `
     else
-	echo 'IP not FEZ or CDS'
+	echo 'IP not FEZ or CDS for sxr'
     fi
 elif [ $HUTCH == 'amo' ]; then
     if [[ $INIP == *'172.21.37'* ]]; then
@@ -76,7 +75,7 @@ elif [ $HUTCH == 'amo' ]; then
 	SRVIPFEZ=$INIP
 	SRVIP=`echo $INIP | sed s/.20./.37./g `
     else
-	echo 'IP not FEZ or CDS'
+	echo 'IP not FEZ or CDS for amo'
     fi
 elif [ $HUTCH == 'det' ]; then
     if [[ $INIP == *'172.21.58'* ]]; then
@@ -136,15 +135,15 @@ let HOST_HAS_FEZ-=1
 
 if [[ $# < 2 ]]
 then
-    if [[ $1 != 'cycle' ]] && [[ $1 != 'off' ]] && [[ $1 != 'on' ]] && [[ $1 != 'status' ]]; then
+    if [[ $1 != 'cycle' ]] && [[ $1 != 'off' ]] && [[ $1 != 'on' ]] && [[ $1 != 'status' ]] && [[ $1 != 'console' ]]; then
 	CMD='status'
 	DEV=$1
     else
-	echo "power <server name> cycle|off|on|status"
+	echo "serverStat <server name> cycle|off|on|status|console"
 	exit
     fi
 else
-    if [[ $2 != 'cycle' ]] && [[ $2 != 'off' ]] && [[ $2 != 'on' ]] && [[ $2 != 'status' ]]; then
+    if [[ $2 != 'cycle' ]] && [[ $2 != 'off' ]] && [[ $2 != 'on' ]] && [[ $2 != 'status' ]] && [[ $2 != 'console' ]]; then
 	DEV=$2
 	CMD=$1
     else
@@ -212,15 +211,21 @@ fi
 
 NAMEIPMI=`echo $NAME'-ipmi'`
 if [[ $CMD == "off" ]]; then
-    ipmitool -U ADMIN -P ipmia8min -H $NAMEIPMI power off
+    ipmitool -I lanplus -U ADMIN -P ipmia8min -H $NAMEIPMI power off
 elif [[ $CMD == "on" ]]; then
-    ipmitool -U ADMIN -P ipmia8min -H $NAMEIPMI power on
+    ipmitool -I lanplus -U ADMIN -P ipmia8min -H $NAMEIPMI power on
 elif [[ $CMD == "cycle" ]]; then
-    ipmitool -U ADMIN -P ipmia8min -H $NAMEIPMI power off
+    ipmitool -I lanplus -U ADMIN -P ipmia8min -H $NAMEIPMI power off
     sleep 10
-    ipmitool -U ADMIN -P ipmia8min -H $NAMEIPMI power on
+    ipmitool -I lanplus -U ADMIN -P ipmia8min -H $NAMEIPMI power on
     sleep 5
-    ipmitool -U ADMIN -P ipmia8min -H $NAMEIPMI power status
+    ipmitool -I lanplus -U ADMIN -P ipmia8min -H $NAMEIPMI power status
+elif [[ $CMD == "console" ]]; then
+    echo "To exit console use ~."
+    # Deactivate if it is activated:
+    ipmitool -I lanplus -U ADMIN -P ipmia8min -H $NAMEIPMI sol deactivate &> /dev/null
+    # Call console
+    xterm -hold -bg black -fg white -T $NAME -e ipmitool -I lanplus -U ADMIN -P ipmia8min -H $NAMEIPMI sol activate &
 else
     ISON=`ipmitool -U ADMIN -P ipmia8min -H $NAMEIPMI power status | awk 'NF>=2 {print $(NF)}'`
     if [[ $ISON == *off* ]]; then
@@ -228,6 +233,7 @@ else
 	exit
     fi
 
+    echo $DEV is powered on
     PNG=`ping -c 1 $SRVIP | grep transmitted | awk '{print $4}'`
     IFUP=0
     if [[ $NAME == *daq* ]]; then
