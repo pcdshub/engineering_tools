@@ -173,11 +173,15 @@ done
 HOST_HAS_FEZ=`netconfig search $HOSTNAME-fez --brief | wc -l`
 let HOST_HAS_FEZ-=1
 
-if [[ $# < 2 ]]
-then
-    if [[ $1 =~ ^(cycle|off|on|status|console|reset) ]]; then
+if [[ $# < 2 ]]; then
+    if [[ $# < 1 ]]; then
 	usage
 	exit
+        echo 'why here?'
+    elif [[ $1 =~ ^(h|-h|-help|--help) ]]; then
+	usage
+	exit
+        echo 'why here?'
     else
 	CMD='status'
 	DEV=$1
