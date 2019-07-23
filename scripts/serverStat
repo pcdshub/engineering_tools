@@ -13,7 +13,7 @@ if [ $HUTCH == 'xpp' ]; then
 	SRVIPFEZ=$INIP
 	SRVIP=`echo $INIP | sed s/.22./.38./g `
     else
-	echo 'IP not FEZ or CDS'
+	echo 'IP not FEZ or CDS for xpp'
     fi
 elif [ $HUTCH == 'xcs' ]; then
     if [[ $INIP == *'172.21.43'* ]]; then
@@ -23,20 +23,19 @@ elif [ $HUTCH == 'xcs' ]; then
 	SRVIPFEZ=$INIP
 	SRVIP=`echo $INIP | sed s/.25./.43./g `
     else
-	echo 'IP not FEZ or CDS'
+	echo 'IP not FEZ or CDS for xcs'
     fi
 elif [ $HUTCH == 'mfx' ]; then
-    echo 'DEBUG in MFX...'
     if [[ $INIP == *'172.21.62'* ]]; then
 	SRVIP=$INIP
 	SRVIPFEZ=`echo $INIP | sed s/.62./.24./g `
     elif [[ $INIP == *'172.21.24'* ]]; then
-	echo 'DEBUG in MFZ GIVEN FEZ '
+	echo 'DEBUG in MFX GIVEN FEZ '
 	SRVIPFEZ=$INIP
 	SRVIP=`echo $INIP | sed s/.24./.62./g `
 	echo 'DEBUG ' $INIP $SRVIP
     else
-	echo 'IP not FEZ or CDS'
+	echo 'IP not FEZ or CDS for mfx'
     fi
 elif [ $HUTCH == 'cxi' ]; then
     if [[ $INIP == *'172.21.68'* ]]; then
@@ -46,7 +45,7 @@ elif [ $HUTCH == 'cxi' ]; then
 	SRVIPFEZ=$INIP
 	SRVIP=`echo $INIP | sed s/.26./.68./g `
     else
-	echo 'IP not FEZ or CDS'
+	echo 'IP not FEZ or CDS for cxi'
     fi
 elif [ $HUTCH == 'mec' ]; then
     if [[ $INIP == *'172.21.45'* ]]; then
@@ -56,7 +55,7 @@ elif [ $HUTCH == 'mec' ]; then
 	SRVIPFEZ=$INIP
 	SRVIP=`echo $INIP | sed s/.27./.45./g `
     else
-	echo 'IP not FEZ or CDS'
+	echo 'IP not FEZ or CDS for mec'
     fi
 elif [ $HUTCH == 'sxr' ]; then
     if [[ $INIP == *'172.21.39'* ]]; then
@@ -66,7 +65,7 @@ elif [ $HUTCH == 'sxr' ]; then
 	SRVIPFEZ=$INIP
 	SRVIP=`echo $INIP | sed s/.21./.39./g `
     else
-	echo 'IP not FEZ or CDS'
+	echo 'IP not FEZ or CDS for sxr'
     fi
 elif [ $HUTCH == 'amo' ]; then
     if [[ $INIP == *'172.21.37'* ]]; then
@@ -76,7 +75,7 @@ elif [ $HUTCH == 'amo' ]; then
 	SRVIPFEZ=$INIP
 	SRVIP=`echo $INIP | sed s/.20./.37./g `
     else
-	echo 'IP not FEZ or CDS'
+	echo 'IP not FEZ or CDS for amo'
     fi
 elif [ $HUTCH == 'det' ]; then
     if [[ $INIP == *'172.21.58'* ]]; then
@@ -118,6 +117,46 @@ isCam(){
     fi
 }
 
+host_from_PV(){
+    if [[ $NAME == *':'* ]]  && [[ $HUTCH == 'unknown_hutch' ]]; then
+	echo 'Getting info for a host of a PV currently only works on the hutch networks'
+	exit
+    fi
+    if [[ ${NAME:0:3} == ${HUTCH^^} ]]; then
+        HOST=`cainfo $NAME | grep Host | awk {'print $2'} | awk 'BEGIN { FS = ":"}; {print $1}' | sed s/'.pcdsn'/''/g`
+	if [[ $HOST == *'disconnected'* ]]; then
+	    echo PV $NAME is disconnected
+	    exit
+	fi
+	echo PV $NAME is hosted on server $HOST
+	NAME=$HOST
+	DEV=$HOST
+    else
+	echo 'Getting info for a host of a PV currently only works on the hutch network (e.g. for MFX:xxx from the mfx network)'
+	exit
+    fi
+}
+
+usage(){
+cat << EOF
+usage: $0 options
+
+script to check statii of servers & reboot/power cycle them
+
+SIGNATURE:
+serverStat <servername> <optinal: commant>
+
+default command is 'status', list of commands:
+status : print power status of machine, try to ping interfaces
+on     : power machine on
+off    : power machine off
+cycle  : power cycle machine, wait a few second in off state
+reset  : reset machine (ideally try that before power cycling)
+console: open the ipmi console where possible
+
+EOF
+}
+
 DIRTMP=`dirname  "${BASH_SOURCE[0]}"`
 DIR="$( cd $DIRTMP && pwd -P )"
 PATH=$PATH:$DIR
@@ -129,24 +168,28 @@ for name in "amo" "sxr" "xpp" "xcs" "mfx" "cxi" "mec" "det"; do
 	break
     fi
 done
-#echo 'NAME: '$NAME
+
 
 HOST_HAS_FEZ=`netconfig search $HOSTNAME-fez --brief | wc -l`
 let HOST_HAS_FEZ-=1
 
-if [[ $# < 2 ]]
-then
-    if [[ $1 != 'cycle' ]] && [[ $1 != 'off' ]] && [[ $1 != 'on' ]] && [[ $1 != 'status' ]]; then
+if [[ $# < 2 ]]; then
+    if [[ $# < 1 ]]; then
+	usage
+	exit
+        echo 'why here?'
+    elif [[ $1 =~ ^(h|-h|-help|--help) ]]; then
+	usage
+	exit
+        echo 'why here?'
+    else
 	CMD='status'
 	DEV=$1
-    else
-	echo "power <server name> cycle|off|on|status"
-	exit
     fi
 else
-    if [[ $2 != 'cycle' ]] && [[ $2 != 'off' ]] && [[ $2 != 'on' ]] && [[ $2 != 'status' ]]; then
-	DEV=$2
-	CMD=$1
+    if [[ $2 =~ ^(cycle|off|on|status|console|reset) ]]; then
+	DEV=$1
+	CMD=$2
     else
 	DEV=$1
 	CMD=$2
@@ -154,6 +197,10 @@ else
 fi
 NAME=$DEV
   
+if [[ $NAME == *':'* ]]; then
+    host_from_PV
+fi
+
 if [[ $NAME == *'172.21'* ]]; then
     ISSRV=1
     ips_from_ip $DEV
@@ -166,7 +213,7 @@ fi
 
 if  [[ $NAME == *rec* ]]; then
     if [[ $CMD == "off" ]] || [[ $CMD == "cycle" ]]; then
-	printf "This is a recorder, better not to power cycle unless necessary, quit? " "$NAME" "$CMD"; read ANSWER		
+	printf "This is a recorder, better not to power cycle unless necessary, try to reset first. Quit? " "$NAME" "$CMD"; read ANSWER		
 	if [[ $ANSWER == 'y' ]] || [[ $ANSWER == 'Y' ]] || [[ $ANSWER == 'yes' ]]; then  
 	    printf 'quit now\n'
 	    exit
@@ -175,7 +222,7 @@ if  [[ $NAME == *rec* ]]; then
 fi
 
 #check if this is a DAQ device
-if [[ $ISSRV -lt 1 ]]; then
+if [[ $ISSRV -lt 1 ]] && [[ $HUTCH == 'unknown_hutch' ]]; then
     if [[  $DEV == *'event'* ]]; then
 	DSSNODES=`grep dss_nodes /reg/g/pcds/dist/pds/${HUTCH}/scripts/${HUTCH}.cnf | grep -v '#' | head -n1`
 	i=$((${#DEV}-1));NEV=`echo "${DEV:$i:1}"`;AWKNUM=$(($NEV+4))
@@ -209,18 +256,25 @@ else
     ips_from_ip $SRVIP
 fi
 
-
 NAMEIPMI=`echo $NAME'-ipmi'`
 if [[ $CMD == "off" ]]; then
-    ipmitool -U ADMIN -P ipmia8min -H $NAMEIPMI power off
+    ipmitool -I lanplus -U ADMIN -P ipmia8min -H $NAMEIPMI power off
 elif [[ $CMD == "on" ]]; then
-    ipmitool -U ADMIN -P ipmia8min -H $NAMEIPMI power on
+    ipmitool -I lanplus -U ADMIN -P ipmia8min -H $NAMEIPMI power on
 elif [[ $CMD == "cycle" ]]; then
-    ipmitool -U ADMIN -P ipmia8min -H $NAMEIPMI power off
+    ipmitool -I lanplus -U ADMIN -P ipmia8min -H $NAMEIPMI power off
     sleep 10
-    ipmitool -U ADMIN -P ipmia8min -H $NAMEIPMI power on
+    ipmitool -I lanplus -U ADMIN -P ipmia8min -H $NAMEIPMI power on
     sleep 5
-    ipmitool -U ADMIN -P ipmia8min -H $NAMEIPMI power status
+    ipmitool -I lanplus -U ADMIN -P ipmia8min -H $NAMEIPMI power status
+elif [[ $CMD == "console" ]]; then
+    echo "To exit console use ~."
+    # Deactivate if it is activated:
+    ipmitool -I lanplus -U ADMIN -P ipmia8min -H $NAMEIPMI sol deactivate &> /dev/null
+    # Call console
+    xterm -hold -bg black -fg white -T $NAME -e ipmitool -I lanplus -U ADMIN -P ipmia8min -H $NAMEIPMI sol activate &
+elif [[ $CMD == "reset" ]]; then
+    ipmitool -I lanplus -U ADMIN -P ipmia8min -H $NAMEIPMI power reset
 else
     ISON=`ipmitool -U ADMIN -P ipmia8min -H $NAMEIPMI power status | awk 'NF>=2 {print $(NF)}'`
     if [[ $ISON == *off* ]]; then
@@ -228,6 +282,7 @@ else
 	exit
     fi
 
+    echo $DEV is powered on
     PNG=`ping -c 1 $SRVIP | grep transmitted | awk '{print $4}'`
     IFUP=0
     if [[ $NAME == *daq* ]]; then

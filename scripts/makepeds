@@ -18,6 +18,7 @@ OPTIONS:
 -J make pedestals for Jungfrau (default only cspad/EPIX detectors)
 -O make pedestals for Opals (default only cspad/EPIX detectors)
 -Z make pedestals for Zyla (default only cspad/EPIX detectors)
+-p <text>: add <text> to elog post
 -c <evtcode x> use events with eventcode <x> set
 -n # : if you have created a noise file, then write pixel mask file for pixels with noise above #sigma
 -N # : use this number of events (default 1000)
@@ -45,8 +46,9 @@ NUMEVT=1000
 SPEC_ARG=''
 INTERACTIVE=0
 elogMessage="DARK" 
+ELOGTEXT=""
 
-while getopts "u:r:e:n:p:c:v:N:m:x:d:C:DLZOJiltfgh" OPTION
+while getopts "u:r:e:n:p:c:v:N:m:x:d:C:DLZOJEiltfgh" OPTION
 do
     case $OPTION in
 	h)
@@ -100,6 +102,10 @@ do
 	    SPEC_ARG=$SPEC_ARG' -J '
 	    elogMessage="DARK for jungfrau, also next two runs." 
 	    ;;
+	E)
+	    SPEC_ARG=$SPEC_ARG' -E '
+	    elogMessage="DARK for epix10k " 
+	    ;;
 	l)
 	    SPEC_ARG=$SPEC_ARG' -l '
 	    ;;
@@ -111,9 +117,7 @@ do
 	    SPEC_ARG=$SPEC_ARG' -l '
 	    ;;
 	p)
-	    RUNFFBNODE=1
-	    SPEC_ARG=$SPEC_ARG' -l '
-	    FFBNODE=$OPTARG
+	    ELOGTEXT=$OPTARG
 	    ;;
 	g) 
 	    GETFFBNODE=1
@@ -190,20 +194,14 @@ else
     fi
 fi
 
-read -p "Press n if you do not want to post an e-log message, otherwise add additional message to append to the following e-log message ($elogMessage):"
-if [[ $InputKey == 'n' ]]; then
-    echo "No e-log message posted for DARK Run $target."
+elogMessage+=$ELOGTEXT
+export PYTHONPATH=/reg/g/pcds/pds/grabber/lib/python2.7/site-packages/
+BINPATH=/reg/g/psdm/sw/conda/inst/miniconda2-prod-rhel7/envs/ana-1.3.63/bin/python
+PYCMD=/reg/g/pcds/pds/grabber/bin/LogBookPost_self.py
+if [[ `whoami` =~ "opr" ]]; then
+    echo $BINPATH $PYCMD -i "${HUTCH^^}" -w https://pswww.slac.stanford.edu/ws-auth -u `whoami` -e "$EXP"  -t DARK  -r $RUN -m "$elogMessage"
+    $BINPATH $PYCMD -i "${HUTCH^^}" -w https://pswww.slac.stanford.edu/ws-auth -u `whoami` -p pcds -e "$EXP"  -t DARK  -r $RUN -m "$elogMessage"&
 else
-    elogMessage+=" $InputKey"
-
-    export PYTHONPATH=/reg/g/pcds/pds/grabber/lib/python2.7/site-packages/
-    BINPATH=/reg/g/psdm/sw/conda/inst/miniconda2-prod-rhel7/envs/ana-1.3.63/bin/python
-    PYCMD=/reg/g/pcds/pds/grabber/bin/LogBookPost_self.py
-    if [[ `whoami` =~ "opr" ]]; then
-	echo $BINPATH $PYCMD -i "${HUTCH^^}" -w https://pswww.slac.stanford.edu/ws-auth -u `whoami` -e "$EXP"  -t DARK  -r $RUN -m "$elogMessage"
-	$BINPATH $PYCMD -i "${HUTCH^^}" -w https://pswww.slac.stanford.edu/ws-auth -u `whoami` -p pcds -e "$EXP"  -t DARK  -r $RUN -m "$elogMessage"&
-    else
-	echo $BINPATH $PYCMD -i "${HUTCH^^}" -w https://pswww.slac.stanford.edu/ws-kerb -u "$USER" -e "$EXP"  -t DARK -r $RUN -m "$elogMessage"
-	$BINPATH $PYCMD -i "${HUTCH^^}" -w https://pswww.slac.stanford.edu/ws-kerb -u "$USER" -e "$EXP" -t DARK -r $RUN -m "$elogMessage"&
-    fi	
-fi
+    echo $BINPATH $PYCMD -i "${HUTCH^^}" -w https://pswww.slac.stanford.edu/ws-kerb -u "$USER" -e "$EXP"  -t DARK -r $RUN -m "$elogMessage"
+    $BINPATH $PYCMD -i "${HUTCH^^}" -w https://pswww.slac.stanford.edu/ws-kerb -u "$USER" -e "$EXP" -t DARK -r $RUN -m "$elogMessage"&
+fi	
