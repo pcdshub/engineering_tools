@@ -1,5 +1,12 @@
 #!/bin/bash
 
+#
+# find_pv: use find_pv to get to the sysreset PV of the IOC for rebooting.
+# --> does not work. Need to know more. Maybe just use in case of gige, assuming naming convention.
+#
+# from EDM_LAUCH: grep that cmd file for 'export IOC_PV'!!!
+#
+
 name_to_pv()
 {
 if [ $# -lt 1 ]; then
@@ -71,10 +78,11 @@ start the viewer for controls cameras
 
 OPTIONS:
 -c camera name as in camera list or gige #
+-m bring up the edm screen
+-r reboot the IOC
 -l print list of cameras
 -w # (wait for # hours to ask to renew, default 2 and 12 for GIGEs)
--r # update rate limit (default 5)
--m bring up the edm screen
+-u # update rate limit (default 5)
 -H hutch: use a specific hutches camviewer config file
 EOF
 }
@@ -96,8 +104,9 @@ PVLIST=/reg/g/pcds/pyps/config/$hutch/camviewer.cfg
 CAMNUM=0
 WAIT=0
 RATE=-1
+REBOOT=0
 
-while getopts "c:w:r:H:hlm" OPTION
+while getopts "c:w:u:H:hlmr" OPTION
 do
     case $OPTION in
 	h)
@@ -121,7 +130,7 @@ do
 	w)
 	    WAIT=$OPTARG
 	    ;;	    
-	r)
+	u)
 	    RATE=$OPTARG
 	    ;;	    
 	H)
@@ -129,6 +138,9 @@ do
 	    ;;
 	m)
 	    MAINSCREEN=1
+	    ;;
+	r)
+	    REBOOT=1
 	    ;;
 	esac
 done
@@ -154,16 +166,36 @@ if [ `echo $CAMNAME | wc -w` -gt 1 ]; then
     done
     read -r CAMNAME
 fi
-echo cameraname: $CAMNAME
+echo working with camera of name: $CAMNAME
 
+CAMPVFULL=`name_to_pv $CAMNAME`
 if [ $MAINSCREEN -gt 0 ]; then
     echo 'try to get the main screen for: ' $CAMNAME
-    CAMPVFULL=`name_to_pv $CAMNAME`
-    echo 'start the main screen ' $CAMPVFULL
+    echo 'start the main screen for camera base PV: ' $CAMPVFULL
     cmdName=`caget -St $CAMPVFULL:LAUNCH_EDM`
     echo calling edm main screen from: $cmdName
     $cmdName
     exit
+fi
+
+if [ $REBOOT -gt 0 ]; then
+    echo 'reboot IOC for camera: ' $CAMNAME
+    edmcmdName=`caget -St $CAMPVFULL:LAUNCH_EDM`
+    IOCPV=`grep 'export IOC_PV' $edmcmdName | awk '{print $2 "\n" }' | sed s/IOC_PV=/''/g`
+    echo 'restart IOC last started on: ' `caget -t $IOCPV:STARTTOD`
+    caput $IOCPV:SYSRESET 1
+    exit
+fi
+
+
+IS_ACQUIRING=`caget -t -n $CAMPVFULL:Acquire_RBV`
+if isNum $IS_ACQUIRING; then
+    if [ $IS_ACQUIRING -eq 0 ]; then
+	echo 'start acquring for camera ' $CAMNAME
+	caput -n $CAMPVFULL:Acquire 1
+    fi
+else
+    echo 'cannot check Acquring PV, try to open camera viewer anyways....'
 fi
 
 if [ $WAIT -gt 0 ]; then
