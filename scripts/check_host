@@ -1,0 +1,94 @@
+#!/bin/bash
+
+HOSTNAME=$1
+function usage(){
+    cat <<EOF
+Display host info and runs some checks.
+
+Usage:   host_checkup <hostname>
+
+EOF
+}
+
+if [[ -z $1 ]]; then
+    usage
+fi
+echo "Host netconfig entry:"
+echo -e "-------------------------------------------------"
+netconfig view $1
+
+echo -e ""
+echo -e "Checking IPMI power status:"
+echo -e "-------------------------------------------------"
+ipmitool -I lanplus -H $HOSTNAME-ipmi -U ADMIN -P ipmia8min power status
+echo -e ""
+echo -e "Checking host/ipmi/fez network interfaces are online:"
+echo -e "-------------------------------------------------"
+ping -w 2 $HOSTNAME >/dev/null 2>&1
+if [[ $? == 0 ]]; then
+   echo "$HOSTNAME pings."
+   CDS_ONLINE=1
+else 
+   echo "$HOSTNAME does not ping."
+   CDS_ONLINE=0
+fi
+ping -w 2 $HOSTNAME-ipmi >/dev/null 2>&1
+if [[ $? == 0 ]]; then
+   echo "$HOSTNAME-ipmi pings."
+else 
+   echo "$HOSTNAME-ipmi does not ping."
+fi
+ping -w 2 $HOSTNAME-fez >/dev/null 2>&1
+if [[ $? == 0 ]]; then
+   echo "$HOSTNAME-fez pings."
+else 
+   echo "$HOSTNAME-fez does not ping."
+fi
+echo -e " "
+if [[ $CDS_ONLINE == 1 ]]; then
+ssh -qT $HOSTNAME <<EOF
+    source /reg/g/pcds/setup/pcds_shortcuts.sh
+    export PATH=$PATH:/sbin/:/usr/sbin
+    echo -e "Red Hat Version:"
+    echo -e "-------------------------------------------------"
+    uname -r | cut -d '.' -f 6
+    echo -e ""
+    echo -e "SLAC PCI Hardware:"
+    echo -e "-------------------------------------------------"
+    lspci | grep SLAC
+    echo -e ""
+    echo -e "Network PCI Hardware:"
+    echo -e "-------------------------------------------------"
+    lspci | grep Ethernet
+    echo -e ""
+    echo -e "Leutron PCI Hardware:"
+    echo -e "-------------------------------------------------"
+    echo -e ""
+    if [[ -e /opt/EDTpdv/pciload ]]; then
+       echo -e "EDT Cards:"
+       echo -e "-------------------------------------------------"
+       /opt/EDTpdv/pciload
+    fi
+    echo -e ""
+    echo -e "IOC Processes:"
+    echo -e "-------------------------------------------------"
+    show_epics_sioc
+EOF
+else
+echo "$HOSTNAME is offline.  Skipping internal checks."
+echo -e "-------------------------------------------------"
+fi
+
+echo -e ""
+echo -e "PCDS Drivers:"
+IOCSTARTUP=/reg/g/pcds/dist/pds/boot/$HOSTNAME
+if [[ -e $IOCSTARTUP ]]; then
+    echo $IOCSTARTUP
+    echo -e "-------------------------------------------------"
+    cat $IOCSTARTUP
+fi
+DAQSTARTUP=/reg/d/iocCommon/hosts/$HOSTNAME/startup.cmd
+if [[ -e $DAQSTARTUP ]]; then
+    echo -e "-------------------------------------------------"
+    cat $DAQSTARTUP
+fi
