@@ -6,33 +6,33 @@ if [ $# -lt 1 ]; then
 fi
 INIP=$1
 if [ $HUTCH == 'xpp' ]; then
-    if [[ $INIP == *'172.21.38'* ]]; then
+    if [[ $INIP == *'172.21.84'* ]]; then
 	SRVIP=$INIP
-	SRVIPFEZ=`echo $INIP | sed s/.38./.22./g `
+	SRVIPFEZ=`echo $INIP | sed s/.84./.22./g `
     elif [[ $INIP == *'172.21.22'* ]]; then
 	SRVIPFEZ=$INIP
-	SRVIP=`echo $INIP | sed s/.22./.38./g `
+	SRVIP=`echo $INIP | sed s/.22./.84./g `
     else
 	echo 'IP not FEZ or CDS for xpp'
     fi
 elif [ $HUTCH == 'xcs' ]; then
-    if [[ $INIP == *'172.21.43'* ]]; then
+    if [[ $INIP == *'172.21.80'* ]]; then
 	SRVIP=$INIP
-	SRVIPFEZ=`echo $INIP | sed s/.43./.25./g `
+	SRVIPFEZ=`echo $INIP | sed s/.80./.25./g `
     elif [[ $INIP == *'172.21.25'* ]]; then
 	SRVIPFEZ=$INIP
-	SRVIP=`echo $INIP | sed s/.25./.43./g `
+	SRVIP=`echo $INIP | sed s/.25./.80./g `
     else
 	echo 'IP not FEZ or CDS for xcs'
     fi
 elif [ $HUTCH == 'mfx' ]; then
-    if [[ $INIP == *'172.21.62'* ]]; then
+    if [[ $INIP == *'172.21.72'* ]]; then
 	SRVIP=$INIP
-	SRVIPFEZ=`echo $INIP | sed s/.62./.24./g `
+	SRVIPFEZ=`echo $INIP | sed s/.72./.24./g `
     elif [[ $INIP == *'172.21.24'* ]]; then
 	echo 'DEBUG in MFX GIVEN FEZ '
 	SRVIPFEZ=$INIP
-	SRVIP=`echo $INIP | sed s/.24./.62./g `
+	SRVIP=`echo $INIP | sed s/.24./.72./g `
 	echo 'DEBUG ' $INIP $SRVIP
     else
 	echo 'IP not FEZ or CDS for mfx'
@@ -48,34 +48,14 @@ elif [ $HUTCH == 'cxi' ]; then
 	echo 'IP not FEZ or CDS for cxi'
     fi
 elif [ $HUTCH == 'mec' ]; then
-    if [[ $INIP == *'172.21.45'* ]]; then
+    if [[ $INIP == *'172.21.76'* ]]; then
 	SRVIP=$INIP
-	SRVIPFEZ=`echo $INIP | sed s/.45./.27./g `
+	SRVIPFEZ=`echo $INIP | sed s/.76./.27./g `
     elif [[ $INIP == *'172.21.27'* ]]; then
 	SRVIPFEZ=$INIP
-	SRVIP=`echo $INIP | sed s/.27./.45./g `
+	SRVIP=`echo $INIP | sed s/.27./.76./g `
     else
 	echo 'IP not FEZ or CDS for mec'
-    fi
-elif [ $HUTCH == 'sxr' ]; then
-    if [[ $INIP == *'172.21.39'* ]]; then
-	SRVIP=$INIP
-	SRVIPFEZ=`echo $INIP | sed s/.39./.21./g `
-    elif [[ $INIP == *'172.21.21'* ]]; then
-	SRVIPFEZ=$INIP
-	SRVIP=`echo $INIP | sed s/.21./.39./g `
-    else
-	echo 'IP not FEZ or CDS for sxr'
-    fi
-elif [ $HUTCH == 'amo' ]; then
-    if [[ $INIP == *'172.21.37'* ]]; then
-	SRVIP=$INIP
-	SRVIPFEZ=`echo $INIP | sed s/.37./.20./g `
-    elif [[ $INIP == *'172.21.20'* ]]; then
-	SRVIPFEZ=$INIP
-	SRVIP=`echo $INIP | sed s/.20./.37./g `
-    else
-	echo 'IP not FEZ or CDS for amo'
     fi
 elif [ $HUTCH == 'det' ]; then
     if [[ $INIP == *'172.21.58'* ]]; then
@@ -222,7 +202,7 @@ if  [[ $NAME == *rec* ]]; then
 fi
 
 #check if this is a DAQ device
-if [[ $ISSRV -lt 1 ]] && [[ $HUTCH == 'unknown_hutch' ]]; then
+if [[ $ISSRV -lt 1 ]] && [[ $HUTCH != 'unknown_hutch' ]]; then
     if [[  $DEV == *'event'* ]]; then
 	DSSNODES=`grep dss_nodes /reg/g/pcds/dist/pds/${HUTCH}/scripts/${HUTCH}.cnf | grep -v '#' | head -n1`
 	i=$((${#DEV}-1));NEV=`echo "${DEV:$i:1}"`;AWKNUM=$(($NEV+4))
@@ -288,12 +268,12 @@ else
     if [[ $NAME == *daq* ]]; then
 	if [[ $HOST_HAS_FEZ -ge 1 ]]; then
 	    PNGFEZ=`ping -c 1 $SRVIPFEZ | grep transmitted | awk '{print $4}'`
-	    echo $DEV ' is a server with IP: ' $SRVIP ' (ping: ' $PNG '), ' $SRVIPFEZ ' (ping' $PNGFEZ ')'
+	    echo $NAME ' is a server with IP: ' $SRVIP ' (ping: ' $PNG '), ' $SRVIPFEZ ' (ping' $PNGFEZ ')'
 	    if [[ $(($PNG+$PNGFEZ)) -gt 1 ]]; then
 		echo 'cds&fez interfaces are up'
 	    fi
 	else
-	    echo $DEV ' is a server with IP: ' $SRVIP ' (ping: ' $PNG '), ' $SRVIPFEZ ' (cannot ping from machine without fez )'
+	    echo $NAME ' is a server with IP: ' $SRVIP ' (ping: ' $PNG '), ' $SRVIPFEZ ' (cannot ping from machine without fez )'
 	    if [ $PNG -gt 0 ]; then
 		echo 'cds interface is up'
 	    fi	    
