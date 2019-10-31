@@ -376,7 +376,7 @@ function mec()
 }
 export mec
 
-afunction mfx()
+function mfx()
 {
 	if [[ ${MFX_SUBNET[*]} =~ $SUBNET ]]; then
 		echo "Warning: Launching live MFX screen ..."
