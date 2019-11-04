@@ -1,7 +1,7 @@
 #!/reg/g/pcds/pyps/conda/py36/envs/pcds-1.2.5/bin/python
 import sys
 from psdm_qs_cli import QuestionnaireClient
-from deviceDicts import deviceDict
+import json
 import argparse
 
 class QuestionnaireTools():
@@ -9,8 +9,7 @@ class QuestionnaireTools():
     def __init__(self, **kwargs):
         self.qc = QuestionnaireClient(**kwargs)
         self.exp_dict = self.qc.getExpName2URAWIProposalIDs()
-        dd = deviceDict()
-        self.deviceDict = dd.getDeviceDict()
+        self.deviceDict = json.loads(open("deviceDict.json").read())
         self.allowedLocations=["Hutch-main experimental",
                                "Hutch-downbeam area",
                                "XPP goniometer",
