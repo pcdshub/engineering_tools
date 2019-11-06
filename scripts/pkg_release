@@ -2,15 +2,21 @@
 # Checks out a package from the pcdshub github at a particular tag.
 # Does not update "latest" softlinks, these are inconsistent between packages.
 # Make sure your tag exists before running.
-usage="pkg_release <package> <tag>"
-if [ -z "${2}" ]; then
+usage="Usage: pkg_release [organization] <package> <tag>"
+if [ $# -eq 2 ]; then
+  ORG="pcdshub"
+  PACKAGE="${1}"
+  TAG="${2}"
+elif [ $# -eq 3 ]; then
+  ORG="${1}"
+  PACKAGE="${2}"
+  TAG="${3}"
+else
   echo "${usage}"
   exit
 fi
-PACKAGE="${1}"
-TAG="${2}"
-URL="https://github.com/slaclab/${PACKAGE}"
-SSH_URL="git@github.com:slaclab/${PACKAGE}"
+URL="https://github.com/${ORG}/${PACKAGE}"
+SSH_URL="git@github.com:${ORG}/${PACKAGE}"
 TEMP="pkg_release_tempdir"
 if [ -d "${TEMP}" ]; then
   echo "Removing leftover ${TEMP} directory..."
@@ -34,8 +40,7 @@ elif echo $TEST_OUTPUT | grep "Permission denied\|no kex alg" > /dev/null; then
   set -e  # Catch error in git clone
   git clone "${URL}" "${TEMP}"
 else
-  echo "Error: "
-  ssh -Tx git@github.com
+  echo "Error: $TEST_OUTPUT" 
 fi
 unset TEST_OUTPUT
 set +e
