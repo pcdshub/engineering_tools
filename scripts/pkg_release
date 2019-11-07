@@ -41,8 +41,8 @@ elif echo $TEST_OUTPUT | grep "Permission denied\|no kex alg" > /dev/null; then
   git clone "${URL}" "${TEMP}"
 else
   echo "Error: $TEST_OUTPUT"
+  exit
 fi
-unset TEST_OUTPUT
 set +e
 echo "Checking out tag..."
 pushd "${TEMP}"
