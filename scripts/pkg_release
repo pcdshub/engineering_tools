@@ -2,27 +2,47 @@
 # Checks out a package from the pcdshub github at a particular tag.
 # Does not update "latest" softlinks, these are inconsistent between packages.
 # Make sure your tag exists before running.
-usage="pkg_release <package> <tag>"
-if [ -z "${2}" ]; then
+usage="Usage: pkg_release [organization] <package> <tag>"
+if [ $# -eq 2 ]; then # pcdshub is default organization
+  ORG="pcdshub"
+  PACKAGE="${1}"
+  TAG="${2}"
+elif [ $# -eq 3 ]; then # allow other orgs if provided
+  ORG="${1}"
+  PACKAGE="${2}"
+  TAG="${3}"
+else # display usage if used with improper number of arguments
   echo "${usage}"
   exit
 fi
-PACKAGE="${1}"
-TAG="${2}"
-URL="https://github.com/pcdshub/${PACKAGE}"
+URL="https://github.com/${ORG}/${PACKAGE}"
+SSH_URL="git@github.com:${ORG}/${PACKAGE}"
 TEMP="pkg_release_tempdir"
 if [ -d "${TEMP}" ]; then
   echo "Removing leftover ${TEMP} directory..."
   rm -rf "${TEMP}"
 fi
-echo "Checking that repo exists..."
-curl -s --head "${URL}" | head -n 1 | grep "HTTP/1.[01] [23].." >/dev/null
-if [ "${?}" == "1" ]; then
-  echo "Error: could not reach repo at URL ${URL}. Aborting."
+echo "Testing connection to github.com" # Check connection before running clone
+if ! ping -c 1 github.com &> /dev/null; then
+  echo "github.com not responding to ping. Exiting."
   exit
 fi
-set -e  # Catch error in git clone
-git clone "${URL}" "${TEMP}"
+echo "Connection successful."
+TEST_OUTPUT=$(ssh -Tx git@github.com 2>&1) # Test ssh key with github and use ssh if appropriate, https otherwise
+if echo $TEST_OUTPUT | grep "successfully authenticated" > /dev/null; then
+  echo "Attemping clone using SSH..."
+  echo "URL = $SSH_URL"
+  set -e  # Catch error in git clone
+  git clone "${SSH_URL}" "${TEMP}"
+elif echo $TEST_OUTPUT | grep "Permission denied\|no kex alg" > /dev/null; then
+  echo "Attemping clone using HTTPS..."
+  echo "URL = $URL"
+  set -e  # Catch error in git clone
+  git clone "${URL}" "${TEMP}"
+else
+  echo "Error: $TEST_OUTPUT"
+  exit
+fi
 set +e
 echo "Checking out tag..."
 pushd "${TEMP}"
