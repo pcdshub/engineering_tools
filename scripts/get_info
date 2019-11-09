@@ -69,11 +69,7 @@ else:
                 break
     if not foundHutch:
         if hostname.find('psusr')>=0:
-            if hostname.find('psusr11')>=0:
-                hutch='AMO'
-            elif hostname.find('psusr12')>=0:
-                hutch='SXR'
-            elif hostname.find('psusr13')>=0:
+            if hostname.find('psusr13')>=0:
                 hutch='XPP'
             elif hostname.find('psusr21')>=0:
                 hutch='XCS'
