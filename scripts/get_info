@@ -23,12 +23,15 @@ parser.add_argument("--nfiles_for_run", help="get xtc files for run")
 parser.add_argument("--setExp", help="set experiment name")
 args = parser.parse_args()
 
-hutches=['xpp','xcs','mfx','cxi','mec', 'det', 'fee']
+hutches=['tmo','txi','rix','xpp','xcs','mfx','cxi','mec', 'det', 'fee']
 foundHutch=False
 hutch=''
 
 #populate hutch-specific subnets here:
-hutch_subnets={'xpp': ['22','84','85','86','87'],
+hutch_subnets={'tmo': ['28','132','133','134','135'],
+               'txi': ['29','136','137','138','139'],
+               'rix': ['31','144','145','146','147'],
+               'xpp': ['22','84','85','86','87'],
                'xcs': ['25','80','81','82','83'],
                'cxi': ['26','68','69','70','71'],
                'mfx': ['24','72','73','74','75'],
