@@ -1,29 +1,29 @@
 #! /bin/bash
 
 names_from_name(){
-if [ $# -lt 1 ]; then
-    echo 'need arguments: input IP'
-fi
-INNAME=$1
-if [[ $INNAME == *'-ipmi'* ]]; then
-    INNAME=`echo $INNAME | sed s/-ipmi//g`
-elif [[ $INNAME == *'-fez'* ]]; then
-    INNAME=`echo $INNAME | sed s/-fez//g`
-elif [[ $INNAME == *'-ana'* ]]; then
-    INNAME=`echo $INNAME | sed s/-ana//g`
-fi
-CDSNAME=$INNAME
-CDSIP=`netconfig search $CDSNAME | grep IP: | awk {'print $2'}`
-if [[ `netconfig search $NAME-ipmi --brief | wc -w` -gt 0 ]]; then
-    NAMEIPMI=$INNAME-ipmi
-fi
-if [[ `netconfig search $NAME-fez --brief | wc -w` -gt 0 ]]; then
-    FEZNAME=$INNAME-fez
-    FEZIP=`netconfig search $FEZNAME | grep IP: | awk {'print $2'}`
-fi
-if [[ `netconfig search $NAME-ana --brief | wc -w` -gt 0 ]]; then
-    ANANAME=$INNAME-ana
-fi
+    if [ $# -lt 1 ]; then
+	echo 'need arguments: input IP'
+    fi
+    INNAME=$1
+    if [[ $INNAME == *'-ipmi'* ]]; then
+	INNAME=`echo $INNAME | sed s/-ipmi//g`
+    elif [[ $INNAME == *'-fez'* ]]; then
+	INNAME=`echo $INNAME | sed s/-fez//g`
+    elif [[ $INNAME == *'-ana'* ]]; then
+	INNAME=`echo $INNAME | sed s/-ana//g`
+    fi
+    CDSNAME=$INNAME
+    CDSIP=`netconfig search $CDSNAME | grep IP: | awk {'print $2'}`
+    if [[ `netconfig search $NAME-ipmi --brief | wc -w` -gt 0 ]]; then
+	NAMEIPMI=$INNAME-ipmi
+    fi
+    if [[ `netconfig search $NAME-fez --brief | wc -w` -gt 0 ]]; then
+	FEZNAME=$INNAME-fez
+	FEZIP=`netconfig search $FEZNAME | grep IP: | awk {'print $2'}`
+    fi
+    if [[ `netconfig search $NAME-ana --brief | wc -w` -gt 0 ]]; then
+	ANANAME=$INNAME-ana
+    fi
 }
 
 isCam(){
@@ -75,12 +75,12 @@ host_from_PV(){
 
 usage(){
 cat << EOF
-usage: $0 options
+usage: $0 servername options
 
-script to check statii of servers & reboot/power cycle them
+Script to check status of servers & reboot/power cycle them
 
 SIGNATURE:
-serverStat <servername> <optinal: commant>
+serverStat <servername> [command]
 
 default command is 'status', list of commands:
 status : print power status of machine, try to ping interfaces
@@ -89,6 +89,7 @@ off    : power machine off
 cycle  : power cycle machine, wait a few second in off state
 reset  : reset machine (ideally try that before power cycling)
 console: open the ipmi console where possible
+expert : display info and run checks on server
 
 EOF
 }
@@ -112,23 +113,24 @@ let HOST_HAS_FEZ-=1
 if [[ $# < 2 ]]; then
     if [[ $# < 1 ]]; then
 	usage
-	exit
+	exit 1
         echo 'why here?'
     elif [[ $1 =~ ^(h|-h|-help|--help) ]]; then
 	usage
-	exit
+	exit 0
         echo 'why here?'
     else
 	CMD='status'
 	DEV=$1
     fi
 else
-    if [[ $2 =~ ^(cycle|off|on|status|console|reset) ]]; then
+    if [[ $2 =~ ^(cycle|off|on|status|console|reset|expert) ]]; then
 	DEV=$1
 	CMD=$2
     else
-	DEV=$1
-	CMD=$2
+	echo "serverStat: invalid option -- '$2'"
+	echo "Try $0 --help for more information."
+	exit 1
     fi
 fi
 NAME=$DEV
@@ -223,6 +225,8 @@ elif [[ $CMD == "console" ]]; then
     xterm -hold -bg black -fg white -T $NAME -e ipmitool -I lanplus -U ADMIN -P ipmia8min -H $NAMEIPMI sol activate &
 elif [[ $CMD == "reset" ]]; then
     ipmitool -I lanplus -U ADMIN -P ipmia8min -H $NAMEIPMI power reset
+elif [[ $CMD == "expert" ]]; then
+    check_host $NAME
 else
     ISON=`ipmitool -U ADMIN -P ipmia8min -H $NAMEIPMI power status | awk 'NF>=2 {print $(NF)}'`
     if [[ $ISON == *off* ]]; then

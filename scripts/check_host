@@ -2,17 +2,22 @@
 
 HOSTNAME=$1
 function usage(){
-    cat <<EOF
-Display host info and runs some checks.
+cat <<EOF
+Usage:   $0 <hostname>
 
-Usage:   host_checkup <hostname>
+Display host info and run some checks.
 
 EOF
 }
 
 if [[ -z $1 ]]; then
     usage
+    exit 1
+elif [[ ($1 == "--help") || ($1 == "-h") ]]; then
+    usage
+    exit 0
 fi
+
 echo "Host netconfig entry:"
 echo -e "-------------------------------------------------"
 netconfig view $1
