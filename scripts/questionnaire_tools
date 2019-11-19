@@ -48,7 +48,7 @@ class QuestionnaireTools():
 
 
     def _propRun_from_propname(self, propname):
-        runStrs=['run17', 'run16', 'run15']
+        runStrs=['run18','run17', 'run16', 'run15']
         for runStr in runStrs:
             if propname in self.qc.getProposalsListForRun(runStr).keys():
                 return propname, runStr
@@ -71,7 +71,7 @@ class QuestionnaireTools():
                 return True
         return False
 
-    def _getProposalList(self, runs=[17], instrument=None):
+    def _getProposalList(self, runs=[18], instrument=None):
         proposalList=[]
         for key in self.exp_dict.keys():
             try:
@@ -85,7 +85,7 @@ class QuestionnaireTools():
                 pass        
         return proposalList
 
-    def _getExperimentList(self, runs=[17], instrument=None):
+    def _getExperimentList(self, runs=[18], instrument=None):
         proposalList=[]
         for key in self.exp_dict.keys():
             try:
@@ -233,14 +233,14 @@ else:
 
 if args.propList:
     print('please be aware that this script takes experiment, not proposal names')
-    print(qs._getProposalList(runs=[17,16,15], instrument=None))
+    print(qs._getProposalList(runs=[18,17,16,15], instrument=None))
     #print('---------------------------')
     #print(qs._getProposalList(runs=[17], instrument=None))
     #print(qs._getExperimentList(runs=[17], instrument=None))
     sys.exit()
 
 if args.experimentList:
-    print(qs._getExperimentList(runs=[17,16,15], instrument=None))
+    print(qs._getExperimentList(runs=[18,17,16,15], instrument=None))
     #print('---------------------------')
     #print(qs._getProposalList(runs=[17], instrument=None))
     #print(qs._getExperimentList(runs=[17], instrument=None))
