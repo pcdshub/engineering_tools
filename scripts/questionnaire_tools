@@ -199,16 +199,15 @@ args = parser.parse_args()
 
 
 if args.list_devices:
-    dd = deviceDict()    
+    deviceDict = json.loads(open("deviceDict.json").read())
     print('List of available devices: ')
-    for key in dd.getDeviceDict().keys():
+    for key in deviceDict.keys():
         print(key)
     if args.toExp is None:
         sys.exit()
 
 if args.print_device is not None:
-    dd = deviceDict()    
-    devd = dd.getDeviceDict()
+    devd = json.loads(open("deviceDict.json").read())
     if args.print_device not in devd.keys():
         print('device %s is not present in device list, avaiable devices are:'%args.print_device)
         print(devd.keys())
