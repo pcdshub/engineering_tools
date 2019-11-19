@@ -92,7 +92,7 @@ else:
                     foundHutch=True
                     break
             if not foundHutch and path.find('xrt')+hostname.find('xrt')>=-1 or path.find('xtod')+hostname.find('xtod')>=-1:
-                hutch='FEE' #because we have so many names for the same subnet.
+                hutch='LFE' #because we have so many names for the same subnet.
                 foundHutch=True
     if not foundHutch:
         #then ask.....outside of python
