@@ -6,14 +6,17 @@ export PATH=/reg/g/pcds/package/epics/3.14/base/current/bin/linux-x86_64:/reg/g/
 export EPICS_CA_MAX_ARRAY_BYTES=8388608
 ulimit -c unlimited
 
-xcsIpm='decmono ipmmono diomono pim3 pim3m pim4 ipm1 ipm2 ipm3 ipm4 ipm5 pim5 ipmgonLD ipmlamLD snddio'
-xppIpm='diomono decmono ipm2 ipm3 pim3 diodeU ipm1'
+sharedIpm='hx2_ipm hfxdg2_ipm'
+xcsIpm='decmono ipmmono diomono pim3 pim3m pim4 ipm1 ipm3 ipm4 ipm5 pim5 ipmgonLD ipmlamLD snddio'
+xppIpm='diomono decmono ipm2 ipm3 pim3 diodeU'
 cxiIpm='dg2ipm dg3ipm'
 mfxIpm='dg1ipm dg2ipm'
+mecIpm='ipm1 ipm2 ipm3 hxm_pim xt2_pim2 xt2pim3 tc1_imb1 usr_imb1 usr_imb2 las_imb1 las_imb2'
 hfxIpm='hfxipm1'
 
 ipmList()
 {
+for box in $sharedIpm; do echo $box; done
 if [ $hutch == 'xcs' ]; then
    for box in $xcsIpm; do echo $box; done
 elif [ $hutch == 'xpp' ]; then
@@ -22,7 +25,9 @@ elif [ $hutch == 'cxi' ]; then
    for box in $cxiIpm; do echo $box; done
 elif [ $hutch == 'mfx' ]; then
    for box in $mfxIpm; do echo $box; done
-elif [ $hutch == 'fee' ]; then
+elif [ $hutch == 'mec' ]; then
+   for box in $mecIpm; do echo $box; done
+elif [ $hutch == 'lfe' ]; then
    for box in $hfxIpm; do echo $box; done
 else
     echo 'hutch cannot be determined, quit'
@@ -35,6 +40,18 @@ ipmSetEnvPars()
 if [ $# -lt 1 ]; then
     echo 'need one arguments: boxname'
     exit
+fi
+
+if [ $1 == 'hx2_ipm' ]; then
+    IOC="IOC:HX2:SB1:BMMON"
+    BASE='HX2:SB1:BMMON'
+    EVR='HX2:SB1:BMMON:EVR'
+    WAVE8='hx2_ipm'
+elif [ $1 == 'hfxdg2_ipm' ]; then
+    IOC="IOC:HFX:DG2:BMMON"
+    BASE='HFX:DG2:BMMON'
+    EVR='HFX:DG2:BMMON:EVR'
+    WAVE8='hfxipm'
 fi
 
 if [ $hutch == 'xcs' ]; then
@@ -62,10 +79,6 @@ if [ $hutch == 'xcs' ]; then
 	BASE="XCS:DG1:IMB:01"
 	IOC="XCS:R04:IOC:34"
 	EVR="XCS:R04:EVR:34"
-    elif [ $1 == 'ipm2' ]; then
-	BASE="HFX:DG2:IMB:01"
-	IOC="XCS:R38:IOC:43"
-	EVR="XCS:R38:EVR:43"
     elif [ $1 == 'ipm3' ]; then
 	BASE="XCS:DG3:IMB:03"
 	IOC="XCS:R38:IOC:43"
@@ -126,13 +139,6 @@ elif [ $hutch == 'mfx' ]; then
 	EVR='MFX:DG2:BMMON:EVR'
 	WAVE8='dg2ipm'
     fi
-elif [ $hutch == 'fee' ]; then
-    if [ $1 == 'hfxipm1' ]; then
-	IOC="IOC:HFX:DG2:BMMON"
-	BASE='HFX:DG2:BMMON'
-	EVR='HFX:DG2:BMMON:EVR'
-	WAVE8='hfxipm1'
-    fi
 elif [ $hutch == 'xpp' ]; then
     if [ $1 == 'diomono' ]; then
 	IOC="IOC:XPP:IPM"
@@ -160,11 +166,54 @@ elif [ $hutch == 'xpp' ]; then
 	IOC="IOC:XPP:IPM"
 	BASE='XPP:USR:IPM:01'
 	EVR='XPP:IPM:EVR'
-    elif [ $1 == 'ipm1' ]; then
-	IOC="IOC:HX2:SB1:BMMON"
-	BASE='HX2:SB1:BMMON'
-	EVR='HX2:SB1:BMMON:EVR'
-	WAVE8='ipm1'
+    fi
+elif [ $hutch == 'mec' ]; then
+    if [ $1 == 'ipm1' ]; then
+	IOC="XRT:R33:IOC:39"
+	BASE='MEC:HXM:IPM:01'
+	EVR='XRT:R44:EVR:39'
+    elif [ $1 == 'hxm_pim' ]; then
+	IOC="XRT:R33:IOC:39"
+	BASE='MEC:HXM:PIM:01'
+	EVR='XRT:R44:EVR:39'
+    elif [ $1 == 'pim2' ]; then
+	IOC="IOC:MEC:IMB02"
+	BASE='MEC:XT2:PIM:02'
+	EVR='MEC:XT2:EVR:01'
+    elif [ $1 == 'pim3' ]; then
+	IOC="IOC:MEC:IMB02"
+	BASE='MEC:XT2:PIM:03'
+	EVR='MEC:XT2:EVR:01'
+    elif [ $1 == 'tc1_imb1' ]; then
+	IOC="IOC:MEC:IPIMB01"
+	EVR='MEC:TC1:EVR:01'
+	BASE='MEC:TC1:IMB:01'
+    elif [ $1 == 'usr_imb1' ]; then
+	IOC="IOC:MEC:IPIMB01"
+	EVR='MEC:TC1:EVR:01'
+	BASE='MEC:USR:IMB:01'
+    elif [ $1 == 'usr_imb2' ]; then
+	IOC="IOC:MEC:IPIMB01"
+	EVR='MEC:TC1:EVR:01'
+	BASE='MEC:USR:IMB:02'
+    elif [ $1 == 'las_imb1' ]; then
+	IOC="IOC:MEC:IPIMB01"
+	EVR='MEC:TC1:EVR:01'
+	BASE='MEC:LAS:IMB:01'
+    elif [ $1 == 'las_imb2' ]; then
+	IOC="IOC:MEC:IPIMB01"
+	EVR='MEC:TC1:EVR:01'
+	BASE='MEC:LAS:IMB:02'
+    elif [ $1 == 'ipm2' ]; then 
+	IOC="IOC:MEC:XT2-1:BMMON"
+	EVR="MEC:XT2-1:BMMON:EVR"
+	BASE="MEC:XT2-1:BMMON"
+	WAVE8='xt2-1bmmon'
+    elif [ $1 == 'ipm3' ]; then 
+	IOC="IOC:MEC:XT2-2:BMMON"
+	EVR="MEC:XT2-2:BMMON:EVR"
+	BASE="MEC:XT2-2:BMMON"
+	WAVE8='xt2-2bmmon'
     fi
 
     if [ ${#BASE} == 0 ]
