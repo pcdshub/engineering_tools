@@ -219,12 +219,11 @@ elif [ $hutch == 'mec' ]; then
 	BASE="MEC:XT2-2:BMMON"
 	WAVE8='xt2-2bmmon'
     fi
-
-    if [ ${#BASE} == 0 ]
+fi
+if [ ${#BASE} == 0 ]
     then    
-	usage
-	exit
-    fi
+        echo 'Not a recognized boxname. Exiting...'
+        exit 1
 fi
 } 
 
