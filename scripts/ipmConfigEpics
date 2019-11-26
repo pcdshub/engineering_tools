@@ -18,6 +18,7 @@ hfxIpm='hfxipm1'
 
 ipmList()
 {
+printf 'Possible boxes:\n'
 if [ $hutch == 'xcs' ]; then
    for box in $hx2Ipm $um6Ipm $dg2Ipm $xcsIpm; do echo $box; done
 elif [ $hutch == 'xpp' ]; then
@@ -43,6 +44,7 @@ if [ $# -lt 1 ]; then
     exit
 fi
 
+# Shared IPMs
 if [ $1 == 'hx2_ipm' ]; then
     IOC="IOC:HX2:SB1:BMMON"
     BASE='HX2:SB1:BMMON'
@@ -59,6 +61,7 @@ elif [ $1 == 'hfxdg2_ipm' ]; then
     WAVE8='hfxipm'
 fi
 
+# Hutch-specific IPMs
 if [ $hutch == 'xcs' ]; then
     if [ $1 == 'decmono' ]; then
 	BASE="HFX:MON:IMB:03"
@@ -244,18 +247,14 @@ get_hutch(){
 
 usage()
 {
-echo 'in usage'
 cat << EOF
-usage: $0 options
-
-we are starting an ipm GUI
-
-OPTIONS:
--b : boxname out of:
--d: fix issues with Bld Damage (likely camera IOC w/plugins on same machine)
+Displays a GUI for the selected IPM. Running without arguments allows for box selection.
+usage: $0 [-b boxname] [-d] [-h] [-l]
+  -b: specify boxname to view
+  -d: fix issues with Bld Damage (likely camera IOC w/plugins on same machine)
+  -h: display this help text
+  -l: list available boxnames
 EOF
-get_hutch
-ipmList
 }
 
 helpBld(){
@@ -269,12 +268,12 @@ helpBld(){
 
 BOXNAME=''
 HELPDAQBLD=0
-while getopts "b:dh" OPTION
+while getopts "b:dhl" OPTION
 do
     case $OPTION in
 	h)
 	    usage
-	    exit 1
+	    exit 0
 	    ;;
 	b)
 	    BOXNAME=$OPTARG
@@ -282,18 +281,22 @@ do
 	d) 
 	    HELPDAQBLD=1
 	    ;;
+	l)
+	    get_hutch
+	    ipmList
+	    exit 0
+	    ;;
 	?)
 	    usage
-	    exit
+	    exit 1
 	    ;;
 	esac
 done
 
-
 get_hutch
-if [ ${#BOXNAME} == 0 ]; then    
-    ipmList $hutch
-    printf 'Enter box name from list:\n'; read BOXNAME
+if [ ${#BOXNAME} == 0 ]; then
+    ipmList
+    printf 'Enter box name from above list:\n'; read BOXNAME
 fi
 
 ipmSetEnvPars $BOXNAME
