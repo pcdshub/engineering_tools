@@ -6,8 +6,10 @@ export PATH=/reg/g/pcds/package/epics/3.14/base/current/bin/linux-x86_64:/reg/g/
 export EPICS_CA_MAX_ARRAY_BYTES=8388608
 ulimit -c unlimited
 
-sharedIpm='hx2_ipm hfxdg2_ipm'
-xcsIpm='decmono ipmmono diomono pim3 pim3m pim4 ipm1 ipm3 ipm4 ipm5 pim5 ipmgonLD ipmlamLD snddio'
+hx2Ipm='hx2_ipm'
+um6Ipm='um6_ipm'
+dg2Ipm='hfxdg2_ipm'
+xcsIpm='decmono ipmmono diomono pim3 pim3m pim4 ipm3 ipm4 ipm5 pim5 ipmgonLD ipmlamLD snddio'
 xppIpm='diomono decmono ipm2 ipm3 pim3 diodeU'
 cxiIpm='dg2ipm dg3ipm'
 mfxIpm='dg1ipm dg2ipm'
@@ -16,17 +18,16 @@ hfxIpm='hfxipm1'
 
 ipmList()
 {
-for box in $sharedIpm; do echo $box; done
 if [ $hutch == 'xcs' ]; then
-   for box in $xcsIpm; do echo $box; done
+   for box in $hx2Ipm $um6Ipm $dg2Ipm $xcsIpm; do echo $box; done
 elif [ $hutch == 'xpp' ]; then
-   for box in $xppIpm; do echo $box; done
+   for box in $hx2Ipm $xppIpm; do echo $box; done
 elif [ $hutch == 'cxi' ]; then
-   for box in $cxiIpm; do echo $box; done
+   for box in $hx2Ipm $um6Ipm $dg2Ipm $cxiIpm; do echo $box; done
 elif [ $hutch == 'mfx' ]; then
-   for box in $mfxIpm; do echo $box; done
+   for box in $hx2Ipm $um6Ipm $mfxIpm; do echo $box; done
 elif [ $hutch == 'mec' ]; then
-   for box in $mecIpm; do echo $box; done
+   for box in $hx2Ipm $um6Ipm $mecIpm; do echo $box; done
 elif [ $hutch == 'lfe' ]; then
    for box in $hfxIpm; do echo $box; done
 else
@@ -47,6 +48,10 @@ if [ $1 == 'hx2_ipm' ]; then
     BASE='HX2:SB1:BMMON'
     EVR='HX2:SB1:BMMON:EVR'
     WAVE8='hx2_ipm'
+elif [ $1 == 'um6_ipm' ]; then		#aka xcs ipm1
+    BASE="XCS:DG1:IMB:01"
+    IOC="XCS:R04:IOC:34"
+    EVR="XCS:R04:EVR:34"
 elif [ $1 == 'hfxdg2_ipm' ]; then
     IOC="IOC:HFX:DG2:BMMON"
     BASE='HFX:DG2:BMMON'
@@ -75,10 +80,6 @@ if [ $hutch == 'xcs' ]; then
 	BASE="HFX:DG3:IMB:02"
 	IOC="XCS:R38:IOC:43"
 	EVR="XCS:R38:EVR:43"
-    elif [ $1 == 'ipm1' ]; then
-	BASE="XCS:DG1:IMB:01"
-	IOC="XCS:R04:IOC:34"
-	EVR="XCS:R04:EVR:34"
     elif [ $1 == 'ipm3' ]; then
 	BASE="XCS:DG3:IMB:03"
 	IOC="XCS:R38:IOC:43"
