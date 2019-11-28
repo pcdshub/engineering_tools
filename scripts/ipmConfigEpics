@@ -256,12 +256,15 @@ usage: $0 [-b boxname] [-d] [-h] [-l]
 EOF
 }
 
+# Turns off statsPlugin for these IPIMB boxes to prevent bogging down server and help Bld run at 120Hz
 helpBld(){
-    if [ $hutch == 'xcs' ]; then 
-	if  [[ $BOXNAME == 'ipm3'  ||  $BOXNAME == 'dio3' ]]; then
-	    caput XCS:DG3:CVV:02:Stat2:EnableCallbacks 0
-	    caput HFX:DG3:CVV:01:Stat2:EnableCallbacks 0
-	fi
+    if [[ $hutch == 'xcs' && ($BOXNAME == 'ipm3' || $BOXNAME == 'dio3') ]]; then
+        caput XCS:DG3:CVV:02:Stat2:EnableCallbacks 0
+        caput HFX:DG3:CVV:01:Stat2:EnableCallbacks 0
+        echo 'Turned off statsPlugin for XCS ipm3 and dio3' # TODO: Actually check if off
+    else
+        echo 'Selected box has no known Bld issue to fix'
+	exit 1
     fi
 }
 
