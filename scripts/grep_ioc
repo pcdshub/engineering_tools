@@ -6,13 +6,17 @@ if [[ -z $1 ]] | [[ -z $2 ]]; then
     echo $USAGE
     exit
 fi
-for hutchname in "xpp" "xcs" "cxi" "mfx" "mec" "xrt" "aux" "det" "fee" "hpl" "icl" "las" "lfe" "tst" "thz"; do 
+for hutchname in "xpp" "xcs" "cxi" "mfx" "mec" "xrt" "aux" "det" "fee" "hpl" "icl" "las" "lfe" "tst" "thz" "all"; do 
     if [[ "${2}" == $hutchname ]]; then
-	HUTCH="${2}"
+        HUTCH="${2}"
     fi
 done
 if [[ -z $HUTCH ]]; then
     echo "incorrect hutch name given.  Enter hutch name in lower case (example: xpp)"
 else
-    grep "${1}" /reg/g/pcds/pyps/config/${HUTCH}/iocmanager.cfg
+    if [[ $HUTCH == "all" ]]; then
+        grep "${1}" /reg/g/pcds/pyps/config/*/iocmanager.cfg
+    else
+        grep "${1}" /reg/g/pcds/pyps/config/${HUTCH}/iocmanager.cfg
+    fi
 fi
