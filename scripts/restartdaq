@@ -11,11 +11,13 @@ OPTIONS:
 EOF
 }
 
+NOTRUNNING='DAQ is not running'
 AIMHOST=$HOSTNAME
 SELPART=''
 DOWIN=''
 #make it silent for now until done with testing and jana has been warned
 SILENT=1
+
 while getopts "m:pwsh" OPTION
 do
     case $OPTION in
@@ -43,6 +45,17 @@ do
 	esac
 done
 
+if [[ $USERNAME != *'opr'* ]]; then
+    echo "Please run the DAQ from the operator account!"
+    exit
+fi
+
+CNFEXT=.cnf
+if [[ $AIMHOST == 'cxi-daq' ]]; then
+    CNFEXT=_0.cnf
+elif [[ $AIMHOST == 'cxi-monitor' ]]; then
+    CNFEXT=_1.cnf
+fi
 
 HUTCH=`get_hutch_name`
 if [[ $HUTCH == 'xpp' ]]; then
@@ -64,33 +77,26 @@ elif [[ $HUTCH == 'det' ]]; then
 fi
 IS_DAQ_HOST=`/sbin/ifconfig | grep inet | grep $FEZ | wc -l`
 
-#IS_DAQ_HOST=0
-#for HOST in $HOSTS
-#do
-#    if [ $AIMHOST != $HOST ]; then
-#	IS_DAQ_HOST=1
-#    fi
-#done
-
 if [ $IS_DAQ_HOST == 0 ]; then
     echo $AIMHOST does not have FEZ, please choose $HOSTS to run the DAQ:
     echo '\"restartdaq <machine_with_FEZ>\"'
     exit
 fi
 
-#go to the operator home, so that pid.txt gets created where expected
+#go to hutches DAQ scripts directory (puts pid file in consistent location)
 cd /reg/g/pcds/dist/pds/$HUTCH/scripts/
 
 #/reg/g/xpp/scripts/stopdaq
 DAQHOST=`wheredaq`
-if [[ $DAQHOST != 'DAQ is not running' ]]; then
+if [[ $DAQHOST != *$NOTRUNNING* ]]; then
     echo stop the DAQ on $DAQHOST from $HOSTNAME
     T="$(date +%s%N)"
-    source /reg/g/pcds/dist/pds/$HUTCH\/scripts/shutdown_$HUTCH\_daq.csh
+    /reg/g/pcds/dist/pds/tools/procmgr/procmgr stop \
+	/reg/g/pcds/dist/pds/$HUTCH/scripts/$HUTCH$CNFEXT 
 
-    DAQ_RUN_STALE=`find /reg/g/pcds/dist/pds/$HUTCH\/scripts/p1.cnf.running | wc | awk '{print $1}'`
-    if [ $DAQ_RUN_STALE -gt 0 ]; then
-	echo 'the DAQ did not stop properly, exit now and call Silke and/or try again or use  xpprestartdaq_old'
+    PLATFORM=`grep 'if not platform' /reg/g/pcds/dist/pds/$HUTCH/scripts/$HUTCH$CNFEXT | awk '{print $NF}' | sed s/\'//g`
+    if [ -f /reg/g/pcds/dist/pds/$HUTCH/scripts/p$PLATFORM$CNFEXT.running ]; then
+	echo 'the DAQ did not stop properly, exit now and try again or call Silke or the DAQ phone'
 	exit
     fi
     T2="$(($(date +%s%N)-T))"
@@ -105,14 +111,20 @@ fi
 T="$(date +%s%N)"
 echo start DAQ on $AIMHOST
 if [ $HOSTNAME == $AIMHOST ]; then
-    source /reg/g/pcds/dist/pds/$HUTCH\/scripts/start_$HUTCH\_daq.csh
+    unset PYTHONPATH
+    unset LD_LIBRARY_PATH
+    /reg/g/pcds/dist/pds/tools/procmgr/procmgr start \
+	/reg/g/pcds/dist/pds/$HUTCH/scripts/$HUTCH$CNFEXT -c 2000000000 -o /reg/g/pcds/pds/$HUTCH/logfiles
 else
-    ssh -Y $AIMHOST /reg/g/pcds/dist/pds/$HUTCH\/scripts/start_$HUTCH\_daq.csh
+    ssh -Y $AIMHOST restartdaq
 fi
 
 DAQHOST=`wheredaq`
-if [[ $DAQHOST == 'DAQ is not running' ]]; then
-    echo 'we tried restarting the DAQ, but $HUTCH\wheredaq does not return a host!'
+if [[ $DAQHOST == *$NOTRUNNING* ]]; then
+    echo 'we tried restarting the DAQ, but wheredaq does not return a host!'
+    if [[ $DAQHOST != $AIMHOST ]]; then
+	echo 'We tried to run the DAQ on another host and the paths do not get properlu reset there...'
+    fi
     exit
 else
     echo the DAQ is now running on $DAQHOST
@@ -137,6 +149,9 @@ if [ ${#DOWIN} != 0 ] ||  [ ${#SELPART} != 0 ]; then
 	fi
     fi
     if [ ! /reg/neh/operator/$HUTCH\opr/bin/$HUTCH\_cleanup_windows_daq ]; then
+	if [ ${#DOWIN} != 0 ]; then
+	    echo 'This instrument does not have standard locations for DAQ windows setup'
+	fi
 	DOWIN=0
     fi
 fi
