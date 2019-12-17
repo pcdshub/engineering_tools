@@ -144,7 +144,7 @@ class QuestionnaireTools():
         return device
 
     def addDeviceToProposal(self, expname, devicename, location=None):
-        proposal, runNo = _propRun_from_name(self, expname)
+        proposal, runNo = self._propRun_from_name(expname)
 
         deviceSetup = self._parseDeviceName(devicename)
         if deviceSetup['name'] not in self.deviceDict.keys():
@@ -168,11 +168,11 @@ class QuestionnaireTools():
                     if numDev>numNewDevice: numNewDevice=numDev+1
 
             for item in addDevice[lineItem]:
-                if lineItem=='pcdssetup-motors-setup' and 'pvbase' not in item.keys():
+                if lineItem=='pcdssetup-motors' and 'pvbase' not in item.keys():
                     item['pvbase']='%s:USR:MMS:'%(expname[:3].upper())
                 if 'location' in deviceSetup.keys() and \
                    deviceSetup['location'] in self.allowedLocations and \
-                   (lineItem=='pcdssetup-motors-setup' or lineItem=='pcdssetup-areadet-setup') \
+                   (lineItem=='pcdssetup-motors' or lineItem=='pcdssetup-areadet') \
                    and 'location' not in item.keys():
                     item['location']=location
                 if 'basename' in deviceSetup.keys():

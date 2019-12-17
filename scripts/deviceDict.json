@@ -1,13 +1,13 @@
 {
     "CXI_stdCfg": {
-        "pcdssetup-areadet-setup": [
+        "pcdssetup-areadet": [
             {
                 "alias": "DscCsPad",
                 "record": "DSC rack",
                 "type": "CSPAD-2.3M"
             }
         ],
-        "pcdssetup-camera-setup": [
+        "pcdssetup-camera": [
             {
                 "alias": "TimeTool",
                 "purpose": "Time Tool",
@@ -39,14 +39,14 @@
                 "purpose": "X-ray simulator EVR for LeCroy"
             }
         ],
-        "pcdssetup-digitized-setup": [
+        "pcdssetup-digitized": [
             {
                 "device": "Agilent",
                 "purpose": "Fast Diode",
                 "rate": "8 Gs/s"
             }
         ],
-        "pcdssetup-motors-setup": [
+        "pcdssetup-motors": [
             {
                 "invac": "Yes",
                 "location": "CXI SC1",
@@ -328,10 +328,10 @@
                 "stageidentity": "Newport"
             }
         ],
-        "pcdssetup-trig-setup": []
+        "pcdssetup-trig": []
     },
     "JJslit": {
-        "pcdssetup-motors-setup": [
+        "pcdssetup-motors": [
             {
                 "name": "jj_vg",
                 "purpose": "slit vertical gap",
@@ -355,7 +355,7 @@
         ]
     },
     "fastDiode": {
-        "pcdssetup-digitized-setup": [
+        "pcdssetup-digitized": [
             {
                 "device": "Agilent",
                 "purpose": "Fast Diode",
@@ -364,13 +364,13 @@
         ]
     },
     "vonHamos": {
-        "pcdssetup-areadet-setup": [
+        "pcdssetup-areadet": [
             {
                 "alias": "epix_1",
                 "type": "Epix100"
             }
         ],
-        "pcdssetup-motors-setup": [
+        "pcdssetup-motors": [
             {
                 "name": "vH_v",
                 "purpose": "von Hamos common vertical",
@@ -389,13 +389,13 @@
         ]
     },
     "vonHamos_small": {
-        "pcdssetup-areadet-setup": [
+        "pcdssetup-areadet": [
             {
                 "alias": "epix_1",
                 "type": "Epix100"
             }
         ],
-        "pcdssetup-motors-setup": [
+        "pcdssetup-motors": [
             {
                 "name": "vHs_v",
                 "purpose": "von Hamos common vertical",
@@ -414,13 +414,13 @@
         ]
     },
     "vonHamos_large": {
-	"pcdssetup-areadet-setup": [
+	"pcdssetup-areadet": [
 	    {
 		"alias": "epix_1",
 		"type": "Epix100"
 	    }
 	],
-	"pcdssetup-motors-setup": [
+	"pcdssetup-motors": [
 		{
 		    "name": "vHl_v",
 		    "purpose": "von Hamos common vertical",
