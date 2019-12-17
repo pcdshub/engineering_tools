@@ -372,18 +372,18 @@
         ],
         "pcdssetup-motors-setup": [
             {
-                "name": "vH_r",
+                "name": "vH_v",
                 "purpose": "von Hamos common vertical",
-                "stageidentity": "vH_r"
+                "stageidentity": "vH_v"
+            },
+            {
+                "name": "vH_h",
+                "purpose": "von Hamos common horizontal",
+                "stageidentity": "vH_h"
             },
             {
                 "name": "vH_r",
-                "purpose": "von Hamos common vertical",
-                "stageidentity": "vH_r"
-            },
-            {
-                "name": "vH_r",
-                "purpose": "von Hamos common vertical",
+                "purpose": "von Hamos common rotation",
                 "stageidentity": "vH_r"
             }
         ]
@@ -397,20 +397,45 @@
         ],
         "pcdssetup-motors-setup": [
             {
-                "name": "vH_r",
+                "name": "vHs_v",
                 "purpose": "von Hamos common vertical",
-                "stageidentity": "vH_r"
+                "stageidentity": "vHs_v"
             },
             {
-                "name": "vH_r",
-                "purpose": "von Hamos common vertical",
-                "stageidentity": "vH_r"
+                "name": "vHs_h",
+                "purpose": "von Hamos common horizontal",
+                "stageidentity": "vHs_h"
             },
             {
-                "name": "vH_r",
-                "purpose": "von Hamos common vertical",
-                "stageidentity": "vH_r"
+                "name": "vHs_r",
+                "purpose": "von Hamos common rotation",
+                "stageidentity": "vHs_r"
             }
         ]
-    }
+    },
+    "vonHamos_large": {
+	"pcdssetup-areadet-setup": [
+	    {
+		"alias": "epix_1",
+		"type": "Epix100"
+	    }
+	],
+	"pcdssetup-motors-setup": [
+		{
+		    "name": "vHl_v",
+		    "purpose": "von Hamos common vertical",
+		    "stageidentity": "vHl_v"
+		},
+		{
+		    "name": "vHl_h",
+		    "purpose": "von Hamos common horizontal",
+		    "stageidentity": "vHl_h"
+		},
+		{
+		    "name": "vHl_r",
+		    "purpose": "von Hamos common rotation",
+		    "stageidentity": "vHl_r"
+		}
+	   ]
+	}
 }
