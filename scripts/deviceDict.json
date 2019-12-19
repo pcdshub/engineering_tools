@@ -4,7 +4,7 @@
             {
                 "alias": "DscCsPad",
                 "record": "DSC rack",
-                "type": "CSPAD-2.3M"
+                "camtype": "CSPAD-2.3M"
             }
         ],
         "pcdssetup-camera": [
@@ -12,22 +12,25 @@
                 "alias": "TimeTool",
                 "purpose": "Time Tool",
                 "record": "DAQ",
-                "trigger": "120",
-                "type": "Opal-1k"
+                "camtrigger": "120",
+                "camtype": "Opal-1k"
             },
             {
                 "alias": "Sc1Questar",
                 "purpose": "Questar camera",
                 "record": "DAQ",
-                "trigger": "120",
-                "type": "Opal-1k"
+                "camtrigger": "120",
+                "camtype": "Opal-1k"
             },
             {
+		"alias": "SideCam",
                 "purpose": "Side Viewing",
                 "record": "vewing only",
-                "trigger": "free run",
-                "type": "Uniq"
-            },
+                "camtrigger": "free run",
+                "camtype": "Uniq"
+            }
+	],
+	"pcdssetup-trig": [
             {
                 "delay": "TBD",
                 "eventcode": "40;",
@@ -327,8 +330,7 @@
                 "pvbase": "CXI:USR:MMN:",
                 "stageidentity": "Newport"
             }
-        ],
-        "pcdssetup-trig": []
+        ]
     },
     "JJslit": {
         "pcdssetup-motors": [
@@ -367,7 +369,7 @@
         "pcdssetup-areadet": [
             {
                 "alias": "epix_1",
-                "type": "Epix100"
+                "camtype": "Epix100"
             }
         ],
         "pcdssetup-motors": [
@@ -392,7 +394,7 @@
         "pcdssetup-areadet": [
             {
                 "alias": "epix_1",
-                "type": "Epix100"
+                "camtype": "Epix100"
             }
         ],
         "pcdssetup-motors": [
@@ -417,7 +419,7 @@
 	"pcdssetup-areadet": [
 	    {
 		"alias": "epix_1",
-		"type": "Epix100"
+		"camtype": "Epix100"
 	    }
 	],
 	"pcdssetup-motors": [
