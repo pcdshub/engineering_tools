@@ -45,7 +45,7 @@ do
 	esac
 done
 
-if [[ $USERNAME != *'opr'* ]]; then
+if [[ `whoami` != *'opr'* ]]; then
     echo "Please run the DAQ from the operator account!"
     exit
 fi
@@ -123,7 +123,7 @@ DAQHOST=`wheredaq`
 if [[ $DAQHOST == *$NOTRUNNING* ]]; then
     echo 'we tried restarting the DAQ, but wheredaq does not return a host!'
     if [[ $DAQHOST != $AIMHOST ]]; then
-	echo 'We tried to run the DAQ on another host and the paths do not get properlu reset there...'
+	echo 'We tried to run the DAQ on another host: target '$AIMHOST' from '$HOSTNAME
     fi
     exit
 else
