@@ -236,20 +236,25 @@ ipmGUI(){
 }
 
 get_hutch(){
-    hutch=`get_info --gethutch`
-    if [ $hutch = unknown_hutch ]; then
-	echo 'unknown hutch, cannot use ipmConfigEpics script'
-	exit 1
+    if [ $HUTCH = '' ]; then
+        hutch=`get_info --gethutch`
+        if [ $hutch = unknown_hutch ]; then
+	    echo 'unknown hutch, cannot use ipmConfigEpics script'
+	    exit 1
+        fi
+        HUTCH=${hutch^^}
+    else
+        hutch=${HUTCH,,}
     fi
-    HUTCH=${hutch^^}
 }
 
 usage()
 {
 cat << EOF
 Displays a GUI for the selected IPM. Running without arguments allows for box selection.
-usage: $0 [-b boxname] [-d] [-h] [-l]
+usage: $0 [-b boxname] [-H hutch] [-d] [-h] [-l]
   -b: specify boxname to view
+  -H: specify a hutch to use, overriding the automated selection
   -d: fix issues with Bld Damage (likely camera IOC w/plugins on same machine)
   -h: display this help text
   -l: list available boxnames
@@ -268,14 +273,18 @@ helpBld(){
     fi
 }
 
+HUTCH=''
 BOXNAME=''
 HELPDAQBLD=0
-while getopts "b:dhl" OPTION
+while getopts "bH:dhl" OPTION
 do
     case $OPTION in
 	h)
 	    usage
 	    exit 0
+	    ;;
+	H)
+	    HUTCH=${OPTARG^^}
 	    ;;
 	b)
 	    BOXNAME=$OPTARG
