@@ -1,72 +1,28 @@
 #! /bin/bash
 
-ips_from_ip(){
+names_from_name(){
 if [ $# -lt 1 ]; then
     echo 'need arguments: input IP'
 fi
-INIP=$1
-if [ $HUTCH == 'xpp' ]; then
-    if [[ $INIP == *'172.21.84'* ]]; then
-	SRVIP=$INIP
-	SRVIPFEZ=`echo $INIP | sed s/.84./.22./g `
-    elif [[ $INIP == *'172.21.22'* ]]; then
-	SRVIPFEZ=$INIP
-	SRVIP=`echo $INIP | sed s/.22./.84./g `
-    else
-	echo 'IP not FEZ or CDS for xpp'
-    fi
-elif [ $HUTCH == 'xcs' ]; then
-    if [[ $INIP == *'172.21.80'* ]]; then
-	SRVIP=$INIP
-	SRVIPFEZ=`echo $INIP | sed s/.80./.25./g `
-    elif [[ $INIP == *'172.21.25'* ]]; then
-	SRVIPFEZ=$INIP
-	SRVIP=`echo $INIP | sed s/.25./.80./g `
-    else
-	echo 'IP not FEZ or CDS for xcs'
-    fi
-elif [ $HUTCH == 'mfx' ]; then
-    if [[ $INIP == *'172.21.72'* ]]; then
-	SRVIP=$INIP
-	SRVIPFEZ=`echo $INIP | sed s/.72./.24./g `
-    elif [[ $INIP == *'172.21.24'* ]]; then
-	echo 'DEBUG in MFX GIVEN FEZ '
-	SRVIPFEZ=$INIP
-	SRVIP=`echo $INIP | sed s/.24./.72./g `
-	echo 'DEBUG ' $INIP $SRVIP
-    else
-	echo 'IP not FEZ or CDS for mfx'
-    fi
-elif [ $HUTCH == 'cxi' ]; then
-    if [[ $INIP == *'172.21.68'* ]]; then
-	SRVIP=$INIP
-	SRVIPFEZ=`echo $INIP | sed s/.68./.26./g `
-    elif [[ $INIP == *'172.21.26'* ]]; then
-	SRVIPFEZ=$INIP
-	SRVIP=`echo $INIP | sed s/.26./.68./g `
-    else
-	echo 'IP not FEZ or CDS for cxi'
-    fi
-elif [ $HUTCH == 'mec' ]; then
-    if [[ $INIP == *'172.21.76'* ]]; then
-	SRVIP=$INIP
-	SRVIPFEZ=`echo $INIP | sed s/.76./.27./g `
-    elif [[ $INIP == *'172.21.27'* ]]; then
-	SRVIPFEZ=$INIP
-	SRVIP=`echo $INIP | sed s/.27./.76./g `
-    else
-	echo 'IP not FEZ or CDS for mec'
-    fi
-elif [ $HUTCH == 'det' ]; then
-    if [[ $INIP == *'172.21.58'* ]]; then
-	SRVIP=$INIP
-	SRVIPFEZ=`echo $INIP | sed s/.58./.59./g `
-    elif [[ $INIP == *'172.21.59'* ]]; then
-	SRVIPFEZ=$INIP
-	SRVIP=`echo $INIP | sed s/.59./.58./g `
-    else
-	echo 'IP not FEZ or CDS'
-    fi
+INNAME=$1
+if [[ $INNAME == *'-ipmi'* ]]; then
+    INNAME=`echo $INNAME | sed s/-ipmi//g`
+elif [[ $INNAME == *'-fez'* ]]; then
+    INNAME=`echo $INNAME | sed s/-fez//g`
+elif [[ $INNAME == *'-ana'* ]]; then
+    INNAME=`echo $INNAME | sed s/-ana//g`
+fi
+CDSNAME=$INNAME
+CDSIP=`netconfig search $CDSNAME | grep IP: | awk {'print $2'}`
+if [[ `netconfig search $NAME-ipmi --brief | wc -w` -gt 0 ]]; then
+    NAMEIPMI=$INNAME-ipmi
+fi
+if [[ `netconfig search $NAME-fez --brief | wc -w` -gt 0 ]]; then
+    FEZNAME=$INNAME-fez
+    FEZIP=`netconfig search $FEZNAME | grep IP: | awk {'print $2'}`
+fi
+if [[ `netconfig search $NAME-ana --brief | wc -w` -gt 0 ]]; then
+    ANANAME=$INNAME-ana
 fi
 }
 
@@ -183,13 +139,23 @@ fi
 
 if [[ $NAME == *'172.21'* ]]; then
     ISSRV=1
-    ips_from_ip $DEV
-    NAME=`netconfig search $SRVIP --brief | awk {'print $1'}`
-    echo $IP is an IP for $NAME
+    NAME=`netconfig search $NAME --brief | awk {'print $1'}`
+    echo $DEV is an IP for $NAME
 else
     ISSRV=`netconfig search $NAME | grep 'Found' | awk {'print $2'}`
 fi
 #exit
+
+if [[ $NAME == *'-ipmi'* ]]; then
+    NAMEIPMI=$NAME
+    NAME=`echo $NAME | sed s/-ipmi//g`
+    DEV=$NAME
+elif [[ $NAME == *'-fez'* ]]; then
+    NAME=`echo $NAME | sed s/-fez//g`
+    DEV=$NAME
+elif [[ $NAME == *'-ana'* ]]; then
+    NAME=`echo $NAME | sed s/-ana//g`
+fi
 
 if  [[ $NAME == *rec* ]]; then
     if [[ $CMD == "off" ]] || [[ $CMD == "cycle" ]]; then
@@ -229,14 +195,16 @@ if [[ $ISSRV -lt 1 ]] && [[ $HUTCH != 'unknown_hutch' ]]; then
     fi
 
     SRVIP=`netconfig search $NAME | grep IP: | awk {'print $2'}`
-    ips_from_ip $SRVIP
+    #ips_from_ip $SRVIP
     echo 'server for ' $DEV ' is: ' $NAME 
 else
     SRVIP=`netconfig search $DEV | grep IP: | awk {'print $2'}`
-    ips_from_ip $SRVIP
+    #ips_from_ip $SRVIP
 fi
 
-NAMEIPMI=`echo $NAME'-ipmi'`
+
+names_from_name $NAME
+
 if [[ $CMD == "off" ]]; then
     ipmitool -I lanplus -U ADMIN -P ipmia8min -H $NAMEIPMI power off
 elif [[ $CMD == "on" ]]; then
@@ -260,26 +228,29 @@ else
     if [[ $ISON == *off* ]]; then
 	echo $DEV is powered off
 	exit
+    elif [[ $ISON == *off* ]]; then
+	echo $DEV is powered on
+    else
+	echo Cannot connect to $NAMEIPMI
     fi
 
-    echo $DEV is powered on
     PNG=`ping -c 1 $SRVIP | grep transmitted | awk '{print $4}'`
     IFUP=0
-    if [[ $NAME == *daq* ]]; then
+    if [ $FEZNAME ]; then
 	if [[ $HOST_HAS_FEZ -ge 1 ]]; then
-	    PNGFEZ=`ping -c 1 $SRVIPFEZ | grep transmitted | awk '{print $4}'`
-	    echo $NAME ' is a server with IP: ' $SRVIP ' (ping: ' $PNG '), ' $SRVIPFEZ ' (ping' $PNGFEZ ')'
+	    PNGFEZ=`ping -c 1 $FEZNAME | grep transmitted | awk '{print $4}'`
+	    echo $NAME ' is a server with IP: ' $CDSIP ' (ping: ' $PNG '), ' $FEZIP ' (ping' $PNGFEZ ')'
 	    if [[ $(($PNG+$PNGFEZ)) -gt 1 ]]; then
 		echo 'cds&fez interfaces are up'
 	    fi
 	else
-	    echo $NAME ' is a server with IP: ' $SRVIP ' (ping: ' $PNG '), ' $SRVIPFEZ ' (cannot ping from machine without fez )'
+	    echo $NAME ' is a server with IP: ' $CDSIP ' (ping: ' $PNG '), ' $FEZIP ' (cannot ping from machine without fez )'
 	    if [ $PNG -gt 0 ]; then
 		echo 'cds interface is up'
 	    fi	    
 	fi
     else
-	echo $DEV ' is a server with IP: ' $SRVIP ' (ping: ' $PNG ')'
+	echo $DEV ' is a server with IP: ' $CDSIP ' (ping: ' $PNG ')'
 	if [ $PNG -gt 0 ]; then
 	    echo 'cds interface is up'
 	fi
