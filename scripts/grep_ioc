@@ -2,15 +2,19 @@
 
 USAGE="grep_ioc <Keyword> <Hutch name(lower case)> greps hutches iocmanager config file for keyword"
 
-if [[ -z $1 ]] | [[ -z $2 ]]; then
+if [[ -z $1 ]]; then
     echo $USAGE
     exit
 fi
-for hutchname in "xpp" "xcs" "cxi" "mfx" "mec" "xrt" "aux" "det" "fee" "hpl" "icl" "las" "lfe" "tst" "thz" "all"; do 
-    if [[ "${2}" == $hutchname ]]; then
-        HUTCH="${2}"
-    fi
-done
+if [[ -z $2 ]]; then
+    HUTCH="all"
+else
+    for hutchname in "xpp" "xcs" "cxi" "mfx" "mec" "xrt" "aux" "det" "fee" "hpl" "icl" "las" "lfe" "tst" "thz" "all"; do 
+        if [[ "${2}" == $hutchname ]]; then
+            HUTCH="${2}"
+        fi
+    done
+fi
 if [[ -z $HUTCH ]]; then
     echo "incorrect hutch name given.  Enter hutch name in lower case (example: xpp)"
 else
