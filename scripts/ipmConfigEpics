@@ -228,15 +228,19 @@ fi
 } 
 
 ipmGUI(){
-    if [ ${#WAVE8} -gt 0 ]; then
-    	/reg/g/pcds/pyps/apps/wave8/latest/wave8 --base $BASE --evr $EVR --ioc $IOC
+    if caget ${BASE}:SUM > /dev/null 2>&1; then
+        if [ ${#WAVE8} -gt 0 ]; then
+            /reg/g/pcds/pyps/apps/wave8/latest/wave8 --base $BASE --evr $EVR --ioc $IOC
+        else
+            /reg/g/pcds/controls/pycaqt/ipimb/ipimb.py --base $BASE --ioc $IOC --evr $EVR --dir /reg/g/pcds/controls/pycaqt/ipimb	
+        fi
     else
-    	/reg/g/pcds/controls/pycaqt/ipimb/ipimb.py --base $BASE --ioc $IOC --evr $EVR --dir /reg/g/pcds/controls/pycaqt/ipimb	
+        echo "Could not connect to ${BASE}. Exiting..."
     fi
 }
 
 get_hutch(){
-    if [ $HUTCH = '' ]; then
+    if [ -z "$HUTCH" ]; then
         hutch=`get_info --gethutch`
         if [ $hutch = unknown_hutch ]; then
 	    echo 'unknown hutch, cannot use ipmConfigEpics script'
@@ -276,7 +280,7 @@ helpBld(){
 HUTCH=''
 BOXNAME=''
 HELPDAQBLD=0
-while getopts "bH:dhl" OPTION
+while getopts "b:H:dhl" OPTION
 do
     case $OPTION in
 	h)
