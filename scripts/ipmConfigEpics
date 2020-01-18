@@ -208,12 +208,12 @@ elif [ $hutch == 'mec' ]; then
 	IOC="IOC:MEC:IPIMB01"
 	EVR='MEC:TC1:EVR:01'
 	BASE='MEC:LAS:IMB:02'
-    elif [ $1 == 'ipm2' ]; then 
+    elif [ $1 == 'ipm2' ]; then
 	IOC="IOC:MEC:XT2-1:BMMON"
 	EVR="MEC:XT2-1:BMMON:EVR"
 	BASE="MEC:XT2-1:BMMON"
 	WAVE8='xt2-1bmmon'
-    elif [ $1 == 'ipm3' ]; then 
+    elif [ $1 == 'ipm3' ]; then
 	IOC="IOC:MEC:XT2-2:BMMON"
 	EVR="MEC:XT2-2:BMMON:EVR"
 	BASE="MEC:XT2-2:BMMON"
@@ -221,35 +221,46 @@ elif [ $hutch == 'mec' ]; then
     fi
 fi
 if [ ${#BASE} == 0 ]
-    then    
+    then
         echo 'Not a recognized boxname. Exiting...'
         exit 1
 fi
-} 
+}
 
+# Attempt to read the :SUM PV and open a GUI if successful and exits if not. Uses wave8 or ipimb accordingly
 ipmGUI(){
-    if [ ${#WAVE8} -gt 0 ]; then
-    	/reg/g/pcds/pyps/apps/wave8/latest/wave8 --base $BASE --evr $EVR --ioc $IOC
+    if caget ${BASE}:SUM > /dev/null 2>&1; then
+        if [ ${#WAVE8} -gt 0 ]; then
+            /reg/g/pcds/pyps/apps/wave8/latest/wave8 --base $BASE --evr $EVR --ioc $IOC
+        else
+            /reg/g/pcds/controls/pycaqt/ipimb/ipimb.py --base $BASE --ioc $IOC --evr $EVR --dir /reg/g/pcds/controls/pycaqt/ipimb
+        fi
     else
-    	/reg/g/pcds/controls/pycaqt/ipimb/ipimb.py --base $BASE --ioc $IOC --evr $EVR --dir /reg/g/pcds/controls/pycaqt/ipimb	
+        echo "Could not connect to ${BASE}. Exiting..."
     fi
 }
 
+# Get hutch name, if not given, using get_info
 get_hutch(){
-    hutch=`get_info --gethutch`
-    if [ $hutch = unknown_hutch ]; then
-	echo 'unknown hutch, cannot use ipmConfigEpics script'
-	exit 1
+    if [ -z "$HUTCH" ]; then
+        hutch=`get_info --gethutch`
+        if [ $hutch = unknown_hutch ]; then
+	    echo 'unknown hutch, cannot use ipmConfigEpics script'
+	    exit 1
+        fi
+        HUTCH=${hutch^^}
+    else
+        hutch=${HUTCH,,}
     fi
-    HUTCH=${hutch^^}
 }
 
 usage()
 {
 cat << EOF
 Displays a GUI for the selected IPM. Running without arguments allows for box selection.
-usage: $0 [-b boxname] [-d] [-h] [-l]
+usage: $0 [-b boxname] [-H hutch] [-d] [-h] [-l]
   -b: specify boxname to view
+  -H: specify a hutch to use, overriding the automated selection
   -d: fix issues with Bld Damage (likely camera IOC w/plugins on same machine)
   -h: display this help text
   -l: list available boxnames
@@ -268,14 +279,18 @@ helpBld(){
     fi
 }
 
+HUTCH=''
 BOXNAME=''
 HELPDAQBLD=0
-while getopts "b:dhl" OPTION
+while getopts "b:H:dhl" OPTION
 do
     case $OPTION in
 	h)
 	    usage
 	    exit 0
+	    ;;
+	H)
+	    HUTCH=${OPTARG^^}
 	    ;;
 	b)
 	    BOXNAME=$OPTARG
