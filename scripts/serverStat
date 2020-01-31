@@ -226,7 +226,83 @@ elif [[ $CMD == "console" ]]; then
 elif [[ $CMD == "reset" ]]; then
     ipmitool -I lanplus -U ADMIN -P ipmia8min -H $NAMEIPMI power reset
 elif [[ $CMD == "expert" ]]; then
-    check_host $NAME
+    echo "Host netconfig entry:"
+    echo -e "-------------------------------------------------"
+    netconfig view $NAME
+    echo -e ""
+    echo -e "Checking IPMI power status:"
+    echo -e "-------------------------------------------------"
+    ipmitool -I lanplus -H $NAME-ipmi -U ADMIN -P ipmia8min power status
+    echo -e ""
+    echo -e "Checking host/ipmi/fez network interfaces are online:"
+    echo -e "-------------------------------------------------"
+    ping -w 2 $NAME >/dev/null 2>&1
+    if [[ $? == 0 ]]; then
+       echo "$NAME pings."
+       CDS_ONLINE=1
+    else 
+       echo "$NAME does not ping."
+       CDS_ONLINE=0
+    fi
+    ping -w 2 $NAME-ipmi >/dev/null 2>&1
+    if [[ $? == 0 ]]; then
+       echo "$NAME-ipmi pings."
+    else 
+       echo "$NAME-ipmi does not ping."
+    fi
+    ping -w 2 $NAME-fez >/dev/null 2>&1
+    if [[ $? == 0 ]]; then
+       echo "$NAME-fez pings."
+    else 
+       echo "$NAME-fez does not ping."
+    fi
+    echo -e " "
+    if [[ $CDS_ONLINE == 1 ]]; then
+	ssh -qT $NAME <<EOF
+	    source /reg/g/pcds/setup/pcds_shortcuts.sh
+	    export PATH=$PATH:/sbin/:/usr/sbin
+	    echo -e "Red Hat Version:"
+	    echo -e "-------------------------------------------------"
+	    uname -r | cut -d '.' -f 6
+	    echo -e ""
+	    echo -e "SLAC PCI Hardware:"
+	    echo -e "-------------------------------------------------"
+	    lspci | grep SLAC
+	    echo -e ""
+	    echo -e "Network PCI Hardware:"
+	    echo -e "-------------------------------------------------"
+	    lspci | grep Ethernet
+	    echo -e ""
+	    echo -e "Leutron PCI Hardware:"
+	    echo -e "-------------------------------------------------"
+	    echo -e ""
+	    if [[ -e /opt/EDTpdv/pciload ]]; then
+	       echo -e "EDT Cards:"
+	       echo -e "-------------------------------------------------"
+	       /opt/EDTpdv/pciload
+	    fi
+	    echo -e ""
+	    echo -e "IOC Processes:"
+	    echo -e "-------------------------------------------------"
+	    show_epics_sioc
+EOF
+    else
+	echo "$NAME is offline.  Skipping internal checks."
+	echo -e "-------------------------------------------------"
+    fi
+    echo -e ""
+    echo -e "PCDS Drivers:"
+    IOCSTARTUP=/reg/g/pcds/dist/pds/boot/$NAME
+    if [[ -e $IOCSTARTUP ]]; then
+	echo $IOCSTARTUP
+	echo -e "-------------------------------------------------"
+	cat $IOCSTARTUP
+    fi
+    DAQSTARTUP=/reg/d/iocCommon/hosts/$NAME/startup.cmd
+    if [[ -e $DAQSTARTUP ]]; then
+	echo -e "-------------------------------------------------"
+	cat $DAQSTARTUP
+    fi
 else
     ISON=`ipmitool -U ADMIN -P ipmia8min -H $NAMEIPMI power status | awk 'NF>=2 {print $(NF)}'`
     if [[ $ISON == *off* ]]; then
