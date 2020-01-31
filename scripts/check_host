@@ -1,6 +1,5 @@
 #!/bin/bash
 
-HOSTNAME=$1
 function usage(){
 cat <<EOF
 Usage:   $0 <hostname>
@@ -18,9 +17,10 @@ elif [[ ($1 == "--help") || ($1 == "-h") ]]; then
     exit 0
 fi
 
+HOSTNAME=$1
 echo "Host netconfig entry:"
 echo -e "-------------------------------------------------"
-netconfig view $1
+netconfig view $HOSTNAME
 
 echo -e ""
 echo -e "Checking IPMI power status:"
