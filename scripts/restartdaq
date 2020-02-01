@@ -91,7 +91,7 @@ DAQHOST=`wheredaq`
 if [[ $DAQHOST != *$NOTRUNNING* ]]; then
     echo stop the DAQ on $DAQHOST from $HOSTNAME
     T="$(date +%s%N)"
-    /reg/g/pcds/dist/pds/tools/procmgr/procmgr stop \
+    /reg/g/pcds/dist/pds/$HUTCH/current/tools/procmgr/procmgr stop \
 	/reg/g/pcds/dist/pds/$HUTCH/scripts/$HUTCH$CNFEXT 
 
     PLATFORM=`grep 'if not platform' /reg/g/pcds/dist/pds/$HUTCH/scripts/$HUTCH$CNFEXT | awk '{print $NF}' | sed s/\'//g`
@@ -113,7 +113,7 @@ echo start DAQ on $AIMHOST
 if [ $HOSTNAME == $AIMHOST ]; then
     unset PYTHONPATH
     unset LD_LIBRARY_PATH
-    /reg/g/pcds/dist/pds/tools/procmgr/procmgr start \
+    /reg/g/pcds/dist/pds/$HUTCH/current/tools/procmgr/procmgr start \
 	/reg/g/pcds/dist/pds/$HUTCH/scripts/$HUTCH$CNFEXT -c 2000000000 -o /reg/g/pcds/pds/$HUTCH/logfiles
 else
     ssh -Y $AIMHOST restartdaq

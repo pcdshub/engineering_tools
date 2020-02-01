@@ -70,9 +70,9 @@ if [ $HOSTNAME == $DAQHOST ]; then
     read -p "Do you really intend to restart the ami_client on $DAQHOST? (y/n)"
     if [ "$REPLY" == "y" ];then
 	echo "Restarting the ami_client...";
-	/reg/g/pcds/dist/pds/tools/procmgr/procmgr stop \
+	/reg/g/pcds/dist/pds/$HUTCH/current/tools/procmgr/procmgr stop \
 	    /reg/g/pcds/dist/pds/$HUTCH/scripts/$HUTCH$CNFEXT ami_client 
-	/reg/g/pcds/dist/pds/tools/procmgr/procmgr start \
+	/reg/g/pcds/dist/pds/$HUTCH/current/tools/procmgr/procmgr start \
  	    /reg/g/pcds/dist/pds/$HUTCH/scripts/$HUTCH$CNFEXT -c 2000000000 -o /reg/g/pcds/pds/$HUTCH/logfiles ami_client 
 	exit
     else
