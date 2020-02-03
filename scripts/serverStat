@@ -1,29 +1,29 @@
 #! /bin/bash
 
 names_from_name(){
-if [ $# -lt 1 ]; then
-    echo 'need arguments: input IP'
-fi
-INNAME=$1
-if [[ $INNAME == *'-ipmi'* ]]; then
-    INNAME=`echo $INNAME | sed s/-ipmi//g`
-elif [[ $INNAME == *'-fez'* ]]; then
-    INNAME=`echo $INNAME | sed s/-fez//g`
-elif [[ $INNAME == *'-ana'* ]]; then
-    INNAME=`echo $INNAME | sed s/-ana//g`
-fi
-CDSNAME=$INNAME
-CDSIP=`netconfig search $CDSNAME | grep IP: | awk {'print $2'}`
-if [[ `netconfig search $NAME-ipmi --brief | wc -w` -gt 0 ]]; then
-    NAMEIPMI=$INNAME-ipmi
-fi
-if [[ `netconfig search $NAME-fez --brief | wc -w` -gt 0 ]]; then
-    FEZNAME=$INNAME-fez
-    FEZIP=`netconfig search $FEZNAME | grep IP: | awk {'print $2'}`
-fi
-if [[ `netconfig search $NAME-ana --brief | wc -w` -gt 0 ]]; then
-    ANANAME=$INNAME-ana
-fi
+    if [ $# -lt 1 ]; then
+	echo 'need arguments: input IP'
+    fi
+    INNAME=$1
+    if [[ $INNAME == *'-ipmi'* ]]; then
+	INNAME=`echo $INNAME | sed s/-ipmi//g`
+    elif [[ $INNAME == *'-fez'* ]]; then
+	INNAME=`echo $INNAME | sed s/-fez//g`
+    elif [[ $INNAME == *'-ana'* ]]; then
+	INNAME=`echo $INNAME | sed s/-ana//g`
+    fi
+    CDSNAME=$INNAME
+    CDSIP=`netconfig search $CDSNAME | grep IP: | awk {'print $2'}`
+    if [[ `netconfig search $NAME-ipmi --brief | wc -w` -gt 0 ]]; then
+	NAMEIPMI=$INNAME-ipmi
+    fi
+    if [[ `netconfig search $NAME-fez --brief | wc -w` -gt 0 ]]; then
+	FEZNAME=$INNAME-fez
+	FEZIP=`netconfig search $FEZNAME | grep IP: | awk {'print $2'}`
+    fi
+    if [[ `netconfig search $NAME-ana --brief | wc -w` -gt 0 ]]; then
+	ANANAME=$INNAME-ana
+    fi
 }
 
 isCam(){
@@ -75,12 +75,12 @@ host_from_PV(){
 
 usage(){
 cat << EOF
-usage: $0 options
+usage: $0 servername options
 
-script to check statii of servers & reboot/power cycle them
+Script to check status of servers & reboot/power cycle them
 
 SIGNATURE:
-serverStat <servername> <optinal: commant>
+serverStat <servername> [command]
 
 default command is 'status', list of commands:
 status : print power status of machine, try to ping interfaces
@@ -89,6 +89,7 @@ off    : power machine off
 cycle  : power cycle machine, wait a few second in off state
 reset  : reset machine (ideally try that before power cycling)
 console: open the ipmi console where possible
+expert : display info and run checks on server
 
 EOF
 }
@@ -112,23 +113,24 @@ let HOST_HAS_FEZ-=1
 if [[ $# < 2 ]]; then
     if [[ $# < 1 ]]; then
 	usage
-	exit
+	exit 1
         echo 'why here?'
     elif [[ $1 =~ ^(h|-h|-help|--help) ]]; then
 	usage
-	exit
+	exit 0
         echo 'why here?'
     else
 	CMD='status'
 	DEV=$1
     fi
 else
-    if [[ $2 =~ ^(cycle|off|on|status|console|reset) ]]; then
+    if [[ $2 =~ ^(cycle|off|on|status|console|reset|expert) ]]; then
 	DEV=$1
 	CMD=$2
     else
-	DEV=$1
-	CMD=$2
+	echo "serverStat: invalid option -- '$2'"
+	echo "Try $0 --help for more information."
+	exit 1
     fi
 fi
 NAME=$DEV
@@ -223,6 +225,84 @@ elif [[ $CMD == "console" ]]; then
     xterm -hold -bg black -fg white -T $NAME -e ipmitool -I lanplus -U ADMIN -P ipmia8min -H $NAMEIPMI sol activate &
 elif [[ $CMD == "reset" ]]; then
     ipmitool -I lanplus -U ADMIN -P ipmia8min -H $NAMEIPMI power reset
+elif [[ $CMD == "expert" ]]; then
+    echo "Host netconfig entry:"
+    echo -e "-------------------------------------------------"
+    netconfig view $NAME
+    echo -e ""
+    echo -e "Checking IPMI power status:"
+    echo -e "-------------------------------------------------"
+    ipmitool -I lanplus -H $NAME-ipmi -U ADMIN -P ipmia8min power status
+    echo -e ""
+    echo -e "Checking host/ipmi/fez network interfaces are online:"
+    echo -e "-------------------------------------------------"
+    ping -w 2 $NAME >/dev/null 2>&1
+    if [[ $? == 0 ]]; then
+       echo "$NAME pings."
+       CDS_ONLINE=1
+    else 
+       echo "$NAME does not ping."
+       CDS_ONLINE=0
+    fi
+    ping -w 2 $NAME-ipmi >/dev/null 2>&1
+    if [[ $? == 0 ]]; then
+       echo "$NAME-ipmi pings."
+    else 
+       echo "$NAME-ipmi does not ping."
+    fi
+    ping -w 2 $NAME-fez >/dev/null 2>&1
+    if [[ $? == 0 ]]; then
+       echo "$NAME-fez pings."
+    else 
+       echo "$NAME-fez does not ping."
+    fi
+    echo -e " "
+    if [[ $CDS_ONLINE == 1 ]]; then
+	ssh -qT $NAME <<EOF
+	    source /reg/g/pcds/setup/pcds_shortcuts.sh
+	    export PATH=\$PATH:/sbin/:/usr/sbin
+	    echo -e "Red Hat Version:"
+	    echo -e "-------------------------------------------------"
+	    uname -r | cut -d '.' -f 6
+	    echo -e ""
+	    echo -e "SLAC PCI Hardware:"
+	    echo -e "-------------------------------------------------"
+	    lspci | grep SLAC
+	    echo -e ""
+	    echo -e "Network PCI Hardware:"
+	    echo -e "-------------------------------------------------"
+	    lspci | grep Ethernet
+	    echo -e ""
+	    echo -e "Leutron PCI Hardware:"
+	    echo -e "-------------------------------------------------"
+	    echo -e ""
+	    if [[ -e /opt/EDTpdv/pciload ]]; then
+	       echo -e "EDT Cards:"
+	       echo -e "-------------------------------------------------"
+	       /opt/EDTpdv/pciload
+	    fi
+	    echo -e ""
+	    echo -e "IOC Processes:"
+	    echo -e "-------------------------------------------------"
+	    show_epics_sioc
+EOF
+    else
+	echo "$NAME is offline.  Skipping internal checks."
+	echo -e "-------------------------------------------------"
+    fi
+    echo -e ""
+    echo -e "PCDS Drivers:"
+    IOCSTARTUP=/reg/g/pcds/dist/pds/boot/$NAME
+    if [[ -e $IOCSTARTUP ]]; then
+	echo $IOCSTARTUP
+	echo -e "-------------------------------------------------"
+	cat $IOCSTARTUP
+    fi
+    DAQSTARTUP=/reg/d/iocCommon/hosts/$NAME/startup.cmd
+    if [[ -e $DAQSTARTUP ]]; then
+	echo -e "-------------------------------------------------"
+	cat $DAQSTARTUP
+    fi
 else
     ISON=`ipmitool -U ADMIN -P ipmia8min -H $NAMEIPMI power status | awk 'NF>=2 {print $(NF)}'`
     if [[ $ISON == *off* ]]; then
