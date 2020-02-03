@@ -260,7 +260,7 @@ elif [[ $CMD == "expert" ]]; then
     if [[ $CDS_ONLINE == 1 ]]; then
 	ssh -qT $NAME <<EOF
 	    source /reg/g/pcds/setup/pcds_shortcuts.sh
-	    export PATH=$PATH:/sbin/:/usr/sbin
+	    export PATH=\$PATH:/sbin/:/usr/sbin
 	    echo -e "Red Hat Version:"
 	    echo -e "-------------------------------------------------"
 	    uname -r | cut -d '.' -f 6
