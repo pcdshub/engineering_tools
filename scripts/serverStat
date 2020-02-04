@@ -174,11 +174,11 @@ if [[ $ISSRV -lt 1 ]] && [[ $HUTCH != 'unknown_hutch' ]]; then
     if [[  $DEV == *'event'* ]]; then
 	DSSNODES=`grep dss_nodes /reg/g/pcds/dist/pds/${HUTCH}/scripts/${HUTCH}.cnf | grep -v '#' | head -n1`
 	i=$((${#DEV}-1));NEV=`echo "${DEV:$i:1}"`;AWKNUM=$(($NEV+4))
-	NAME=`echo $DSSNODES | awk -v temp=$AWKNUM {'print $temp'}  |  sed s/,// | sed s/_/-/g`
+	NAME=`echo $DSSNODES | awk -v temp=$AWKNUM {'print $temp'}  |  sed s/,// | sed s/_/-/g | sed s/\'//g | sed s/-fez//g`	
     else
 	NDEV=`grep $DEV /reg/g/pcds/dist/pds/${HUTCH}/scripts/${HUTCH}.cnf | grep -v '#' | grep host | wc -l`
 	if [ $NDEV -eq 1 ]; then
-	    NAME=`grep $DEV /reg/g/pcds/dist/pds/${HUTCH}/scripts/${HUTCH}.cnf | grep -v '#' | grep host | awk {'print $1'} | sed s/{host://g | sed s/,// | sed s/_/-/g`
+	    NAME=`grep $DEV /reg/g/pcds/dist/pds/${HUTCH}/scripts/${HUTCH}.cnf | grep -v '#' | grep host | awk {'print $1'} | sed s/{host://g | sed s/,// | sed s/_/-/g | sed s/\'//g | sed s/-fez//g`
 	elif  [ $NDEV -eq 0 ]; then
 	    #check if we have a camera, will exit if yes.
 	    isCam
@@ -308,7 +308,7 @@ else
     if [[ $ISON == *off* ]]; then
 	echo $DEV is powered off
 	exit
-    elif [[ $ISON == *off* ]]; then
+    elif [[ $ISON == *on* ]]; then
 	echo $DEV is powered on
     else
 	echo Cannot connect to $NAMEIPMI
