@@ -5,13 +5,13 @@ ulimit -c unlimited
 
 hx2Ipm='hx2_ipm'
 um6Ipm='um6_ipm'
-dg2Ipm='hfxdg2_ipm'
-xcsIpm='decmono ipmmono diomono pim3 pim3m pim4 ipm3 ipm4 ipm5 pim5 ipmgonLD ipmlamLD snddio'
+dg2Ipm='hxfdg2_ipm'
+xcsIpm='decmono ipmmono diomono pim3 pim3m ipm3 pim4 ipm4 snddio ipm5 pim5 ipmgonLD ipmlamLD'
 xppIpm='diomono decmono ipm2 ipm3 pim3 diodeU'
-cxiIpm='dg2ipm dg3ipm'
+cxiIpm='pim3m dg2ipm dg3ipm'
 mfxIpm='dg1ipm dg2ipm'
-mecIpm='ipm1 ipm2 ipm3 hxm_pim xt2_pim2 xt2pim3 tc1_imb1 usr_imb1 usr_imb2 las_imb1 las_imb2'
-hfxIpm='hfxipm1'
+mecIpm='ipm1 ipm2 ipm3 hxm_pim pim2 pim3 tc1_imb1 usr_imb1 usr_imb2 las_imb1 las_imb2'
+lfeIpm='um6_ipm hfxdg2_ipm pim3m'
 
 ipmList()
 {
@@ -27,7 +27,7 @@ elif [ $hutch == 'mfx' ]; then
 elif [ $hutch == 'mec' ]; then
    for box in $hx2Ipm $um6Ipm $mecIpm; do echo $box; done
 elif [ $hutch == 'lfe' ]; then
-   for box in $hfxIpm; do echo $box; done
+   for box in $lfeIpm; do echo $box; done
 else
     echo 'hutch cannot be determined, quit'
     exit
@@ -56,6 +56,10 @@ elif [ $1 == 'hfxdg2_ipm' ]; then
     BASE='HFX:DG2:BMMON'
     EVR='HFX:DG2:BMMON:EVR'
     WAVE8='hfxipm'
+elif [ $1 == 'pim3m' ]; then
+    BASE="HFX:DG3:IMB:02"
+    IOC="XCS:R38:IOC:43"
+    EVR="XCS:R38:EVR:43"
 fi
 
 # Hutch-specific IPMs
@@ -74,10 +78,6 @@ if [ $hutch == 'xcs' ]; then
 	EVR="XCS:R38:EVR:43"
     elif [ $1 == 'pim3' ]; then
 	BASE="HFX:DG3:IMB:04"
-	IOC="XCS:R38:IOC:43"
-	EVR="XCS:R38:EVR:43"
-    elif [ $1 == 'pim3m' ]; then
-	BASE="HFX:DG3:IMB:02"
 	IOC="XCS:R38:IOC:43"
 	EVR="XCS:R38:EVR:43"
     elif [ $1 == 'ipm3' ]; then
