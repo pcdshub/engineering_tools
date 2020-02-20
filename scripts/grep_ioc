@@ -18,7 +18,7 @@ if [[ -z $2 ]]; then
     HUTCH="all"
 else
     for hutchname in "xpp" "xcs" "cxi" "mfx" "mec" "xrt" "aux" "det" "fee" "hpl" "icl" "las" "lfe" "tst" "thz" "all"; do 
-        if [[ "${2,,}" == $hutchname ]]; then
+        if [[ "${2}" == $hutchname ]]; then
             HUTCH=$hutchname
         fi
     done
