@@ -230,7 +230,7 @@ ipmGUI(){
         if [ ${#WAVE8} -gt 0 ]; then
             /reg/g/pcds/pyps/apps/wave8/latest/wave8 --base $BASE --evr $EVR --ioc $IOC
         else
-            /reg/g/pcds/controls/pycaqt/ipimb/ipimb --base $BASE --ioc $IOC --evr $EVR --dir /reg/g/pcds/controls/pycaqt/ipimb
+            /reg/g/pcds/controls/pycaqt/ipimb/ipimb --base $BASE --ioc $IOC --evr $EVR
         fi
     else
         echo "Could not connect to ${BASE}. Exiting..."
@@ -292,7 +292,7 @@ do
 	b)
 	    BOXNAME=$OPTARG
 	    ;;
-	d) 
+	d)
 	    HELPDAQBLD=1
 	    ;;
 	l)
