@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+# Source this to activate a pcds conda environment.
+# By default, this activates the latest environment.
+# Use export PCDS_CONDA_VER=<version> before running to pick a different env.
+unset LD_LIBRARY_PATH
+unset PYTHONPATH
+CONDA_ROOT="/reg/g/pcds/pyps/conda/py36"
+source "${CONDA_ROOT}/etc/profile.d/conda.sh"
+# Activate base env first so things like conda build are available
+conda activate
+# Default to dev pcds release
+conda activate dev
+
+export PYTHONPATH=/reg/g/pcds/pyps/apps/dev/pythonpath
+export PYQTDESIGNERPATH=/reg/g/pcds/pyps/conda/dev_designer_plugins/:$PYQTDESIGNERPATH
+export PYDM_DESIGNER_ONLINE=1
+export PYDM_DISPLAYS_PATH=/reg/g/pcds/epics-dev/
+export LUCID_CONFIG=/reg/g/pcds/pyps/apps/hutch-python/lucid_config/
+export HAPPI_CFG=/reg/g/pcds/pyps/apps/hutch-python/device_config/happi.cfg
