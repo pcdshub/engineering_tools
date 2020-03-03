@@ -25,10 +25,10 @@ class deviceDict():
         self.deviceDict['JJslit']['pcdssetup-motors-setup']=[]
         for motorName in {'jj_vg', 'jj_hg', 'jj_vo', 'jj_ho'}:
             deviceMotor={}            
-            if motorName=='jj_vg': deviceMotor['purpose']='vertical gap'
-            elif motorName=='jj_hg': deviceMotor['purpose']='horizontal gap'
-            elif motorName=='jj_vo': deviceMotor['purpose']='vertical offset'
-            elif motorName=='jj_ho': deviceMotor['purpose']='horizontal offset'
+            if motorName=='jj_vg': deviceMotor['purpose']='slit vertical gap'
+            elif motorName=='jj_hg': deviceMotor['purpose']='slit horizontal gap'
+            elif motorName=='jj_vo': deviceMotor['purpose']='slit vertical offset'
+            elif motorName=='jj_ho': deviceMotor['purpose']='slit horizontal offset'
             deviceMotor['name']=motorName
             deviceMotor['stageidentity']=motorName
             if hutch is not None:
@@ -47,9 +47,9 @@ class deviceDict():
         for motorName in {'vHs_v', 'vHs_h', 'vHs_r'}:
             deviceMotor['name']=motorName
             deviceMotor['stageidentity']=motorName
-            if motorName=='vHs_v': deviceMotor['purpose']='common vertical'
-            elif motorName=='vHs_h': deviceMotor['purpose']='common horizontal'
-            elif motorName=='vHs_r': deviceMotor['purpose']='common rotation'
+            if motorName=='vHs_v': deviceMotor['purpose']='von Hamos common vertical'
+            elif motorName=='vHs_h': deviceMotor['purpose']='von Hamos common horizontal'
+            elif motorName=='vHs_r': deviceMotor['purpose']='von Hamos common rotation'
             if hutch is not None:
                 deviceMotor['pvbase']='%s:USR:MMS:'%hutch.upper()
             self.deviceDict['vonHamos_small']['pcdssetup-motors-setup'].append(deviceMotor)
@@ -66,9 +66,9 @@ class deviceDict():
         for motorName in {'vH_v', 'vH_h', 'vH_r'}:
             deviceMotor['name']=motorName
             deviceMotor['stageidentity']=motorName
-            if motorName=='vHs_v': deviceMotor['purpose']='common vertical'
-            elif motorName=='vHs_h': deviceMotor['purpose']='common horizontal'
-            elif motorName=='vHs_r': deviceMotor['purpose']='common rotation'
+            if motorName=='vHs_v': deviceMotor['purpose']='von Hamos common vertical'
+            elif motorName=='vHs_h': deviceMotor['purpose']='von Hamos common horizontal'
+            elif motorName=='vHs_r': deviceMotor['purpose']='von Hamos common rotation'
             if hutch is not None:
                 deviceMotor['pvbase']='%s:USR:MMS:'%hutch.upper()
             self.deviceDict['vonHamos']['pcdssetup-motors-setup'].append(deviceMotor)

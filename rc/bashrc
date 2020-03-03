@@ -21,7 +21,7 @@ if [ -f "${HOME}/.pcds_setup.sh" ]; then
     source "${HOME}/.pcds_setup.sh"
 fi
 
-source pcds_shortcuts.sh
+source /reg/g/pcds/setup/pcds_shortcuts.sh
 
 export PATH=$PATH:/reg/g/pcds/engineering_tools/latest/scripts/
 
