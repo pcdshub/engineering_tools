@@ -28,7 +28,6 @@ export PATH=$PATH:/reg/g/pcds/engineering_tools/latest/scripts/
 ########################################
 ### Specific PCDS environment logins ###
 ########################################
-alias epicsenv='. /reg/g/pcds/setup/epics-cur.sh'
+alias epicsenv='. /reg/g/pcds/setup/epicsenv-cur.sh'
 alias ana_env='source /reg/g/psdm/psconda.sh'
 alias plc_env='. /reg/g/pcds/setup/plcenv.sh'
-
