@@ -271,7 +271,7 @@ helpBld(){
         caput HFX:DG3:CVV:01:Stats2:EnableCallbacks 0
         caput XCS:DG3:CVV:02:Stats2:EnableCallbacks 0
         # Check if actually set      
-        if [[ $(caget -nt HFX:DG3:CVV:01:Stat2:EnableCallbacks 2> /dev/null) == 0 ]] && [[ $(caget -nt XCS:DG3:CVV:02:Stat2:EnableCallbacks 2> /dev/null) == 0 ]]; then
+        if [[ $(caget -nt HFX:DG3:CVV:01:Stats2:EnableCallbacks 2> /dev/null) == 0 ]] && [[ $(caget -nt XCS:DG3:CVV:02:Stats2:EnableCallbacks 2> /dev/null) == 0 ]]; then
             echo 'Turned off statsPlugin for XCS ipm3 and dio3'
         else
             echo 'Was unable to turn off statsPlugin'
