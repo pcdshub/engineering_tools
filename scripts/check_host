@@ -1,21 +1,26 @@
 #!/bin/bash
 
-HOSTNAME=$1
 function usage(){
-    cat <<EOF
-Display host info and runs some checks.
+cat <<EOF
+Usage:   $0 <hostname>
 
-Usage:   host_checkup <hostname>
+Display host info and run some checks.
 
 EOF
 }
 
 if [[ -z $1 ]]; then
     usage
+    exit 1
+elif [[ ($1 == "--help") || ($1 == "-h") ]]; then
+    usage
+    exit 0
 fi
+
+HOSTNAME=$1
 echo "Host netconfig entry:"
 echo -e "-------------------------------------------------"
-netconfig view $1
+netconfig view $HOSTNAME
 
 echo -e ""
 echo -e "Checking IPMI power status:"
@@ -46,33 +51,33 @@ else
 fi
 echo -e " "
 if [[ $CDS_ONLINE == 1 ]]; then
-ssh -qT $HOSTNAME <<EOF
-    source /reg/g/pcds/setup/pcds_shortcuts.sh
-    export PATH=$PATH:/sbin/:/usr/sbin
-    echo -e "Red Hat Version:"
-    echo -e "-------------------------------------------------"
-    uname -r | cut -d '.' -f 6
-    echo -e ""
-    echo -e "SLAC PCI Hardware:"
-    echo -e "-------------------------------------------------"
-    lspci | grep SLAC
-    echo -e ""
-    echo -e "Network PCI Hardware:"
-    echo -e "-------------------------------------------------"
-    lspci | grep Ethernet
-    echo -e ""
-    echo -e "Leutron PCI Hardware:"
-    echo -e "-------------------------------------------------"
-    echo -e ""
-    if [[ -e /opt/EDTpdv/pciload ]]; then
-       echo -e "EDT Cards:"
-       echo -e "-------------------------------------------------"
-       /opt/EDTpdv/pciload
-    fi
-    echo -e ""
-    echo -e "IOC Processes:"
-    echo -e "-------------------------------------------------"
-    show_epics_sioc
+    ssh -qT $HOSTNAME <<EOF
+	source /reg/g/pcds/setup/pcds_shortcuts.sh
+	export PATH=\$PATH:/sbin/:/usr/sbin
+	echo -e "Red Hat Version:"
+	echo -e "-------------------------------------------------"
+	uname -r | cut -d '.' -f 6
+	echo -e ""
+	echo -e "SLAC PCI Hardware:"
+	echo -e "-------------------------------------------------"
+	lspci | grep SLAC
+	echo -e ""
+	echo -e "Network PCI Hardware:"
+	echo -e "-------------------------------------------------"
+	lspci | grep Ethernet
+	echo -e ""
+	echo -e "Leutron PCI Hardware:"
+	echo -e "-------------------------------------------------"
+	echo -e ""
+	if [[ -e /opt/EDTpdv/pciload ]]; then
+	   echo -e "EDT Cards:"
+	   echo -e "-------------------------------------------------"
+	   /opt/EDTpdv/pciload
+	fi
+	echo -e ""
+	echo -e "IOC Processes:"
+	echo -e "-------------------------------------------------"
+	show_epics_sioc
 EOF
 else
 echo "$HOSTNAME is offline.  Skipping internal checks."
