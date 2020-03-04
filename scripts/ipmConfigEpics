@@ -230,7 +230,7 @@ ipmGUI(){
         if [ ${#WAVE8} -gt 0 ]; then
             /reg/g/pcds/pyps/apps/wave8/latest/wave8 --base $BASE --evr $EVR --ioc $IOC
         else
-            /reg/g/pcds/controls/pycaqt/ipimb/ipimb --base $BASE --ioc $IOC --evr $EVR --dir /reg/g/pcds/controls/pycaqt/ipimb
+            /reg/g/pcds/controls/pycaqt/ipimb/ipimb --base $BASE --ioc $IOC --evr $EVR
         fi
     else
         echo "Could not connect to ${BASE}. Exiting..."
@@ -267,9 +267,15 @@ EOF
 # Turns off statsPlugin for these IPIMB boxes to prevent bogging down server and help Bld run at 120Hz
 helpBld(){
     if [[ $hutch == 'xcs' && ($BOXNAME == 'ipm3' || $BOXNAME == 'dio3') ]]; then
-        caput XCS:DG3:CVV:02:Stat2:EnableCallbacks 0
-        caput HFX:DG3:CVV:01:Stat2:EnableCallbacks 0
-        echo 'Turned off statsPlugin for XCS ipm3 and dio3' # TODO: Actually check if off
+        # Attempt to caput values
+        caput HFX:DG3:CVV:01:Stats2:EnableCallbacks 0
+        caput XCS:DG3:CVV:02:Stats2:EnableCallbacks 0
+        # Check if actually set      
+        if [[ $(caget -nt HFX:DG3:CVV:01:Stats2:EnableCallbacks 2> /dev/null) == 0 ]] && [[ $(caget -nt XCS:DG3:CVV:02:Stats2:EnableCallbacks 2> /dev/null) == 0 ]]; then
+            echo 'Turned off statsPlugin for XCS ipm3 and dio3'
+        else
+            echo 'Was unable to turn off statsPlugin'
+        fi
     else
         echo 'Selected box has no known Bld issue to fix'
 	exit 1
@@ -292,7 +298,7 @@ do
 	b)
 	    BOXNAME=$OPTARG
 	    ;;
-	d) 
+	d)
 	    HELPDAQBLD=1
 	    ;;
 	l)
