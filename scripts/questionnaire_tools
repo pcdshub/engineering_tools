@@ -1,7 +1,7 @@
 #!/reg/g/pcds/pyps/conda/py36/envs/pcds-1.2.5/bin/python
 import sys
 from psdm_qs_cli import QuestionnaireClient
-from deviceDicts import deviceDict
+import json
 import argparse
 
 class QuestionnaireTools():
@@ -9,8 +9,7 @@ class QuestionnaireTools():
     def __init__(self, **kwargs):
         self.qc = QuestionnaireClient(**kwargs)
         self.exp_dict = self.qc.getExpName2URAWIProposalIDs()
-        dd = deviceDict()
-        self.deviceDict = dd.getDeviceDict()
+        self.deviceDict = json.loads(open("deviceDict.json").read())
         self.allowedLocations=["Hutch-main experimental",
                                "Hutch-downbeam area",
                                "XPP goniometer",
@@ -49,7 +48,7 @@ class QuestionnaireTools():
 
 
     def _propRun_from_propname(self, propname):
-        runStrs=['run17', 'run16', 'run15']
+        runStrs=['run18','run17', 'run16', 'run15']
         for runStr in runStrs:
             if propname in self.qc.getProposalsListForRun(runStr).keys():
                 return propname, runStr
@@ -72,7 +71,7 @@ class QuestionnaireTools():
                 return True
         return False
 
-    def _getProposalList(self, runs=[17], instrument=None):
+    def _getProposalList(self, runs=[18], instrument=None):
         proposalList=[]
         for key in self.exp_dict.keys():
             try:
@@ -86,7 +85,7 @@ class QuestionnaireTools():
                 pass        
         return proposalList
 
-    def _getExperimentList(self, runs=[17], instrument=None):
+    def _getExperimentList(self, runs=[18], instrument=None):
         proposalList=[]
         for key in self.exp_dict.keys():
             try:
@@ -145,7 +144,7 @@ class QuestionnaireTools():
         return device
 
     def addDeviceToProposal(self, expname, devicename, location=None):
-        proposal, runNo = _propRun_from_name(self, expname)
+        proposal, runNo = self._propRun_from_name(expname)
 
         deviceSetup = self._parseDeviceName(devicename)
         if deviceSetup['name'] not in self.deviceDict.keys():
@@ -169,11 +168,11 @@ class QuestionnaireTools():
                     if numDev>numNewDevice: numNewDevice=numDev+1
 
             for item in addDevice[lineItem]:
-                if lineItem=='pcdssetup-motors-setup' and 'pvbase' not in item.keys():
+                if lineItem=='pcdssetup-motors' and 'pvbase' not in item.keys():
                     item['pvbase']='%s:USR:MMS:'%(expname[:3].upper())
                 if 'location' in deviceSetup.keys() and \
                    deviceSetup['location'] in self.allowedLocations and \
-                   (lineItem=='pcdssetup-motors-setup' or lineItem=='pcdssetup-areadet-setup') \
+                   (lineItem=='pcdssetup-motors' or lineItem=='pcdssetup-areadet') \
                    and 'location' not in item.keys():
                     item['location']=location
                 if 'basename' in deviceSetup.keys():
@@ -200,16 +199,15 @@ args = parser.parse_args()
 
 
 if args.list_devices:
-    dd = deviceDict()    
+    deviceDict = json.loads(open("deviceDict.json").read())
     print('List of available devices: ')
-    for key in dd.getDeviceDict().keys():
+    for key in deviceDict.keys():
         print(key)
     if args.toExp is None:
         sys.exit()
 
 if args.print_device is not None:
-    dd = deviceDict()    
-    devd = dd.getDeviceDict()
+    devd = json.loads(open("deviceDict.json").read())
     if args.print_device not in devd.keys():
         print('device %s is not present in device list, avaiable devices are:'%args.print_device)
         print(devd.keys())
@@ -235,14 +233,14 @@ else:
 
 if args.propList:
     print('please be aware that this script takes experiment, not proposal names')
-    print(qs._getProposalList(runs=[17,16,15], instrument=None))
+    print(qs._getProposalList(runs=[18,17,16,15], instrument=None))
     #print('---------------------------')
     #print(qs._getProposalList(runs=[17], instrument=None))
     #print(qs._getExperimentList(runs=[17], instrument=None))
     sys.exit()
 
 if args.experimentList:
-    print(qs._getExperimentList(runs=[17,16,15], instrument=None))
+    print(qs._getExperimentList(runs=[18,17,16,15], instrument=None))
     #print('---------------------------')
     #print(qs._getProposalList(runs=[17], instrument=None))
     #print(qs._getExperimentList(runs=[17], instrument=None))
