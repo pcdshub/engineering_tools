@@ -1,0 +1,443 @@
+{
+    "CXI_stdCfg": {
+        "pcdssetup-areadet": [
+            {
+                "alias": "DscCsPad",
+                "record": "DSC rack",
+                "camtype": "CSPAD-2.3M"
+            }
+        ],
+        "pcdssetup-camera": [
+            {
+                "alias": "TimeTool",
+                "purpose": "Time Tool",
+                "record": "DAQ",
+                "camtrigger": "120",
+                "camtype": "Opal-1k"
+            },
+            {
+                "alias": "Sc1Questar",
+                "purpose": "Questar camera",
+                "record": "DAQ",
+                "camtrigger": "120",
+                "camtype": "Opal-1k"
+            },
+            {
+		"alias": "SideCam",
+                "purpose": "Side Viewing",
+                "record": "vewing only",
+                "camtrigger": "free run",
+                "camtype": "Uniq"
+            }
+	],
+	"pcdssetup-trig": [
+            {
+                "delay": "TBD",
+                "eventcode": "40;",
+                "purpose": "X-ray simulator EVR for LeCroy"
+            },
+            {
+                "delay": "TBD",
+                "eventcode": "40;",
+                "purpose": "X-ray simulator EVR for LeCroy"
+            }
+        ],
+        "pcdssetup-digitized": [
+            {
+                "device": "Agilent",
+                "purpose": "Fast Diode",
+                "rate": "8 Gs/s"
+            }
+        ],
+        "pcdssetup-motors": [
+            {
+                "invac": "Yes",
+                "location": "CXI SC1",
+                "name": "laser_incoupling_mirror_x",
+                "purpose": "Laser incoupling mirror X",
+                "pvbase": "CXI:USR:MMS:25",
+                "stageidentity": "VT-50"
+            },
+            {
+                "invac": "Yes",
+                "location": "CXI SC1",
+                "name": "laser_incoupling_mirror_y",
+                "purpose": "Laser incoupling mirror Y",
+                "pvbase": "CXI:USR:MMS:28",
+                "stageidentity": "VT-50"
+            },
+            {
+                "invac": "Yes",
+                "location": "CXI SC1",
+                "name": "laser_incoupling_mirror_z",
+                "purpose": "Laser incoupling mirror Z",
+                "pvbase": "CXI:USR:MMS:27",
+                "stageidentity": "VT-50"
+            },
+            {
+                "invac": "Yes",
+                "location": "CXI SC1",
+                "name": "laser_incoupling_lens_x",
+                "purpose": "Laser incoupling lens X",
+                "pvbase": "CXI:USR:MMS:26",
+                "stageidentity": "VT-21"
+            },
+            {
+                "invac": "Yes",
+                "location": "CXI SC1",
+                "name": "laser_sc1mirror1_yaw",
+                "purpose": "sc1 laser mirror yaw",
+                "pvbase": "CXI:LAS:PIC:03",
+                "stageidentity": "pico"
+            },
+            {
+                "invac": "Yes",
+                "location": "CXI SC1",
+                "name": "laser_sc1mirror1_pitch",
+                "purpose": "sc1 laser mirror pitch",
+                "pvbase": "CXI:LAS:PIC:02",
+                "stageidentity": "pico"
+            },
+            {
+                "invac": "Yes",
+                "location": "CXI SC1",
+                "name": "illumination_x",
+                "purpose": "Side Illumination X",
+                "pvbase": "CXI:SC1:MMS:09",
+                "stageidentity": "VT-21"
+            },
+            {
+                "invac": "Yes",
+                "location": "CXI SC1",
+                "name": "illumination_y",
+                "purpose": "Side Illumination Y",
+                "pvbase": "CXI:USR:MMS:17",
+                "stageidentity": "VT-21"
+            },
+            {
+                "invac": "Yes",
+                "location": "CXI SC1",
+                "name": "illumination_z",
+                "purpose": "Side Illumination Z",
+                "pvbase": "CXI:USR:MMS:19",
+                "stageidentity": "VT-21"
+            },
+            {
+                "invac": "Yes",
+                "location": "CXI SC1",
+                "name": "sample_x",
+                "purpose": "Sample Diode",
+                "pvbase": "CXI:SC1:MMS:02",
+                "stageidentity": "VT-50 (long)"
+            },
+            {
+                "invac": "Yes",
+                "location": "CXI SC1",
+                "name": "sc1diode_y",
+                "purpose": "SC1 fast diode piezo motors",
+                "pvbase": "CXI:SC1:MZM:09",
+                "stageidentity": "piezo"
+            },
+            {
+                "invac": "Yes",
+                "location": "CXI SC1",
+                "name": "Sc1Questar_zoom",
+                "purpose": "SC1 Questar zoom",
+                "pvbase": "CXI:SC1:MMS:01",
+                "stageidentity": "Questar"
+            },
+            {
+                "invac": "Yes",
+                "location": "CXI SC1",
+                "name": "Sc1Questar_x",
+                "purpose": "SC1 Questar X",
+                "pvbase": "CXI:SC1:MMS:03",
+                "stageidentity": "VT-21"
+            },
+            {
+                "invac": "Yes",
+                "location": "CXI SC1",
+                "name": "Sc1Questar_y",
+                "purpose": "SC1 Questar Y",
+                "pvbase": "CXI:SC1:MMS:04",
+                "stageidentity": "VT-21"
+            },
+            {
+                "invac": "Yes",
+                "location": "CXI SC1",
+                "name": "sc1objective_x",
+                "purpose": "SC1 Objective X",
+                "pvbase": "CXI:SC1:MMS:06",
+                "stageidentity": "VT-50"
+            },
+            {
+                "invac": "Yes",
+                "location": "CXI SC1",
+                "name": "sc1objective_y",
+                "purpose": "SC1 Objective Y",
+                "pvbase": "CXI:SC1:MMS:05",
+                "stageidentity": "VT-50"
+            },
+            {
+                "invac": "Yes",
+                "location": "CXI SC1",
+                "name": "sc1objective_z1",
+                "purpose": "SC1 Objective top z",
+                "pvbase": "CXI:SC1:MMS:08",
+                "stageidentity": "VT-50"
+            },
+            {
+                "invac": "Yes",
+                "location": "CXI SC1",
+                "name": "sc1objective_z2",
+                "purpose": "SC1 Objective bot z",
+                "pvbase": "CXI:SC1:MMS:07",
+                "stageidentity": "VT-50"
+            },
+            {
+                "location": "CXI SC1",
+                "name": "pi1_x",
+                "purpose": "SC1 PI1 X",
+                "pvbase": "CXI:PI1:MMS:01",
+                "stageidentity": "IMS smart motor"
+            },
+            {
+                "location": "CXI SC1",
+                "name": "pi1_y",
+                "purpose": "SC1 PI1 Y",
+                "pvbase": "CXI:PI1:MMS:02",
+                "stageidentity": "IMS smart motor"
+            },
+            {
+                "location": "CXI SC1",
+                "name": "pi1_z",
+                "purpose": "SC1 PI1 Z",
+                "pvbase": "CXI:PI1:MMS:03",
+                "stageidentity": "IMS smart motor"
+            },
+            {
+                "location": "CXI SC1",
+                "name": "pi1_fine_x",
+                "purpose": "SC1 PI1 Fine X",
+                "pvbase": "CXI:USR:MMS:01",
+                "stageidentity": "IMS smart motor"
+            },
+            {
+                "location": "CXI SC1",
+                "name": "pi1_fine_y",
+                "purpose": "SC1 PI1 Fine Y",
+                "pvbase": "CXI:USR:MMS:02",
+                "stageidentity": "IMS smart motor"
+            },
+            {
+                "location": "CXI SC1",
+                "name": "pi1_fine_z",
+                "purpose": "SC1 PI1 Fine Z",
+                "pvbase": "CXI:USR:MMS:03",
+                "stageidentity": "IMS smart motor"
+            },
+            {
+                "location": "CXI SC1",
+                "name": "sc1led_stick",
+                "purpose": "SC1 LED",
+                "pvbase": "CXI:SC1:MMS:18",
+                "stageidentity": "IMS smart motor"
+            },
+            {
+                "invac": "Yes",
+                "location": "CXI SC1",
+                "name": "sc1ap1_x",
+                "purpose": "SC1 Aperture 1 X",
+                "pvbase": "CXI:SC1:MZM:05",
+                "stageidentity": "piezo"
+            },
+            {
+                "invac": "Yes",
+                "location": "CXI SC1",
+                "name": "sc1ap1_y",
+                "purpose": "SC1 Aperture 1 Y",
+                "pvbase": "CXI:SC1:MZM:06",
+                "stageidentity": "piezo"
+            },
+            {
+                " pvbase": "CXI:SC1:MZM:07",
+                "invac": "Yes",
+                "location": "CXI SC1",
+                "name": "sc1ap2_x",
+                "purpose": "SC1 Aperture 2 X",
+                "stageidentity": "piezo"
+            },
+            {
+                "invac": "Yes",
+                "location": "CXI SC1",
+                "name": "sc1ap2_y",
+                "purpose": "SC1 Aperture 2 Y",
+                "pvbase": "CXI:SC1:MZM:08",
+                "stageidentity": "piezo"
+            },
+            {
+                "invac": "Yes",
+                "location": "CXI SC1",
+                "name": "sc1ap0_s",
+                "purpose": "SC1 Ta Jaws +X blade",
+                "pvbase": "CXI:SC1:MZM:01",
+                "stageidentity": "piezo"
+            },
+            {
+                "invac": "Yes",
+                "location": "CXI SC1",
+                "name": "sc1ap0_n",
+                "purpose": "SC1 Ta Jaws -X blade",
+                "pvbase": "CXI:SC1:MZM:14",
+                "stageidentity": "piezo"
+            },
+            {
+                "invac": "Yes",
+                "location": "CXI SC1",
+                "name": "sc1ap0_u",
+                "purpose": "SC1 Ta Jaws +Y blade",
+                "pvbase": "CXI:SC1:MZM:02",
+                "stageidentity": "piezo"
+            },
+            {
+                "invac": "Yes",
+                "location": "CXI SC1",
+                "name": "sc1ap0_d",
+                "purpose": "SC1 Ta Jaws -Y blade",
+                "pvbase": "CXI:SC1:MZM:04",
+                "stageidentity": "piezo"
+            },
+            {
+                "invac": "Yes",
+                "location": "CXI SC1",
+                "name": "sample_y",
+                "purpose": "Sample Y",
+                "pvbase": "CXI:USR:MMS:18",
+                "stageidentity": "VT-50"
+            },
+            {
+                "invac": "Yes",
+                "location": "CXI SC1",
+                "name": "sample_z",
+                "purpose": "Sample Z",
+                "pvbase": "CXI:USR:MMS:20",
+                "stageidentity": "VT-50"
+            },
+            {
+                "connection": "On movable optical table for OPO",
+                "name": "opo_wp",
+                "purpose": "Newport Rotational Motor",
+                "pvbase": "CXI:USR:MMN:",
+                "stageidentity": "Newport"
+            }
+        ]
+    },
+    "JJslit": {
+        "pcdssetup-motors": [
+            {
+                "name": "jj_vg",
+                "purpose": "slit vertical gap",
+                "stageidentity": "jj_vg"
+            },
+            {
+                "name": "jj_vo",
+                "purpose": "slit vertical offset",
+                "stageidentity": "jj_vo"
+            },
+            {
+                "name": "jj_hg",
+                "purpose": "slit horizontal gap",
+                "stageidentity": "jj_hg"
+            },
+            {
+                "name": "vH_r",
+                "purpose": "von Hamos common vertical",
+                "stageidentity": "vH_r"
+            }
+        ]
+    },
+    "fastDiode": {
+        "pcdssetup-digitized": [
+            {
+                "device": "Agilent",
+                "purpose": "Fast Diode",
+                "rate": "8 Gs/s"
+            }
+        ]
+    },
+    "vonHamos": {
+        "pcdssetup-areadet": [
+            {
+                "alias": "epix_1",
+                "camtype": "Epix100"
+            }
+        ],
+        "pcdssetup-motors": [
+            {
+                "name": "vH_v",
+                "purpose": "von Hamos common vertical",
+                "stageidentity": "vH_v"
+            },
+            {
+                "name": "vH_h",
+                "purpose": "von Hamos common horizontal",
+                "stageidentity": "vH_h"
+            },
+            {
+                "name": "vH_r",
+                "purpose": "von Hamos common rotation",
+                "stageidentity": "vH_r"
+            }
+        ]
+    },
+    "vonHamos_small": {
+        "pcdssetup-areadet": [
+            {
+                "alias": "epix_1",
+                "camtype": "Epix100"
+            }
+        ],
+        "pcdssetup-motors": [
+            {
+                "name": "vHs_v",
+                "purpose": "von Hamos common vertical",
+                "stageidentity": "vHs_v"
+            },
+            {
+                "name": "vHs_h",
+                "purpose": "von Hamos common horizontal",
+                "stageidentity": "vHs_h"
+            },
+            {
+                "name": "vHs_r",
+                "purpose": "von Hamos common rotation",
+                "stageidentity": "vHs_r"
+            }
+        ]
+    },
+    "vonHamos_large": {
+	"pcdssetup-areadet": [
+	    {
+		"alias": "epix_1",
+		"camtype": "Epix100"
+	    }
+	],
+	"pcdssetup-motors": [
+		{
+		    "name": "vHl_v",
+		    "purpose": "von Hamos common vertical",
+		    "stageidentity": "vHl_v"
+		},
+		{
+		    "name": "vHl_h",
+		    "purpose": "von Hamos common horizontal",
+		    "stageidentity": "vHl_h"
+		},
+		{
+		    "name": "vHl_r",
+		    "purpose": "von Hamos common rotation",
+		    "stageidentity": "vHl_r"
+		}
+	   ]
+	}
+}
