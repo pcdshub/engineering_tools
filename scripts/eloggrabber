@@ -9,94 +9,68 @@ start the eloggrabber, by default look at current exp
 OPTIONS:
 -e pass in an experiment to look at
 -x instrument logbook
--o old grabber (using current exp)
--y old grabber (using the Instrument logbook)
 -u username
 EOF
 }
 
-new_grab()
+grab()
 {
-    source /reg/g/psdm/etc/psconda.sh
+    if [[ $hutch == 'unknown_hutch' ]]; then
+	echo 'I cannot determine the current hutch and thus not the current experiment. Try another machine (control room/psusr) or different directory like /reg/d/psdm/<hutch>/..... Will quit.'
+	exit
+    fi
+    source /reg/g/psdm/sw/conda2/manage/bin/psconda.sh ""
+    export PYTHONPATH=/reg/g/psdm/web/ws/prod/apps/LogBookClient:${PYTHONPATH}
+    export PATH=/reg/g/psdm/web/ws/prod/apps/LogBookClient/LogBookClient:${PATH}
     LogBookGrabber_qt \
 	-i $HUTCH \
 	-e $1 \
 	-u $USERNAME \
 	-p pcds \
-	-w https://pswww.slac.stanford.edu/ws-auth
+	-w https://pswww.slac.stanford.edu/ws-auth/lgbk
     exit
 }
 
-new_grab_user()
+grab_user()
 {
-    source /reg/g/psdm/etc/psconda.sh
+    source /reg/g/psdm/sw/conda2/manage/bin/psconda.sh ""
+    export PYTHONPATH=/reg/g/psdm/web/ws/prod/apps/LogBookClient:${PYTHONPATH}
+    export PATH=/reg/g/psdm/web/ws/prod/apps/LogBookClient/LogBookClient:${PATH}
     LogBookGrabber_qt \
 	-i $HUTCH \
 	-e $1 \
 	-u $USERNAME \
-	-w https://pswww.slac.stanford.edu/ws-kerb
+	-w https://pswww.slac.stanford.edu/ws-kerb/lgbk
     exit
 }
 
-new_grab_dev()
+grab_instrument()
 {
-    source /reg/g/psdm/etc/psconda.sh
-    LogBookGrabber_qt \
-	-i $HUTCH \
-	-e $1 \
-	-u $USERNAME \
-	-p pcds \
-	-w https://pswww.slac.stanford.edu/ws-auth \
-	-f config-pars.txt \
-	-c "ls -l"
-    exit
-}
-
-new_grab_instrument()
-{
-    source /reg/g/psdm/etc/psconda.sh
-    #. /reg/g/psdm/etc/ana_env.sh
-    #. /reg/g/psdm/etc/sit_env.sh
+    if [[ $hutch == 'unknown_hutch' ]]; then
+	echo 'I cannot determine the current hutch and thus not the current experiment. Try another machine (control room/psusr) or different directory like /reg/d/psdm/<hutch>/..... Will quit.'
+	exit
+    fi
+    source /reg/g/psdm/sw/conda2/manage/bin/psconda.sh ""
+    export PYTHONPATH=/reg/g/psdm/web/ws/prod/apps/LogBookClient:${PYTHONPATH}
+    export PATH=/reg/g/psdm/web/ws/prod/apps/LogBookClient/LogBookClient:${PATH}
     EXPNAME="$HUTCH Instrument"
     LogBookGrabber_qt \
 	-i NEH \
 	-e "$EXPNAME" \
 	-u $USERNAME \
 	-p pcds \
-	-w https://pswww.slac.stanford.edu/ws-auth \
-	-f config-pars.txt \
-	-c "ls -l"
+	-w https://pswww.slac.stanford.edu/ws-auth/lgbk
     exit
 }
 
-old_grab_instrument()
-{
-    LOC='NEH'
-    EXPNAME="$HUTCH Instrument"
-    export PYTHONPATH=/reg/g/pcds/pds/grabber/lib/python2.6/site-packages:${PYTHONPATH}
-    python2.6 /reg/g/pcds/pds/grabber/bin/LogBookGrabber.py -i $LOC -w https://pswww/pcdsn/ws-auth -u $USERNAME -e "$EXPNAME" > /dev/null 2>&1
-    exit
-}
-
-old_grab()
-{
-    LOC=$HUTCH
-    EXPNAME=$1
-    export PYTHONPATH=/reg/g/pcds/pds/grabber/lib/python2.6/site-packages:${PYTHONPATH}
-    python2.6 /reg/g/pcds/pds/grabber/bin/LogBookGrabber.py -i $LOC -w https://pswww/pcdsn/ws-auth -u $USERNAME -e $EXPNAME > /dev/null 2>&1
-    exit
-}
-
-hutch=`get_info --gethutch`
-if [ $hutch == 'unknown_hutch' ]; then
-    echo 'I cannot determine the current hutch and thus not the current experiment. Try another machine (control room/psusr) or different directory like /reg/d/psdm/<hutch>/..... Will quit.'
-    exit
-fi
-HUTCH=${hutch^^}
-USERNAME=`get_info --gethutch`opr
+##who am I doing this? Why don't just use the actual username?
+#USERNAME=`get_info --gethutch`opr
+USERNAME=`whoami`
 EXPNAME=current
+hutch=`get_info --gethutch`
+HUTCH=${hutch^^}
 
-while getopts "e:u:hxyot" OPTION
+while getopts "e:u:hxt" OPTION
 do
     case $OPTION in
 	e)
@@ -106,26 +80,14 @@ do
 	    ;;
 	u)
 	    USERNAME=$OPTARG
-	    new_grab_user $EXPNAME
+	    grab_user $EXPNAME
 	    ;;
 	h)
 	    usage
 	    exit 1
 	    ;;
 	x)
-	    new_grab_instrument
-	    exit
-	    ;;
-	t)
-	    new_grab_dev $EXPNAME
-	    exit
-	    ;;
-	o)
-	    old_grab $EXPNAME
-	    exit
-	    ;;
-	y)
-	    old_grab_instrument
+	    grab_instrument
 	    exit
 	    ;;
 	?)
@@ -135,5 +97,8 @@ do
 	esac
 done
 
-new_grab $EXPNAME
-
+if [[ $USERNAME == *'opr'* ]]; then
+    grab $EXPNAME
+else
+    grab_user $EXPNAME
+fi
