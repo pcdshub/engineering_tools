@@ -1,9 +1,10 @@
 #!/reg/g/psdm/sw/conda/inst/miniconda2-prod-rhel6/envs/ana-1.3.17/bin/python
-import RegDB.experiment_info
 import argparse
 import socket
 import os
 import sys
+import requests
+import logging
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--run", help="get last run", action='store_true')
@@ -22,6 +23,10 @@ parser.add_argument("--files_for_run", help="get xtc files for run")
 parser.add_argument("--nfiles_for_run", help="get xtc files for run")
 parser.add_argument("--setExp", help="set experiment name")
 args = parser.parse_args()
+
+ws_url = "https://pswww.slac.stanford.edu/ws/lgbk"
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 hutches=['tmo','txi','rix','xpp','xcs','mfx','cxi','mec', 'det', 'lfe','kfe','tst']
 foundHutch=False
@@ -123,10 +128,10 @@ else:
     nstations = 1
     if args.station:
         station = int(args.station)
-    else: 
+    else:
         station=0
 
-if station >= nstations: 
+if station >= nstations:
     print "Invalid --station={:} keyword set for hutch {:}".format(hutch)
     sys.exit()
 
@@ -143,26 +148,34 @@ elif args.getcnf:
     print daq_base+'.cnf'
     sys.exit()
 
+
 if args.exp:
-    print RegDB.experiment_info.active_experiment(hutch,station)[1]
+    resp = requests.get(ws_url + "/lgbk/ws/activeexperiment_for_instrument_station", {"instrument_name": hutch, "station": station})
+    exp = resp.json().get("value", {}).get("name")
+    print(exp)
 
 if args.run:
     try:
+        resp = requests.get(ws_url + "/lgbk/ws/activeexperiment_for_instrument_station", {"instrument_name": hutch, "station": station})
+        exp = resp.json().get("value", {}).get("name")
+        rundoc = requests.get(ws_url + "/lgbk/" + exp  + "/ws/current_run").json()["value"]
+        if not rundoc:
+            logger.error("Invalid response from server")
         if args.ended:
-            if RegDB.experiment_info.experiment_runs(hutch)[-1]['end_time_unix'] is not None:
-                print RegDB.experiment_info.experiment_runs(hutch)[-1]['num']
+            if rundoc.get('end_time', None):
+                print(int(rundoc['num']))
             else:
-                runLive = RegDB.experiment_info.experiment_runs(hutch)[-1]['num']
-                print int(runLive)-1
+                print(int(rundoc['num'] - 1)) # Really bogus way to determine this; but copying over from previous code.
         else:
-            print RegDB.experiment_info.experiment_runs(hutch)[-1]['num']
+            print(int(rundoc['num']))
             if args.live:
-                if RegDB.experiment_info.experiment_runs(hutch)[-1]['end_time_unix'] is None:
-                    print 'live'
+                if not rundoc.get('end_time', None):
+                    print('live')
                 else:
-                    print 'ended'
+                    print('ended')
     except:
-        print 'no runs yet'
+        logger.exception("No runs?")
+        print('no runs yet')
 
 if args.files_for_run or args.nfiles_for_run:
     if args.files_for_run:
@@ -173,22 +186,23 @@ if args.files_for_run or args.nfiles_for_run:
     if args.setExp:
         exp=args.setExp
     else:
-        exp=RegDB.experiment_info.active_experiment(hutch)[1]
-    expNum = RegDB.experiment_info.name2id(exp)
+        resp = requests.get(ws_url + "/lgbk/ws/activeexperiment_for_instrument_station", {"instrument_name": hutch, "station": station})
+        exp = resp.json().get("value", {}).get("name")
 
-    runLast = RegDB.experiment_info.experiment_runs(hutch, exp)[-1]['num']
+    currundoc = requests.get(ws_url + "/lgbk/" + exp  + "/ws/current_run").json()["value"]
+    runLast = int(currundoc['num'])
     if run > runLast:
-        print 'run %d not taken yet, last run is'%(run,runLast)
+        print('run %s not taken yet, last run is %s'%(run,runLast))
     else:
-        file_list = RegDB.experiment_info.get_open_files(expNum,run)
+        file_list = requests.get(ws_url + "/lgbk/" + exp + "/ws/" + str(run) + "/files_for_live_mode").json()["value"]
         if args.files_for_run:
             for tfile in file_list:
-                print tfile['dirpath'].replace('/u2/pcds/pds','/reg/d/psdm')
+                print('/reg/d/psdm/'+tfile)
         elif args.nfiles_for_run:
             #look at files, remove stream 80, only first chunk, return number.
             nFiles=0
             for tfile in file_list:
-                tfilename = tfile['dirpath'].replace('/u2/pcds/pds','/reg/d/psdm')
+                tfilename = '/reg/d/psdm/'+tfile
                 if tfilename.find('c00')>=0 and tfilename.find('-s8')<0:
                     nFiles=nFiles+1
-            print '%d %d'%(nFiles,len(file_list))
+            print('%d %d'%(nFiles,len(file_list)))
