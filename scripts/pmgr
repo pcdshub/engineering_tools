@@ -1,8 +1,8 @@
 #!/bin/bash
-if [[ -z $1 ]]; then
-    HUTCH=`get_hutch_name`
-else
+if [[ -n $1 && ! $1 =~ '--' ]]; then
     HUTCH=$1
     shift
+else
+    HUTCH=`get_hutch_name`
 fi
 /reg/g/pcds/pyps/config/${HUTCH}/pmgr/pmgr --type ims_motor --hutch ${HUTCH} $@ &
