@@ -1,3 +1,8 @@
 #!/bin/bash
-HUTCH=`get_info --gethutch`
+if [[ -z $1 ]]; then
+    HUTCH=`get_hutch_name`
+else
+    HUTCH=$1
+    shift
+fi
 /reg/g/pcds/pyps/config/${HUTCH}/pmgr/pmgr --type ims_motor --hutch ${HUTCH} $@ &
