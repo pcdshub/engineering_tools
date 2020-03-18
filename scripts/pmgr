@@ -1,4 +1,10 @@
 #!/bin/bash
+#
+# pmgr [hutch] [--debug] [--applyenable]
+#
+# --debug	: Displays the debug button, which prints out any edits made
+# --applyenable	: Displays the apply all button, which applies settings to all motors
+#
 if [[ -n $1 && ! $1 =~ '--' ]]; then
     HUTCH=$1
     shift
