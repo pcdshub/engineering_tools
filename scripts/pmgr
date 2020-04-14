@@ -1,3 +1,14 @@
 #!/bin/bash
-HUTCH=`get_info --gethutch`
+#
+# pmgr [hutch] [--debug] [--applyenable]
+#
+# --debug	: Displays the debug button, which prints out any edits made
+# --applyenable	: Displays the apply all button, which applies settings to all motors
+#
+if [[ -n $1 && ! $1 =~ '--' ]]; then
+    HUTCH=$1
+    shift
+else
+    HUTCH=`get_hutch_name`
+fi
 /reg/g/pcds/pyps/config/${HUTCH}/pmgr/pmgr --type ims_motor --hutch ${HUTCH} $@ &
