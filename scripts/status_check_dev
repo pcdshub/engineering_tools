@@ -1,0 +1,166 @@
+#!/bin/bash
+
+function usage(){
+cat <<EOF
+Usage:   $0 <hutch>
+
+1) Checks status of Digi servers in a given hutch.
+2) Checks status of hosts in a given hutch.
+3) Checks status of EVR links in a given hutch. *Coming Soon!*
+4) Checks status of Vacuum Devices in a given hutch. *Coming Soon!*
+5) Checks status of motors in a given hutch. *Coming Soon!*
+EOF
+}
+
+if [[ -z $1 ]]; then
+    usage
+    exit 1
+elif [[ ($1 == "--help") || ($1 == "-h") ]]; then
+    usage
+    exit 0
+fi
+xcsdigis=(03 07 10 11 12 13 14 15 16 17 19 21 22 23 24 25) 
+cxidigis=(01 02 03 04 05 06 07 08 09 12 13 15 16 17 19 20 21 23 24 25 27 28 30 31)
+xppdigis=(01 02 03 05 06 07 09 10 11 13)
+mecdigis=(01 02 03 07 08 09)
+mfxdigis=("smc-mfx-02" "smc-mfx-03" "digi-mfx-01" "mcc-mfx-01" "smc-mfx-04" "mcc-mfx-02" "smc-mfx-05")
+xrtdigis=("r48-33" "03" "04" "mec01" "mec02" "hxm-01" "mec04" "mec05")
+allhutchs=("xcs" "cxi" "mfx" "mec" "xpp" "xrt")
+xcshosts=("daq-xcs-pgp01" "daq-xcs-pgp02" "daq-xcs-pgp02" "ioc-lfe-gasdet-daq" "ioc-xcs-gige01" "ioc-xcs-misc1" "ioc-xcs-mot1" "ioc-xcs-rec01" "ioc-xcs-rec02" "ioc-xcs-rec03" "ioc-xcs-rec04" "ioc-xcs-snd" "ioc-xcs-user1" "ioc-xcs-user2" "ioc-xcs-vacuum" "ioc-xcs-wave8" "ioc-xrt-xcsmisc1" "ioc-xrt-xcsmot2" "xcs-control")
+xpphutchs=("daq-xpp-pgp01" "daq-xpp-pgp02" "ioc-xpp-gige01" "ioc-xpp-gige02" "ioc-xpp-gon" "ioc-xpp-ipimb" "ioc-xpp-mot01" "ioc-xpp-osc01" "ioc-xpp-rec01" "ioc-xpp-rec02" "ioc-xpp-rec03" "ioc-xpp-rob01" "ioc-xpp-usr01" "ioc-xpp-vacuum" "ioc-xpp-wave8" "xpp-control")
+mfxhosts=("ioc-mfx-rec01" "ioc-mfx-rec02" "ioc-mfx-table" "ioc-mfx-tfs" "ioc-mfx-usr01" "ioc-mfx-vacuum" "ioc-mfx-wave8" "ioc-xrt-mfxmot1")
+cxihosts=("ioc-cxi-wave8" "ioc-cxi-vacuum" "ioc-cxi-usrmot2" "ioc-cxi-usr1" "ioc-cxi-sc2" "ioc-cxi-sc1" "ioc-cxi-rec04" "ioc-cxi-rec03" "ioc-cxi-rec01" "ioc-cxi-protura2" "ioc-cxi-protura1" "ioc-cxi-mot1" "ioc-cxi-misc1" "ioc-cxi-lassrv2" "ioc-cxi-dg1" "ioc-cxi-det2" "ioc-cxi-cam5" "ioc-cxi-cam4" "ioc-cxi-cam2" "ioc-cxi-cam1" "daq-cxi-cspad04" "cxi-control")
+mechosts=("daq-mec-cam01" "daq-mec-misc01" "ioc-las-mec-evr01" "ioc-las-mec-evr02" "ioc-las-mec-evr03" "ioc-mec-cam04" "ioc-mec-evg" "ioc-mec-evr01" "ioc-mec-gige01" "ioc-mec-imb02" "ioc-mec-ipimb01" "ioc-mec-las-gige01" "ioc-mec-lasmot1" "ioc-mec-lpl01" "ioc-mec-misc01" "ioc-mec-mot3" "ioc-mec-opal01" "ioc-mec-pci01" "ioc-mec-rec01" "ioc-mec-vacuum" "ioc-mec-wave8" "ioc-xrt-mec-mot1" "ioc-xrt-mec-mot2" "mec-monitor")
+xrthosts=("ioc-xrt-hxx-motvac1" "ioc-xrt-misc01" "ioc-xrt-misc02" "ioc-xrt-mxtmirror" "ioc-xrt-rec01" "ioc-xrt-rec02" "ioc-xrt-rec03" "ioc-xrt-rec04" "ioc-xrt-rec05" "ioc-xrt-rec06" "ioc-xrt-rec07" "ioc-xrt-vacuum" "ioc-xrt-wave8" "ioc-xrt-xcsmot1")
+HUTCH=$1
+x="xcs"
+c="cxi"
+m="mfx"
+e="mec"
+p="xpp"
+t="xrt"
+
+if [[ ! "${allhutchs[@]}" =~ "$1" ]]; then
+echo -e "This is not a valid entry for a hutch, please re-enter. Example: xcs,cxi,etc."
+exit
+fi
+
+echo -e ""
+echo -e "-------------------------------------------------"
+echo -e "Checking all Digi server's in this hutch:"
+echo -e "-------------------------------------------------"
+echo -e ""
+
+if [ "$1" = "$t" ]; then
+for z in "${xrtdigis[@]}"; do
+   ping -w 2 $z >/dev/null 2>&1
+   if [[ $? == 0 ]]; then
+   echo -e "$z pings."
+   else
+   echo -e "$z does not ping."
+   fi
+done
+fi
+
+if [ "$1" = "$m" ]; then
+for y in "${mfxdigis[@]}"; do
+   ping -w 2 $y >/dev/null 2>&1
+   if [[ $? == 0 ]]; then
+   echo -e "$y pings."
+   else
+   echo -e "$y does not ping."
+   fi
+done
+fi
+
+if [ "$1" = "$e" ]; then
+for o in "${mecdigis[@]}"; do
+   ping -w 2 digi-mec-$o >/dev/null 2>&1
+   if [[ $? == 0 ]]; then
+   echo -e "digi-mec-$o pings."
+   else
+   echo -e "digi-mec-$o does not ping."
+   fi
+done
+fi 
+
+if [ "$1" = "$p" ]; then
+for w in "${xppdigis[@]}"; do
+   ping -w 2 digi-xpp-$w >/dev/null 2>&1
+   if [[ $? == 0 ]]; then
+   echo -e "digi-xpp-$w pings."
+   else
+   echo -e "digi-xpp-$w does not ping."
+   fi
+done
+fi
+
+if [ "$1" = "$c" ]; then
+for i in "${cxidigis[@]}"; do
+   ping -w 2 digi-cxi-$i >/dev/null 2>&1
+   if [[ $? == 0 ]]; then
+   echo -e "digi-cxi-$i pings."
+   else
+   echo -e "digi-cxi-$i does not ping."
+   fi
+done
+fi
+
+if [ "$1" = "$x" ]; then
+for s in "${xcsdigis[@]}"; do
+   ping -w 2 digi-xcs-$s >/dev/null 2>&1
+   if [[ $? == 0 ]]; then
+   echo -e "digi-xcs-$s pings."
+   else
+   echo -e "digi-xcs-$s does not ping."
+   fi
+done
+fi
+
+echo -e ""
+echo -e "-------------------------------------------------"
+echo -e "Now checking the status of hosts in this hutch!"
+echo -e "-------------------------------------------------"
+echo -e ""
+
+if [ "$1" = "$t" ]; then
+for z in "${xrthosts[@]}"; do
+   serverStat $z
+echo -e ""
+done
+fi
+
+if [ "$1" = "$x" ]; then
+for k in "${xcshosts[@]}"; do
+   serverStat $k
+echo -e ""
+done
+fi
+
+if [ "$1" = "$p" ]; then
+for l in "${xpphosts[@]}"; do
+   serverStat $l
+echo -e ""
+done
+fi
+
+if [ "$1" = "$m" ]; then
+for e in "${mfxhosts[@]}"; do
+   serverStat $e
+echo -e ""
+done
+fi
+
+if [ "$1" = "$c" ]; then
+for b in "${cxihosts[@]}"; do
+   serverStat $b
+echo -e ""
+done
+fi
+
+if [ "$1" = "$e" ]; then
+for q in "${mechosts[@]}"; do
+   serverStat $q
+echo -e ""
+done
+fi
