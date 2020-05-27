@@ -13,7 +13,13 @@ if [ $# -lt 1 ]; then
     echo 'need a name as input to return camera basePV'
 fi
 VIEWERCFG=/reg/g/pcds/pyps/config/*/camviewer.cfg
-echo `grep $1 $VIEWERCFG | grep -v '#' | head -n 1 | awk 'BEGIN { FS = "," }; { print $2 }' | awk 'BEGIN { FS = ";" }; {print $2}' | sed s/,//g`
+grep $1 $VIEWERCFG | grep -v '#' | while read -r line; do 
+    PVNAME=`echo $line | awk 'BEGIN { FS = "," }; { print $2 }' | awk 'BEGIN { FS = ";" }; {print $2}' | sed s/,//g`
+    FULLCAMNAME=`echo $line | awk 'BEGIN { FS = "," }; { print $4 }'`
+    if [ $FULLCAMNAME == $1 ]; then
+    	echo $PVNAME
+    fi
+done
 exit
 }
 
@@ -47,8 +53,8 @@ list_cams()
 if [ $# -lt 1 ]; then
     echo 'need one arguments: hutch '
 fi
-HUTCH=${1^^}
-hutch=${1,,}
+HUTCH=`echo $1 | tr a-z A-Z`
+hutch=`echo $1 | tr A-Z a-z`
 VIEWERCFG=/reg/g/pcds/pyps/config/$hutch/camviewer.cfg
 VIEWERCFGFEE=/reg/g/pcds/pyps/config/fee/camviewer.cfg
 VIEWERCFGXRT=/reg/g/pcds/pyps/config/xrt/camviewer.cfg
@@ -99,7 +105,6 @@ RATE=-1
 MAINSCREEN=0
 
 EXE=/reg/g/pcds/pyps/config/$hutch/camviewer/run_viewer.csh
-#EXE='/reg/g/pcds/pyps/apps/camviewer/latest/run_viewer.csh'
 PVLIST=/reg/g/pcds/pyps/config/$hutch/camviewer.cfg
 CAMNUM=0
 WAIT=0
@@ -114,6 +119,7 @@ do
 	    exit 1
 	    ;;
 	l)
+	    echo DEBUG list cams $hutch
 	    list_cams $hutch
 	    exit 1
 	    ;;
