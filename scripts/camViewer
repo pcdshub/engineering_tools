@@ -4,22 +4,66 @@
 # find_pv: use find_pv to get to the sysreset PV of the IOC for rebooting.
 # --> does not work. Need to know more. Maybe just use in case of gige, assuming naming convention.
 #
-# from EDM_LAUCH: grep that cmd file for 'export IOC_PV'!!!
+# from EDM_LAUNCH: grep that cmd file for 'export IOC_PV'!!!
 #
+CAMPVFULL=""
 
 name_to_pv()
 {
-if [ $# -lt 1 ]; then
-    echo 'need a name as input to return camera basePV'
+if [ $# -lt 2 ]; then
+    echo 'need a name as input to return camera basePV and hutch'
+    exit
 fi
-VIEWERCFG=/reg/g/pcds/pyps/config/*/camviewer.cfg
-grep $1 $VIEWERCFG | grep -v '#' | while read -r line; do 
-    PVNAME=`echo $line | awk 'BEGIN { FS = "," }; { print $2 }' | awk 'BEGIN { FS = ";" }; {print $2}' | sed s/,//g`
-    FULLCAMNAME=`echo $line | awk 'BEGIN { FS = "," }; { print $4 }'`
-    if [ $FULLCAMNAME == $1 ]; then
-    	echo $PVNAME
+CAMPVFULL=""
+hutch=${2,,}
+VIEWERCFG=/reg/g/pcds/pyps/config/$hutch/camviewer.cfg
+# Match "-" or "_" or " ".
+NAME=`echo $1 | sed -e 's/-/ /g' -e 's/_/ /g' -e 's/ /[-_ ]/g'`
+#
+# The story here: 
+# See how many matches we have in the hutch.
+# If 0, try looking in all of the hutches.
+# If 1, then we're done.
+# Otherwise:
+# Look for a complete match, anchored on both sides.
+# Look for a match anchored at the end.
+# If there is more than one, return "ambiguous"
+#
+# Make a temp file with just the PVs and camera names that match.
+tmp=/tmp/cv.$$
+cat $VIEWERCFG | grep -i "$NAME" | grep -v '#' | awk -F, '{ if (split($2,a,";")==1) n=$2; else n=a[2]; gsub(" ","",n); gsub(" ","",$4); printf "%s %s\n", n, $4; }' >$tmp
+c=`wc -l <$tmp`
+if [ $c -eq 0 ]; then
+    VIEWERCFG=/reg/g/pcds/pyps/config/*/camviewer.cfg
+    cat $VIEWERCFG | grep -i "$NAME" | grep -v '#' | awk -F, '{ if (split($2,a,";")==1) n=$2; else n=a[2]; gsub(" ","",n); gsub(" ","",$4); printf "%s %s\n", n, $4; }' >$tmp
+    c=`wc -l <$tmp`
+    if [ $c -eq 0 ]; then
+	echo "No match for $1"
+	rm -f $tmp
+	exit
     fi
-done
+fi
+if [ $c -eq 1 ]; then
+    CAMPVFULL=`awk '{print $1;}' <$tmp`
+    rm -f $tmp
+    return
+fi
+# OK, ambiguous.  Look for a complete match on the second word.
+if [ `egrep -i " $NAME\$" < $tmp | wc -l` -eq 1 ]; then
+    CAMPVFULL=`egrep -i " $NAME\$" < $tmp | awk '{print $1;}'`
+    rm -f $tmp
+    return
+fi
+# What about just a match at the end? (That is, if we are searching
+# for "yag1", prefer "mec_yag1" to "mec_yag11".)
+if [ `egrep -i "$NAME\$" < $tmp | wc -l` -eq 1 ]; then
+    CAMPVFULL=`egrep -i "$NAME\$" < $tmp | awk '{print $1;}'`
+    rm -f $tmp
+    return
+fi
+echo '"'$1'" is ambiguous:'
+awk '{print $2;}' <$tmp
+rm -f $tmp
 exit
 }
 
@@ -34,7 +78,7 @@ VIEWERCFG=/reg/g/pcds/pyps/config/$hutch/camviewer.cfg
 printf -v GIGENUM "%02d" $2
 GIGEBASE=$HUTCH:GIGE:$GIGENUM
 
-echo `grep $GIGEBASE $VIEWERCFG | grep -v '#' | awk 'BEGIN { FW = "," }; {print $4}' | sed s/,//g`
+echo `grep $GIGEBASE $VIEWERCFG | grep -v '#' | awk -F, '{print $4}'`
 }
 
 isNum(){
@@ -53,22 +97,22 @@ list_cams()
 if [ $# -lt 1 ]; then
     echo 'need one arguments: hutch '
 fi
-HUTCH=`echo $1 | tr a-z A-Z`
-hutch=`echo $1 | tr A-Z a-z`
+HUTCH=${1^^}
+hutch=${1,,}
 VIEWERCFG=/reg/g/pcds/pyps/config/$hutch/camviewer.cfg
 VIEWERCFGFEE=/reg/g/pcds/pyps/config/fee/camviewer.cfg
 VIEWERCFGXRT=/reg/g/pcds/pyps/config/xrt/camviewer.cfg
 
-for gige_cam in `grep -v '#' $VIEWERCFGFEE | awk 'BEGIN { FW = "," }; {print $4 "\n" }' | sed s/,//g`; do
+for gige_cam in `grep -v '#' $VIEWERCFGFEE | awk -F, '{print $4 "\n" }' | sed s/,//g`; do
     echo $gige_cam
 done
 
-for gige_cam in `grep -v '#' $VIEWERCFG | awk 'BEGIN { FW = "," }; {print $4 "\n" }' | sed s/,//g`; do
+for gige_cam in `grep -v '#' $VIEWERCFG | awk -F, '{print $4 "\n" }' | sed s/,//g`; do
     echo $gige_cam
 done
 
 if  [ $hutch != 'amo' ] && [ $hutch != 'sxr' ]; then
-    for gige_cam in `grep -v '#' $VIEWERCFGXRT | awk 'BEGIN { FW = "," }; {print $4 "\n" }' | sed s/,//g`; do
+    for gige_cam in `grep -v '#' $VIEWERCFGXRT | awk -F, '{print $4 "\n" }' | sed s/,//g`; do
 	echo $gige_cam
     done
 fi
@@ -105,6 +149,7 @@ RATE=-1
 MAINSCREEN=0
 
 EXE=/reg/g/pcds/pyps/config/$hutch/camviewer/run_viewer.csh
+#EXE='/reg/g/pcds/pyps/apps/camviewer/latest/run_viewer.csh'
 PVLIST=/reg/g/pcds/pyps/config/$hutch/camviewer.cfg
 CAMNUM=0
 WAIT=0
@@ -119,7 +164,6 @@ do
 	    exit 1
 	    ;;
 	l)
-	    echo DEBUG list cams $hutch
 	    list_cams $hutch
 	    exit 1
 	    ;;
@@ -164,17 +208,10 @@ if [ $CAMNUM -eq 0 ]; then
 fi
     
 export EPICS_CA_MAX_ARRAY_BYTES=24000000
-#echo cameranum: $CAMNUM
-if [ `echo $CAMNAME | wc -w` -gt 1 ]; then
-    echo 'Please select from: ',
-    for camname in $CAMNAME; do
-	echo $camname
-    done
-    read -r CAMNAME
-fi
 echo working with camera of name: $CAMNAME
 
-CAMPVFULL=`name_to_pv $CAMNAME`
+name_to_pv "$CAMNAME" $hutch
+
 if [ $MAINSCREEN -gt 0 ]; then
     echo 'try to get the main screen for: ' $CAMNAME
     echo 'start the main screen for camera base PV: ' $CAMPVFULL
@@ -206,18 +243,18 @@ fi
 
 if [ $WAIT -gt 0 ]; then
     if [ $RATE -gt 0 ]; then
-	echo $EXE --camera $CAMNAME --instrument $hutch --pvlist $PVLIST --idle $WAIT --rate $RATE&
-	$EXE --camera $CAMNAME --instrument $hutch --pvlist $PVLIST --idle $WAIT --rate $RATE&
+	echo $EXE --camerapv $CAMPVFULL --instrument $hutch --pvlist $PVLIST --idle $WAIT --rate $RATE&
+	$EXE --camerapv $CAMPVFULL --instrument $hutch --pvlist $PVLIST --idle $WAIT --rate $RATE&
     else
-	echo $EXE --camera $CAMNAME --instrument $hutch --pvlist $PVLIST --idle $WAIT&
-	$EXE --camera $CAMNAME --instrument  $hutch --pvlist $PVLIST --idle $WAIT&
+	echo $EXE --camerapv $CAMPVFULL --instrument $hutch --pvlist $PVLIST --idle $WAIT&
+	$EXE --camerapv $CAMPVFULL --instrument  $hutch --pvlist $PVLIST --idle $WAIT&
     fi
 else
     if [ $RATE -gt 0 ]; then
-	echo $EXE --camera $CAMNAME --instrument $hutch --pvlist $PVLIST --rate $RATE&
-	$EXE --camera $CAMNAME --instrument  $hutch --pvlist $PVLIST --rate $RATE&
+	echo $EXE --camerapv $CAMPVFULL --instrument $hutch --pvlist $PVLIST --rate $RATE&
+	$EXE --camerapv $CAMPVFULL --instrument  $hutch --pvlist $PVLIST --rate $RATE&
     else
-	echo $EXE --camera $CAMNAME --instrument $hutch --pvlist $PVLIST &
-	$EXE --camera $CAMNAME --instrument  $hutch --pvlist $PVLIST &
+	echo $EXE --camerapv $CAMPVFULL --instrument $hutch --pvlist $PVLIST &
+	$EXE --camerapv $CAMPVFULL --instrument  $hutch --pvlist $PVLIST &
     fi
 fi
