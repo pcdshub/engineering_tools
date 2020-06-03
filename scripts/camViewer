@@ -72,8 +72,8 @@ gige_num_to_name()
 if [ $# -lt 2 ]; then
     echo 'need two arguments: hutch & number'
 fi
-HUTCH=${1^^}
-hutch=${1,,}
+HUTCH=`echo $1 | tr a-z A-Z`
+hutch=`echo $1 | tr A-Z a-z`
 VIEWERCFG=/reg/g/pcds/pyps/config/$hutch/camviewer.cfg
 printf -v GIGENUM "%02d" $2
 GIGEBASE=$HUTCH:GIGE:$GIGENUM
@@ -103,16 +103,16 @@ VIEWERCFG=/reg/g/pcds/pyps/config/$hutch/camviewer.cfg
 VIEWERCFGFEE=/reg/g/pcds/pyps/config/fee/camviewer.cfg
 VIEWERCFGXRT=/reg/g/pcds/pyps/config/xrt/camviewer.cfg
 
-for gige_cam in `grep -v '#' $VIEWERCFGFEE | awk -F, '{print $4 "\n" }' | sed s/,//g`; do
+for gige_cam in `grep -v '#' $VIEWERCFGFEE | awk -F, '{print $4 "\n" }'`; do
     echo $gige_cam
 done
 
-for gige_cam in `grep -v '#' $VIEWERCFG | awk -F, '{print $4 "\n" }' | sed s/,//g`; do
+for gige_cam in `grep -v '#' $VIEWERCFG | awk -F, '{print $4 "\n" }'`; do
     echo $gige_cam
 done
 
 if  [ $hutch != 'amo' ] && [ $hutch != 'sxr' ]; then
-    for gige_cam in `grep -v '#' $VIEWERCFGXRT | awk -F, '{print $4 "\n" }' | sed s/,//g`; do
+    for gige_cam in `grep -v '#' $VIEWERCFGXRT | awk -F, '{print $4 "\n" }'`; do
 	echo $gige_cam
     done
 fi
