@@ -149,7 +149,6 @@ RATE=-1
 MAINSCREEN=0
 
 EXE=/reg/g/pcds/pyps/config/$hutch/camviewer/run_viewer.csh
-#EXE='/reg/g/pcds/pyps/apps/camviewer/latest/run_viewer.csh'
 PVLIST=/reg/g/pcds/pyps/config/$hutch/camviewer.cfg
 CAMNUM=0
 WAIT=0
