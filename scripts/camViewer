@@ -15,7 +15,7 @@ if [ $# -lt 2 ]; then
     exit
 fi
 CAMPVFULL=""
-hutch=${2,,}
+hutch=`echo $2 | tr A-Z a-z`
 VIEWERCFG=/reg/g/pcds/pyps/config/$hutch/camviewer.cfg
 # Match "-" or "_" or " ".
 NAME=`echo $1 | sed -e 's/-/ /g' -e 's/_/ /g' -e 's/ /[-_ ]/g'`
@@ -72,8 +72,8 @@ gige_num_to_name()
 if [ $# -lt 2 ]; then
     echo 'need two arguments: hutch & number'
 fi
-HUTCH=`echo $1 | tr a-z A-Z`
-hutch=`echo $1 | tr A-Z a-z`
+HUTCH=${1^^}
+hutch=${1,,}
 VIEWERCFG=/reg/g/pcds/pyps/config/$hutch/camviewer.cfg
 printf -v GIGENUM "%02d" $2
 GIGEBASE=$HUTCH:GIGE:$GIGENUM
@@ -97,8 +97,8 @@ list_cams()
 if [ $# -lt 1 ]; then
     echo 'need one arguments: hutch '
 fi
-HUTCH=${1^^}
-hutch=${1,,}
+HUTCH=`echo $1 | tr a-z A-Z`
+hutch=`echo $1 | tr A-Z a-z`
 VIEWERCFG=/reg/g/pcds/pyps/config/$hutch/camviewer.cfg
 VIEWERCFGFEE=/reg/g/pcds/pyps/config/fee/camviewer.cfg
 VIEWERCFGXRT=/reg/g/pcds/pyps/config/xrt/camviewer.cfg
@@ -234,11 +234,11 @@ fi
 IS_ACQUIRING=`caget -t -n $CAMPVFULL:Acquire_RBV`
 if isNum $IS_ACQUIRING; then
     if [ $IS_ACQUIRING -eq 0 ]; then
-	echo 'start acquring for camera ' $CAMNAME
+	echo 'start acquiring for camera ' $CAMNAME
 	caput -n $CAMPVFULL:Acquire 1
     fi
 else
-    echo 'cannot check Acquring PV, try to open camera viewer anyways....'
+    echo 'cannot check Acquiring PV, try to open camera viewer anyways....'
 fi
 
 if [ $WAIT -gt 0 ]; then
