@@ -9,6 +9,7 @@ start the eloggrabber, by default look at current exp
 OPTIONS:
 -e pass in an experiment to look at
 -x instrument logbook
+-c controls logbook
 -u username
 EOF
 }
@@ -55,7 +56,22 @@ grab_instrument()
     export PATH=/reg/g/psdm/web/ws/prod/apps/LogBookClient/LogBookClient:${PATH}
     EXPNAME="$HUTCH Instrument"
     LogBookGrabber_qt \
-	-i NEH \
+	-i OPS \
+	-e "$EXPNAME" \
+	-u $USERNAME \
+	-p pcds \
+	-w https://pswww.slac.stanford.edu/ws-auth/lgbk
+    exit
+}
+
+grab_controls()
+{
+    source /reg/g/psdm/sw/conda2/manage/bin/psconda.sh ""
+    export PYTHONPATH=/reg/g/psdm/web/ws/prod/apps/LogBookClient:${PYTHONPATH}
+    export PATH=/reg/g/psdm/web/ws/prod/apps/LogBookClient/LogBookClient:${PATH}
+    EXPNAME="Controls"
+    LogBookGrabber_qt \
+	-i OPS \
 	-e "$EXPNAME" \
 	-u $USERNAME \
 	-p pcds \
@@ -70,7 +86,7 @@ EXPNAME=current
 hutch=`get_info --gethutch`
 HUTCH=${hutch^^}
 
-while getopts "e:u:hxt" OPTION
+while getopts "e:u:hxct" OPTION
 do
     case $OPTION in
 	e)
@@ -88,6 +104,10 @@ do
 	    ;;
 	x)
 	    grab_instrument
+	    exit
+	    ;;
+	c)
+	    grab_controls
 	    exit
 	    ;;
 	?)

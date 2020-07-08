@@ -99,23 +99,27 @@ if [ $# -lt 1 ]; then
 fi
 HUTCH=`echo $1 | tr a-z A-Z`
 hutch=`echo $1 | tr A-Z a-z`
+
+ALLVIEWERCFG=/reg/g/pcds/pyps/config/*/camviewer.cfg
+echo cat $ALLVIEWERCFG | grep -v '#' | awk -F, '{ if (split($2,a,";")==1) n=$2; else n=a[2]; gsub(" ","",n); gsub(" ","",$4); printf "%s %s\n", n, $4; }' 
+
+VIEWERCFGLFE=/reg/g/pcds/pyps/config/lfe/camviewer.cfg
 VIEWERCFG=/reg/g/pcds/pyps/config/$hutch/camviewer.cfg
-VIEWERCFGFEE=/reg/g/pcds/pyps/config/fee/camviewer.cfg
 VIEWERCFGXRT=/reg/g/pcds/pyps/config/xrt/camviewer.cfg
 
-for gige_cam in `grep -v '#' $VIEWERCFGFEE | awk -F, '{print $4 "\n" }'`; do
+for gige_cam in `grep -v '#' $VIEWERCFGLFE | awk -F, '{print $4 "\n" }'`; do
     echo $gige_cam
 done
 
-for gige_cam in `grep -v '#' $VIEWERCFG | awk -F, '{print $4 "\n" }'`; do
-    echo $gige_cam
-done
-
-if  [ $hutch != 'amo' ] && [ $hutch != 'sxr' ]; then
+if  [ $hutch != 'tmo' ] && [ $hutch != 'rix' ]; then
     for gige_cam in `grep -v '#' $VIEWERCFGXRT | awk -F, '{print $4 "\n" }'`; do
 	echo $gige_cam
     done
 fi
+
+for gige_cam in `grep -v '#' $VIEWERCFG | awk -F, '{print $4 "\n" }'`; do
+    echo $gige_cam
+done
 
 }
 
