@@ -1,0 +1,140 @@
+#! /bin/bash
+
+usage()
+{
+cat << EOF
+usage: $0 options
+
+We will run ami_offline
+
+OPTIONS:
+-u user (needs to be able to log into the psananeh/feh, if not on psana already)
+-e <expnumber> 
+-R rebinning (binned to 640x640)
+-n no timetool plugin
+EOF
+}
+
+USER=`whoami`
+ARGSTR='-Z '
+
+while getopts "h:u:e:ntR" OPTION
+do
+    case $OPTION in
+	h)
+	    usage
+	    exit 1
+	    ;;
+	u)
+	    USER=$OPTARG
+	    ;;
+	e)
+	    EXP=$OPTARG
+	    ;;
+	R)
+	    REBIN=1
+	    ;;
+	n)  
+	    NOPLUG=1
+	    ;;
+	?)
+	    usage
+	    exit
+	    ;;
+	esac
+done
+
+if [ -z $EXP ]; then
+    echo getting the experiment $EXP
+    HUTCH=`get_hutch_name`
+    if [ $HUTCH == 'unknown_hutch' ]; then
+	printf 'please enter an experiment name '; read $EXP
+    else
+	EXP=`get_curr_exp`
+    fi
+fi
+HUTCH=${EXP:0:3}
+
+if [ -z $REBIN ]; then
+    ARGSTR=$ARGSTR' -R'
+fi
+
+jet_hutches="xpp xcs"
+if [ `echo $jet_hutches | grep $HUTCH | wc -l` -gt 0 ]; then
+    ARGSTR=$ARGSTR' -C mono,jet'
+fi
+
+#get executable
+ami_base_path=`grep ami_base_path /reg/g/pcds/dist/pds/$HUTCH/scripts/$HUTCH.cnf | grep -v '#' | grep -v 'ami_base_path+' | tail -n 1 | awk 'BEGIN { FS = "=" }; { print $2}' | sed s/\'//g`
+ami_path=$ami_base_path`grep ami_path /reg/g/pcds/dist/pds/$HUTCH/scripts/$HUTCH.cnf | grep -v 'ami_path+' | grep -v '#' | awk 'BEGIN { FS = "= " }; { print $2}' | sed s/ami_base_path+//g | sed s/\'//g`
+
+if [ ! -f  $ami_path/offline_ami ]; then
+    echo 'could not find offline_ami executable in $ami_path'
+    exit
+fi
+
+#plugin_path & plugin string.
+plugin_path=$ami_base_path`grep plugin_path /reg/g/pcds/dist/pds/$HUTCH/scripts/$HUTCH.cnf | grep -v 'plugin_path+' | grep -v '#' | awk 'BEGIN { FS = "= " }; { print $2}' | sed s/ami_base_path+//g | sed s/\'//g`
+if [ $HUTCH == 'xpp' ]; then
+    plugin_string=`grep 'ami_opts =' /reg/g/pcds/dist/pds/$HUTCH/scripts/$HUTCH.cnf | grep -v '#' | awk 'BEGIN { FS = "-L " }; { print $2}'`
+    plugin_str=`echo $plugin_string | sed "s:'+plugin_path+':$plugin_path:g" | sed "s:, :\,:g"`
+else
+    plugin_str=$pluging_path'/libtimetoolbdb.so' 
+fi
+
+if [ -z $NOPLUG ]; then
+    ARGSTR=$ARGSTR' -L '$plugin_str
+fi
+#ARGSTR=$ARGSTR -X /reg/neh/operator/$HUTCH\opr/experiments
+
+#check hostname - different path for recorder node.
+if [ ${HOSTNAME:0:5} == 'psana' ]; then
+    XTCDIR=/reg/d/psdm/$HUTCH/$EXP/xtc/
+    HAVE_RUNS=`find $XTCDIR/*r* | wc | awk '{print $1}'`
+    if [ $HAVE_RUNS == 0 ]; then
+	echo 'did not find any xtc files in /reg/d/psdm/$HUTCH/$EXP, will look on the ffb now'
+	XTCDIR=/reg/d/ffb/$HUTCH/$EXP/xtc/
+	HAVE_RUNS=`find $XTCDIR/*r* | wc | awk '{print $1}'`
+	if [ $HAVE_RUNS == 0 ]; then
+	    echo 'did not find any xtc files in /reg/d/<psdm/fbb>/$HUTCH/$EXP, please specify a different experiment with the -e option or check wether the chose offline node has the data disks mounted....'
+	    exit
+	fi
+    fi 
+elif  [ ${HOSTNAME:8:3} == 'rec' ]; then
+    #EXPID=`get_info --setExp $EXP --experimentNumber`
+    XTCDIR=/u2/REC/daq/xtc/
+elif  [ ${HOSTNAME:8:3} == 'dss' ]; then
+    EXPID=`get_info --setExp $EXP --experimentNumber`
+    XTCDIR=/u2/pcds/pds/$HUTCH/e$EXPID    
+else
+    echo 'Please ssh to a psana, recorder or dss node to see data'
+    exit
+fi
+
+#change to temporary directory where we'll need the favorites file (&maybe
+if [ ! -d /tmp/ami_offline_$USER ] ; then
+    mkdir /tmp/ami_offline_$USER
+fi
+
+ln -sf /reg/neh/operator/$HUTCHopr/.ami_favorites ~/.
+##not sure this is necessry anymore....
+#if [ x$TTINFDIR != 'x' ]; then
+#    pwd
+#    echo 'will use the timetool plugin w/ '$TTINF' as input file'
+#    echo LD_LIBRAY_PATH: $LD_LIBRARY_PATH
+#    cp $TTINFDIR/timetool.input ~/.
+#    cp $TTINFDIR/timetool.ref.* ~/.
+#else
+#    rm timetool.input
+#fi
+
+#not sure this is necessary either.
+source /reg/g/pcds/setup/pathmunge.sh
+ldpathmunge /reg/g/pcds/dist/pds/$HUTCH/ami-current/build/ami/lib/x86_64-linux-opt
+
+LD_LIBRARY_PATH=/reg/g/pcds/dist/pds/$HUTCH/current/build/pds/lib/x86_64-linux/:/reg/g/pcds/dist/pds/xpp/current/build/pdsdata/lib/x86_64-linux/:/reg/g/pcds/dist/pds/xpp/current/build/pdsalg/lib/x86_64-linux/:/reg/g/pcds/dist/pds/xpp/current/build/pdsapp/lib/x86_64-linux/:$LD_LIBRARY_PATH
+
+echo '----------------------------------------------'
+echo $ami_path/offline_ami -p $XTCDIR  $ARGSTR
+echo '----------------------------------------------'
+$ami_path/offline_ami -p $XTCDIR $ARGSTR
