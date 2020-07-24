@@ -165,8 +165,8 @@ if [ $EXP != 'xxx' ]; then
     HUTCH=${EXP:0:3}
 else
     HUTCH=`get_info --gethutch`
-    COMMAND_ARGS=$COMMAND_ARGS' -H '$HUTCH
     EXP=`get_info --exp --hutch $HUTCH`
+    COMMAND_ARGS=$COMMAND_ARGS' -H '$HUTCH' -e '$EXP
 fi
 
 if [ $VALSTR != 'xxx' ]; then
@@ -195,13 +195,22 @@ else
 fi
 
 elogMessage+=$ELOGTEXT
-export PYTHONPATH=/reg/g/pcds/pds/grabber/lib/python2.7/site-packages/
-BINPATH=/reg/g/psdm/sw/conda/inst/miniconda2-prod-rhel7/envs/ana-1.3.63/bin/python
-PYCMD=/reg/g/pcds/pds/grabber/bin/LogBookPost_self.py
+source pcds_conda
+PYTHONPATH=/reg/g/pcds/pyps/apps/hutch-python/common/dev/elog:${PYTHONPATH}
+BINPATH=/reg/g/pcds/pyps/conda/py36/envs/pcds-3.3.1/bin/python
+PYCMD=/reg/g/pcds/pyps/apps/hutch-python/common/dev/elog/scripts/LogBookPost.py
 if [[ `whoami` =~ "opr" ]]; then
-    echo $BINPATH $PYCMD -i "${HUTCH^^}" -w https://pswww.slac.stanford.edu/ws-auth -u `whoami` -e "$EXP"  -t DARK  -r $RUN -m "$elogMessage"
-    $BINPATH $PYCMD -i "${HUTCH^^}" -w https://pswww.slac.stanford.edu/ws-auth -u `whoami` -p pcds -e "$EXP"  -t DARK  -r $RUN -m "$elogMessage"&
+    echo $BINPATH $PYCMD -i "${HUTCH^^}" -u `whoami` -e "$EXP"  -t DARK  -r $RUN -m "$elogMessage"
+    if [[ $HOSTNAME == 'cxi-monitor' ]]; then
+        $BINPATH $PYCMD -i "${HUTCH^^}" -u `whoami` -p pcds -e "$EXP"  -t DARK  -r $RUN -m "$elogMessage" -s 1&
+    else
+        $BINPATH $PYCMD -i "${HUTCH^^}" -u `whoami` -p pcds -e "$EXP"  -t DARK  -r $RUN -m "$elogMessage"&
+    fi
 else
-    echo $BINPATH $PYCMD -i "${HUTCH^^}" -w https://pswww.slac.stanford.edu/ws-kerb -u "$USER" -e "$EXP"  -t DARK -r $RUN -m "$elogMessage"
-    $BINPATH $PYCMD -i "${HUTCH^^}" -w https://pswww.slac.stanford.edu/ws-kerb -u "$USER" -e "$EXP" -t DARK -r $RUN -m "$elogMessage"&
+    echo $BINPATH $PYCMD -i "${HUTCH^^}" -u "$USER" -e "$EXP"  -t DARK -r $RUN -m "$elogMessage"
+    if [[ $HOSTNAME == 'cxi-monitor' ]]; then
+        $BINPATH $PYCMD -i "${HUTCH^^}" -u "$USER" -e "$EXP" -t DARK -r $RUN -m "$elogMessage" -s 1&
+    else
+        $BINPATH $PYCMD -i "${HUTCH^^}" -u "$USER" -e "$EXP" -t DARK -r $RUN -m "$elogMessage"&
+    fi
 fi	
