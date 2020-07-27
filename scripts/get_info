@@ -110,7 +110,8 @@ else:
         print hutch.lower()
         sys.exit()
 
-if hutch.lower() in ['mfx','cxi']:
+#if hutch.lower() in ['mfx','cxi']:
+if hutch.lower() in ['cxi']:
     nstations = 2
     if args.station is not None:
         station = int(args.station)
