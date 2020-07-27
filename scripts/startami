@@ -61,7 +61,6 @@ if [ $proxy_node == 'mon-nodes[0]' ]; then
     mon_node_line=`grep 'mon_nodes ' /reg/g/pcds/dist/pds/$HUTCH/scripts/$HUTCH$CNFEXT  | grep -v '#'`
     proxy_node=`echo $mon_node_line | awk '{for (x=1;x<=NF;x++) if ($x~"daq-") print $x}' | head -n1 | sed s/\,//g | sed s/\'//g | sed s/-fez//g `
 fi
-echo proxy_node-again $proxy_node
 
 netconfig search $proxy_node | grep IP | sed 's/IP: //g' | sed 's/\t172/172/g' > /tmp/amiProxy_IP
 proxy_cds=`grep 172 /tmp/amiProxy_IP`
@@ -90,6 +89,13 @@ if [ $HOSTNAME == $DAQHOST ]; then
 else
     echo --- connect to proxy on: $proxy_cds, calling:
 fi    
+
+#fix for control rooms that have not been upgraded
+if [ `uname -a | grep el6 | wc -l ` == 1 ]; then
+    echo 'RHEL6 node'
+    ami_path=`echo $ami_path | sed s/rhel7/linux/g`
+    amicmd=`echo $amicmd | sed s/ami_GUI_path//g`
+fi
 
 echo $ami_path$amicmd
 exec $ami_path$amicmd&
