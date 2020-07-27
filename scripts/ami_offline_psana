@@ -89,14 +89,14 @@ fi
 
 #check hostname - different path for recorder node.
 if [ ${HOSTNAME:0:5} == 'psana' ]; then
-    XTCDIR=/reg/d/psdm/$HUTCH/$EXP/xtc/
-    HAVE_RUNS=`find $XTCDIR/*r* | wc | awk '{print $1}'`
+    XTCDIR=/reg/d/psdm/$HUTCH/$EXP/xtc
+    HAVE_RUNS=`find $XTCDIR/*r* | wc -l `
     if [ $HAVE_RUNS == 0 ]; then
-	echo 'did not find any xtc files in /reg/d/psdm/$HUTCH/$EXP, will look on the ffb now'
-	XTCDIR=/reg/d/ffb/$HUTCH/$EXP/xtc/
-	HAVE_RUNS=`find $XTCDIR/*r* | wc | awk '{print $1}'`
+	echo 'did not find any xtc files in /reg/d/psdm/'$HUTCH'/'$EXP', will look on the ffb now'
+	XTCDIR=/reg/d/ffb/$HUTCH/$EXP/xtc
+	HAVE_RUNS=`find $XTCDIR/*r* | wc -l `
 	if [ $HAVE_RUNS == 0 ]; then
-	    echo 'did not find any xtc files in /reg/d/<psdm/fbb>/$HUTCH/$EXP, please specify a different experiment with the -e option or check wether the chose offline node has the data disks mounted....'
+	    echo 'did not find any xtc files in /reg/d/<psdm/ffb>/'$HUTCH'/'$EXP', please specify a different experiment with the -e option or check wether the chose offline node has the data disks mounted....'
 	    exit
 	fi
     fi 
