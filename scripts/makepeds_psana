@@ -356,11 +356,11 @@ fi
 # epix10k related stuff. Different executable w/ different options. Ack.
 ###
 #check if epix10k detectors are present
-HAVE_EPIX10K=`detnames exp=${EXP}:run=${RUN} | grep Epix10ka2M | wc -l`
+HAVE_EPIX10K=`detnames exp=${EXP}:run=${RUN} | grep Epix10ka | wc -l`
 if [[ ( $HAVE_EPIX10K -ge 1 ) ]]; then
     echo -------------------- START EPIX10K PEDESTALS at $(date +"%T") ----------------------------
     source /reg/g/psdm/etc/psconda.sh
-    EPIX10K=`detnames exp=${EXP}:run=${RUN} | grep Epix10ka2M | awk {'print $3'}`
+    EPIX10K=`detnames exp=${EXP}:run=${RUN} | grep Epix10ka | awk {'print $3'}`
     echo Epix10ka2M name for $EXP is: $EPIX10K
     for calibcycle in {0..2}; do
 	CMD=`echo epix10ka_pedestals_calibration -d $EPIX10K -e $EXP -r $RUN -c $calibcycle -o /reg/d/psdm/$HUTCH/$EXP/results/calib_work`
