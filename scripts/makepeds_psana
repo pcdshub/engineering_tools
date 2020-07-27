@@ -13,7 +13,6 @@ OPTIONS:
 -Z pedestal for zyla
 -O make pedestals for Opals
 -J pedestal for jungfrau (needs first of set of 3 runs!)
--E pedestal for epix10k (for now: single gain range)
 -D : dark run for XTCAV
 -L : lasing off run for XTCAV (-b specifies the number of assumed bunches, def 1)
 -l : donot send to batch queue
@@ -83,7 +82,6 @@ DEPLOY=1
 WANT_ZYLA=0
 WANT_OPAL=0
 WANT_JUNGFRAU=0
-WANT_EPIX10K=0
 CUT_EPIX100=0
 
 DET='CSPAD,CSPAD2x2'
@@ -150,9 +148,6 @@ do
 	    ;;
 	J)
 	    WANT_JUNGFRAU=1
-	    ;;
-	E)
-	    WANT_EPIX10K=1
 	    ;;
 	y)
 	    CUT_EPIX100=1
@@ -362,7 +357,7 @@ fi
 ###
 #check if epix10k detectors are present
 HAVE_EPIX10K=`detnames exp=${EXP}:run=${RUN} | grep Epix10ka2M | wc -l`
-if [[ ( $HAVE_EPIX10K -ge 1 ) && ( $WANT_EPIX10K -ge 1 ) ]]; then
+if [[ ( $HAVE_EPIX10K -ge 1 ) ]]; then
     echo -------------------- START EPIX10K PEDESTALS at $(date +"%T") ----------------------------
     source /reg/g/psdm/etc/psconda.sh
     EPIX10K=`detnames exp=${EXP}:run=${RUN} | grep Epix10ka2M | awk {'print $3'}`
