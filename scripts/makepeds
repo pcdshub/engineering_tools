@@ -26,6 +26,7 @@ OPTIONS:
 -L : lasing off run for XTCAV
 -v <str>: validity range (if not run#-end, e.g. 123-567 or 123-end)
 -l: do NOT send to batch queue
+-f : full epix10k charge injection run
 -C # : if noise filecreated, write pixel mask file for pixels with noise below xxx (currently integer only...)
 -m # : write pixel mask file for pixels with pedestal below xxx (currently integer only...)
 -x # : write pixel mask file for pixels with pedestal above xxx (currently integer only...)
@@ -72,6 +73,9 @@ do
 	    ;;
 	n)
 	    SPEC_ARG=$SPEC_ARG' -n '$OPTARG
+	    ;;
+	f)
+	    SPEC_ARG=$SPEC_ARG' -f '
 	    ;;
 	v)
 	    VALSTR=$OPTARG
