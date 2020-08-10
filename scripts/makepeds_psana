@@ -16,6 +16,7 @@ OPTIONS:
 -D : dark run for XTCAV
 -L : lasing off run for XTCAV (-b specifies the number of assumed bunches, def 1)
 -l : donot send to batch queue
+-f : full epix10k charge injection run
 -v <str>: validity range (if not run#-end, e.g. 123-567 or 123-end)
 -N # : use this number of events (default 1000)
 -n # : if noise filecreated, write pixel mask file for pixels with noise above xxx (currently integer only...)
@@ -79,6 +80,7 @@ XTCAV=0
 NUMBUNCH=1
 CALIBDIR='xxx'
 DEPLOY=1
+CHARGEINJECTION=0
 WANT_ZYLA=0
 WANT_OPAL=0
 WANT_JUNGFRAU=0
@@ -93,7 +95,7 @@ MYNOISESIGMAX=-1
 MYADUMIN=-1
 MYADUMAX=-1
 
-while getopts "r:e:n:c:C:m:x:v:b:N:H:d:DLZOJEilth" OPTION
+while getopts "r:e:n:c:C:m:x:v:b:N:H:d:DLZOJEiltfh" OPTION
 do
     case $OPTION in
 	h)
@@ -130,6 +132,9 @@ do
 	    ;;
 	t)
 	    DEPLOY=0
+	    ;;
+	f)
+	    CHARGEINJECTION=1
 	    ;;
 	D)
 	    XTCAV=1
@@ -227,8 +232,8 @@ if [ ! -d $WORKDIR ]; then
 	    #inexp=`groups | grep $EXP | wc -l`
 	    #inhutch=`groups | grep ps-$HUTCH | wc -l`
 	    #if [[ ( $inexp -gt 0 ) ||  ( $inhutch -gt 1 )]]; then
-	    echo 'could not create directory for experiment in offline area, but member of experiment '$EXP' of ps-'$HUTCH' group, wierd. email snelson@slac.stanford.edu. QUIT!'
-	    exit
+	    echo 'Cannot create T=typical directory to store calib logfiles & results is not writeable, will attempt to work from /tmp, but things may fail'
+            $WORKDIR = '/tmp'
 	fi
 	#else
 	#    echo 'not member of experiment '$EXP' of ps-'$HUTCH' group, QUIT!'
@@ -238,6 +243,10 @@ if [ ! -d $WORKDIR ]; then
 	exit
     fi
 fi
+if [ ! -w $WORKDIR ]; then
+    echo 'Typical directory to store calib logfiles & results is not writeable, will attempt to work from /tmp, but things may fail'
+    $WORKDIR = '/tmp'
+fi 
 cd $WORKDIR
 
 ######################
@@ -362,14 +371,30 @@ if [[ ( $HAVE_EPIX10K -ge 1 ) ]]; then
     source /reg/g/psdm/etc/psconda.sh
     EPIX10K=`detnames exp=${EXP}:run=${RUN} | grep Epix10ka | awk {'print $3'}`
     echo Epix10ka2M name for $EXP is: $EPIX10K
-    for calibcycle in {0..2}; do
-	CMD=`echo epix10ka_pedestals_calibration -d $EPIX10K -e $EXP -r $RUN -c $calibcycle -o /reg/d/psdm/$HUTCH/$EXP/results/calib_work`
-	echo $CMD
-	$CMD
-    done
-    CMD=`echo epix10ka_deploy_constants -D -d $EPIX10K -e $EXP -r $RUN -o /reg/d/psdm/$HUTCH/$EXP/results/calib_work`
-    echo $CMD
-    $CMD
+    #CMD=`echo epix10ka_pedestals_calibration -d $EPIX10K -e $EXP -r $RUN -o $WORKDIR`
+    #echo $CMD
+    $CM
+    if [ $CHARGEINJECTION == 1 ]; then
+	for calibcycle in {0..105}; do
+            CMD=`echo epix10ka_pedestals_calibration -d $EPIX10K -e $EXP -r $RUN -c $calibcycle -o $WORKDIR`
+    	    echo ---------------EPIX10K PEDESTALS FOR CYCLE $calibcycle --------------------
+    	    echo $CMD
+     	    $CMD
+        done
+    else
+	for calibcycle in {0..5}; do
+            CMD=`echo epix10ka_pedestals_calibration -d $EPIX10K -e $EXP -r $RUN -c $calibcycle -o $WORKDIR`
+    	    echo ---------------EPIX10K PEDESTALS FOR CYCLE $calibcycle --------------------
+    	    echo $CMD
+    	    $CMD
+        done
+    fi
+    echo ---------------EPIX10K PEDESTALS CALCULATED NOW DEPLOY     --------------------
+    if [ $DEPLOY == 1 ]; then
+        CMD=`echo epix10ka_deploy_constants -D -d $EPIX10K -e $EXP -r $RUN -o $WORKDIR`
+        echo $CMD
+        $CMD
+    fi
     echo -------------------- STOP EPIX10K PEDESTALS at $(date +"%T") ----------------------------
 fi
 
