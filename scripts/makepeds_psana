@@ -382,16 +382,33 @@ if [[ ( $HAVE_EPIX10K -ge 1 ) ]]; then
      	    $CMD
         done
     else
+	#Do not use workdir as you'd need to run the full charge injection run there for this to work
+	#revisit when we run into permission problems.
 	for calibcycle in {0..5}; do
-            CMD=`echo epix10ka_pedestals_calibration -d $EPIX10K -e $EXP -r $RUN -c $calibcycle -o $WORKDIR`
+            #CMD=`echo epix10ka_pedestals_calibration -d $EPIX10K -e $EXP -r $RUN -c $calibcycle -o $WORKDIR`
+            CMD=`echo epix10ka_pedestals_calibration -d $EPIX10K -e $EXP -r $RUN -c $calibcycle`
     	    echo ---------------EPIX10K PEDESTALS FOR CYCLE $calibcycle --------------------
     	    echo $CMD
     	    $CMD
+	    #parallel calc, not working yet. fix later.
+            #epix10ka_pedestals_calibration -d $EPIX10K -e $EXP -r $RUN -c $calibcycle &
         done
+	#sleep 20
+	#while [`find /reg/g/psdm/detector/gains/epix10k/panels/*/pedestals/*/*$EXP*$RUN* -mmin +1 | wc -l ` -gt 0 ]; do
+	#    echo 'processes are still running'
+	#    sleep 10
+	#done
+	#run all together
+        #CMD=`echo epix10ka_pedestals_calibration -d $EPIX10K -e $EXP -r $RUN`
+    	#echo ---------------EPIX10K PEDESTALS FOR ALL 5 CYCLES    -------------------
+    	#echo $CMD
+    	#$CMD
     fi
+    #echo ---testing parallel, no deploy----
     echo ---------------EPIX10K PEDESTALS CALCULATED NOW DEPLOY     --------------------
     if [ $DEPLOY == 1 ]; then
-        CMD=`echo epix10ka_deploy_constants -D -d $EPIX10K -e $EXP -r $RUN -o $WORKDIR`
+        #CMD=`echo epix10ka_deploy_constants -D -d $EPIX10K -e $EXP -r $RUN -o $WORKDIR`
+        CMD=`echo epix10ka_deploy_constants -D -d $EPIX10K -e $EXP -r $RUN`
         echo $CMD
         $CMD
     fi
