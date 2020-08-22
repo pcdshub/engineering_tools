@@ -1,0 +1,41 @@
+#!/bin/bash
+
+usage()
+{
+cat << EOF
+usage: $0 options <motor_pv_basename>
+
+Start a typhos screen for the specified motor.
+Attempts to choose the correct type.
+
+OPTIONS:
+-h shows the usage information
+EOF
+}
+
+PREFIX=`echo $1 | cut -d . -f 1`
+
+if [ -z "${PREFIX}" ]; then
+    usage;
+    exit 1;
+fi
+
+# Use the latest tagged environment
+source /reg/g/pcds/pyps/conda/pcds_conda
+
+caget "${PREFIX}:PLC:nErrorId_RBV" > /dev/null 2>&1
+
+if [ $? -eq 0 ]; then
+    echo "* This looks like a Beckhoff axis."
+    DEVICE_CLASS="pcdsdevices.epics_motor.BeckhoffAxis"
+    NAME="${PREFIX}"  # maybe we can do better?
+else
+    echo "* Falling back to a standard EpicsMotor."
+    DEVICE_CLASS="ophyd.EpicsMotor"
+    NAME="${PREFIX}"
+fi
+
+TYPHOS_ARGS="${DEVICE_CLASS}[{'prefix':'${PREFIX}','name':'${NAME}'}]"
+echo "* Launching typhos with arguments: ${TYPHOS_ARGS}"
+echo "* This may take a bit, please wait..."
+typhos ${TYPHOS_ARGS} > /dev/null 2>&1 &
