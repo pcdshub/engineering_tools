@@ -77,6 +77,12 @@ if [[ $proxy_node == 'mon-nodes[0]' ]]; then
     proxy_node=`echo $mon_node_line | awk '{for (x=1;x<=NF;x++) if ($x~"daq-") print $x}' | head -n1 | sed s/\,//g | sed s/\'//g | sed s/-fez//g `
 fi
 
+# CXI uses ami-nodes[0]
+if [[ $proxy_node == 'ami-nodes[0]' ]]; then
+    echo 'using ami nodes '
+    proxy_node=`grep 'ami_nodes ' /reg/g/pcds/dist/pds/$HUTCH/scripts/$CONFIG  | grep -v '#' | cut -d "[" -f2 | cut -d "," -f1 | sed s/-fez//g | tr -d '"'`
+fi
+
 netconfig search $proxy_node | grep IP | sed 's/IP: //g' | sed 's/\t172/172/g' > /tmp/amiProxy_IP
 proxy_cds=`grep 172 /tmp/amiProxy_IP`
 rm /tmp/amiProxy_IP
