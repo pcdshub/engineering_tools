@@ -370,7 +370,7 @@ if [[ ( $HAVE_EPIX10K -ge 1 ) ]]; then
     echo -------------------- START EPIX10K PEDESTALS at $(date +"%T") ----------------------------
     source /reg/g/psdm/etc/psconda.sh
     EPIX10K=`detnames exp=${EXP}:run=${RUN} | grep Epix10ka | awk {'print $3'}`
-    echo Epix10ka2M name for $EXP is: $EPIX10K
+    echo Epix10ka name for $EXP is: $EPIX10K
     #CMD=`echo epix10ka_pedestals_calibration -d $EPIX10K -e $EXP -r $RUN -o $WORKDIR`
     #echo $CMD
     $CM
@@ -468,7 +468,7 @@ fi
 
 
 if [[ ( $DETS == '' ) ]]; then
-    echo xxxxxxxx NO DETECTORS IN RUN $RUN -  END MAKEPEDS at $(date +"%T") XXXXXXXXXXXXXXXXXXXXX
+    echo xxxxxxxx NO epix100/cspad/opal/... IN RUN $RUN -  END MAKEPEDS at $(date +"%T") XXXXXXXXXXXXXXXXXXXXX
     exit
 fi
 
