@@ -218,6 +218,9 @@ if args.run:
                 print('ended')
 
 if args.files_for_run or args.nfiles_for_run:
+    if not rundoc:
+        print('no runs started yet, exiting')
+        sys.exit()
     if args.files_for_run:
         run = int(args.files_for_run)
     if args.nfiles_for_run:
