@@ -126,7 +126,8 @@ else:
         hutch = lcls_path_key.pop().upper()
     elif lcls2_path_key:
         hutch = lcls2_path_key.pop().lower()
-    # Not touching this one...
+    # Not touching this one, I like the greater than -1 because -1 + -1 = -2.
+    # This is becoming quite enjoyable
     elif not hutch and path.find('xrt')+hostname.find('xrt')>=-1 or path.find('xtod')+hostname.find('xtod')>=-1:
         hutch='LFE' #because we have so many names for the same subnet.
     else:
@@ -139,6 +140,7 @@ if args.getHutch:
 if args.gethutch:
     print hutch.lower()
 
+# cxi is such a rebel
 if hutch.lower() in ['cxi']:
     nstations = 2
     if args.station is not None:
@@ -177,21 +179,29 @@ elif args.getcnf:
 request_args = {"instrument_name": hutch, "station": station}
 exp_metadata = requests.get(''.join([ws_url, ACTIVE_EXP_URL]), request_args).json()
 exp = exp_metadata.get('value', {}).get('name')
-rundoc = requests.get(''.join([ws_url, '/lgbk/', exp, '/ws/current_run'])).json()['value']
-
-if args.exp:
-    print(exp)
 
 # I don't think we'll want to parse this
 # in bash, but useful quick lookup
 if args.expmeta:
     print(json.dumps(exp_metadata, sort_keys=True, indent=2))
 
-# This needs to be considered
-# In our current case we haven't taken any runs so there is no rundoc
-# Do we just move on, or do we print 0 for run, or...
-# Implementation not super clear, and get_lastrun is a bit strange too.
-if rundoc and args.run:
+# This should be active experiment since we can pass in an experiment name
+if args.exp:
+    print(exp)
+
+# If the user wants to know about some other experiment
+# we'll do the rest of the logic with that name
+if args.setExp:
+    exp = args.setExp
+
+# Rest of logic is run/exp name specific, no need for hutch info anymore
+# This could be a different script that is just experiment lookup
+rundoc = requests.get(''.join([ws_url, '/lgbk/', exp, '/ws/current_run'])).json()['value']
+
+if args.run:
+    if not rundoc:
+        print('no runs started yet, exiting')
+        sys.exit()
     if args.ended:
         if rundoc.get('end_time', None):
             print(int(rundoc['num']))
@@ -207,14 +217,11 @@ if rundoc and args.run:
             else:
                 print('ended')
 
-if rundoc and args.files_for_run or args.nfiles_for_run:
+if args.files_for_run or args.nfiles_for_run:
     if args.files_for_run:
         run = int(args.files_for_run)
     if args.nfiles_for_run:
         run = int(args.nfiles_for_run)
-
-    if args.setExp:
-        exp=args.setExp
 
     runLast = int(rundoc['num'])
     if run > runLast:
