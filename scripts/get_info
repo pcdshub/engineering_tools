@@ -5,13 +5,15 @@ import os
 import sys
 import requests
 import logging
+import json
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--run", help="get last run", action='store_true')
 parser.add_argument("--exp", help="get experiment name", action='store_true')
+parser.add_argument('--expmeta', help='get all associated experiment metadat', action='store_true')
 parser.add_argument("--live", help="ongoing?", action='store_true')
 parser.add_argument("--ended", help="ended", action='store_true')
-parser.add_argument("--hutch", help="get experiment for hutch xxx")
+parser.add_argument("--hutch", help="hutch to get info for {xxx}")
 parser.add_argument("--station", help="optional station for hutch with two daqs, e.g. cxi and mfx")
 parser.add_argument("--getHutch", help="get hutch (uppercase)", action='store_true')
 parser.add_argument("--gethutch", help="get hutch (lowercase)", action='store_true')
@@ -28,89 +30,115 @@ ws_url = "https://pswww.slac.stanford.edu/ws/lgbk"
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-hutches=['tmo','txi','rix','xpp','xcs','mfx','cxi','mec', 'det', 'lfe','kfe','tst']
-foundHutch=False
-hutch=''
+ACTIVE_EXP_URL = '/lgbk/ws/activeexperiment_for_instrument_station'
+
+LCLS2_HUTCHES = [
+    'tmo',
+    'txi',
+    'rix'
+] 
+
+LCLS_HUTCHES = [
+    'xpp',
+    'xcs',
+    'mfx',
+    'cxi',
+    'mec', 
+    'det', 
+    'lfe',
+    'kfe',
+    'tst'
+]
+#foundHutch=False
+#hutch=''
 
 #populate hutch-specific subnets here:
-hutch_subnets={'tmo': ['28','132','133','134','135'],
-               'txi': ['29','136','137','138','139'],
-               'rix': ['31','144','145','146','147'],
-               'xpp': ['22','84','85','86','87'],
-               'xcs': ['25','80','81','82','83'],
-               'cxi': ['26','68','69','70','71'],
-               'mfx': ['24','72','73','74','75'],
-               'mec': ['27','76','77','78','79'],
-               'det': ['58', '59'],
-               'lfe': ['88','89','90','91'],
-               'kfe': ['92','93','94','95'],
-               'tst': ['23','148','149','150','151']}
+HUTCH_SUBNETS = {
+    'tmo': ['28','132','133','134','135'],
+    'txi': ['29','136','137','138','139'],
+    'rix': ['31','144','145','146','147'],
+    'xpp': ['22','84','85','86','87'],
+    'xcs': ['25','80','81','82','83'],
+    'cxi': ['26','68','69','70','71'],
+    'mfx': ['24','72','73','74','75'],
+    'mec': ['27','76','77','78','79'],
+    'det': ['58', '59'],
+    'lfe': ['88','89','90','91'],
+    'kfe': ['92','93','94','95'],
+    'tst': ['23','148','149','150','151']
+}
+
 
 if args.hutch:
-    hutch=args.hutch
-    if hutch in hutches:
-        hutch=hutch.upper()
+    # Check if the hutch arg upper/lower is in lcls or lcls2 hutches
+    hutch = args.hutch
+    hutch_set = set([hutch.upper(), hutch.lower()])
+    if bool(hutch_set.intersection(LCLS_HUTCHES)):
+        hutch = hutch.upper()
+    elif bool(hutch_set.intersection(LCLS2_HUTCHES)):
+        hutch = hutch.lower()
     else:
-        for ihutch in hutches:
-            if hutch.find(ihutch.upper())>=0:
-                hutch=ihutch.upper()
-                foundHutch=True
-                break
-        if not foundHutch:
-            print 'unknown_hutch'
-            sys.exit()
+        print('unknown hutch {0}'.format(hutch))
+        sys.exit()
 else:
-    hostname=socket.gethostname()
-    ip=socket.gethostbyname(hostname)
-    subnet=ip.split('.')[2]
-    for ihutch in hutches: #use the IP address to match the host to a hutch by subnet
-        if subnet in hutch_subnets.get(ihutch):
-            hutch=ihutch.upper()
-            foundHutch=True
-            break
-    if not foundHutch:
-        for ihutch in hutches:
-            if hostname.find(ihutch)>=0:
-                hutch=ihutch.upper()
-                foundHutch=True
-                break
-    if not foundHutch:
-        if hostname.find('psusr')>=0:
-            if hostname.find('psusr13')>=0:
-                hutch='XPP'
-            elif hostname.find('psusr21')>=0:
-                hutch='XCS'
-            elif hostname.find('psusr22')>=0:
-                hutch='CXI'
-            elif hostname.find('psusr23')>=0:
-                hutch='MEC'
-            elif hostname.find('psusr24')>=0:
-                hutch='MFX'
-            if hutch!='':
-                foundHutch=True
-        else:
-            #then check current path
-            path=os.getcwd()
-            for ihutch in hutches:
-                if path.find(ihutch)>=0:
-                    hutch=ihutch.upper()
-                    foundHutch=True
-                    break
-            if not foundHutch and path.find('xrt')+hostname.find('xrt')>=-1 or path.find('xtod')+hostname.find('xtod')>=-1:
-                hutch='LFE' #because we have so many names for the same subnet.
-                foundHutch=True
-    if not foundHutch:
+    hutch = ''
+    # Get hutch from hostname string
+    hostname = socket.gethostname()
+    match_hostname_lcls = [hutch for hutch in LCLS_HUTCHES if hutch in hostname]
+    match_hostname_lcls2 = [hutch for hutch in LCLS2_HUTCHES if hutch in hostname]
+    
+    # Get hutch from subnet key
+    ip = socket.gethostbyname(hostname)
+    subnet = ip.split('.')[2]
+    subnet_key = [k for k, v in HUTCH_SUBNETS.items() if subnet in v]
+
+    # Get hutch from path
+    path = os.getcwd()
+    lcls_path_key = [hutch for hutch in LCLS_HUTCHES if hutch in path]
+    lcls2_path_key = [hutch for hutch in LCLS2_HUTCHES if hutch in path]
+
+    # Run through all conditions to see if we can find hutch name
+    if subnet_key:
+        hutch = subnet_key.pop()
+        if hutch in LCLS_HUTCHES:
+            hutch = hutch.upper()
+        elif hutch in LCLS2_HUTCHES:
+            hutch = hutch.lower()
+    # Check hutch from host name
+    elif match_hostname_lcls:
+        hutch = match_hostname_lcls.pop().upper()
+    elif match_hostname_lcls2:
+        hutch = match_hostname_lcls2.pop().lower()
+    # Check psusr accounts
+    elif 'psusr' in hostname:
+        if hostname.find('psusr13')>=0:
+            hutch='XPP'
+        elif hostname.find('psusr21')>=0:
+            hutch='XCS'
+        elif hostname.find('psusr22')>=0:
+            hutch='CXI'
+        elif hostname.find('psusr23')>=0:
+            hutch='MEC'
+        elif hostname.find('psusr24')>=0:
+            hutch='MFX'
+    # Check for hutch on the path
+    elif lcls_path_key:
+        hutch = lcls_path_key.pop().upper()
+    elif lcls2_path_key:
+        hutch = lcls2_path_key.pop().lower()
+    # Not touching this one...
+    elif not hutch and path.find('xrt')+hostname.find('xrt')>=-1 or path.find('xtod')+hostname.find('xtod')>=-1:
+        hutch='LFE' #because we have so many names for the same subnet.
+    else:
         #then ask.....outside of python
-        print 'unknown_hutch'
-        sys.exit()
-    if args.getHutch:
-        print hutch.upper()
-        sys.exit()
-    if args.gethutch:
-        print hutch.lower()
+        print 'Could not locate hutch this is run from'
         sys.exit()
 
-#if hutch.lower() in ['mfx','cxi']:
+if args.getHutch:
+    print hutch.upper()
+if args.gethutch:
+    print hutch.lower()
+
 if hutch.lower() in ['cxi']:
     nstations = 2
     if args.station is not None:
@@ -124,6 +152,7 @@ if hutch.lower() in ['cxi']:
     daq_base = '{:}_{:}'.format(hutch.lower(),station)
     instrument = '{:}:{:}'.format(hutch.upper(),station)
 else:
+    # This might need to change as well, no daq yet
     daq_base = hutch.lower()
     instrument = hutch.upper()
     nstations = 1
@@ -138,47 +167,47 @@ if station >= nstations:
 
 if args.getstation:
     print station
-    sys.exit()
 elif args.getinstrument:
     print instrument
-    sys.exit()
 elif args.getbase:
     print daq_base
-    sys.exit()
 elif args.getcnf:
     print daq_base+'.cnf'
-    sys.exit()
 
+request_args = {"instrument_name": hutch, "station": station}
+exp_metadata = requests.get(''.join([ws_url, ACTIVE_EXP_URL]), request_args).json()
+exp = exp_metadata.get('value', {}).get('name')
+rundoc = requests.get(''.join([ws_url, '/lgbk/', exp, '/ws/current_run'])).json()['value']
 
 if args.exp:
-    resp = requests.get(ws_url + "/lgbk/ws/activeexperiment_for_instrument_station", {"instrument_name": hutch, "station": station})
-    exp = resp.json().get("value", {}).get("name")
     print(exp)
 
-if args.run:
-    try:
-        resp = requests.get(ws_url + "/lgbk/ws/activeexperiment_for_instrument_station", {"instrument_name": hutch, "station": station})
-        exp = resp.json().get("value", {}).get("name")
-        rundoc = requests.get(ws_url + "/lgbk/" + exp  + "/ws/current_run").json()["value"]
-        if not rundoc:
-            logger.error("Invalid response from server")
-        if args.ended:
-            if rundoc.get('end_time', None):
-                print(int(rundoc['num']))
-            else:
-                print(int(rundoc['num'] - 1)) # Really bogus way to determine this; but copying over from previous code.
-        else:
-            print(int(rundoc['num']))
-            if args.live:
-                if not rundoc.get('end_time', None):
-                    print('live')
-                else:
-                    print('ended')
-    except:
-        logger.exception("No runs?")
-        print('no runs yet')
+# I don't think we'll want to parse this
+# in bash, but useful quick lookup
+if args.expmeta:
+    print(json.dumps(exp_metadata, sort_keys=True, indent=2))
 
-if args.files_for_run or args.nfiles_for_run:
+# This needs to be considered
+# In our current case we haven't taken any runs so there is no rundoc
+# Do we just move on, or do we print 0 for run, or...
+# Implementation not super clear, and get_lastrun is a bit strange too.
+if rundoc and args.run:
+    if args.ended:
+        if rundoc.get('end_time', None):
+            print(int(rundoc['num']))
+        else:
+            print(int(rundoc['num'] - 1)) 
+            # I'm a big fan of comments like these ;)
+            # Really bogus way to determine this; but copying over from previous code.
+    else:
+        print(int(rundoc['num']))
+        if args.live:
+            if not rundoc.get('end_time', None):
+                print('live')
+            else:
+                print('ended')
+
+if rundoc and args.files_for_run or args.nfiles_for_run:
     if args.files_for_run:
         run = int(args.files_for_run)
     if args.nfiles_for_run:
@@ -186,12 +215,8 @@ if args.files_for_run or args.nfiles_for_run:
 
     if args.setExp:
         exp=args.setExp
-    else:
-        resp = requests.get(ws_url + "/lgbk/ws/activeexperiment_for_instrument_station", {"instrument_name": hutch, "station": station})
-        exp = resp.json().get("value", {}).get("name")
 
-    currundoc = requests.get(ws_url + "/lgbk/" + exp  + "/ws/current_run").json()["value"]
-    runLast = int(currundoc['num'])
+    runLast = int(rundoc['num'])
     if run > runLast:
         print('run %s not taken yet, last run is %s'%(run,runLast))
     else:
