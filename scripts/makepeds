@@ -26,6 +26,7 @@ OPTIONS:
 -L : lasing off run for XTCAV
 -v <str>: validity range (if not run#-end, e.g. 123-567 or 123-end)
 -l: do NOT send to batch queue
+-F : use the FFB (default if no experiment is passed)
 -f : full epix10k charge injection run
 -C # : if noise filecreated, write pixel mask file for pixels with noise below xxx (currently integer only...)
 -m # : write pixel mask file for pixels with pedestal below xxx (currently integer only...)
@@ -41,7 +42,7 @@ EXP='xxx'
 RUNLOCAL=0
 GETFFBNODE=0
 RUNFFBNODE=0
-FFBNODE=psana1509
+FFBNODE=psana1609
 VALSTR='xxx'
 NUMEVT=1000
 SPEC_ARG=''
@@ -49,7 +50,7 @@ INTERACTIVE=0
 elogMessage="DARK"
 ELOGTEXT=""
 
-while getopts "u:r:e:n:p:c:v:N:m:x:d:C:DLZOJEiltfgh" OPTION
+while getopts "u:r:e:n:p:c:v:N:m:x:d:C:DLZOJEiltfFgh" OPTION
 do
     case $OPTION in
 	h)
@@ -76,6 +77,11 @@ do
 	    ;;
 	f)
 	    SPEC_ARG=$SPEC_ARG' -f '
+	    ;;
+	F)
+	    GETFFBNODE=1
+	    RUNFFBNODE=1
+	    SPEC_ARG=$SPEC_ARG' -F '
 	    ;;
 	v)
 	    VALSTR=$OPTARG
@@ -116,10 +122,6 @@ do
 	t)
 	    SPEC_ARG=$SPEC_ARG' -t '
 	    ;;
-	f)
-	    RUNFFBNODE=1
-	    SPEC_ARG=$SPEC_ARG' -l '
-	    ;;
 	p)
 	    ELOGTEXT=$OPTARG
 	    ;;
@@ -148,13 +150,38 @@ if [[ $USER =~ "opr" ]]; then
  fi
 
  if [ $GETFFBNODE -eq 1 ]; then
-     FFBNODE_LINE=`ssh -Y $USER@psdev ssh -Y psana "bhosts psnehfarm | grep ok | tail -n1 "`
-     FFBNODE=`echo $FFBNODE_LINE |  awk '{print $1}'`
-     echo 'for interactive sessions, use: '$FFBNODE
-     if [ $RUNFFBNODE -ne 1 ]; then
-	 echo 'do not want to run on ffb node, so I will QUIT here '
-	 exit
+     #only if local:
+     if [[ $SPEC_ARG == *' -l'* ]]; then
+         printf "Please enter ffb node name (suggested psana1609): \n"; read FFBNODE
+         if [ `echo $FFBNODE | wc -c` -le 1 ]; then
+             FFBNODE=psana1609
+         fi    
+     else
+         RUNFFBNODE=0
      fi
+    
+     ##find an empty node.
+     #FFBNODE_LINE=`ssh -Y $USER@psdev ssh -Y psana "bhosts psnehfarm | grep ok | tail -n1 "`
+     #echo A $FFBNODE_LINE XX
+     #if [ `echo $FFBNODE_LINE |  wc -w ` -eq 0 ]; then
+     #	 echo check feh
+     #	 FFBNODE_LINE=`ssh -Y $USER@psdev ssh -Y psana "bhosts psfehfarm | grep ok | tail -n1 "`
+     #fi
+     #echo B $FFBNODE_LINE XX
+     ##accept a full, but working node.
+     #echo C $FFBNODE_LINE
+     #if [ `echo $FFBNODE_LINE |  wc -w ` -eq 0 ]; then
+     #	 FFBNODE_LINE=`ssh -Y $USER@psdev ssh -Y psana "bhosts pshehfarm | grep Full | tail -n1 "`
+     #fi
+     #if [ `echo $FFBNODE_LINE |  wc -w ` -eq 0 ]; then
+     #	 FFBNODE_LINE=`ssh -Y $USER@psdev ssh -Y psana "bhosts psfehfarm | grep Full | tail -n1 "`
+     #fi
+     #FFBNODE=`echo $FFBNODE_LINE |  awk '{print $1}'`
+     #echo 'for interactive sessions, use: '$FFBNODE
+     #if [ $RUNFFBNODE -ne 1 ]; then
+     #	 echo 'do not want to run on ffb node, so I will QUIT here '
+     #	 exit
+     #fi
  fi
 
  if [ $RUN == 0 ]; then
@@ -168,9 +195,13 @@ if [ $EXP != 'xxx' ]; then
     COMMAND_ARGS=$COMMAND_ARGS' -e '$EXP
     HUTCH=${EXP:0:3}
 else
+    #no experiment was passed, default to using the FFB
     HUTCH=`get_info --gethutch`
     EXP=`get_info --exp --hutch $HUTCH`
-    COMMAND_ARGS=$COMMAND_ARGS' -H '$HUTCH' -e '$EXP
+    COMMAND_ARGS=$COMMAND_ARGS' -H '$HUTCH' -e '$EXP' -F'
+    if [[ $SPEC_ARG == *' -l'* ]]; then
+	RUNFFBNODE=1
+    fi
 fi
 
 if [ $VALSTR != 'xxx' ]; then
@@ -179,15 +210,8 @@ fi
 
 COMMAND_ARGS=$COMMAND_ARGS$SPEC_ARG
 
-#WORKDIR=/reg/neh/operator/${HUTCH}opr/experiments/$EXP/pedestals
-#if [ ! -d $WORKDIR ]; then
-#    echo 'created <hutch>opr based working directory as fallback'
-#    mkdir -p $WORKDIR
-#fi
-
 if [ $RUNFFBNODE -ne 0 ]; then
-    echo calling:  makepeds_psana $COMMAND_ARGS
-    #ssh -Y $USER@psdev ssh -Y $FFBNODE "/reg/g/pcds/engineering_tools/$HUTCH/scripts/makepeds_psana $COMMAND_ARGS"
+    echo calling on $FFBNODE makepeds_psana $COMMAND_ARGS
     ssh -Y $USER@psdev ssh -Y $FFBNODE "$DIR/makepeds_psana $COMMAND_ARGS"
 else
     echo calling:  makepeds_psana $COMMAND_ARGS
@@ -205,18 +229,18 @@ source pcds_conda
 export PYTHONPATH=/reg/g/pcds/pyps/apps/hutch-python/common/dev/elog:${PYTHONPATH}
 BINPATH=/reg/g/pcds/pyps/conda/py36/envs/pcds-3.3.1/bin/python
 PYCMD=/reg/g/pcds/pyps/apps/hutch-python/common/dev/elog/scripts/LogBookPost.py
-if [[ `whoami` =~ "opr" ]]; then
-    echo $BINPATH $PYCMD -i "${HUTCH^^}" -u `whoami` -e "$EXP"  -t DARK  -r $RUN -m "$elogMessage"
-    if [[ $HOSTNAME == 'cxi-monitor' ]]; then
-        $BINPATH $PYCMD -i "${HUTCH^^}" -u `whoami` -p pcds -e "$EXP"  -t DARK  -r $RUN -m "$elogMessage" -s 1&
-    else
-        $BINPATH $PYCMD -i "${HUTCH^^}" -u `whoami` -p pcds -e "$EXP"  -t DARK  -r $RUN -m "$elogMessage"&
-    fi
-else
-    echo $BINPATH $PYCMD -i "${HUTCH^^}" -e "$EXP"  -t DARK -r $RUN -m "$elogMessage"
-    if [[ $HOSTNAME == 'cxi-monitor' ]]; then
-        $BINPATH $PYCMD -i "${HUTCH^^}" -e "$EXP" -t DARK -r $RUN -m "$elogMessage" -s 1&
-    else
-        $BINPATH $PYCMD -i "${HUTCH^^}" -e "$EXP" -t DARK -r $RUN -m "$elogMessage"&
-    fi
-fi
+#if [[ `whoami` =~ "opr" ]]; then
+#    echo $BINPATH $PYCMD -i "${HUTCH^^}" -u `whoami` -e "$EXP"  -t DARK  -r $RUN -m "$elogMessage"
+#    if [[ $HOSTNAME == 'cxi-monitor' ]]; then
+#        $BINPATH $PYCMD -i "${HUTCH^^}" -u `whoami` -p pcds -e "$EXP"  -t DARK  -r $RUN -m "$elogMessage" -s 1&
+#    else
+#        $BINPATH $PYCMD -i "${HUTCH^^}" -u `whoami` -p pcds -e "$EXP"  -t DARK  -r $RUN -m "$elogMessage"&
+#    fi
+#else
+#    echo $BINPATH $PYCMD -i "${HUTCH^^}" -e "$EXP"  -t DARK -r $RUN -m "$elogMessage"
+#    if [[ $HOSTNAME == 'cxi-monitor' ]]; then
+#        $BINPATH $PYCMD -i "${HUTCH^^}" -e "$EXP" -t DARK -r $RUN -m "$elogMessage" -s 1&
+#    else
+#        $BINPATH $PYCMD -i "${HUTCH^^}" -e "$EXP" -t DARK -r $RUN -m "$elogMessage"&
+#    fi
+#fi

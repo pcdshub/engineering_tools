@@ -16,6 +16,7 @@ OPTIONS:
 -D : dark run for XTCAV
 -L : lasing off run for XTCAV (-b specifies the number of assumed bunches, def 1)
 -l : donot send to batch queue
+-F : use FFB
 -f : full epix10k charge injection run
 -v <str>: validity range (if not run#-end, e.g. 123-567 or 123-end)
 -N # : use this number of events (default 1000)
@@ -94,8 +95,9 @@ MYNOISESIGMIN=-1
 MYNOISESIGMAX=-1
 MYADUMIN=-1
 MYADUMAX=-1
+USEFFB=0
 
-while getopts "r:e:n:c:C:m:x:v:b:N:H:d:DLZOJEiltfh" OPTION
+while getopts "r:e:n:c:C:m:x:v:b:N:H:d:DLZOJEiltfFh" OPTION
 do
     case $OPTION in
 	h)
@@ -135,6 +137,9 @@ do
 	    ;;
 	f)
 	    CHARGEINJECTION=1
+	    ;;
+	F)
+	    USEFFB=1
 	    ;;
 	D)
 	    XTCAV=1
@@ -197,7 +202,7 @@ fi
 umask 0002
 
 source /reg/g/psdm/etc/psconda.sh
-#conda activate ana-1.3.80
+conda activate ana-1.5.24
 
 #I will be in the home area of whoever calls this script if called from <hutch>makepeds
 #thus we need to pass the experiment or the hutch from there.
@@ -205,6 +210,9 @@ HUTCH=${EXP:0:3}
 QUEUE=psnehhiprioq
 if [[ ( $HUTCH == 'xcs' ) ||  ( $HUTCH == 'cxi' ) ||  ( $HUTCH == 'mec' ) || ( $HUTCH == 'mfx' )]]; then
     QUEUE=psfehhiprioq
+fi
+if [ $USEFFB -ne 0 ]; then
+    FFB=1
 fi
 if [ $FFB -ne 1 ]; then
     QUEUE=psanaq
@@ -344,7 +352,6 @@ if [[ ( $HAVE_JUNGFRAU -ge 1 ) && ( $WANT_JUNGFRAU -ge 1 ) ]]; then
         cat $tmpScript
         jfCmd=`echo bsub -q $QUEUE -o $WORKDIR/jungfrau_${EXP}_RUN${RUN}_%J.out $tmpScript`
         echo 'run in queue: ' $jfCmd
-        #SUBMISSION=`bsub -q $QUEUE -o $WORKDIR/jungfrau_${EXP}_RUN${RUN}_%J.out jungfrau_ndarr_dark_proc $JFARG`
         SUBMISSION=`$jfCmd`
         echo $SUBMISSION
         JOBNR=`echo $SUBMISSION | awk {'print $2'} | sed s/'<'//g | sed s/'>'//g`
@@ -371,9 +378,10 @@ if [[ ( $HAVE_EPIX10K -ge 1 ) ]]; then
     source /reg/g/psdm/etc/psconda.sh
     EPIX10K=`detnames exp=${EXP}:run=${RUN} | grep Epix10ka | awk {'print $3'}`
     echo Epix10ka name for $EXP is: $EPIX10K
+    ##run all at once - do not use
     #CMD=`echo epix10ka_pedestals_calibration -d $EPIX10K -e $EXP -r $RUN -o $WORKDIR`
     #echo $CMD
-    $CM
+    #$CMD
     if [ $CHARGEINJECTION == 1 ]; then
 	for calibcycle in {0..105}; do
             CMD=`echo epix10ka_pedestals_calibration -d $EPIX10K -e $EXP -r $RUN -c $calibcycle -o $WORKDIR`
@@ -385,8 +393,12 @@ if [[ ( $HAVE_EPIX10K -ge 1 ) ]]; then
 	#Do not use workdir as you'd need to run the full charge injection run there for this to work
 	#revisit when we run into permission problems.
 	for calibcycle in {0..5}; do
-            #CMD=`echo epix10ka_pedestals_calibration -d $EPIX10K -e $EXP -r $RUN -c $calibcycle -o $WORKDIR`
-            CMD=`echo epix10ka_pedestals_calibration -d $EPIX10K -e $EXP -r $RUN -c $calibcycle`
+	    if [ $FFB == 1 ]; then
+		CMD=`echo epix10ka_pedestals_calibration -d $EPIX10K -e $EXP -r $RUN -c $calibcycle -x /reg/d/ffb/$HUTCH/$EXP/xtc/:live`
+		#CMD=`echo epix10ka_pedestals_calibration -d $EPIX10K -e $EXP -r $RUN -c $calibcycle -x /reg/d/ffb/$HUTCH/$EXP/xtc/`
+	    else
+		CMD=`echo epix10ka_pedestals_calibration -d $EPIX10K -e $EXP -r $RUN -c $calibcycle`
+	    fi
     	    echo ---------------EPIX10K PEDESTALS FOR CYCLE $calibcycle --------------------
     	    echo $CMD
     	    $CMD
@@ -404,10 +416,8 @@ if [[ ( $HAVE_EPIX10K -ge 1 ) ]]; then
     	#echo $CMD
     	#$CMD
     fi
-    #echo ---testing parallel, no deploy----
     echo ---------------EPIX10K PEDESTALS CALCULATED NOW DEPLOY     --------------------
     if [ $DEPLOY == 1 ]; then
-        #CMD=`echo epix10ka_deploy_constants -D -d $EPIX10K -e $EXP -r $RUN -o $WORKDIR`
         CMD=`echo epix10ka_deploy_constants -D -d $EPIX10K -e $EXP -r $RUN`
         echo $CMD
         $CMD
@@ -473,7 +483,7 @@ if [[ ( $DETS == '' ) ]]; then
 fi
 
 echo 'now calling calibrun from host ' $HOSTNAME ' from directory '
-echo 'in: ' `pwd` ' running: ' `which calibrun`
+echo 'in: ' `pwd` ' running: ' `which calibrun` ' on ' `hostname`
 echo 'for the following detectors: ' $DETS
 
 for MYDET in $DETS; do
