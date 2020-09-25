@@ -229,18 +229,18 @@ source pcds_conda
 export PYTHONPATH=/reg/g/pcds/pyps/apps/hutch-python/common/dev/elog:${PYTHONPATH}
 BINPATH=/reg/g/pcds/pyps/conda/py36/envs/pcds-3.3.1/bin/python
 PYCMD=/reg/g/pcds/pyps/apps/hutch-python/common/dev/elog/scripts/LogBookPost.py
-#if [[ `whoami` =~ "opr" ]]; then
-#    echo $BINPATH $PYCMD -i "${HUTCH^^}" -u `whoami` -e "$EXP"  -t DARK  -r $RUN -m "$elogMessage"
-#    if [[ $HOSTNAME == 'cxi-monitor' ]]; then
-#        $BINPATH $PYCMD -i "${HUTCH^^}" -u `whoami` -p pcds -e "$EXP"  -t DARK  -r $RUN -m "$elogMessage" -s 1&
-#    else
-#        $BINPATH $PYCMD -i "${HUTCH^^}" -u `whoami` -p pcds -e "$EXP"  -t DARK  -r $RUN -m "$elogMessage"&
-#    fi
-#else
-#    echo $BINPATH $PYCMD -i "${HUTCH^^}" -e "$EXP"  -t DARK -r $RUN -m "$elogMessage"
-#    if [[ $HOSTNAME == 'cxi-monitor' ]]; then
-#        $BINPATH $PYCMD -i "${HUTCH^^}" -e "$EXP" -t DARK -r $RUN -m "$elogMessage" -s 1&
-#    else
-#        $BINPATH $PYCMD -i "${HUTCH^^}" -e "$EXP" -t DARK -r $RUN -m "$elogMessage"&
-#    fi
-#fi
+if [[ `whoami` =~ "opr" ]]; then
+    echo $BINPATH $PYCMD -i "${HUTCH^^}" -u `whoami` -e "$EXP"  -t DARK  -r $RUN -m "$elogMessage"
+    if [[ $HOSTNAME == 'cxi-monitor' ]]; then
+        $BINPATH $PYCMD -i "${HUTCH^^}" -u `whoami` -p pcds -e "$EXP"  -t DARK  -r $RUN -m "$elogMessage" -s 1&
+    else
+        $BINPATH $PYCMD -i "${HUTCH^^}" -u `whoami` -p pcds -e "$EXP"  -t DARK  -r $RUN -m "$elogMessage"&
+    fi
+else
+    echo $BINPATH $PYCMD -i "${HUTCH^^}" -e "$EXP"  -t DARK -r $RUN -m "$elogMessage"
+    if [[ $HOSTNAME == 'cxi-monitor' ]]; then
+        $BINPATH $PYCMD -i "${HUTCH^^}" -e "$EXP" -t DARK -r $RUN -m "$elogMessage" -s 1&
+    else
+        $BINPATH $PYCMD -i "${HUTCH^^}" -e "$EXP" -t DARK -r $RUN -m "$elogMessage"&
+    fi
+fi
