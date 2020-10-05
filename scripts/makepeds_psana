@@ -525,6 +525,9 @@ for MYDET in $DETS; do
     fi
 
     LOCARG=$ARG' --thr_int_min '$ADUMIN' --thr_int_max '$ADUMAX' --thr_rms_min '$NOISESIGMIN' --thr_rms '$NOISESIGMAX
+    if [[ ( $MYDET == 'Zyla') ]]; then
+	LOCARG=$LOCARG' -m 100'
+    fi
 
     echo -------------------- START CALIBRUN at $(date +"%T") for detector $MYDET----------------------------
     if [ $FFB == 1 ]; then
