@@ -70,22 +70,8 @@ fi
 DAQHOST=`wheredaq`
 ami_base_path=`grep ami_base_path /reg/g/pcds/dist/pds/$HUTCH/scripts/$CONFIG | grep -v '#' | grep -v 'ami_base_path+'  | awk 'BEGIN { FS = "=" }; { print $2}' | sed s/\'//g`
 ami_path=$ami_base_path`grep ami_path /reg/g/pcds/dist/pds/$HUTCH/scripts/$CONFIG | grep -v 'ami_path+' | grep -v '#' | awk 'BEGIN { FS = "= " }; { print $2}' | sed s/ami_base_path+// | sed s/\'//g`
-proxy_node=`grep 'proxy_node ' /reg/g/pcds/dist/pds/$HUTCH/scripts/$CONFIG | grep -v procmg | grep -v \# | awk {'print $3'} | sed s/_/-/g | tr -d '"'`
 
-if [[ $proxy_node == 'mon-nodes[0]' ]]; then
-    mon_node_line=`grep 'mon_nodes ' /reg/g/pcds/dist/pds/$HUTCH/scripts/$CONFIG  | grep -v '#'`
-    proxy_node=`echo $mon_node_line | awk '{for (x=1;x<=NF;x++) if ($x~"daq-") print $x}' | head -n1 | sed s/\,//g | sed s/\'//g | sed s/-fez//g `
-fi
-
-# CXI uses ami-nodes[0]
-if [[ $proxy_node == 'ami-nodes[0]' ]]; then
-    echo 'using ami nodes '
-    proxy_node=`grep 'ami_nodes ' /reg/g/pcds/dist/pds/$HUTCH/scripts/$CONFIG  | grep -v '#' | cut -d "[" -f2 | cut -d "," -f1 | sed s/-fez//g | tr -d '"'`
-fi
-
-netconfig search $proxy_node | grep IP | sed 's/IP: //g' | sed 's/\t172/172/g' > /tmp/amiProxy_IP
-proxy_cds=`grep 172 /tmp/amiProxy_IP`
-rm /tmp/amiProxy_IP
+proxy_cds=`/reg/g/pcds/dist/pds/$HUTCH/current/tools/procmgr/procmgr status /reg/g/pcds/dist/pds/$HUTCH/scripts/$CONFIG | grep ami_proxy | awk {'print $1'} | sed s/'-fez'/''/g`
 
 amicmd=`grep ami_client /reg/g/pcds/dist/pds/$HUTCH/scripts/$CONFIG | grep -v '#' |  awk 'BEGIN { FS = ":" }; { print $4}' | sed s/ami_path//g | sed s/\'+proxy_cds/$proxy_cds/g | sed  s:\'+expname:$EXPNAME/:g | sed s/+\'//g | sed s/\'\}\)//g` 
 
@@ -110,13 +96,6 @@ if [[ "$DAQHOST" == *"$HOSTNAME" ]]; then  # Check host and daq host line share 
 else
     echo --- connect to proxy on: $proxy_cds, calling:
 fi    
-
-#fix for control rooms that have not been upgraded
-if [ `uname -a | grep el6 | wc -l ` == 1 ]; then
-    echo 'RHEL6 node'
-    ami_path=`echo $ami_path | sed s/rhel7/linux/g`
-    amicmd=`echo $amicmd | sed s/ami_GUI_path//g`
-fi
 
 echo $ami_path$amicmd
 exec $ami_path$amicmd&
