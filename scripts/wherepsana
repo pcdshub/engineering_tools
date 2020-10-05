@@ -1,0 +1,101 @@
+#!/bin/bash
+HUTCH=`get_info --gethutch`
+if [ $HUTCH == 'xpp' ]; then
+   HOSTS="xpp-daq xpp-control xpp-hutch01"
+elif  [ $HUTCH == 'xcs' ]; then
+   HOSTS="xcs-daq xcs-control xcs-hutch01"
+elif  [ $HUTCH == 'mfx' ]; then
+   HOSTS="mfx-daq mfx-monitor"
+elif  [ $HUTCH == 'cxi' ]; then
+   HOSTS="cxi-daq cxi-monitor"
+elif  [ $HUTCH == 'mec' ]; then
+   HOSTS="mec-daq mec-console"
+elif  [ $HUTCH == 'det' ]; then
+   HOSTS="det-console daq-det-standalone"
+else
+   echo 'could not determine hutch or hutch not implemented, quit'
+   exit
+fi
+NOTRUNNING='Not running'
+
+while getopts "hc:d" OPTION
+do
+    case "$OPTION" in
+	h)
+	    usage
+	    exit 1
+	    ;;
+	c)
+	    CONFIG="$OPTARG"
+	    ;;
+	d)
+	    DETAIL="1"
+	    ;;
+	?)
+	    usage
+	    exit
+	    ;;
+	esac
+done
+shift "$(($OPTIND-1))"
+
+# If specified a config file, then use that
+if [[ -z $CONFIG ]]; then
+
+    CNFEXT=.cnf
+
+    if [[ $HUTCH == 'cxi' ]]; then
+        if [[ $HOSTNAME == 'cxi-daq' ]]; then
+           CNFEXT=_0.cnf
+        elif [[ $HOSTNAME == 'cxi-monitor' ]]; then
+           CNFEXT=_1.cnf
+        elif [[ -z $CONFIG ]]; then
+            echo 'You must provide cxi config file (-c) if not on daq machine'
+            exit 1
+        fi 
+    fi
+
+    CONFIG=$HUTCH$CNFEXT
+fi
+
+#create a tempoprary file with the procStatus so we only call that once;
+/reg/g/pcds/dist/pds/$HUTCH/current/tools/procmgr/procmgr status /reg/g/pcds/dist/pds/$HUTCH/scripts/$CONFIG > /tmp/procServStatus
+
+PSANA_NODES=(`grep monreqsrvpsana /tmp/procServStatus | awk {'print $1'}`)
+
+if [[ -z $DETAIL ]]; then
+    NODESTR=''
+    for ((idx=0; idx<${#PSANA_NODES[@]}; ++idx)); do 
+        NODESTR=$NODESTR${PSANA_NODES[idx]}','; 
+    done
+    echo ${NODESTR::-1}
+else
+    EVENT=(`grep event /tmp/procServStatus | awk {'print $1'}`)
+    PSANA_MASKS=(`grep monreqsrvpsana /tmp/procServStatus | awk -F "-i " {'print $2'} | awk {'print $1'}`)
+    echo 'psana runs on the following nodes looking at event nodes '${#EVENT[@]}
+    NODESTR=''
+    for ((idx=0; idx<${#PSANA_NODES[@]}; ++idx)); do 
+	if [ ${PSANA_MASKS[idx]} == '1' ]; then
+            echo  ${PSANA_NODES[idx]}': '${EVENT[0]} 
+	elif [ ${PSANA_MASKS[idx]} == '2' ]; then
+            echo  ${PSANA_NODES[idx]}': '${EVENT[1]} 
+	elif [ ${PSANA_MASKS[idx]} == '4' ]; then
+            echo  ${PSANA_NODES[idx]}': '${EVENT[2]} 
+	elif [ ${PSANA_MASKS[idx]} == '8' ]; then
+            echo  ${PSANA_NODES[idx]}': '${EVENT[3]} 
+	elif [ ${PSANA_MASKS[idx]} == '16' ]; then
+            echo  ${PSANA_NODES[idx]}': '${EVENT[2]} 
+	elif [ ${PSANA_MASKS[idx]} == '3' ]; then
+            echo  ${PSANA_NODES[idx]}': '${EVENT[0]}  ${EVENT[1]} 
+	elif [ ${PSANA_MASKS[idx]} == '12' ]; then
+            echo  ${PSANA_NODES[idx]}': '${EVENT[2]}  ${EVENT[3]} 
+	elif [ ${PSANA_MASKS[idx]} == '7' ]; then
+            echo  ${PSANA_NODES[idx]}': '${EVENT[0]} ${EVENT[1]}  ${EVENT[2]} 
+	else
+            echo  ${PSANA_NODES[idx]} ' -- need better event definition'
+	fi
+    done
+
+fi
+
+rm  /tmp/procServStatus
