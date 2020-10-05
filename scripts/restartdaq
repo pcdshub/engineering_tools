@@ -144,9 +144,9 @@ else
 fi
 
 if [ ${#DOWIN} != 0 ] ||  [ ${#SELPART} != 0 ]; then
-    if  [ $HUTCH  == 'xpp' ||  $HUTCH  == 'xcs' ]; then
+    if  [ $HUTCH  == 'xpp' ] || [ $HUTCH  == 'xcs' ]; then
 	if  [ ! -f /usr/bin/xdotool ]; then
-	    echo 'xdotool not installed, ask Omar to do so'
+	    echo 'xdotool not installed, ask IT to do so'
 	    DOWIN=0
 	    SELPART=0
 	fi
