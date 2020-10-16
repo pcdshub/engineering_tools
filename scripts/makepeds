@@ -16,6 +16,7 @@ OPTIONS:
 -r runnumber for pedestal
 -e <expname> in case you do not want pedestals for the ongoing experiment
 -J make pedestals for Jungfrau (default only cspad/EPIX detectors)
+-j make pedestals for Jungfrau - 3 run version(default only cspad/EPIX detectors)
 -O make pedestals for Opals (default only cspad/EPIX detectors)
 -Z make pedestals for Zyla (default only cspad/EPIX detectors)
 -p <text>: add <text> to elog post
@@ -50,7 +51,7 @@ INTERACTIVE=0
 elogMessage="DARK"
 ELOGTEXT=""
 
-while getopts "u:r:e:n:p:c:v:N:m:x:d:C:DLZOJEiltfFgh" OPTION
+while getopts "u:r:e:n:p:c:v:N:m:x:d:C:DLZOJEjiltfFgh" OPTION
 do
     case $OPTION in
 	h)
@@ -110,6 +111,10 @@ do
 	    ;;
 	J)
 	    SPEC_ARG=$SPEC_ARG' -J '
+	    elogMessage="DARK for jungfrau"
+	    ;;
+	j)
+	    SPEC_ARG=$SPEC_ARG' -j '
 	    elogMessage="DARK for jungfrau, also next two runs."
 	    ;;
 	E)
