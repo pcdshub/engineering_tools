@@ -113,8 +113,23 @@ if [[ $DAQHOST != *$NOTRUNNING* ]]; then
     M="$((T2/1000000))"
     echo 'it took '$S'.'$M' for stopping the DAQ'
 else
-    echo DAQ is currently not running
+    PLATFORM=`grep 'if not platform' /reg/g/pcds/dist/pds/$HUTCH/scripts/$HUTCH$CNFEXT | awk '{print $NF}' | sed s/\'//g`
+    if [ -f /reg/g/pcds/dist/pds/$HUTCH/scripts/p$PLATFORM$CNFEXT.running ]; then
+	echo while DAQ reports to not run, will stop the DAQ on $DAQHOST from $HOSTNAME to clear the p$PLATFORM$CNFEXT.running file
+	T="$(date +%s%N)"
+	/reg/g/pcds/dist/pds/$HUTCH/current/tools/procmgr/procmgr stop \
+	    /reg/g/pcds/dist/pds/$HUTCH/scripts/$HUTCH$CNFEXT 
+
+        if [ -f /reg/g/pcds/dist/pds/$HUTCH/scripts/p$PLATFORM$CNFEXT.running ]; then
+            echo 'the DAQ did not stop properly, exit now and try again follow the escalation procedure'
+            exit
+        fi
+        echo DAQ is now stopped
+    else
+        echo DAQ is currently not running
+    fi
 fi
+
 
 #start DAQ on AIMHOST
 T="$(date +%s%N)"
