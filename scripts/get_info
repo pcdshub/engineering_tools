@@ -1,4 +1,4 @@
-#!/reg/g/psdm/sw/conda/inst/miniconda2-prod-rhel7/envs/ana-1.5.19/bin/python
+#!/reg/g/pcds/pyps/conda/py36/envs/pcds-3.4.0/bin/python
 import argparse
 import socket
 import os
@@ -51,7 +51,7 @@ if args.hutch:
                 foundHutch=True
                 break
         if not foundHutch:
-            print 'unknown_hutch'
+            print('unknown_hutch')
             sys.exit()
 else:
     hostname=socket.gethostname()
@@ -95,13 +95,13 @@ else:
                 foundHutch=True
     if not foundHutch:
         #then ask.....outside of python
-        print 'unknown_hutch'
+        print('unknown_hutch')
         sys.exit()
     if args.getHutch:
-        print hutch.upper()
+        print(hutch.upper())
         sys.exit()
     if args.gethutch:
-        print hutch.lower()
+        print(hutch.lower())
         sys.exit()
 
 #if hutch.lower() in ['mfx','cxi']:
@@ -127,20 +127,20 @@ else:
         station=0
 
 if station >= nstations:
-    print "Invalid --station={:} keyword set for hutch {:}".format(hutch)
+    print("Invalid --station={:} keyword set for hutch {:}".format(hutch))
     sys.exit()
 
 if args.getstation:
-    print station
+    print(station)
     sys.exit()
 elif args.getinstrument:
-    print instrument
+    print(instrument)
     sys.exit()
 elif args.getbase:
-    print daq_base
+    print(daq_base)
     sys.exit()
 elif args.getcnf:
-    print daq_base+'.cnf'
+    print(daq_base+'.cnf')
     sys.exit()
 
 import requests
