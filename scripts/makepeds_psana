@@ -302,7 +302,7 @@ if [ $DEPLOY == 1 ]; then
 fi
 
 if [ $FFB -eq 1 ]; then
-    detnames exp=${EXP}:run=${RUN}:dir=/reg/d/ffb/$HUTCH/$EXP/xtc > /tmp/detnames_$EXP
+    detnames exp=${EXP}:run=${RUN}:dir=/reg/d/ffb/$HUTCH/$EXP/xtc:stream=0-79 > /tmp/detnames_$EXP
 else
     detnames exp=${EXP}:run=${RUN} > /tmp/detnames_$EXP
 fi
@@ -411,7 +411,7 @@ if [[ ( $HAVE_EPIX10K -ge 1 ) ]]; then
 	#revisit when we run into permission problems.
 	for calibcycle in {0..5}; do
 	    if [ $FFB == 1 ]; then
-		CMD=`echo epix10ka_pedestals_calibration -d $EPIX10K -e $EXP -r $RUN -c $calibcycle -x /reg/d/ffb/$HUTCH/$EXP/xtc/:live`
+		CMD=`echo epix10ka_pedestals_calibration -d $EPIX10K -e $EXP -r $RUN -c $calibcycle -x /reg/d/ffb/$HUTCH/$EXP/xtc/:live:stream=0-79`
 		#CMD=`echo epix10ka_pedestals_calibration -d $EPIX10K -e $EXP -r $RUN -c $calibcycle -x /reg/d/ffb/$HUTCH/$EXP/xtc/`
 	    else
 		CMD=`echo epix10ka_pedestals_calibration -d $EPIX10K -e $EXP -r $RUN -c $calibcycle`
