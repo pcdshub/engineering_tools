@@ -25,5 +25,9 @@ else
   conda activate "pcds-${PCDS_CONDA_VER}"
 fi
 
+EPICS_ROOT="/reg/g/pcds/epics-dev"
+
 export PYDM_DESIGNER_ONLINE=1
+export PYDM_DISPLAYS_PATH=$EPICS_ROOT/screens/pydm:$EPICS_ROOT
+export LUCID_CONFIG=/reg/g/pcds/pyps/apps/hutch-python/lucid_config/
 export HAPPI_CFG=/reg/g/pcds/pyps/apps/hutch-python/device_config/happi.cfg
