@@ -4,8 +4,14 @@
 # Use export PCDS_CONDA_VER=<version> before running to pick a different env.
 unset LD_LIBRARY_PATH
 unset PYTHONPATH
+
+# Pick up EPICS environment variable settings just in case user did not
+source /reg/g/pcds/setup/epics-ca-env.sh
+
+# Source the bash setup
 CONDA_ROOT="/reg/g/pcds/pyps/conda/py36"
 source "${CONDA_ROOT}/etc/profile.d/conda.sh"
+
 # Activate base env first so things like conda build are available
 conda activate
 # Default to dev pcds release
