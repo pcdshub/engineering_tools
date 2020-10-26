@@ -31,3 +31,10 @@ export PYDM_DESIGNER_ONLINE=1
 export PYDM_DISPLAYS_PATH=$EPICS_ROOT/screens/pydm:$EPICS_ROOT
 export LUCID_CONFIG=/reg/g/pcds/pyps/apps/hutch-python/lucid_config/
 export HAPPI_CFG=/reg/g/pcds/pyps/apps/hutch-python/device_config/happi.cfg
+
+# Revert to Software Raster when SSH to avoid issues with QtQuick.
+# The same was done with PyDM and this fixes Designer and friends.
+if [ -n "SSH_CONNECTION" ]; then
+	echo "Using SSH, reverting QtQuick rendering to Software."
+	export QT_QUICK_BACKEND="software"
+fi
