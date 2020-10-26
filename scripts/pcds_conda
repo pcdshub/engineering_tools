@@ -4,8 +4,14 @@
 # Use export PCDS_CONDA_VER=<version> before running to pick a different env.
 unset LD_LIBRARY_PATH
 unset PYTHONPATH
+
+# Pick up EPICS environment variable settings just in case user did not
+source /reg/g/pcds/setup/epics-ca-env.sh
+
+# Source the bash setup
 CONDA_ROOT="/reg/g/pcds/pyps/conda/py36"
 source "${CONDA_ROOT}/etc/profile.d/conda.sh"
+
 # Activate base env first so things like conda build are available
 conda activate
 if [ -z "${PCDS_CONDA_VER}" ]; then
@@ -19,5 +25,9 @@ else
   conda activate "pcds-${PCDS_CONDA_VER}"
 fi
 
+EPICS_ROOT="/reg/g/pcds/epics-dev"
+
 export PYDM_DESIGNER_ONLINE=1
+export PYDM_DISPLAYS_PATH=$EPICS_ROOT/screens/pydm:$EPICS_ROOT
+export LUCID_CONFIG=/reg/g/pcds/pyps/apps/hutch-python/lucid_config/
 export HAPPI_CFG=/reg/g/pcds/pyps/apps/hutch-python/device_config/happi.cfg
