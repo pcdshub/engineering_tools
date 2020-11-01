@@ -304,7 +304,7 @@ fi
 if [ $FFB -eq 1 ]; then
     detnames exp=${EXP}:run=${RUN}:dir=/reg/d/ffb/$HUTCH/$EXP/xtc:stream=0-79 > /tmp/detnames_$EXP
 else
-    detnames exp=${EXP}:run=${RUN} > /tmp/detnames_$EXP
+    detnames exp=${EXP}:run=${RUN}:stream=0-79 > /tmp/detnames_$EXP
 fi
 
 ####
@@ -562,4 +562,5 @@ for MYDET in $DETS; do
     fi
     echo -------------------- END CALIBRUN at $(date +"%T") for detector $MYDET----------------------------
 done
+rm /tmp/detnames_$EXP
 echo xxxxxxxxxxxxxxxxxxxx END MAKEPEDS at $(date +"%T") XXXXXXXXXXXXXXXXXXXXXXXXXXXX
