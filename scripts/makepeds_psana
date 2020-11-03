@@ -301,17 +301,19 @@ if [ $DEPLOY == 1 ]; then
     ARG=$ARG' -D '
 fi
 
+
+CREATE_TIME=`date '+%m_%d_%Y_%H:%M:%S'`
 if [ $FFB -eq 1 ]; then
-    detnames exp=${EXP}:run=${RUN}:dir=/reg/d/ffb/$HUTCH/$EXP/xtc:stream=0-79 > /tmp/detnames_$EXP
+    detnames exp=${EXP}:run=${RUN}:dir=/reg/d/ffb/$HUTCH/$EXP/xtc:stream=0-79 > /tmp/detnames_$EXP\_$CREATE_TIME
 else
-    detnames exp=${EXP}:run=${RUN}:stream=0-79 > /tmp/detnames_$EXP
+    detnames exp=${EXP}:run=${RUN}:stream=0-79 > /tmp/detnames_$EXP\_$CREATE_TIME
 fi
 
 ####
 # Jungfrau related stuff. Different executable w/ different options. Ack.
 ###
 #check if jungfrau detectors are present
-HAVE_JUNGFRAU=`grep Jungfrau /tmp/detnames_$EXP | wc -l`
+HAVE_JUNGFRAU=`grep Jungfrau /tmp/detnames_$EXP\_$CREATE_TIME | wc -l`
 #HAVE_JUNGFRAU=`detnames exp=${EXP}:run=${RUN} | grep Jungfrau | wc -l`
 if [[ ( $HAVE_JUNGFRAU -ge 1 ) && ( $WANT_JUNGFRAU -ge 1 ) ]]; then
     
@@ -328,7 +330,7 @@ if [[ ( $HAVE_JUNGFRAU -ge 1 ) && ( $WANT_JUNGFRAU -ge 1 ) ]]; then
 
     #detector names. This will only for for a single JF
     #DETNAMES=`detnames exp=${EXP}:run=${RUN} | grep Jungfrau | awk  'BEGIN { FS = "|"}; {print $1}' | paste -d " " -s`
-    DETNAMES=`grep Jungfrau /tmp/detnames_$EXP | awk  'BEGIN { FS = "|"}; {print $1}' | paste -d " " -s`
+    DETNAMES=`grep Jungfrau /tmp/detnames_$EXP\_$CREATE_TIME | awk  'BEGIN { FS = "|"}; {print $1}' | paste -d " " -s`
 
     #default arguments.
     JFARG=' -d '$DSNAME' -n '$NUMEVT' -D 1000000 -U 1000000 -L 1000000 -H 1000000 '
@@ -389,7 +391,7 @@ fi
 ###
 #check if epix10k detectors are present
 #HAVE_EPIX10K=`detnames exp=${EXP}:run=${RUN} | grep Epix10ka | wc -l`
-HAVE_EPIX10K=`grep Epix10ka /tmp/detnames_$EXP | wc -l`
+HAVE_EPIX10K=`grep Epix10ka /tmp/detnames_$EXP\_$CREATE_TIME | wc -l`
 if [[ ( $HAVE_EPIX10K -ge 1 ) ]]; then
     echo -------------------- START EPIX10K PEDESTALS at $(date +"%T") ----------------------------
     source /reg/g/psdm/etc/psconda.sh
@@ -447,10 +449,10 @@ fi
 ###########
 
 #check if detectors are present    
-HAVE_EPIX=`grep Epix100 /tmp/detnames_$EXP | wc -l`
-HAVE_CSPAD=`grep Cspad /tmp/detnames_$EXP | wc -l`
-HAVE_ZYLA=`grep Zyla /tmp/detnames_$EXP | wc -l`
-HAVE_OPAL=`grep Opal /tmp/detnames_$EXP | wc -l`
+HAVE_EPIX=`grep Epix100 /tmp/detnames_$EXP\_$CREATE_TIME | wc -l`
+HAVE_CSPAD=`grep Cspad /tmp/detnames_$EXP\_$CREATE_TIME | wc -l`
+HAVE_ZYLA=`grep Zyla /tmp/detnames_$EXP\_$CREATE_TIME | wc -l`
+HAVE_OPAL=`grep Opal /tmp/detnames_$EXP\_$CREATE_TIME | wc -l`
 #HAVE_EPIX=`detnames exp=${EXP}:run=${RUN} | grep -i Epix100 | wc -l`
 #HAVE_CSPAD=`detnames exp=${EXP}:run=${RUN} | grep -i Cspad | wc -l`
 #HAVE_ZYLA=`detnames exp=${EXP}:run=${RUN} | grep -i Zyla | wc -l`
@@ -562,5 +564,5 @@ for MYDET in $DETS; do
     fi
     echo -------------------- END CALIBRUN at $(date +"%T") for detector $MYDET----------------------------
 done
-rm /tmp/detnames_$EXP
+rm /tmp/detnames_$EXP\_$CREATE_TIME
 echo xxxxxxxxxxxxxxxxxxxx END MAKEPEDS at $(date +"%T") XXXXXXXXXXXXXXXXXXXXXXXXXXXX
