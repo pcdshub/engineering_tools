@@ -21,7 +21,7 @@ export PATH=/reg/g/psdm/web/ws/prod/apps/LogBookClient/LogBookClient:${PATH}
 
 grab()
 {
-    if [[ $hutch == 'unknown_hutch' ]]; then
+    if [[ $HUTCH == 'unknown_hutch' ]]; then
 	echo 'I cannot determine the current hutch and thus not the current experiment. Try another machine (control room/psusr) or different directory like /reg/d/psdm/<hutch>/..... Will quit.'
 	exit
     fi
@@ -44,7 +44,7 @@ grab_script()
     -p pcds \
     -w https://pswww.slac.stanford.edu/ws-auth/lgbk \
     -c $SCRIPT
-    exit
+    exit 1
 }
 
 grab_user()
@@ -59,7 +59,7 @@ grab_user()
 
 grab_instrument()
 {
-    if [[ $hutch == 'unknown_hutch' ]]; then
+    if [[ $HUTCH == 'unknown_hutch' ]]; then
 	echo 'I cannot determine the current hutch and thus not the current experiment. Try another machine (control room/psusr) or different directory like /reg/d/psdm/<hutch>/..... Will quit.'
 	exit
     fi
@@ -101,12 +101,10 @@ do
 	u)
 	    USERNAME=$OPTARG
 	    grab_user $EXPNAME
-	    exit 1
 	    ;;
 	s)
 	    SCRIPT=$OPTARG
 	    grab_script
-	    exit 1
 	    ;;
 	h)
 	    usage
@@ -114,11 +112,9 @@ do
 	    ;;
 	x)
 	    grab_instrument
-	    exit
 	    ;;
 	c)
 	    grab_controls
-	    exit
 	    ;;
 	?)
 	    usage
