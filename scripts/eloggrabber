@@ -57,7 +57,7 @@ grab_user()
 	-i $HUTCH \
 	-e $1 \
 	-u $USERNAME \
-	-w https://pswww.slac.stanford.edu/ws-kerb/lgbk \
+	-w https://pswww.slac.stanford.edu/ws-kerb/lgbk
     exit
 }
 
