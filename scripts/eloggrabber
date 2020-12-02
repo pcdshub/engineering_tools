@@ -127,9 +127,6 @@ do
 	esac
 done
 
-#SCRIPT='/cds/home/opr/tmoopr/bin/get_all.sh'
-
-
 if [[ $USERNAME == *'opr'* ]]; then
     grab $EXPNAME
 else
