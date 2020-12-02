@@ -14,15 +14,21 @@ OPTIONS:
 EOF
 }
 
+source /reg/g/psdm/sw/conda2/manage/bin/psconda.sh ""
+export PYTHONPATH=/reg/g/psdm/web/ws/prod/apps/LogBookClient:${PYTHONPATH}
+export PATH=/reg/g/psdm/web/ws/prod/apps/LogBookClient/LogBookClient:${PATH}
+
+# This whole script should be thought about.  On one hand you can
+# pass args to do more customizable things, but it's almost all automated
+# on the other hand.  It makes it difficult to adhere to a convention amongst hutches
+# and have any useful logic.
+
 grab()
 {
     if [[ $hutch == 'unknown_hutch' ]]; then
 	echo 'I cannot determine the current hutch and thus not the current experiment. Try another machine (control room/psusr) or different directory like /reg/d/psdm/<hutch>/..... Will quit.'
 	exit
     fi
-    source /reg/g/psdm/sw/conda2/manage/bin/psconda.sh ""
-    export PYTHONPATH=/reg/g/psdm/web/ws/prod/apps/LogBookClient:${PYTHONPATH}
-    export PATH=/reg/g/psdm/web/ws/prod/apps/LogBookClient/LogBookClient:${PATH}
     LogBookGrabber_qt \
 	-i $HUTCH \
 	-e $1 \
@@ -32,16 +38,26 @@ grab()
     exit
 }
 
+# To try and avoid everything else going on
+grab_script()
+{
+	LogBookGrabber_qt \
+    -i $HUTCH \
+    -e $1 \
+    -u $USERNAME \
+    -p pcds \
+    -w https://pswww.slac.stanford.edu/ws-auth/lgbk \
+    -c $SCRIPT
+    exit
+}
+
 grab_user()
 {
-    source /reg/g/psdm/sw/conda2/manage/bin/psconda.sh ""
-    export PYTHONPATH=/reg/g/psdm/web/ws/prod/apps/LogBookClient:${PYTHONPATH}
-    export PATH=/reg/g/psdm/web/ws/prod/apps/LogBookClient/LogBookClient:${PATH}
     LogBookGrabber_qt \
 	-i $HUTCH \
 	-e $1 \
 	-u $USERNAME \
-	-w https://pswww.slac.stanford.edu/ws-kerb/lgbk
+	-w https://pswww.slac.stanford.edu/ws-kerb/lgbk \
     exit
 }
 
@@ -51,9 +67,6 @@ grab_instrument()
 	echo 'I cannot determine the current hutch and thus not the current experiment. Try another machine (control room/psusr) or different directory like /reg/d/psdm/<hutch>/..... Will quit.'
 	exit
     fi
-    source /reg/g/psdm/sw/conda2/manage/bin/psconda.sh ""
-    export PYTHONPATH=/reg/g/psdm/web/ws/prod/apps/LogBookClient:${PYTHONPATH}
-    export PATH=/reg/g/psdm/web/ws/prod/apps/LogBookClient/LogBookClient:${PATH}
     EXPNAME="$HUTCH Instrument"
     LogBookGrabber_qt \
 	-i OPS \
@@ -66,9 +79,6 @@ grab_instrument()
 
 grab_controls()
 {
-    source /reg/g/psdm/sw/conda2/manage/bin/psconda.sh ""
-    export PYTHONPATH=/reg/g/psdm/web/ws/prod/apps/LogBookClient:${PYTHONPATH}
-    export PATH=/reg/g/psdm/web/ws/prod/apps/LogBookClient/LogBookClient:${PATH}
     EXPNAME="Controls"
     LogBookGrabber_qt \
 	-i OPS \
@@ -84,7 +94,6 @@ grab_controls()
 USERNAME=`whoami`
 EXPNAME=current
 hutch=`get_info --gethutch`
-HUTCH=${hutch^^}
 
 while getopts "e:u:hxct" OPTION
 do
@@ -92,7 +101,6 @@ do
 	e)
 	    EXPNAME=$OPTARG
 	    hutch=${EXPNAME:0:3}
-	    HUTCH=${hutch^^}
 	    ;;
 	u)
 	    USERNAME=$OPTARG
@@ -116,6 +124,15 @@ do
 	    ;;
 	esac
 done
+
+# hardcoding script running for now
+if [[ $USERNAME == 'tmoopr' ]]
+then
+    HUTCH="tmo"
+    SCRIPT='/cds/home/opr/tmoopr/bin/get_all.sh'
+    grab_script $EXPNAME
+    exit 1
+
 
 if [[ $USERNAME == *'opr'* ]]; then
     grab $EXPNAME
