@@ -11,17 +11,13 @@ OPTIONS:
 -x instrument logbook
 -c controls logbook
 -u username
+-s script to run and post stdout as sublog entry
 EOF
 }
 
 source /reg/g/psdm/sw/conda2/manage/bin/psconda.sh ""
 export PYTHONPATH=/reg/g/psdm/web/ws/prod/apps/LogBookClient:${PYTHONPATH}
 export PATH=/reg/g/psdm/web/ws/prod/apps/LogBookClient/LogBookClient:${PATH}
-
-# This whole script should be thought about.  On one hand you can
-# pass args to do more customizable things, but it's almost all automated
-# on the other hand.  It makes it difficult to adhere to a convention amongst hutches
-# and have any useful logic.
 
 grab()
 {
@@ -43,7 +39,7 @@ grab_script()
 {
 	LogBookGrabber_qt \
     -i $HUTCH \
-    -e $1 \
+    -e $EXPNAME \
     -u $USERNAME \
     -p pcds \
     -w https://pswww.slac.stanford.edu/ws-auth/lgbk \
@@ -93,18 +89,24 @@ grab_controls()
 #USERNAME=`get_info --gethutch`opr
 USERNAME=`whoami`
 EXPNAME=current
-hutch=`get_info --gethutch`
+HUTCH=`get_info --gethutch`
 
-while getopts "e:u:hxct" OPTION
+while getopts "e:u:s:hxct" OPTION
 do
     case $OPTION in
 	e)
 	    EXPNAME=$OPTARG
-	    hutch=${EXPNAME:0:3}
+	    HUTCH=${EXPNAME:0:3}
 	    ;;
 	u)
 	    USERNAME=$OPTARG
 	    grab_user $EXPNAME
+	    exit 1
+	    ;;
+	s)
+	    SCRIPT=$OPTARG
+	    grab_script
+	    exit 1
 	    ;;
 	h)
 	    usage
@@ -125,13 +127,7 @@ do
 	esac
 done
 
-# hardcoding script running for now
-if [[ $USERNAME == 'tmoopr' ]]
-then
-    HUTCH="tmo"
-    SCRIPT='/cds/home/opr/tmoopr/bin/get_all.sh'
-    grab_script $EXPNAME
-    exit 1
+#SCRIPT='/cds/home/opr/tmoopr/bin/get_all.sh'
 
 
 if [[ $USERNAME == *'opr'* ]]; then
