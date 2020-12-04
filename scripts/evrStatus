@@ -1,0 +1,102 @@
+#!/bin/bash
+source /reg/g/pcds/setup/epicsenv-3.14.12.sh  # source latest epics environment
+source /reg/g/pcds/engineering_tools/latest/scripts/evrList    # execute evrList containg evr pv array in this script
+
+# function to call requested evr pvs and direct them to requisite edm screen 
+function pvs_to_screen () {
+
+in_areas=$(echo ${areas[@]} | grep -o "$hutch" | wc -w) # 1 or 0 depending if user input returns a match or not
+
+if [ $in_areas -ne 0 ]
+then
+	true           # continue with executing script
+else
+	echo "The area you searched does not correspond to any currently in the NEH or FEH where EVRs are located"
+	exit
+fi
+
+# Now let's try to access a list of PVs located in evrList file and return the associated PVs for a given user area 
+evr_req=()  # array that is filled with the requested EVR PVs
+
+if [[ "$hutch" == "ALL" ]]; then  # all callable pvs are requested evr pvs 
+	for i in ${evrs[@]}; do
+		evr_req+=($i)
+	done
+else
+	for i in "${evrs[@]}"; do # call only pvs that are associated with specified hutch
+	if [[ $i == *"$hutch"* ]]; then
+		evr_req+=($i)
+	fi
+	done
+fi
+
+if [[ "$hutch" == "TMO" ]]; then
+	evr_req+=("IM3K4:PPM:CAM:EVR,")       # This PV needs to be added manually b/c the name does not have "$hutch" identifier in it
+
+elif [[ "$hutch" == "XRT" ]]; then
+        evr_req+=("HFX:DG2:BMMON:EVR,")       # This PV needs to be added manually b/c the name does not have "$hutch" identifier in it
+fi
+
+# Now let's try to assign variables to each element in the evr_req array, which can than be exported to an edl file to display in the GUI
+
+evr_num=${#evr_req[@]} # counter for discerning which screen file to display
+
+
+for ((i=0; i< 10; i++)); do  # assign EVR00=<HUTCH:EVR:PV0>, EVR01=<HUTCH:EVR:PV1>...
+      macro_array+="EVR0$i=${evr_req[$i]}"  # array containing macro assignments 
+done
+
+if [[ evr_num -ge 10 ]]; then
+      for ((j=10; j < ${#evr_req[@]}; j++ )); do
+      	macro_array+="EVR$j=${evr_req[$j]}"
+      done
+fi
+macros_exported=${macro_array[@]} # macros are exported to edm as a string
+
+
+if [[ $evr_num -le 5 ]]; then   # smallest edm display file
+	edm -x -eolc -m "$macros_exported" /reg/g/pcds/epics-dev/screens/edm/common/current/evrStatus/evrStatus_tinyScreen.edl &
+ 
+elif [[ $evr_num -gt 5 &&  $evr_num -le 10 ]]; then # small edm display file
+        edm -x -eolc -m "$macros_exported" /reg/g/pcds/epics-dev/screens/edm/common/current/evrStatus/evrStatus_smallScreen.edl &
+
+elif [[ $evr_num -gt 10 &&  $evr_num -lt 20 ]]; then # medium edm display file
+	edm -x -eolc -m "$macros_exported" /reg/g/pcds/epics-dev/screens/edm/common/current/evrStatus/evrStatus_mediumScreen.edl &
+
+else	# big edm display file
+	edm -x -eolc -m "$macros_exported" /reg/g/pcds/epics-dev/screens/edm/common/current/evrStatus/evrStatus_bigScreen.edl &
+
+fi
+
+}
+
+areas=(
+"MEC"
+"CXI"
+"MFX"
+"XCS"
+"XRT"
+"XPP"
+"TMO"
+"FEE"
+"LAS"
+"DET"
+"RIX"
+"TST"
+"TXI"
+"ALL"
+)
+
+for ((i=0; i< ${#areas[@]}; i++)); do # let the user type in multiple hutch arguments to open multiple screens in one session
+        echo "Enter area you'd like to see EVR status display ie (XPP, TMO, FEE, ALL..etc): (Press enter to exit this session)"
+        read  hutch 
+	hutch=${hutch^^}  # make user input uppercase for user friendliness  
+	  
+        if [[ "${hutch}" == "" ]]; then # exit session if user is done requesting hutch evr info
+                exit
+	fi
+        echo "Displaying EVR status screen for" $hutch "..."	
+	printf "\n"
+	pvs_to_screen "$hutch" &  # execute function to display status screen while keeping prompt open to additional input
+done
+
