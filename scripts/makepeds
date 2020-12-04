@@ -28,6 +28,7 @@ OPTIONS:
 -v <str>: validity range (if not run#-end, e.g. 123-567 or 123-end)
 -l: do NOT send to batch queue
 -F : use the FFB (default if no experiment is passed)
+-g : run on an FFB batch node
 -f : full epix10k charge injection run
 -C # : if noise filecreated, write pixel mask file for pixels with noise below xxx (currently integer only...)
 -m # : write pixel mask file for pixels with pedestal below xxx (currently integer only...)
@@ -80,8 +81,6 @@ do
 	    SPEC_ARG=$SPEC_ARG' -f '
 	    ;;
 	F)
-	    GETFFBNODE=1
-	    RUNFFBNODE=1
 	    SPEC_ARG=$SPEC_ARG' -F '
 	    ;;
 	v)
@@ -131,6 +130,7 @@ do
 	    ELOGTEXT=$OPTARG
 	    ;;
 	g)
+	    RUNFFBNODE=1
 	    GETFFBNODE=1
 	    SPEC_ARG=$SPEC_ARG' -l '
 	    ;;
@@ -155,38 +155,10 @@ if [[ $USER =~ "opr" ]]; then
  fi
 
  if [ $GETFFBNODE -eq 1 ]; then
-     #only if local:
-     if [[ $SPEC_ARG == *' -l'* ]]; then
-         printf "Please enter ffb node name (suggested psana1609): \n"; read FFBNODE
-         if [ `echo $FFBNODE | wc -c` -le 1 ]; then
-             FFBNODE=psana1609
-         fi    
-     else
-         RUNFFBNODE=0
-     fi
-    
-     ##find an empty node.
-     #FFBNODE_LINE=`ssh -Y $USER@psdev ssh -Y psana "bhosts psnehfarm | grep ok | tail -n1 "`
-     #echo A $FFBNODE_LINE XX
-     #if [ `echo $FFBNODE_LINE |  wc -w ` -eq 0 ]; then
-     #	 echo check feh
-     #	 FFBNODE_LINE=`ssh -Y $USER@psdev ssh -Y psana "bhosts psfehfarm | grep ok | tail -n1 "`
-     #fi
-     #echo B $FFBNODE_LINE XX
-     ##accept a full, but working node.
-     #echo C $FFBNODE_LINE
-     #if [ `echo $FFBNODE_LINE |  wc -w ` -eq 0 ]; then
-     #	 FFBNODE_LINE=`ssh -Y $USER@psdev ssh -Y psana "bhosts pshehfarm | grep Full | tail -n1 "`
-     #fi
-     #if [ `echo $FFBNODE_LINE |  wc -w ` -eq 0 ]; then
-     #	 FFBNODE_LINE=`ssh -Y $USER@psdev ssh -Y psana "bhosts psfehfarm | grep Full | tail -n1 "`
-     #fi
-     #FFBNODE=`echo $FFBNODE_LINE |  awk '{print $1}'`
-     #echo 'for interactive sessions, use: '$FFBNODE
-     #if [ $RUNFFBNODE -ne 1 ]; then
-     #	 echo 'do not want to run on ffb node, so I will QUIT here '
-     #	 exit
-     #fi
+     printf "Please enter ffb node name (suggested psana1609): \n"; read FFBNODE
+     if [ `echo $FFBNODE | wc -c` -le 1 ]; then
+         FFBNODE=psana1609
+     fi    
  fi
 
  if [ $RUN == 0 ]; then
@@ -204,9 +176,6 @@ else
     HUTCH=`get_info --gethutch`
     EXP=`get_info --exp --hutch $HUTCH`
     COMMAND_ARGS=$COMMAND_ARGS' -H '$HUTCH' -e '$EXP' -F'
-    if [[ $SPEC_ARG == *' -l'* ]]; then
-	RUNFFBNODE=1
-    fi
 fi
 
 if [ $VALSTR != 'xxx' ]; then
