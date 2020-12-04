@@ -4,7 +4,7 @@ export EPICS_CA_MAX_ARRAY_BYTES=8388608
 ulimit -c unlimited
 
 hx2Ipm='hx2_ipm'
-um6Ipm='um6_ipm'
+um6Ipm='um6_ipm um6_dio'
 dg2Ipm='hfxdg2_ipm'
 xcsIpm='decmono ipmmono diomono pim3 pim3m ipm3 pim4 ipm4 snddio ipm5 pim5 ipmgonLD ipmlamLD'
 xppIpm='diomono decmono ipm2 ipm3 pim3 diodeU'
@@ -49,6 +49,10 @@ if [ $1 == 'hx2_ipm' ]; then
     WAVE8='hx2_ipm'
 elif [ $1 == 'um6_ipm' ]; then		#aka xcs ipm1
     BASE="XCS:DG1:IMB:01"
+    IOC="XCS:R04:IOC:34"
+    EVR="XCS:R04:EVR:34"
+elif [ $1 == 'um6_dio' ]; then		#aka xcs ipm1
+    BASE="XCS:DG1:IMB:02"
     IOC="XCS:R04:IOC:34"
     EVR="XCS:R04:EVR:34"
 elif [ $1 == 'hfxdg2_ipm' ]; then	#aka xcs ipm2
