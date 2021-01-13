@@ -1,5 +1,4 @@
 #!/bin/bash
-source /reg/g/pcds/setup/epicsenv-3.14.12.sh
 
 usage() 
 {
