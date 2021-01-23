@@ -208,23 +208,19 @@ fi
 names_from_name $NAME
 
 if [[ $CMD == "off" ]]; then
-    ipmitool -I lanplus -U ADMIN -P ipmia8min -H $NAMEIPMI power off
+    psipmi $NAMEIPMI power off
 elif [[ $CMD == "on" ]]; then
-    ipmitool -I lanplus -U ADMIN -P ipmia8min -H $NAMEIPMI power on
+    psipmi $NAMEIPMI power on
 elif [[ $CMD == "cycle" ]]; then
-    ipmitool -I lanplus -U ADMIN -P ipmia8min -H $NAMEIPMI power off
-    sleep 10
-    ipmitool -I lanplus -U ADMIN -P ipmia8min -H $NAMEIPMI power on
-    sleep 5
-    ipmitool -I lanplus -U ADMIN -P ipmia8min -H $NAMEIPMI power status
+    psipmi $NAMEIPMI power cycle
 elif [[ $CMD == "console" ]]; then
     echo "To exit console use ~."
     # Deactivate if it is activated:
-    ipmitool -I lanplus -U ADMIN -P ipmia8min -H $NAMEIPMI sol deactivate &> /dev/null
+    psipmi $NAMEIPMI sol deactivate &> /dev/null
     # Call console
-    xterm -hold -bg black -fg white -T $NAME -e ipmitool -I lanplus -U ADMIN -P ipmia8min -H $NAMEIPMI sol activate &
+    xterm -hold -bg black -fg white -T $NAME -e psipmi $NAMEIPMI sol activate &
 elif [[ $CMD == "reset" ]]; then
-    ipmitool -I lanplus -U ADMIN -P ipmia8min -H $NAMEIPMI power reset
+    psipmi $NAMEIPMI power reset
 elif [[ $CMD == "expert" ]]; then
     echo "Host netconfig entry:"
     echo -e "-------------------------------------------------"
@@ -232,7 +228,7 @@ elif [[ $CMD == "expert" ]]; then
     echo -e ""
     echo -e "Checking IPMI power status:"
     echo -e "-------------------------------------------------"
-    ipmitool -I lanplus -H $NAME-ipmi -U ADMIN -P ipmia8min power status
+    psipmi $NAMEIPMI power status
     echo -e ""
     echo -e "Checking host/ipmi/fez network interfaces are online:"
     echo -e "-------------------------------------------------"
@@ -304,7 +300,7 @@ EOF
 	cat $DAQSTARTUP
     fi
 else
-    ISON=`ipmitool -U ADMIN -P ipmia8min -H $NAMEIPMI power status | awk 'NF>=2 {print $(NF)}'`
+    ISON=`psipmi $NAMEIPMI power status | awk 'NF>=2 {print $(NF)}'`
     if [[ $ISON == *off* ]]; then
 	echo $DEV is powered off
 	exit
