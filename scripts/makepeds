@@ -15,13 +15,12 @@ OPTIONS:
 -u user (needs to be able to log into the psananeh/feh)
 -r runnumber for pedestal
 -e <expname> in case you do not want pedestals for the ongoing experiment
--J make pedestals for Jungfrau (default only cspad/EPIX detectors)
 -j make pedestals for Jungfrau - 3 run version(default only cspad/EPIX detectors)
 -O make pedestals for Opals (default only cspad/EPIX detectors)
 -Z make pedestals for Zyla (default only cspad/EPIX detectors)
 -p <text>: add <text> to elog post
 -c <evtcode x> use events with eventcode <x> set
--n # : if you have created a noise file, then write pixel mask file for pixels with noise above #sigma
+-n # : if you have created a noise file, then write pixel mask file for pixels with noise above #sigmas
 -N # : use this number of events (default 1000)
 -D : dark run for XTCAV
 -L : lasing off run for XTCAV
@@ -52,7 +51,7 @@ INTERACTIVE=0
 elogMessage="DARK"
 ELOGTEXT=""
 
-while getopts "u:r:e:n:p:c:v:N:m:x:d:C:DLZOJEjiltfFgh" OPTION
+while getopts "u:r:e:n:p:c:v:N:m:x:d:C:DLZOEjiltfFgh" OPTION
 do
     case $OPTION in
 	h)
@@ -107,10 +106,6 @@ do
 	O)
 	    SPEC_ARG=$SPEC_ARG' -O '
 	    elogMessage="DARK for Opal"
-	    ;;
-	J)
-	    SPEC_ARG=$SPEC_ARG' -J '
-	    elogMessage="DARK for jungfrau"
 	    ;;
 	j)
 	    SPEC_ARG=$SPEC_ARG' -j '
@@ -197,6 +192,11 @@ else
 fi
 
 elogMessage+=$ELOGTEXT
+#if this is a default pedestal run, then do not post as this is handled in the pedestal scripts
+if [[ $elogMessage == 'DARK' ]]; then
+    echo ---- Done processing pedestals for Run $RUN -----
+    exit 0
+fi
 source pcds_conda
 
 # Need the following line until the controls conda is updated to pick up the latest elog package.
