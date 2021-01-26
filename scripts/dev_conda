@@ -23,6 +23,8 @@ export PYTHONPATH=/reg/g/pcds/pyps/apps/dev/pythonpath
 export PYQTDESIGNERPATH=/reg/g/pcds/pyps/conda/dev_designer_plugins/:$PYQTDESIGNERPATH
 export PYDM_DESIGNER_ONLINE=1
 export PYDM_DISPLAYS_PATH=$EPICS_ROOT/screens/pydm:$EPICS_ROOT
+export PYDM_STYLESHEET=$EPICS_ROOT/screens/pydm/vacuumscreens/styleSheet/masterStyleSheet.qss
+export PYDM_STYLESHEET_INCLUDE_DEFAULT=1
 export LUCID_CONFIG=/reg/g/pcds/pyps/apps/hutch-python/lucid_config/
 export HAPPI_CFG=/reg/g/pcds/pyps/apps/hutch-python/device_config/happi.cfg
 
