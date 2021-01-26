@@ -139,7 +139,6 @@ req_evrs_func() {
         req_evrs+=("IM3K4:PPM:CAM:EVR,")       # This PV needs to be added manually b/c the name does not have "$hutch" identifier in it
 
     elif [[ "$hutch" == "XRT" ]]; then
-        echo "Ping! Your code sucks!"
 	req_evrs+=("HFX:DG2:BMMON:EVR,")       # This PV needs to be added manually b/c the name does not have "$hutch" identifier in it
     fi
     export req_evrs
