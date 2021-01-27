@@ -311,7 +311,7 @@ if [[ ( $RUNLOCAL -eq 1 ) && ( $HOSTNAME =~ 'psana' ) ]]; then
     fi
 fi
 if [ $FFB -eq 1 ]; then
-    check FFB files: 
+    echo check FFB files: 
     ls -ltr /reg/d/ffb/$HUTCH/$EXP/xtc/*r$RUNSTR*s*xtc*
     detnames exp=${EXP}:run=${RUN}:dir=/reg/d/ffb/$HUTCH/$EXP/xtc:stream=0-79 > /tmp/detnames_$EXP\_$CREATE_TIME
 else
