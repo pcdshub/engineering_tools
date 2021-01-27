@@ -32,6 +32,26 @@ OPTIONS:
 EOF
 }
 
+check_running_jobs()
+{
+    NJOBS=0
+    REMJOBIDS=()
+    for JOBID in ${JOBIDS[@]}; do
+        if  bjobs | grep -q $JOBID; then
+        REMJOBIDS+=( $JOBID )
+            NJOBS=$(($NJOBS+1))
+        fi
+    done
+    if (( $NJOBS == 0 )); then
+        echo Nothing running
+        JOBIDS=''
+    else
+        JOBIDS=(${REMJOBIDS[@]})
+        echo $NJOBS jobs are still running ${JOBIDS[@]}
+    fi
+    return $NJOBS
+}
+
 xtcav_dark()
 {
     if [ $RUNLOCAL == 1 ]; then
@@ -86,6 +106,7 @@ WANT_ZYLA=0
 WANT_OPAL=0
 OLD_JUNGFRAU=0
 CUT_EPIX100=0
+QUEUE='xxx'
 
 DET='CSPAD,CSPAD2x2'
 DET2='Epix100a'
@@ -97,7 +118,7 @@ MYADUMIN=-1
 MYADUMAX=-1
 USEFFB=0
 
-while getopts "r:e:n:c:C:m:x:v:b:N:H:d:DLZOEjiltfFh" OPTION
+while getopts "r:e:n:c:C:m:x:v:b:N:H:q:d:DLZOEjiltfFh" OPTION
 do
     case $OPTION in
 	h)
@@ -174,6 +195,9 @@ do
 	x)
 	    MYADUMAX=$OPTARG
 	    ;;
+	q)
+	    QUEUE=$OPTARG
+	    ;;
 	?)
 	    usage
 	    exit
@@ -208,15 +232,17 @@ source /reg/g/psdm/etc/psconda.sh
 #I will be in the home area of whoever calls this script if called from <hutch>makepeds
 #thus we need to pass the experiment or the hutch from there.
 HUTCH=${EXP:0:3}
-QUEUE=psnehhiprioq
-if [[ ( $HUTCH == 'xcs' ) ||  ( $HUTCH == 'cxi' ) ||  ( $HUTCH == 'mec' ) || ( $HUTCH == 'mfx' )]]; then
-    QUEUE=psfehhiprioq
-fi
 if [ $USEFFB -ne 0 ]; then
     FFB=1
 fi
-if [ $FFB -ne 1 ]; then
-    QUEUE=psanaq
+if [ $QUEUE == 'xxx' ]; then
+    QUEUE=psnehhiprioq
+    if [[ ( $HUTCH == 'xcs' ) ||  ( $HUTCH == 'cxi' ) ||  ( $HUTCH == 'mec' ) || ( $HUTCH == 'mfx' )]];  then
+        QUEUE=psfehhiprioq
+    fi
+    if [ $FFB -ne 1 ]; then
+        QUEUE=psanaq
+    fi
 fi
 
 #(hopefully) effectively turn off relative cuts for status bits. Defaults to 6. used in calibrun
@@ -344,8 +370,6 @@ if [[ ( $HAVE_JUNGFRAU -ge 1 ) ]]; then
 	      DSNAME=$DSNAME':dir=/reg/d/ffb/'$HUTCH'/'$EXP'/xtc/'
     fi   
 
-    #detector names. This will only for for a single JF
-    #DETNAMES=`detnames exp=${EXP}:run=${RUN} | grep Jungfrau | awk  'BEGIN { FS = "|"}; {print $1}' | paste -d " " -s`
     DETNAMES=`grep Jungfrau /tmp/detnames_$EXP\_$CREATE_TIME | awk  'BEGIN { FS = "|"}; {print $1}' | paste -d " " -s`
 
     #default arguments.
@@ -410,46 +434,68 @@ fi
 HAVE_EPIX10K=`grep Epix10ka /tmp/detnames_$EXP\_$CREATE_TIME | wc -l`
 if [[ ( $HAVE_EPIX10K -ge 1 ) ]]; then
     echo -------------------- START EPIX10K PEDESTALS at $(date +"%T") ----------------------------
-    EPIX10K=`detnames exp=${EXP}:run=${RUN} | grep Epix10ka | awk {'print $3'}`
-    echo Epix10ka name for $EXP is: $EPIX10K
-    ##run all at once - do not use
-    #CMD=`echo epix10ka_pedestals_calibration -d $EPIX10K -e $EXP -r $RUN -o $WORKDIR`
-    #echo $CMD
-    #$CMD
-    if [ $CHARGEINJECTION == 1 ]; then
-	for calibcycle in {0..105}; do
-            CMD=`echo epix10ka_pedestals_calibration -d $EPIX10K -e $EXP -r $RUN -c $calibcycle -o $WORKDIR`
-    	    echo ---------------EPIX10K PEDESTALS FOR CYCLE $calibcycle --------------------
-    	    echo $CMD
-     	    $CMD
-        done
-    else
-	#Do not use workdir as you'd need to run the full charge injection run there for this to work
-	#revisit when we run into permission problems.
-	for calibcycle in {0..5}; do
-	    if [ $FFB == 1 ]; then
-		CMD=`echo epix10ka_pedestals_calibration -d $EPIX10K -e $EXP -r $RUN -c $calibcycle -x /reg/d/ffb/$HUTCH/$EXP/xtc/:live:stream=0-79`
-		#CMD=`echo epix10ka_pedestals_calibration -d $EPIX10K -e $EXP -r $RUN -c $calibcycle -x /reg/d/ffb/$HUTCH/$EXP/xtc/`
-	    else
-		CMD=`echo epix10ka_pedestals_calibration -d $EPIX10K -e $EXP -r $RUN -c $calibcycle`
-	    fi
-    	    echo ---------------EPIX10K PEDESTALS FOR CYCLE $calibcycle --------------------
-    	    echo $CMD
-    	    $CMD
-	    #parallel calc, not working yet. fix later.
-            #epix10ka_pedestals_calibration -d $EPIX10K -e $EXP -r $RUN -c $calibcycle &
-        done
-	#sleep 20
-	#while [`find /reg/g/psdm/detector/gains/epix10k/panels/*/pedestals/*/*$EXP*$RUN* -mmin +1 | wc -l ` -gt 0 ]; do
-	#    echo 'processes are still running'
-	#    sleep 10
-	#done
-	#run all together
-        #CMD=`echo epix10ka_pedestals_calibration -d $EPIX10K -e $EXP -r $RUN`
-    	#echo ---------------EPIX10K PEDESTALS FOR ALL 5 CYCLES    -------------------
-    	#echo $CMD
-    	#$CMD
+    DETNAMES=`grep Epix10ka /tmp/detnames_$EXP\_$CREATE_TIME | awk  'BEGIN { FS = "|"}; {print $2}' | paste -d " " -s`
+    for EPIX10K in $DETNAMES; do
+        #EPIX10K=`grep Epix10ka /tmp/detnames_$EXP\_$CREATE_TIME | awk {'print $3'}`
+        echo Epix10ka name for $EXP is: $EPIX10K
+        ##run all at once - do not use
+        #CMD=`echo epix10ka_pedestals_calibration -d $EPIX10K -e $EXP -r $RUN -o $WORKDIR`
+        #echo $CMD
+        #$CMD
+        if [ $CHARGEINJECTION == 1 ]; then
+    	    for calibcycle in {0..105}; do
+                CMD=`echo epix10ka_pedestals_calibration -d $EPIX10K -e $EXP -r $RUN -c $calibcycle -o $WORKDIR`
+    	        echo ---------------EPIX10K PEDESTALS FOR CYCLE $calibcycle --------------------
+       	        echo $CMD
+     	        $CMD
+            done
+        else
+	    #Do not use workdir as you'd need to run the full charge injection run there for this to work
+	    #revisit when we run into permission problems.
+            if [ $RUNLOCAL -ne 1 ]; then
+                JOBIDS=()
+                NJOBS=0
+            fi
+	    for calibcycle in {0..5}; do
+	        if [ $FFB == 1 ]; then
+		    CMD=`echo epix10ka_pedestals_calibration -d $EPIX10K -e $EXP -r $RUN -c $calibcycle -x /reg/d/ffb/$HUTCH/$EXP/xtc/:live:stream=0-79`
+	        else 
+		    CMD=`echo epix10ka_pedestals_calibration -d $EPIX10K -e $EXP -r $RUN -c $calibcycle`
+	        fi
+    	        echo ---------------EPIX10K PEDESTALS FOR CYCLE $calibcycle --------------------
+                if [ $RUNLOCAL -ne 1 ]; then
+                    tmpScript=$(mktemp -p $WORKDIR epix10ka_pedestals_tmpXXXXX.sh)
+                    trap "rm -f $tmpScript" EXIT
+                    chmod u+x $tmpScript
+                    printf '#!/bin/bash\nsource /cds/sw/ds/ana/conda1/manage/bin/psconda.sh\n' > $tmpScript
+                    printf $CMD >> $tmpScript
+                    printf '\n' >> $tmpScript
+                    #echo "contents of $tmpScript:"
+                    #cat $tmpScript
+                    ep10kaCmd=`echo bsub -q $QUEUE -o $WORKDIR/${EPIX10K}_${EXP}_Run${RUN}_cycle${calibcycle}%J.out $tmpScript`
+                    echo 'run in queue: ' $ep10kaCmd
+                    SUBMISSION=`$ep10kaCmd`
+                    echo $SUBMISSION
+                    THISJOBID=`echo $SUBMISSION | awk {'print $2'} | sed s/'<'//g | sed s/'>'//g`
+                    JOBIDS+=( $THISJOBID )
+                    NJOBS=$(($NJOBS+1))
+                else            
+                    echo $CMD
+                    $CMD
+                fi
+            done
+        fi   
+    done
+    sleep 5
+    if [ $RUNLOCAL -ne 1 ]; then
+        echo Running jobs are PIDS: ${JOBIDS[@]}
+        until check_running_jobs; do
+                echo 'Checking again in 10s'
+                sleep 10
+            done
+        echo 'All jobs finished'
     fi
+
     echo ---------------EPIX10K PEDESTALS CALCULATED NOW DEPLOY     --------------------
     if [ $DEPLOY == 1 ]; then
         CMD=`echo epix10ka_deploy_constants -D -d $EPIX10K -e $EXP -r $RUN`
