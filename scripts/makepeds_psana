@@ -300,25 +300,26 @@ fi
 
 CREATE_TIME=`date '+%m_%d_%Y_%H:%M:%S'`
 printf -v RUNSTR "%04g" $RUN
-if [ $FFB -eq 1 ]; then
-    echo Process FFB files: 
-    ls -ltr /reg/d/ffb/$HUTCH/$EXP/xtc/*r$RUNSTR*xtc*
-    detnames exp=${EXP}:run=${RUN}:dir=/reg/d/ffb/$HUTCH/$EXP/xtc:stream=0-79 > /tmp/detnames_$EXP\_$CREATE_TIME
-else
-    echo Process files: 
-    ls -ltr /reg/d/psdm/$HUTCH/$EXP/xtc/*r*$RUNSTR*xtc*
-    detnames exp=${EXP}:run=${RUN}:stream=0-79 > /tmp/detnames_$EXP\_$CREATE_TIME
-fi
-#running local
 if [[ ( $RUNLOCAL -eq 1 ) && ( $HOSTNAME =~ 'psana' ) ]]; then
-    NXTCOFF=`ls /reg/d/psdm/$HUTCH/$EXP/xtc/*r*$RUNSTR*xtc* | wc -l`
-    NXTCFFB=`ls /reg/d/ffb/$HUTCH/$EXP/xtc/*r*$RUNSTR*xtc* | wc -l`
+    NXTCOFF=`ls /reg/d/psdm/$HUTCH/$EXP/xtc/*r*$RUNSTR*s0*xtc* | wc -l`
+    NXTCFFB=`ls /reg/d/ffb/$HUTCH/$EXP/xtc/*r*$RUNSTR*s0*xtc* | wc -l`
     if [ $NXTCOFF -lt $NXTCFFB ]; then
+	echo Process FFB files.
 	FFB=1
     else
 	FFB=0
     fi
 fi
+if [ $FFB -eq 1 ]; then
+    check FFB files: 
+    ls -ltr /reg/d/ffb/$HUTCH/$EXP/xtc/*r$RUNSTR*s*xtc*
+    detnames exp=${EXP}:run=${RUN}:dir=/reg/d/ffb/$HUTCH/$EXP/xtc:stream=0-79 > /tmp/detnames_$EXP\_$CREATE_TIME
+else
+    echo Process files: 
+    ls -ltr /reg/d/psdm/$HUTCH/$EXP/xtc/*r*$RUNSTR*s*xtc*
+    detnames exp=${EXP}:run=${RUN}:stream=0-79 > /tmp/detnames_$EXP\_$CREATE_TIME
+fi
+#running local
 echo -----------------------
 echo 'XTC files contain:'
 cat /tmp/detnames_$EXP\_$CREATE_TIME
