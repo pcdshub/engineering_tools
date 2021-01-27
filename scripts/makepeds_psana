@@ -183,7 +183,7 @@ done
 
 shift $((OPTIND-1))
 
-echo xxxxxxxxxxxxxxxxxxxx START MAKEPEDS at $(date +"%T") XXXXXXXXXXXXXXXXXXXXXXXXXXXX
+echo XXXXXXXXXXXXXXXXX START MAKEPEDS at $(date +"%T") on $HOSTNAME XXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 if [ $RUN -lt 0 ]; then
     if [ $INTERACTIVE -ne 1 ]; then
@@ -203,8 +203,7 @@ fi
 # set the umask so all the files create are group writeable
 umask 0002
 
-#source /reg/g/psdm/etc/psconda.sh
-source /reg/g/psdm/etc/psconda.sh.old
+source /reg/g/psdm/etc/psconda.sh
 
 #I will be in the home area of whoever calls this script if called from <hutch>makepeds
 #thus we need to pass the experiment or the hutch from there.
@@ -300,11 +299,30 @@ fi
 
 
 CREATE_TIME=`date '+%m_%d_%Y_%H:%M:%S'`
+printf -v RUNSTR "%04g" $RUN
 if [ $FFB -eq 1 ]; then
+    echo Process FFB files: 
+    ls -ltr /reg/d/ffb/$HUTCH/$EXP/xtc/*r$RUNSTR*xtc*
     detnames exp=${EXP}:run=${RUN}:dir=/reg/d/ffb/$HUTCH/$EXP/xtc:stream=0-79 > /tmp/detnames_$EXP\_$CREATE_TIME
 else
+    echo Process files: 
+    ls -ltr /reg/d/psdm/$HUTCH/$EXP/xtc/*r*$RUNSTR*xtc*
     detnames exp=${EXP}:run=${RUN}:stream=0-79 > /tmp/detnames_$EXP\_$CREATE_TIME
 fi
+#running local
+if [[ ( $RUNLOCAL -eq 1 ) && ( $HOSTNAME =~ 'psana' ) ]]; then
+    NXTCOFF=`ls /reg/d/psdm/$HUTCH/$EXP/xtc/*r*$RUNSTR*xtc* | wc -l`
+    NXTCFFB=`ls /reg/d/ffb/$HUTCH/$EXP/xtc/*r*$RUNSTR*xtc* | wc -l`
+    if [ $NXTCOFF -lt $NXTCFFB ]; then
+	FFB=1
+    else
+	FFB=0
+    fi
+fi
+echo -----------------------
+echo 'XTC files contain:'
+cat /tmp/detnames_$EXP\_$CREATE_TIME
+echo -----------------------
 
 ####
 # Jungfrau related stuff. Different executable w/ different options. Ack.
@@ -391,7 +409,6 @@ fi
 HAVE_EPIX10K=`grep Epix10ka /tmp/detnames_$EXP\_$CREATE_TIME | wc -l`
 if [[ ( $HAVE_EPIX10K -ge 1 ) ]]; then
     echo -------------------- START EPIX10K PEDESTALS at $(date +"%T") ----------------------------
-    source /reg/g/psdm/etc/psconda.sh
     EPIX10K=`detnames exp=${EXP}:run=${RUN} | grep Epix10ka | awk {'print $3'}`
     echo Epix10ka name for $EXP is: $EPIX10K
     ##run all at once - do not use
