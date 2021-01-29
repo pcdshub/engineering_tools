@@ -52,16 +52,27 @@ usage: ami_offline_psana options<br/>
 <tr>
     <td>camViewer</td>
     <td>
- find_pv: use find_pv to get to the sysreset PV of the IOC for rebooting.<br/>
-     --> does not work. Need to know more. Maybe just use in case of gige, assuming naming convention.<br/>
-     from EDM_LAUNCH: grep that cmd file for 'export IOC_PV'!!!
+usage: /reg/g/pcds/engineering_tools/latest/scripts/camViewer options<br/>
+    <br/>
+    start the viewer for controls cameras<br/>
+    <br/>
+    OPTIONS:<br/>
+    -c camera name as in camera list or gige #<br/>
+    -m bring up the edm screen<br/>
+    -r reboot the IOC<br/>
+    -l print list of cameras<br/>
+    -w # (wait for # hours to ask to renew, default 2 and 12 for GIGEs)<br/>
+    -u # update rate limit (default 5)<br/>
+    -H hutch: use a specific hutches camviewer config file<br/>
     </td>
 </tr>
 
 <tr>
     <td>check_host</td>
     <td>
-(TODO)
+Usage:   /reg/g/pcds/engineering_tools/latest/scripts/check_host <hostname><br/>
+    <br/>
+    Display host info and run some checks.</br>
     </td>
 </tr>
 
@@ -135,14 +146,38 @@ usage: get_curr_exp options<br/>
 <tr>
     <td>get_hutch_name</td>
     <td>
-(TODO)
+Returns the hutch name based on the host it is run on. See `get_info` for more information.
     </td>
 </tr>
 
 <tr>
     <td>get_info</td>
     <td>
-(TODO)
+usage: get_info [-h] [--run] [--exp] [--live] [--ended] [--hutch HUTCH]<br/>
+                    [--station STATION] [--getHutch] [--gethutch] [--getstation]<br/>
+                    [--getbase] [--getinstrument] [--getcnf]<br/>
+                    [--files_for_run FILES_FOR_RUN]<br/>
+                    [--nfiles_for_run NFILES_FOR_RUN] [--setExp SETEXP]<br/>
+    <br/>
+    optional arguments:<br/>
+      -h, --help            show this help message and exit<br/>
+      --run                 get last run<br/>
+      --exp                 get experiment name<br/>
+      --live                ongoing?<br/>
+      --ended               ended<br/>
+      --hutch HUTCH         get experiment for hutch xxx<br/>
+      --station STATION     optional station for hutch with two daqs, e.g. cxi and mfx<br/>
+      --getHutch            get hutch (uppercase)<br/>
+      --gethutch            get hutch (lowercase)<br/>
+      --getstation          get hutch station (for multiple daqs)<br/>
+      --getbase             get base daq name (hutch_station if multiple daqs, otherwise hutch)<br/>
+      --getinstrument       get instrument (HUTCH_station if multiple daqs, otherwise hutch)<br/>
+      --getcnf              get cnf file name<br/>
+      --files_for_run FILES_FOR_RUN<br/>
+                            get xtc files for run<br/>
+      --nfiles_for_run NFILES_FOR_RUN<br/>
+                            get xtc files for run<br/>
+      --setExp SETEXP       set experiment name<br/>
     </td>
 </tr>
 
@@ -160,7 +195,7 @@ usage: get_lastRun options<br/>
 <tr>
     <td>gige</td>
     <td>
-(TODO)
+        Deprecated; do not use.
     </td>
 </tr>
 
@@ -177,17 +212,18 @@ usage: grep_ioc <keyword> [hutch]<br/>
 <tr>
     <td>grep_pv</td>
     <td>
-##################################################<br/>
      GREP SEARCHES THROUGH ALL IOCs IN /reg/d/iocData/<br/>
      FOR PVs THAT MATCH GIVEN KEYWORD/HANDLE.<br/>
-    ##################################################
     </td>
 </tr>
 
 <tr>
     <td>iocmanager</td>
     <td>
-PATH=$PATH:$DIR
+iocmanager [hutch]<br/>
+    <br/>
+    Control status of all IOCs running in a particular hutch in an interactive GUI.<br/>
+    Current hutch is used if not provided.
     </td>
 </tr>
 
@@ -360,14 +396,54 @@ usage: motorInfo <motor_pv> <motor_pv_2/autosave/archive/pmgr_diff/pmgr_save> <o
 <tr>
     <td>pyps-deploy</td>
     <td>
-(TODO)
+usage: pyps-deploy [-h] -r RELEASE -c CONDA [--repo REPO] [--app-bin APP_BIN] app <br/>
+    <br/>
+    Sets up a pyps/apps deployment for a particular github python package. This<br/>
+    will create an executable under .../pyps/apps/<app-name>/<release>/<app-name><br/>
+    and repoint the symbolic link at .../pyps/apps/<app-name>/latest to the new<br/>
+    release folder.<br/>
+    <br/>
+    positional arguments:<br/>
+      app                   Name of the app to deploy<br/>
+    <br/>
+    optional arguments:<br/>
+      -h, --help            show this help message and exit<br/>
+      -r RELEASE, --release RELEASE<br/>
+                            App version<br/>
+      -c CONDA, --conda CONDA<br/>
+                            Conda environment name<br/>
+      --repo REPO           Clone this repo and mask the environment package. Use<br/>
+                            this when you have only a small change that does not<br/>
+                            need a full environment release.<br/>
+      --app-bin APP_BIN     Use in conjunction with --repo arg when the launcher<br/>
+                            is not in the bin directory
     </td>
 </tr>
 
 <tr>
     <td>questionnaire_tools</td>
     <td>
-(TODO)
+usage: questionnaire_tools [-h] [-f FROMEXP] [-t TOEXP] [-r READEXP] [-c]<br/>
+                               [-d ADD_DEVICE] [-l] [-p PRINT_DEVICE] [--dev]<br/>
+                               [--experimentList] [--propList]<br/>
+    <br/>
+    optional arguments:<br/>
+      -h, --help            show this help message and exit<br/>
+      -f FROMEXP, --fromExp FROMEXP<br/>
+                            experiment to copy from<br/>
+      -t TOEXP, --toExp TOEXP<br/>
+                            experiment to copy to<br/>
+      -r READEXP, --readExp READEXP<br/>
+                            experiment to read CDS tag from<br/>
+      -c, --copy_CDS        copy data from CDS tab<br/>
+      -d ADD_DEVICE, --add_device ADD_DEVICE<br/>
+                            name of device to be added<br/>
+      -l, --list_devices    list device to be added<br/>
+      -p PRINT_DEVICE, --print_device PRINT_DEVICE<br/>
+                            print data for device<br/>
+      --dev                 connect to dev database<br/>
+      --experimentList      list of experiments<br/>
+      --propList            list of proposals<br/>
     </td>
 </tr>
 
@@ -420,21 +496,21 @@ usage: startami options<br/>
 <tr>
     <td>stopami</td>
     <td>
-(TODO)
+Kill an AMI process running in the current hutch.
     </td>
 </tr>
 
 <tr>
     <td>stopdaq</td>
     <td>
-(TODO)
+Stop the daq in the current hutch.
     </td>
 </tr>
 
 <tr>
     <td>wheredaq</td>
     <td>
-(TODO)
+Discover what host is running the daq in the current hutch, if any.
     </td>
 </tr>
 
