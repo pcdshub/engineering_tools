@@ -103,7 +103,7 @@ usage: configdb_readxtc options<br/>
 <tr>
     <td>daq_waitwin</td>
     <td>
-(TODO)
+Waits for the LCLS-I daq windows to load, then exits.
     </td>
 </tr>
 
