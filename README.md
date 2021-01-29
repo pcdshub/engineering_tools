@@ -92,7 +92,7 @@ usage: configdb_readxtc options<br/>
 <tr>
     <td>daq_control</td>
     <td>
- daq_control <command> <target><br/>
+ daq_control COMMAND TARGET<br/>
      <command> : { start, stop, restart, status }<br/>
      <target>  : { daq, ami }<br/>
      <command> : ami<br/>
