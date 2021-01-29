@@ -517,7 +517,12 @@ Discover what host is running the daq in the current hutch, if any.
 <tr>
     <td>wherepsana</td>
     <td>
-(TODO)
+Usage: where_psana [-h] [-c  CONFIG] [-d DETAIL]<br/>
+Checks where we have shared memory servers for psana running and could run psana jobs.<br/>
+Optional arguments:<br/>
+-h      Show usage<br/>
+-c      Pick a specific DAQ config file rather than automatically selecting current hutch's file<br/>
+-d      Also show information about dss node mapping<br/>
     </td>
 </tr>
 
