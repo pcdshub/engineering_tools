@@ -43,7 +43,7 @@ usage: ami_offline_psana options<br/>
     <br/>
     OPTIONS:<br/>
     -u user (needs to be able to log into the psananeh/feh, if not on psana already)<br/>
-    -e <expnumber> <br/>
+    -e EXPNUMBER <br/>
     -R rebinning (binned to 640x640)<br/>
     -n no timetool plugin
     </td>
@@ -70,7 +70,7 @@ usage: /reg/g/pcds/engineering_tools/latest/scripts/camViewer options<br/>
 <tr>
     <td>check_host</td>
     <td>
-Usage:   /reg/g/pcds/engineering_tools/latest/scripts/check_host <hostname><br/>
+Usage:   /reg/g/pcds/engineering_tools/latest/scripts/check_host HOSTNAME<br/>
     <br/>
     Display host info and run some checks.</br>
     </td>
@@ -93,10 +93,10 @@ usage: configdb_readxtc options<br/>
     <td>daq_control</td>
     <td>
  daq_control COMMAND TARGET<br/>
-     <command> : { start, stop, restart, status }<br/>
-     <target>  : { daq, ami }<br/>
-     <command> : ami<br/>
-     <target>  : { [0], 1 }
+     COMMAND : { start, stop, restart, status }<br/>
+     TARGET  : { daq, ami }<br/>
+     COMMAND : ami<br/>
+     TARGET  : { [0], 1 }
     </td>
 </tr>
 
@@ -112,7 +112,7 @@ usage: configdb_readxtc options<br/>
     <td>
  Source this to activate a pcds conda environment.<br/>
      By default, this activates the latest environment.<br/>
-     Use export PCDS_CONDA_VER=<version> before running to pick a different env.<br/>
+     Use export PCDS_CONDA_VER=VERSION before running to pick a different env.<br/>
      Pick up EPICS environment variable settings just in case user did not
     </td>
 </tr>
@@ -202,7 +202,7 @@ usage: get_lastRun options<br/>
 <tr>
     <td>grep_ioc</td>
     <td>
-usage: grep_ioc <keyword> [hutch]<br/>
+usage: grep_ioc KEYWORD [hutch]<br/>
         hutch can be any of:<br/>
     xpp, xcs, cxi, mfx, mec, xrt, aux, det, fee, hpl, icl, las, lfe, tst, thz, all<br/>
     If no hutch is specified, all hutches will be searched
@@ -249,18 +249,18 @@ usage: makepeds options<br/>
     OPTIONS:<br/>
     -u user (needs to be able to log into the psananeh/feh)<br/>
     -r runnumber for pedestal<br/>
-    -e <expname> in case you do not want pedestals for the ongoing experiment<br/>
+    -e EXPNAME in case you do not want pedestals for the ongoing experiment<br/>
     -J make pedestals for Jungfrau (default only cspad/EPIX detectors)<br/>
     -j make pedestals for Jungfrau - 3 run version(default only cspad/EPIX detectors)<br/>
     -O make pedestals for Opals (default only cspad/EPIX detectors)<br/>
     -Z make pedestals for Zyla (default only cspad/EPIX detectors)<br/>
-    -p <text>: add <text> to elog post<br/>
-    -c <evtcode x> use events with eventcode <x> set<br/>
+    -p TEXT: add <text> to elog post<br/>
+    -c EVTCODE X use events with eventcode X set<br/>
     -n # : if you have created a noise file, then write pixel mask file for pixels with noise above #sigma<br/>
     -N # : use this number of events (default 1000)<br/>
     -D : dark run for XTCAV<br/>
     -L : lasing off run for XTCAV<br/>
-    -v <str>: validity range (if not run#-end, e.g. 123-567 or 123-end)<br/>
+    -v STR: validity range (if not run#-end, e.g. 123-567 or 123-end)<br/>
     -l: do NOT send to batch queue<br/>
     -F : use the FFB (default if no experiment is passed)<br/>
     -g : run on an FFB batch node<br/>
@@ -282,8 +282,8 @@ usage: makepeds_psana options<br/>
     <br/>
     OPTIONS:<br/>
     -r runnumber for pedestal<br/>
-    -e <expname> in case you do not want pedestals for the ongoing experiment<br/>
-    -H <hutch> in case you do not pass an experiment name<br/>
+    -e EXPNAME in case you do not want pedestals for the ongoing experiment<br/>
+    -H HUTCH in case you do not pass an experiment name<br/>
     -Z pedestal for zyla<br/>
     -O make pedestals for Opals<br/>
     -J pedestal for jungfrau (needs first of set of 3 runs!)<br/>
@@ -292,13 +292,13 @@ usage: makepeds_psana options<br/>
     -l : donot send to batch queue<br/>
     -F : use FFB<br/>
     -f : full epix10k charge injection run<br/>
-    -v <str>: validity range (if not run#-end, e.g. 123-567 or 123-end)<br/>
+    -v STR: validity range (if not run#-end, e.g. 123-567 or 123-end)<br/>
     -N # : use this number of events (default 1000)<br/>
     -n # : if noise filecreated, write pixel mask file for pixels with noise above xxx (currently integer only...)<br/>
     -C # : if noise filecreated, write pixel mask file for pixels with noise below xxx (currently integer only...)<br/>
     -m # : write pixel mask file for pixels with pedestal below xxx (currently integer only...)<br/>
     -x # : write pixel mask file for pixels with pedestal above xxx (currently integer only...)<br/>
-    -c <evtcode x> use events with eventcode <x> set<br/>
+    -c EVTCODE X use events with eventcode X set<br/>
     -i start calibman. -r 0: show all darks, -r n: show runs (n-25) - 25<br/>
     -d give path for alternative calibdir<br/>
     -t : test, do not deploy.<br/>
@@ -309,7 +309,7 @@ usage: makepeds_psana options<br/>
 <tr>
     <td>motor-expert-screen</td>
     <td>
-usage: motor-expert-screen options <motor_pv_basename><br/>
+usage: motor-expert-screen options MOTOR_PV_BASENAME<br/>
         <br/>
     Start an EDM for the specified motor.<br/>
     Attempts to choose the correct type.<br/>
@@ -322,7 +322,7 @@ usage: motor-expert-screen options <motor_pv_basename><br/>
 <tr>
     <td>motor-typhos</td>
     <td>
-usage: motor-typhos options <motor_pv_basename><br/>
+usage: motor-typhos options MOTOR_PV_BASENAME<br/>
         <br/>
     Start a typhos screen for the specified motor.<br/>
     Attempts to choose the correct type.<br/>
@@ -335,7 +335,7 @@ usage: motor-typhos options <motor_pv_basename><br/>
 <tr>
     <td>motorInfo</td>
     <td>
-usage: motorInfo <motor_pv> <motor_pv_2/autosave/archive/pmgr_diff/pmgr_save> <opt><br/>
+usage: motorInfo MOTOR_PV (motor_pv_2/autosave/archive/pmgr_diff/pmgr_save) OPT<br/>
         <br/>
     If given two motors, compare their settings<br/>
     If given autosave as second argument, compare the current settings to the autosaved values: differences will be printed<br/>
@@ -343,9 +343,9 @@ usage: motorInfo <motor_pv> <motor_pv_2/autosave/archive/pmgr_diff/pmgr_save> <o
     <br/>
     OPTIONS:<br/>
     -h shows the usage information<br/>
-    -f fields to use as a comma separated list <default: use all autosave values><br/>
-    -s start time for archiver info <YYYY/MM/DD HH:MM:SS><br/>
-    -e end time for archiver info <YYYY/MM/DD HH:MM:SS>
+    -f fields to use as a comma separated list (default: use all autosave values)<br/>
+    -s start time for archiver info (YYYY/MM/DD HH:MM:SS)<br/>
+    -e end time for archiver info (YYYY/MM/DD HH:MM:SS)
     </td>
 </tr>
 
@@ -354,7 +354,7 @@ usage: motorInfo <motor_pv> <motor_pv_2/autosave/archive/pmgr_diff/pmgr_save> <o
     <td>
  Source this to activate a pcds conda environment.<br/>
      By default, this activates the latest environment.<br/>
-     Use export PCDS_CONDA_VER=<version> before running to pick a different env.<br/>
+     Use export PCDS_CONDA_VER=VERSION before running to pick a different env.<br/>
      Pick up EPICS environment variable settings just in case user did not
     </td>
 </tr>
@@ -399,8 +399,8 @@ usage: motorInfo <motor_pv> <motor_pv_2/autosave/archive/pmgr_diff/pmgr_save> <o
 usage: pyps-deploy [-h] -r RELEASE -c CONDA [--repo REPO] [--app-bin APP_BIN] app <br/>
     <br/>
     Sets up a pyps/apps deployment for a particular github python package. This<br/>
-    will create an executable under .../pyps/apps/<app-name>/<release>/<app-name><br/>
-    and repoint the symbolic link at .../pyps/apps/<app-name>/latest to the new<br/>
+    will create an executable under .../pyps/apps/APP-NAME/RELEASE/APP-NAME<br/>
+    and repoint the symbolic link at .../pyps/apps/APP-NAME/latest to the new<br/>
     release folder.<br/>
     <br/>
     positional arguments:<br/>
@@ -467,7 +467,7 @@ usage: serverStat servername options<br/>
     Script to check status of servers & reboot/power cycle them<br/>
     <br/>
     SIGNATURE:<br/>
-    serverStat <servername> [command]<br/>
+    serverStat SERVERNAME [command]<br/>
     <br/>
     default command is 'status', list of commands:<br/>
     status : print power status of machine, try to ping interfaces<br/>
