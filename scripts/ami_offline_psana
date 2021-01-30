@@ -23,7 +23,7 @@ if [[ $1 =~ ^(h|-h|-help|--help) ]]; then
 	exit 0
 fi
 
-while getopts "h:u:e:ntR" OPTION
+while getopts "u:e:ntR" OPTION
 do
     case $OPTION in
 	u)
