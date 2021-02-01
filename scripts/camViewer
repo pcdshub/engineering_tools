@@ -141,6 +141,11 @@ OPTIONS:
 EOF
 }
 
+if [[ $1 =~ ^(h|-h|-help|--help) ]]; then
+	usage
+	exit 0
+fi
+
 hutch=`get_info --gethutch`
 if [ $hutch = unknown_hutch ]; then
     echo 'unknown hutch, cannot use camViewer script'
