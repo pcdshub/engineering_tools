@@ -432,9 +432,13 @@ fi
 #check if epix10k detectors are present
 #HAVE_EPIX10K=`detnames exp=${EXP}:run=${RUN} | grep Epix10ka | wc -l`
 HAVE_EPIX10K=`grep Epix10ka /tmp/detnames_$EXP\_$CREATE_TIME | wc -l`
-if [[ ( $HAVE_EPIX10K -ge 1 ) ]]; then
+if [[ ( $HAVE_EPIX10K -ge 1 ) && ( $WANT_ZYLA -eq 0 ) && ( $WANT_OPAL -eq 0 ) ]]; then
     echo -------------------- START EPIX10K PEDESTALS at $(date +"%T") ----------------------------
     DETNAMES=`grep Epix10ka /tmp/detnames_$EXP\_$CREATE_TIME | awk  'BEGIN { FS = "|"}; {print $2}' | paste -d " " -s`
+    if [ $RUNLOCAL -ne 1 ]; then
+        JOBIDS=()
+        NJOBS=0
+    fi
     for EPIX10K in $DETNAMES; do
         #EPIX10K=`grep Epix10ka /tmp/detnames_$EXP\_$CREATE_TIME | awk {'print $3'}`
         echo Epix10ka name for $EXP is: $EPIX10K
@@ -452,10 +456,6 @@ if [[ ( $HAVE_EPIX10K -ge 1 ) ]]; then
         else
 	    #Do not use workdir as you'd need to run the full charge injection run there for this to work
 	    #revisit when we run into permission problems.
-            if [ $RUNLOCAL -ne 1 ]; then
-                JOBIDS=()
-                NJOBS=0
-            fi
 	    for calibcycle in {0..5}; do
 	        if [ $FFB == 1 ]; then
 		    CMD=`echo epix10ka_pedestals_calibration -d $EPIX10K -e $EXP -r $RUN -c $calibcycle -x /reg/d/ffb/$HUTCH/$EXP/xtc/:live:stream=0-79`
@@ -468,11 +468,10 @@ if [[ ( $HAVE_EPIX10K -ge 1 ) ]]; then
                     trap "rm -f $tmpScript" EXIT
                     chmod u+x $tmpScript
                     printf '#!/bin/bash\nsource /cds/sw/ds/ana/conda1/manage/bin/psconda.sh\n' > $tmpScript
-                    printf $CMD >> $tmpScript
-                    printf '\n' >> $tmpScript
+                    printf '%s\n' "${CMD}" >> $tmpScript
                     #echo "contents of $tmpScript:"
                     #cat $tmpScript
-                    ep10kaCmd=`echo bsub -q $QUEUE -o $WORKDIR/${EPIX10K}_${EXP}_Run${RUN}_cycle${calibcycle}%J.out $tmpScript`
+                    ep10kaCmd=`echo bsub -q $QUEUE -o $WORKDIR/${EPIX10K}_${EXP}_Run${RUN}_cycle${calibcycle}_%J.out $tmpScript`
                     echo 'run in queue: ' $ep10kaCmd
                     SUBMISSION=`$ep10kaCmd`
                     echo $SUBMISSION
@@ -614,6 +613,7 @@ for MYDET in $DETS; do
     fi
 
     echo -------------------- START CALIBRUN at $(date +"%T") for detector $MYDET----------------------------
+    source /reg/g/psdm/etc/psconda.sh.old
     if [ $FFB == 1 ]; then
 	cmd=`echo calibrun -r $RUN  -d $MYDET -P -e $EXP -x /reg/d/ffb/$HUTCH/$EXP/xtc/ $LOCARG`
 	echo $cmd
