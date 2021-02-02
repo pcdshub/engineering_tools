@@ -37,8 +37,9 @@ check_running_jobs()
     NJOBS=0
     REMJOBIDS=()
     for JOBID in ${JOBIDS[@]}; do
+        #if [ `bjobs $JOBID | wc -l` -gt 0 ]; then
         if  bjobs | grep -q $JOBID; then
-        REMJOBIDS+=( $JOBID )
+            REMJOBIDS+=( $JOBID )
             NJOBS=$(($NJOBS+1))
         fi
     done
@@ -485,9 +486,9 @@ if [[ ( $HAVE_EPIX10K -ge 1 ) && ( $WANT_ZYLA -eq 0 ) && ( $WANT_OPAL -eq 0 ) ]]
             done
         fi   
     done
-    sleep 5
     if [ $RUNLOCAL -ne 1 ]; then
-        echo Running jobs are PIDS: ${JOBIDS[@]}
+        sleep 20
+        echo Running $NJOBS jobs are PIDS: ${JOBIDS[@]}
         until check_running_jobs; do
                 echo 'Checking again in 10s'
                 sleep 10
@@ -497,9 +498,11 @@ if [[ ( $HAVE_EPIX10K -ge 1 ) && ( $WANT_ZYLA -eq 0 ) && ( $WANT_OPAL -eq 0 ) ]]
 
     echo ---------------EPIX10K PEDESTALS CALCULATED NOW DEPLOY     --------------------
     if [ $DEPLOY == 1 ]; then
-        CMD=`echo epix10ka_deploy_constants -D -d $EPIX10K -e $EXP -r $RUN`
-        echo $CMD
-        $CMD
+        for EPIX10K in $DETNAMES; do
+            CMD=`echo epix10ka_deploy_constants -D -d $EPIX10K -e $EXP -r $RUN`
+            echo $CMD
+            $CMD
+        done
     fi
     echo -------------------- STOP EPIX10K PEDESTALS at $(date +"%T") ----------------------------
 fi
