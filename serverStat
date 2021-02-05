@@ -306,7 +306,7 @@ EOF
 	echo -e "-------------------------------------------------"
 	cat $DAQSTARTUP
     fi
-else
+elif [[ $CMD == "status" ]]; then
     ISON=`psipmi $NAMEIPMI power status | awk 'NF>=2 {print $(NF)}'`
     if [[ $ISON == *off* ]]; then
 	echo $DEV is powered off
@@ -338,4 +338,6 @@ else
 	    echo 'cds interface is up'
 	fi
     fi
+else
+    echo 'this should not happen'
 fi
