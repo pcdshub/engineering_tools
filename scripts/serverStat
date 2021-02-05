@@ -83,14 +83,14 @@ SIGNATURE:
 serverStat <servername> [command]
 
 default command is 'status', list of commands:
-status : print power status of machine, try to ping interfaces
-on     : power machine on
-off    : power machine off
-reset  : reset machine (ideally try that before power cycling)
-console: open the ipmi console where possible
-expert : display info and run checks on server
+status      : print power status of machine, try to ping interfaces
+on          : power machine on
+off         : power machine off
 cycle       : power cycle machine, uses "psipmi" cycle command
 cycle_sleep : power cycle machine, uses sleep command to control time on/off
+reset       : reset machine (ideally try that before power cycling)
+console     : open the ipmi console where possible
+expert      : display info and run checks on server
 
 EOF
 }
