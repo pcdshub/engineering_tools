@@ -79,6 +79,11 @@ grab_controls()
     exit
 }
 
+if [[ $1 =~ ^(h|-h|-help|--help) ]]; then
+	usage
+	exit 0
+fi
+
 ##who am I doing this? Why don't just use the actual username?
 #USERNAME=`get_info --gethutch`opr
 USERNAME=`whoami`
@@ -97,10 +102,6 @@ do
 	u)
 	    USERNAME=$OPTARG
 	    grab_user $EXPNAME
-	    ;;
-	h)
-	    usage
-	    exit 1
 	    ;;
 	x)
 	    grab_instrument
