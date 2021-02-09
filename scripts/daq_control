@@ -1,24 +1,79 @@
 #!/bin/bash
-#
-# daq_control <command> <target>
-#
-# <command> : { start, stop, restart, status }
-# <target>  : { daq, ami }
-#
-# <command> : ami
-# <target>  : { [0], 1 }
-#
-# <command> : configdb
-# <target>  : { [view], edit, expname, current }
-#
-# <command> : hosts 
-# <target>  : { }
-#
-# <command> : release 
-# <target>  : { }
-#
-# <command> : logcheck
-#
+
+usage()
+{
+cat << EOF
+usage: $0 options
+
+daq_control <command> <target>
+
+<command> : { start, stop, restart, status }
+<target>  : { daq, ami }
+
+<command> : ami
+<target>  : { [0], 1 }
+
+<command> : configdb
+<target>  : { [view], edit, expname, current }
+
+<command> : stop|start|restart|status
+<target>  : { daq, ami}
+
+<command> : configdb
+<target>  : { edit, view, help, amo|sxr|xpp|xcs|mfx|cxi|mec|det }
+
+<command> : logcheck
+<command> : ipmi_start
+<command> : post
+<command> : edit
+<command> : viewer
+<command> : recorder
+<command> : ipsana
+<command> : calibman
+<command> : dark
+<command> : pedestal
+<command> : bdark
+<command> : emacs|emacsnw|vi|vim|gedit
+<command> : less|more|cat|tail
+<command> : grep
+<command> : ffb
+<command> : memory|free
+<command> : source
+<command> : mon
+<command> : monit
+<command> : df
+<command> : uptime
+<command> : uname
+<command> : nic
+<command> : hosts
+<command> : releases
+<command> : daqrelease|release|amirelease
+<command> : logcheck|checklog
+<command> : pgp
+<command> : cam
+<command> : ipmi
+<command> : detinfo
+<command> : amidump
+<command> : infiniband
+<command> : sudo
+
+
+OPTIONS:
+-h, --help print usage
+-a authorized_host
+-c cnf_base 
+-i instrument  
+-m COMMENT 
+-v printverbose
+-e expname
+
+EOF
+}
+
+if [[ $1 =~ ^(h|-h|-help|--help) ]]; then
+	usage
+	exit 0
+fi
 
 input_cmd=$@
 bin_path=$0
@@ -57,7 +112,7 @@ fi
 # make shutdown an alias for stop
 [[ $command == 'shutdown' ]] && command=stop
 
-while getopts ":a:c:e:i:m:vh" opt; do
+while getopts ":a:c:e:i:m:v" opt; do
   case $opt in
     a)
       authorized_host=$OPTARG
@@ -77,9 +132,6 @@ while getopts ":a:c:e:i:m:vh" opt; do
       ;;
     e)
       expname=$OPTARG
-      ;;
-    h)
-      printhelp=1
       ;;
     :)
       echo "Option -$OPTARG requires an argument." >&2
