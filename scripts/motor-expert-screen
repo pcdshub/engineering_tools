@@ -5,25 +5,19 @@ OLD_VERSION='R2.5.0'
 usage()
 {
 cat << EOF
-usage: $0 options <motor_pv_basename>
+usage: $0 options 
+
+$0 <motor_pv_basename>
 
 Start an EDM for the specified motor.
 Attempts to choose the correct type.
-
-OPTIONS:
--h shows the usage information
 EOF
 }
 
-while getopts "onh" OPTION
-do
-    case $OPTION in
-    h)
-        usage
-        exit 1
-        ;;
-	esac
-done
+if [[ $1 =~ ^(h|-h|-help|--help) ]]; then
+	usage
+	exit 0
+fi
 
 shift $(($OPTIND - 1))
 
