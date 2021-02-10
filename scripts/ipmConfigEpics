@@ -286,16 +286,17 @@ helpBld(){
     fi
 }
 
+if [[ $1 =~ ^(h|-h|-help|--help) ]]; then
+	usage
+	exit 0
+fi
+
 HUTCH=''
 BOXNAME=''
 HELPDAQBLD=0
-while getopts "b:H:dhl" OPTION
+while getopts "b:H:dl" OPTION
 do
     case $OPTION in
-	h)
-	    usage
-	    exit 0
-	    ;;
 	H)
 	    HUTCH=${OPTARG^^}
 	    ;;
