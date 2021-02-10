@@ -1,4 +1,21 @@
 #!/bin/bash
+usage()
+{
+cat << EOF
+usage: $0
+
+iocmanager [hutch]
+
+Control status of all IOCs running in a particular hutch in an interactive GUI.
+Current hutch is used if not provided.
+EOF
+}
+
+if [[ $1 =~ ^(h|-h|-help|--help) ]]; then
+	usage
+	exit 0
+fi
+
 ulimit -c unlimited
 
 source /reg/g/pcds/setup/pathmunge.sh
