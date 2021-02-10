@@ -10,6 +10,12 @@ OPTIONS:
 -i/H information for hutch (override autodetection)
 EOF
 }
+
+if [[ $1 =~ ^(h|-h|-help|--help) ]]; then
+	usage
+	exit 0
+fi
+
 AskLive=0
 Ended=0
 INSTRUMENT='xxx'
@@ -18,13 +24,9 @@ DIRTMP=`dirname  "${BASH_SOURCE[0]}"`
 DIR="$( cd $DIRTMP && pwd -P )"
 PATH=$PATH:$DIR
 
-while getopts "H:i:hle" OPTION
+while getopts "H:i:le" OPTION
 do
     case $OPTION in
-	h)
-	    usage
-	    exit 1
-	    ;;
 	l) 
 	    AskLive=1
 	    ;;
