@@ -26,10 +26,6 @@ ARGSTR='-Z '
 while getopts "u:e:ntR" OPTION
 do
     case $OPTION in
-	h)
-	    usage
-	    exit 1
-	    ;;
 	u)
 	    USER=$OPTARG
 	    ;;
