@@ -7,11 +7,13 @@ usage: $0 options <motor_pv_basename>
 
 Start a typhos screen for the specified motor.
 Attempts to choose the correct type.
-
-OPTIONS:
--h shows the usage information
 EOF
 }
+
+if [[ $1 =~ ^(h|-h|-help|--help) ]]; then
+	usage
+	exit 0
+fi
 
 PREFIX=`echo $1 | cut -d . -f 1`
 
