@@ -1,8 +1,22 @@
 #!/bin/bash
-# Checks out a package from the pcdshub github at a particular tag.
-# Does not update "latest" softlinks, these are inconsistent between packages.
-# Make sure your tag exists before running.
-usage="Usage: pkg_release [organization] <package> <tag>"
+usage()
+{
+cat << EOF
+usage: $0
+
+$0 [organization] <package> <tag>
+
+Checks out a package from the pcdshub github at a particular tag.
+Does not update "latest" softlinks, these are inconsistent between packages.
+Make sure your tag exists before running.
+EOF
+}
+
+if [[ $1 =~ ^(h|-h|-help|--help) ]]; then
+	usage
+	exit 0
+fi
+
 if [ $# -eq 2 ]; then # pcdshub is default organization
   ORG="pcdshub"
   PACKAGE="${1}"
@@ -12,9 +26,10 @@ elif [ $# -eq 3 ]; then # allow other orgs if provided
   PACKAGE="${2}"
   TAG="${3}"
 else # display usage if used with improper number of arguments
-  echo "${usage}"
+  usage
   exit
 fi
+
 URL="https://github.com/${ORG}/${PACKAGE}"
 SSH_URL="git@github.com:${ORG}/${PACKAGE}"
 TEMP="pkg_release_tempdir"
