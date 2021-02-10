@@ -3,7 +3,9 @@
 usage()
 {
 cat << EOF
-usage: $0 <motor_pv> <motor_pv_2/autosave/archive/pmgr_diff/pmgr_save> <opt>
+usage: $0 
+
+$0 <motor_pv> <motor_pv_2/autosave/archive/pmgr_diff/pmgr_save> <opt>
 
 If given two motors, compare their settings
 If given autosave as second argument, compare the current settings to the autosaved values: differences will be printed
@@ -14,17 +16,17 @@ OPTIONS:
 -f fields to use as a comma separated list <default: use all autosave values>
 -s start time for archiver info <YYYY/MM/DD HH:MM:SS>
 -e end time for archiver info <YYYY/MM/DD HH:MM:SS>
-
 EOF
 }
 
-while getopts "f:s:e:h" OPTION
+if [[ $1 =~ ^(h|-h|-help|--help) ]]; then
+	usage
+	exit 0
+fi
+
+while getopts "f:s:e:" OPTION
 do
     case $OPTION in
-    h)
-        usage
-        exit 1
-        ;;
     f) 
 	PVFIELDS=`echo $OPTARG | sed s/','/' '/g`
 	;;
