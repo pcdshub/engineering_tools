@@ -91,7 +91,7 @@ EXPNAME=current
 hutch=`get_info --gethutch`
 HUTCH=${hutch^^}
 
-while getopts "e:u:hxct" OPTION
+while getopts "e:u:xct" OPTION
 do
     case $OPTION in
 	e)
