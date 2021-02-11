@@ -1,7 +1,4 @@
 #!/bin/bash
-
-programLen=$0
-
 usage()
 {
 cat << EOF
@@ -9,7 +6,7 @@ usage: $0 options
 
 Waits for the LCLS-I daq windows to load, then exits.
 
-${0:2:${#programLen}} [desktop number]
+$0 [desktop number]
 
 EOF
 }

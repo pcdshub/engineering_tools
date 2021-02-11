@@ -1,5 +1,4 @@
 #!/bin/bash
-
 function usage(){
 cat <<EOF
 Usage:   $0 <hostname>
