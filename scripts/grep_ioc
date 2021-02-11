@@ -1,5 +1,4 @@
 #!/bin/bash
-
 usage() {
 cat << EOF
 greps hutch iocmanager config files for keyword
