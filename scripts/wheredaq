@@ -20,9 +20,9 @@ NOTRUNNING='Not running'
 
 if  [ $HUTCH == 'cxi' ]; then
     if [ $HOSTNAME == 'cxi-daq' ]; then
-	STATUS=`/reg/g/pcds/dist/pds/$HUTCH/current/tools/procmgr/procmgr status /reg/g/pcds/dist/pds/$HUTCH/scripts/$HUTCH\_0.cnf | grep started`
+	STATUS=`/reg/g/pcds/dist/pds/$HUTCH/current/tools/procmgr/procmgr status /reg/g/pcds/dist/pds/$HUTCH/scripts/$HUTCH\_0.cnf control_gui | grep started`
 	if [[ $STATUS == *$NOTRUNNING* ]]; then
-	    echo 'cxi_0 - Main DAQ is not running'
+	    echo 'cxi_0 - ' $STATUS
 	else
 	    echo 'cxi_0 - Main DAQ is running on '$HOSTNAME
 	fi
@@ -39,9 +39,9 @@ if  [ $HUTCH == 'cxi' ]; then
     exit
 fi
 
-STATUS=`/reg/g/pcds/dist/pds/$HUTCH/current/tools/procmgr/procmgr status /reg/g/pcds/dist/pds/$HUTCH/scripts/$HUTCH.cnf | grep started`
+STATUS=`/reg/g/pcds/dist/pds/$HUTCH/current/tools/procmgr/procmgr status /reg/g/pcds/dist/pds/$HUTCH/scripts/$HUTCH.cnf control_gui | grep started`
 if [[ $STATUS == *$NOTRUNNING* ]]; then
-    echo 'DAQ is not running in' ${HUTCH^^}
+    echo 'DAQ in ' ${HUTCH^^}': ' $STATUS
     exit
 fi
 
