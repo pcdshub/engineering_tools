@@ -11,7 +11,7 @@ OPTIONS:
 EOF
 }
 
-NOTRUNNING='DAQ is not running'
+NOTRUNNING='Not running'
 AIMHOST=$HOSTNAME
 SELPART=''
 DOWIN=''
