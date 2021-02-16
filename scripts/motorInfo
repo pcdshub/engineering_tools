@@ -2,9 +2,7 @@
 usage()
 {
 cat << EOF
-usage: $0 
-
-$0 <motor_pv> <motor_pv_2/autosave/archive/pmgr_diff/pmgr_save> <opt>
+$0 <motor_pv> <motor_pv_2|autosave|archive|pmgr_diff|pmgr_save> [opt]
 
 If given two motors, compare their settings
 If given autosave as second argument, compare the current settings to the autosaved values: differences will be printed

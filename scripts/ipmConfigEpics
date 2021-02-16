@@ -263,13 +263,16 @@ get_hutch(){
 usage()
 {
 cat << EOF
-Displays a GUI for the selected IPM. Running without arguments allows for box selection.
 usage: $0 [-b boxname] [-H hutch] [-d] [-h] [-l]
-  -b: specify boxname to view
-  -H: specify a hutch to use, overriding the automated selection
-  -d: fix issues with Bld Damage (likely camera IOC w/plugins on same machine)
-  -h: display this help text
-  -l: list available boxnames
+
+Displays a GUI for the selected IPM. Running without arguments allows for box selection.
+
+OPTIONS:
+-b: specify boxname to view
+-H: specify a hutch to use, overriding the automated selection
+-d: fix issues with Bld Damage (likely camera IOC w/plugins on same machine)
+-h: display this help text
+-l: list available boxnames
 EOF
 }
 

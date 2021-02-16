@@ -2,9 +2,7 @@
 usage()
 {
 cat << EOF
-usage: $0 options
-
-daq_control <command> <target>
+usage: $0 <command> <target> [options]
 
 <command> : { start, stop, restart, status }
 <target>  : { daq, ami }
@@ -105,7 +103,8 @@ if [[ "$1" ]]; then
       fi
     fi 
 else
-    printhelp=1
+    usage
+    exit 0
 fi
 
 # make shutdown an alias for stop

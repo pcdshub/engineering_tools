@@ -1,8 +1,9 @@
 #!/bin/bash
 usage() {
 cat << EOF
-greps hutch iocmanager config files for keyword
 usage: $0 <keyword> [hutch]
+
+greps hutch iocmanager config files for keyword
 hutch can be any of:
 xpp, xcs, cxi, mfx, mec, xrt, aux, det, fee, hpl, icl, las, lfe, tst, thz, all
 If no hutch is specified, all hutches will be searched

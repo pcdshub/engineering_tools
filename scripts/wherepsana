@@ -2,11 +2,10 @@
 usage()
 {
 cat << EOF
-usage: $0
+usage: $0 [-h] [-c CONFIG] [-d]
+
 Checks where we have shared memory servers for psana running
 and could run psana jobs.
-
-Usage: where_psana [-h] [-c CONFIG] [-d DETAIL]
 
 OPTIONS:
 -h Show usage

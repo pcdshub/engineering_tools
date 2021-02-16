@@ -5,16 +5,14 @@ OLD_VERSION='R2.5.0'
 usage()
 {
 cat << EOF
-usage: $0 options 
-
-$0 <motor_pv_basename>
+usage: $0 <motor_pv_basename>
 
 Start an EDM for the specified motor.
 Attempts to choose the correct type.
 EOF
 }
 
-if [[ ($1 == "--help") || ($1 == "-h") ]]; then
+if [[ ($1 == "--help") || ($1 == "-h") || (-z $1) ]]; then
 	usage
 	exit 0
 fi

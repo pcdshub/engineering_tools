@@ -2,9 +2,7 @@
 usage()
 {
 cat << EOF
-usage: $0
-
-latest stable version.
+usage: source $0
 
 Source this to activate a pcds conda environment.
 By default, this activates the latest environment.

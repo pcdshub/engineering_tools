@@ -2,9 +2,7 @@
 usage()
 {
 cat << EOF
-usage: $0
-
-iocmanager [hutch]
+usage: $0 [hutch]
 
 Control status of all IOCs running in a particular hutch in an interactive GUI.
 Current hutch is used if not provided.

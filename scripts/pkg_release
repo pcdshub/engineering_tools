@@ -2,13 +2,11 @@
 usage()
 {
 cat << EOF
-usage: $0
+usage: $0 [organization] <repo> <tag>
 
-$0 [organization] <package> <tag>
-
-Checks out a package from the pcdshub github at a particular tag.
-Does not update "latest" softlinks, these are inconsistent between packages.
-Make sure your tag exists before running.
+Checks out a Github repository into the current directory, from the pcdshub organization unless told otherwise.
+Does not update any softlinks. If you'd like a link re-pointed, this must be changed manually.
+Will fail if the tag cannot be found so make sure your tag exists before running.
 EOF
 }
 

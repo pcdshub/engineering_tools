@@ -2,9 +2,7 @@
 usage()
 {
 cat << EOF
-usage: $0
-
-$0 [hutch] [--debug] [--applyenable]
+usage: $0 [hutch] [--debug] [--applyenable]
 
 --debug	: Displays the debug button, which prints out any edits made
 --applyenable : Displays the apply all button, which applies settings to all motors

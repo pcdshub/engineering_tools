@@ -2,13 +2,9 @@
 usage()
 {
 cat << EOF
-usage: $0 
+usage: source $0 
 
-latest development version.
-
-Source this to activate a pcds conda environment.
-By default, this activates the latest environment.
-Use export PCDS_CONDA_VER=<version> before running to pick a different env.
+Source this to activate the latest version a pcds conda environment.
 EOF
 }
 
