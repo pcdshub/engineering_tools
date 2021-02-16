@@ -9,7 +9,7 @@ If no hutch is specified, all hutches will be searched
 EOF
 }
 
-if [[ $1 =~ ^(h|-h|-help|--help) ]]; then
+if [[ ($1 == "--help") || ($1 == "-h") ]]; then
 	usage
 	exit 0
 fi
