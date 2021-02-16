@@ -2,11 +2,9 @@
 usage()
 {
 cat << EOF
-usage: $0 options
+usage: $0
 
-$0
-
-Stop the daq in the current hutch.
+Kill an AMI process running in the current hutch.
 EOF
 }
 

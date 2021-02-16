@@ -2,7 +2,7 @@
 usage()
 {
 cat << EOF
-usage: $0 options <motor_pv_basename>
+usage: $0 <motor_pv_basename>
 
 Start a typhos screen for the specified motor.
 Attempts to choose the correct type.

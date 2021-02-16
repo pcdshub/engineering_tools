@@ -2,12 +2,9 @@
 usage()
 {
 cat << EOF
-usage: $0 options
+usage: $0 [desktop number]
 
 Waits for the LCLS-I daq windows to load, then exits.
-
-$0 [desktop number]
-
 EOF
 }
 

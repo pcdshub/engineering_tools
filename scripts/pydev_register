@@ -2,9 +2,7 @@
 usage()
 {
 cat << EOF
-usage: $0
-
-$0 <path> <module or bin>
+usage: $0 <path> module|bin
 
 Use this script to register development packages so that they will be
 available when you source pydev_env

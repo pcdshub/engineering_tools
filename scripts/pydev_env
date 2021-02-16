@@ -2,12 +2,10 @@
 usage()
 {
 cat << EOF
-usage: $0
-
-$0
+usage: source $0
 
 Source this file to activate a development environment based on the latest.
-shared environment and on past calls to pydev_register.
+shared pcds conda environment and on past calls to pydev_register.
 EOF
 }
 
