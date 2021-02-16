@@ -12,7 +12,7 @@ Make sure your tag exists before running.
 EOF
 }
 
-if [[ $1 =~ ^(h|-h|-help|--help) ]]; then
+if [[ ($1 == "--help") || ($1 == "-h") ]]; then
 	usage
 	exit 0
 fi
