@@ -115,7 +115,7 @@ if [[ $# < 2 ]]; then
 	usage
 	exit 1
         echo 'why here?'
-    elif [[ $1 =~ ^(h|-h|-help|--help) ]]; then
+    elif [[ ($1 == "--help") || ($1 == "-h") ]]; then
 	usage
 	exit 0
         echo 'why here?'
