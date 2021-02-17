@@ -2,14 +2,78 @@
 usage()
 {
 cat << EOF
-This tool is deprecated. Please let your ECS staff know
-what you were trying to do in case you are not aware of a supported 
-alternative.
+This tool is deprecated. Please let your ECS staff 
+know what you were trying to do in case you are not 
+aware of a supported alternative
 EOF
 }
 
+if [[ ($1 == "--help") || ($1 == "-h") ]]; then
+	usage
+	exit 0
+fi
+#daq_control <command> <target>
+#
+#<command> : { start, stop, restart, status }
+#<target>  : { daq, ami }
+#
+#<command> : ami
+#<target>  : { [0], 1 }
+#
+#<command> : configdb
+#<target>  : { [view], edit, expname, current }
+#
+#<command> : stop|start|restart|status
+#<target>  : { daq, ami}
+#
+#<command> : configdb
+#<target>  : { edit, view, help, amo|sxr|xpp|xcs|mfx|cxi|mec|det }
+#
+#<command> : logcheck
+#<command> : ipmi_start
+#<command> : post
+#<command> : edit
+#<command> : viewer
+#<command> : recorder
+#<command> : ipsana
+#<command> : calibman
+#<command> : dark
+#<command> : pedestal
+#<command> : bdark
+#<command> : emacs|emacsnw|vi|vim|gedit
+#<command> : less|more|cat|tail
+#<command> : grep
+#<command> : ffb
+#<command> : memory|free
+#<command> : source
+#<command> : mon
+#<command> : monit
+#<command> : df
+#<command> : uptime
+#<command> : uname
+#<command> : nic
+#<command> : hosts
+#<command> : releases
+#<command> : daqrelease|release|amirelease
+#<command> : logcheck|checklog
+#<command> : pgp
+#<command> : cam
+#<command> : ipmi
+#<command> : detinfo
+#<command> : amidump
+#<command> : infiniband
+#<command> : sudo
+#
+#
+#OPTIONS:
+#-h, --help print usage
+#-a authorized_host
+#-c cnf_base 
+#-i instrument  
+#-m COMMENT 
+#-v printverbose
+#-e expname
 usage
-exit 0
 
 input_cmd=$@
 bin_path=$0
@@ -42,8 +106,8 @@ if [[ "$1" ]]; then
       fi
     fi 
 else
-    usage
-    exit 0
+  usage
+  exit 0
 fi
 
 # make shutdown an alias for stop
