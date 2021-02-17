@@ -34,6 +34,7 @@ OPTIONS:
 -x # : write pixel mask file for pixels with pedestal above xxx (currently integer only...)
 -i start calibman. -r 0: show all darks, -r n: show runs (n-25) - 25
 -d give path for alternative calibdir
+-q queue for batch submisson
 EOF
 }
 
@@ -51,7 +52,7 @@ INTERACTIVE=0
 elogMessage="DARK"
 ELOGTEXT=""
 
-while getopts "u:r:e:n:p:c:v:N:m:x:d:C:DLZOEjiltfFgh" OPTION
+while getopts "u:r:e:n:p:c:v:N:m:x:d:C:q:DLZOEjiltfFgh" OPTION
 do
     case $OPTION in
 	h)
@@ -75,6 +76,9 @@ do
 	    ;;
 	n)
 	    SPEC_ARG=$SPEC_ARG' -n '$OPTARG
+	    ;;
+	q)
+	    SPEC_ARG=$SPEC_ARG' -q '$OPTARG
 	    ;;
 	f)
 	    SPEC_ARG=$SPEC_ARG' -f '
