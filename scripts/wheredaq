@@ -1,21 +1,5 @@
 #!/bin/bash
 HUTCH=`get_info --gethutch`
-if [ $HUTCH == 'xpp' ]; then
-   HOSTS="xpp-daq xpp-control xpp-hutch01"
-elif  [ $HUTCH == 'xcs' ]; then
-   HOSTS="xcs-daq xcs-control xcs-hutch01"
-elif  [ $HUTCH == 'mfx' ]; then
-   HOSTS="mfx-daq mfx-monitor"
-elif  [ $HUTCH == 'cxi' ]; then
-   HOSTS="cxi-daq cxi-monitor"
-elif  [ $HUTCH == 'mec' ]; then
-   HOSTS="mec-daq mec-console"
-elif  [ $HUTCH == 'det' ]; then
-   HOSTS="det-console daq-det-standalone"
-else
-   echo 'could not determine hutch or hutch not implemented, quit'
-   exit
-fi
 NOTRUNNING='Not running'
 
 if  [ $HUTCH == 'cxi' ]; then
@@ -43,19 +27,8 @@ STATUS=`/reg/g/pcds/dist/pds/$HUTCH/current/tools/procmgr/procmgr status /reg/g/
 if [[ $STATUS == *$NOTRUNNING* ]]; then
     echo 'DAQ in ' ${HUTCH^^}': ' $STATUS
     exit
+else
+   HOST=`echo $STATUS | awk {'print $5'}`
+   echo $HOST
 fi
-
-for HOST in $HOSTS;
-do
-    daqhost=''
-    if [[ $STATUS == *$HOST* ]]
-    then
-	daqhost=$HOST
-    fi
-    if [ ${#daqhost} != 0 ] 
-    then
-	echo $HOST
-	break
-    fi
-done
 
