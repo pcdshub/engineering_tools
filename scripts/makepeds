@@ -26,8 +26,8 @@ OPTIONS:
 -L : lasing off run for XTCAV
 -v <str>: validity range (if not run#-end, e.g. 123-567 or 123-end)
 -l: do NOT send to batch queue
+-g #: deploy geometry <needs experiment to take geometry from>
 -F : use the FFB (default if no experiment is passed)
--g : run on an FFB batch node
 -f : full epix10k charge injection run
 -C # : if noise filecreated, write pixel mask file for pixels with noise below xxx (currently integer only...)
 -m # : write pixel mask file for pixels with pedestal below xxx (currently integer only...)
@@ -52,7 +52,7 @@ INTERACTIVE=0
 elogMessage="DARK"
 ELOGTEXT=""
 
-while getopts "u:r:e:n:p:c:v:N:m:x:d:C:q:DLZOEjiltfFgh" OPTION
+while getopts "u:r:e:n:p:c:v:N:m:x:d:C:q:g:DLZOEjiltfFh" OPTION
 do
     case $OPTION in
 	h)
@@ -129,9 +129,7 @@ do
 	    ELOGTEXT=$OPTARG
 	    ;;
 	g)
-	    RUNFFBNODE=1
-	    GETFFBNODE=1
-	    SPEC_ARG=$SPEC_ARG' -l '
+	    SPEC_ARG=$SPEC_ARG' -g '$OPTARG
 	    ;;
 	C)
 	    SPEC_ARG=$SPEC_ARG' -C '$OPTARG
