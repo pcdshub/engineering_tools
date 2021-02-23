@@ -222,10 +222,7 @@ elif [[ $CMD == "cycle_sleep" ]]; then
     psipmi $NAMEIPMI power status
 elif [[ $CMD == "console" ]]; then
     echo "To exit console use ~."
-    # Deactivate if it is activated:
-    psipmi $NAMEIPMI sol deactivate &> /dev/null
-    # Call console
-    xterm -hold -bg black -fg white -T $NAME -e psipmi $NAMEIPMI sol activate &
+    psipmi $NAMEIPMI sol xterm &> /dev/null
 elif [[ $CMD == "reset" ]]; then
     psipmi $NAMEIPMI power reset
 elif [[ $CMD == "expert" ]]; then
