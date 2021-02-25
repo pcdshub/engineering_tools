@@ -1,4 +1,18 @@
 #!/bin/bash
+usage()
+{
+cat << EOF
+usage: $0
+
+Stop the daq in the current hutch.
+EOF
+}
+
+if [[ ($1 == "--help") || ($1 == "-h") ]]; then
+	usage
+	exit 0
+fi
+
 HUTCH=`get_info --gethutch`
 DAQHOST=`wheredaq`
 CNFEXT=.cnf

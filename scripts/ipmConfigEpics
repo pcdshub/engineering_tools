@@ -263,13 +263,16 @@ get_hutch(){
 usage()
 {
 cat << EOF
-Displays a GUI for the selected IPM. Running without arguments allows for box selection.
 usage: $0 [-b boxname] [-H hutch] [-d] [-h] [-l]
-  -b: specify boxname to view
-  -H: specify a hutch to use, overriding the automated selection
-  -d: fix issues with Bld Damage (likely camera IOC w/plugins on same machine)
-  -h: display this help text
-  -l: list available boxnames
+
+Displays a GUI for the selected IPM. Running without arguments allows for box selection.
+
+OPTIONS:
+-b: specify boxname to view
+-H: specify a hutch to use, overriding the automated selection
+-d: fix issues with Bld Damage (likely camera IOC w/plugins on same machine)
+-h: display this help text
+-l: list available boxnames
 EOF
 }
 
@@ -291,16 +294,17 @@ helpBld(){
     fi
 }
 
+if [[ ($1 == "--help") || ($1 == "-h") ]]; then
+	usage
+	exit 0
+fi
+
 HUTCH=''
 BOXNAME=''
 HELPDAQBLD=0
-while getopts "b:H:dhl" OPTION
+while getopts "b:H:dl" OPTION
 do
     case $OPTION in
-	h)
-	    usage
-	    exit 0
-	    ;;
 	H)
 	    HUTCH=${OPTARG^^}
 	    ;;

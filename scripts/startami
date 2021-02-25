@@ -1,5 +1,4 @@
 #! /usr/bin/env bash
-
 usage()
 {
 cat << EOF
@@ -13,14 +12,15 @@ OPTIONS:
 EOF
 }
 
+if [[ ($1 == "--help") || ($1 == "-h") ]]; then
+	usage
+	exit 0
+fi
+
 STOP_AMI=0
-while getopts "hsc:" OPTION
+while getopts "sc:" OPTION
 do
     case "$OPTION" in
-	h)
-	    usage
-	    exit 1
-	    ;;
 	s)
 	    stopami
 	    ;;

@@ -52,13 +52,14 @@ INTERACTIVE=0
 elogMessage="DARK"
 ELOGTEXT=""
 
-while getopts "u:r:e:n:p:c:v:N:m:x:d:C:q:g:DLZOEjiltfFh" OPTION
+if [[ ($1 == "--help") || ($1 == "-h") ]]; then
+	usage
+	exit 0
+fi
+
+while getopts "u:r:e:n:p:c:v:N:m:x:d:C:q:g:DLZOEjiltfF" OPTION
 do
     case $OPTION in
-	h)
-	    usage
-	    exit 1
-	    ;;
 	u)
 	    USER=$OPTARG
 	    ;;

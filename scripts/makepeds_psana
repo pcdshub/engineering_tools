@@ -119,13 +119,14 @@ MYADUMIN=-1
 MYADUMAX=-1
 USEFFB=0
 
-while getopts "r:e:n:c:C:m:x:v:b:N:H:q:d:g:DLZOEjiltfFh" OPTION
+if [[ ($1 == "--help") || ($1 == "-h") ]]; then
+	usage
+	exit 0
+fi
+
+while getopts "r:e:n:c:C:m:x:v:b:N:H:q:d:g:DLZOEjiltfF" OPTION
 do
     case $OPTION in
-	h)
-	    usage
-	    exit 1
-	    ;;
 	r)
 	    RUN=$OPTARG
 	    ;;

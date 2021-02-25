@@ -18,7 +18,12 @@ DOWIN=''
 #make it silent for now until done with testing and jana has been warned
 SILENT=1
 
-while getopts "m:pwsh" OPTION
+if [[ ($1 == "--help") || ($1 == "-h") ]]; then
+	usage
+	exit 0
+fi
+
+while getopts "m:pws" OPTION
 do
     case $OPTION in
 	p)
@@ -32,10 +37,6 @@ do
 	    ;;
 	m) 
 	    AIMHOST=$OPTARG
-	    ;;
-	h)
-	    usage
-	    exit
 	    ;;
 	?)
 	    usage

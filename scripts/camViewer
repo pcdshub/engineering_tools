@@ -141,6 +141,11 @@ OPTIONS:
 EOF
 }
 
+if [[ ($1 == "--help") || ($1 == "-h") ]]; then
+	usage
+	exit 0
+fi
+
 hutch=`get_info --gethutch`
 if [ $hutch = unknown_hutch ]; then
     echo 'unknown hutch, cannot use camViewer script'
@@ -159,13 +164,9 @@ WAIT=0
 RATE=-1
 REBOOT=0
 
-while getopts "c:w:u:H:hlmr" OPTION
+while getopts "c:w:u:H:lmr" OPTION
 do
     case $OPTION in
-	h)
-	    usage
-	    exit 1
-	    ;;
 	l)
 	    list_cams $hutch
 	    exit 1

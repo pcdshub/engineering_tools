@@ -1,5 +1,4 @@
 #! /bin/bash
-
 usage()
 {
 cat << EOF
@@ -15,16 +14,17 @@ OPTIONS:
 EOF
 }
 
+if [[ ($1 == "--help") || ($1 == "-h") ]]; then
+	usage
+	exit 0
+fi
+
 USER=`whoami`
 ARGSTR='-Z '
 
-while getopts "h:u:e:ntR" OPTION
+while getopts "u:e:ntR" OPTION
 do
     case $OPTION in
-	h)
-	    usage
-	    exit 1
-	    ;;
 	u)
 	    USER=$OPTARG
 	    ;;
