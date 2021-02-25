@@ -1,17 +1,18 @@
 #!/bin/bash
-
 usage()
 {
 cat << EOF
-usage: $0 options <motor_pv_basename>
+usage: $0 <motor_pv_basename>
 
 Start a typhos screen for the specified motor.
 Attempts to choose the correct type.
-
-OPTIONS:
--h shows the usage information
 EOF
 }
+
+if [[ ($1 == "--help") || ($1 == "-h") ]]; then
+	usage
+	exit 0
+fi
 
 PREFIX=`echo $1 | cut -d . -f 1`
 

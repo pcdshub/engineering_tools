@@ -1,7 +1,20 @@
 #!/usr/bin/env bash
-# Source this to activate a pcds conda environment.
-# By default, this activates the latest environment.
-# Use export PCDS_CONDA_VER=<version> before running to pick a different env.
+usage()
+{
+cat << EOF
+usage: source $0
+
+Source this to activate a pcds conda environment.
+By default, this activates the latest environment.
+Use export PCDS_CONDA_VER=<version> before running to pick a different env.
+EOF
+}
+
+if [[ ($1 == "--help") || ($1 == "-h") ]]; then
+	usage
+	exit 0
+fi
+
 unset LD_LIBRARY_PATH
 unset PYTHONPATH
 

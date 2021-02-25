@@ -1,11 +1,9 @@
 #!/bin/bash
-
 function usage(){
 cat <<EOF
 Usage:   $0 <hostname>
 
 Display host info and run some checks.
-
 EOF
 }
 

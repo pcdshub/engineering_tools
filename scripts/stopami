@@ -1,4 +1,17 @@
 #! /usr/bin/env bash
+usage()
+{
+cat << EOF
+usage: $0
+
+Kill an AMI process running in the current hutch.
+EOF
+}
+
+if [[ ($1 == "--help") || ($1 == "-h") ]]; then
+	usage
+	exit 0
+fi
 
 HUTCH=`get_hutch_name`
 DAQHOST=`wheredaq`

@@ -1,6 +1,19 @@
 #!/bin/bash
-# Source this file to activate a development environment based on the latest
-# shared environment and on past calls to pydev_register
+usage()
+{
+cat << EOF
+usage: source $0
+
+Source this file to activate a development environment based on the latest.
+shared pcds conda environment and on past calls to pydev_register.
+EOF
+}
+
+if [[ ($1 == "--help") || ($1 == "-h") ]]; then
+	usage
+	exit 0
+fi
+
 source pcds_conda
 PYDEV="${HOME}/pydev"
 export PATH="${PYDEV}/bin:${PATH}"

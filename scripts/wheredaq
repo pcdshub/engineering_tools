@@ -1,4 +1,18 @@
 #!/bin/bash
+usage()
+{
+cat << EOF
+usage: $0
+
+Discover what host is running the daq in the current hutch, if any.
+EOF
+}
+
+if [[ ($1 == "--help") || ($1 == "-h") ]]; then
+	usage
+	exit 0
+fi
+
 HUTCH=`get_info --gethutch`
 NOTRUNNING='Not running'
 

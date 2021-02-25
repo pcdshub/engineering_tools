@@ -1,4 +1,25 @@
 #!/bin/bash
+usage()
+{
+cat << EOF
+usage: $0 [-h] [-c CONFIG] [-d]
+
+Checks where we have shared memory servers for psana running
+and could run psana jobs.
+
+OPTIONS:
+-h Show usage
+-c Pick a specific DAQ config file rather than automatically selecting
+current hutch's file
+-d Also show information about dss node mapping
+EOF
+}
+
+if [[ ($1 == "--help") || ($1 == "-h") ]]; then
+	usage
+	exit 0
+fi
+
 HUTCH=`get_info --gethutch`
 if [ $HUTCH == 'xpp' ]; then
    HOSTS="xpp-daq xpp-control xpp-hutch01"
@@ -18,13 +39,9 @@ else
 fi
 NOTRUNNING='Not running'
 
-while getopts "hc:d" OPTION
+while getopts "c:d" OPTION
 do
     case "$OPTION" in
-	h)
-	    usage
-	    exit 1
-	    ;;
 	c)
 	    CONFIG="$OPTARG"
 	    ;;

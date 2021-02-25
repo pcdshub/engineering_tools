@@ -85,13 +85,18 @@ grab_controls()
     exit
 }
 
+if [[ ($1 == "--help") || ($1 == "-h") ]]; then
+	usage
+	exit 0
+fi
+
 ##who am I doing this? Why don't just use the actual username?
 #USERNAME=`get_info --gethutch`opr
 USERNAME=`whoami`
 EXPNAME=current
 HUTCH=`get_info --gethutch`
 
-while getopts "e:u:s:hxct" OPTION
+while getopts "e:u:s:xct" OPTION
 do
     case $OPTION in
 	e)
@@ -105,10 +110,6 @@ do
 	s)
 	    SCRIPT=$OPTARG
 	    grab_script
-	    ;;
-	h)
-	    usage
-	    exit 1
 	    ;;
 	x)
 	    grab_instrument

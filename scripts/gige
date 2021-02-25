@@ -1,4 +1,15 @@
 #! /bin/bash
+usage()
+{
+cat << EOF
+This script is deprecated, please use camViewer instead.
+EOF
+}
+
+if [[ ($1 == "--help") || ($1 == "-h") ]]; then
+	usage
+	exit 0
+fi
 
 echo 'the gige script is deprecated, we will call camViewer'
 camViewer "$@"
