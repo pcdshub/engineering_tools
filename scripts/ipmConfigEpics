@@ -8,7 +8,7 @@ um6Ipm='um6_ipm um6_dio'
 dg2Ipm='hfxdg2_ipm'
 xcsIpm='decmono ipmmono diomono pim3 pim3m ipm3 pim4 ipm4 snddio ipm5 pim5 ipmgonLD ipmlamLD'
 xppIpm='diomono decmono ipm2 ipm3 pim3 diodeU'
-cxiIpm='pim3m dg2ipm dg3ipm'
+cxiIpm='pim3m dg2ipm dg3ipm sc1ipm'
 mfxIpm='dg1ipm dg2ipm'
 mecIpm='ipm1 ipm2 ipm3 hxm_pim pim2 pim3 tc1_imb1 usr_imb1 usr_imb2 las_imb1 las_imb2'
 lfeIpm='um6_ipm hfxdg2_ipm pim3m'
@@ -131,6 +131,11 @@ elif [ $hutch == 'cxi' ]; then
 	BASE='CXI:DG3:BMMON'
 	EVR='CXI:DG3:BMMON:EVR'
 	WAVE8='dg3ipm'
+    elif [ $1 == 'sc1ipm' ]; then
+        IOC="IOC:CXI:SC1:BMMON"
+        BASE='CXI:SC1:BMMON'
+        EVR='CXI:SC1:BMMON:EVR'
+        WAVE8='sc1ipm'
     fi
 elif [ $hutch == 'mfx' ]; then
     if [ $1 == 'dg1ipm' ]; then
@@ -258,13 +263,16 @@ get_hutch(){
 usage()
 {
 cat << EOF
-Displays a GUI for the selected IPM. Running without arguments allows for box selection.
 usage: $0 [-b boxname] [-H hutch] [-d] [-h] [-l]
-  -b: specify boxname to view
-  -H: specify a hutch to use, overriding the automated selection
-  -d: fix issues with Bld Damage (likely camera IOC w/plugins on same machine)
-  -h: display this help text
-  -l: list available boxnames
+
+Displays a GUI for the selected IPM. Running without arguments allows for box selection.
+
+OPTIONS:
+-b: specify boxname to view
+-H: specify a hutch to use, overriding the automated selection
+-d: fix issues with Bld Damage (likely camera IOC w/plugins on same machine)
+-h: display this help text
+-l: list available boxnames
 EOF
 }
 
@@ -286,16 +294,17 @@ helpBld(){
     fi
 }
 
+if [[ ($1 == "--help") || ($1 == "-h") ]]; then
+	usage
+	exit 0
+fi
+
 HUTCH=''
 BOXNAME=''
 HELPDAQBLD=0
-while getopts "b:H:dhl" OPTION
+while getopts "b:H:dl" OPTION
 do
     case $OPTION in
-	h)
-	    usage
-	    exit 0
-	    ;;
 	H)
 	    HUTCH=${OPTARG^^}
 	    ;;

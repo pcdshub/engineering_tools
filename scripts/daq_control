@@ -1,24 +1,79 @@
 #!/bin/bash
+usage()
+{
+cat << EOF
+This tool is deprecated. Please let your ECS staff 
+know what you were trying to do in case you are not 
+aware of a supported alternative
+EOF
+}
+
+if [[ ($1 == "--help") || ($1 == "-h") ]]; then
+	usage
+	exit 0
+fi
+#daq_control <command> <target>
 #
-# daq_control <command> <target>
+#<command> : { start, stop, restart, status }
+#<target>  : { daq, ami }
 #
-# <command> : { start, stop, restart, status }
-# <target>  : { daq, ami }
+#<command> : ami
+#<target>  : { [0], 1 }
 #
-# <command> : ami
-# <target>  : { [0], 1 }
+#<command> : configdb
+#<target>  : { [view], edit, expname, current }
 #
-# <command> : configdb
-# <target>  : { [view], edit, expname, current }
+#<command> : stop|start|restart|status
+#<target>  : { daq, ami}
 #
-# <command> : hosts 
-# <target>  : { }
+#<command> : configdb
+#<target>  : { edit, view, help, amo|sxr|xpp|xcs|mfx|cxi|mec|det }
 #
-# <command> : release 
-# <target>  : { }
+#<command> : logcheck
+#<command> : ipmi_start
+#<command> : post
+#<command> : edit
+#<command> : viewer
+#<command> : recorder
+#<command> : ipsana
+#<command> : calibman
+#<command> : dark
+#<command> : pedestal
+#<command> : bdark
+#<command> : emacs|emacsnw|vi|vim|gedit
+#<command> : less|more|cat|tail
+#<command> : grep
+#<command> : ffb
+#<command> : memory|free
+#<command> : source
+#<command> : mon
+#<command> : monit
+#<command> : df
+#<command> : uptime
+#<command> : uname
+#<command> : nic
+#<command> : hosts
+#<command> : releases
+#<command> : daqrelease|release|amirelease
+#<command> : logcheck|checklog
+#<command> : pgp
+#<command> : cam
+#<command> : ipmi
+#<command> : detinfo
+#<command> : amidump
+#<command> : infiniband
+#<command> : sudo
 #
-# <command> : logcheck
 #
+#OPTIONS:
+#-h, --help print usage
+#-a authorized_host
+#-c cnf_base 
+#-i instrument  
+#-m COMMENT 
+#-v printverbose
+#-e expname
+usage
 
 input_cmd=$@
 bin_path=$0
@@ -51,13 +106,14 @@ if [[ "$1" ]]; then
       fi
     fi 
 else
-    printhelp=1
+  usage
+  exit 0
 fi
 
 # make shutdown an alias for stop
 [[ $command == 'shutdown' ]] && command=stop
 
-while getopts ":a:c:e:i:m:vh" opt; do
+while getopts ":a:c:e:i:m:v" opt; do
   case $opt in
     a)
       authorized_host=$OPTARG
@@ -77,9 +133,6 @@ while getopts ":a:c:e:i:m:vh" opt; do
       ;;
     e)
       expname=$OPTARG
-      ;;
-    h)
-      printhelp=1
       ;;
     :)
       echo "Option -$OPTARG requires an argument." >&2

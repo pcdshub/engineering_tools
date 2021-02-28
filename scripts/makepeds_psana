@@ -16,6 +16,7 @@ OPTIONS:
 -D : dark run for XTCAV
 -L : lasing off run for XTCAV (-b specifies the number of assumed bunches, def 1)
 -l : donot send to batch queue
+-g #: deploy geometry <needs experiment to take geometry from>
 -F : use FFB
 -f : full epix10k charge injection run
 -v <str>: validity range (if not run#-end, e.g. 123-567 or 123-end)
@@ -30,6 +31,26 @@ OPTIONS:
 -t : test, do not deploy.
 -y : when specify cuts for status mask, apply those for epix100.
 EOF
+}
+
+check_running_jobs()
+{
+    NJOBS=0
+    REMJOBIDS=()
+    for JOBID in ${JOBIDS[@]}; do
+        if  squeue | grep -q $JOBID; then
+            REMJOBIDS+=( $JOBID )
+            NJOBS=$(($NJOBS+1))
+        fi
+    done
+    if (( $NJOBS == 0 )); then
+        echo Nothing running
+        JOBIDS=''
+    else
+        JOBIDS=(${REMJOBIDS[@]})
+        echo $NJOBS jobs are still running ${JOBIDS[@]}
+    fi
+    return $NJOBS
 }
 
 xtcav_dark()
@@ -86,6 +107,7 @@ WANT_ZYLA=0
 WANT_OPAL=0
 OLD_JUNGFRAU=0
 CUT_EPIX100=0
+QUEUE='xxx'
 
 DET='CSPAD,CSPAD2x2'
 DET2='Epix100a'
@@ -97,13 +119,14 @@ MYADUMIN=-1
 MYADUMAX=-1
 USEFFB=0
 
-while getopts "r:e:n:c:C:m:x:v:b:N:H:d:DLZOEjiltfFh" OPTION
+if [[ ($1 == "--help") || ($1 == "-h") ]]; then
+	usage
+	exit 0
+fi
+
+while getopts "r:e:n:c:C:m:x:v:b:N:H:q:d:g:DLZOEjiltfF" OPTION
 do
     case $OPTION in
-	h)
-	    usage
-	    exit 1
-	    ;;
 	r)
 	    RUN=$OPTARG
 	    ;;
@@ -141,6 +164,9 @@ do
 	F)
 	    USEFFB=1
 	    ;;
+	g)
+	    GEOMETRY=$OPTARG
+	    ;;
 	D)
 	    XTCAV=1
 	    ;;
@@ -174,6 +200,9 @@ do
 	x)
 	    MYADUMAX=$OPTARG
 	    ;;
+	q)
+	    QUEUE=$OPTARG
+	    ;;
 	?)
 	    usage
 	    exit
@@ -183,7 +212,8 @@ done
 
 shift $((OPTIND-1))
 
-echo xxxxxxxxxxxxxxxxxxxx START MAKEPEDS at $(date +"%T") XXXXXXXXXXXXXXXXXXXXXXXXXXXX
+T="$(date +%s%N)"
+echo XXXXXXXXXXXXXXXXX START MAKEPEDS at $(date +"%T") on $HOSTNAME XXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 if [ $RUN -lt 0 ]; then
     if [ $INTERACTIVE -ne 1 ]; then
@@ -203,21 +233,23 @@ fi
 # set the umask so all the files create are group writeable
 umask 0002
 
-#source /reg/g/psdm/etc/psconda.sh
-source /reg/g/psdm/etc/psconda.sh.old
+source /reg/g/psdm/etc/psconda.sh
 
 #I will be in the home area of whoever calls this script if called from <hutch>makepeds
 #thus we need to pass the experiment or the hutch from there.
 HUTCH=${EXP:0:3}
-QUEUE=psnehhiprioq
-if [[ ( $HUTCH == 'xcs' ) ||  ( $HUTCH == 'cxi' ) ||  ( $HUTCH == 'mec' ) || ( $HUTCH == 'mfx' )]]; then
-    QUEUE=psfehhiprioq
-fi
 if [ $USEFFB -ne 0 ]; then
     FFB=1
 fi
-if [ $FFB -ne 1 ]; then
-    QUEUE=psanaq
+if [ $QUEUE == 'xxx' ]; then
+    QUEUE=psnehhiprioq
+    if [[ ( $HUTCH == 'xcs' ) ||  ( $HUTCH == 'cxi' ) ||  ( $HUTCH == 'mec' ) || ( $HUTCH == 'mfx' )]];  then
+        QUEUE=psfehhiprioq
+    fi
+    if [ $FFB -ne 1 ]; then
+        QUEUE=psfehq
+        #QUEUE=psanaq
+    fi
 fi
 
 #(hopefully) effectively turn off relative cuts for status bits. Defaults to 6. used in calibrun
@@ -290,9 +322,12 @@ if [ $CALIBCODE -ne 0 ]; then
     ARG=$ARG' -f '$CALIBCODE
 fi
 
-if [ $RUNLOCAL -ne 1 ]; then
-    ARG=$ARG' -q '$QUEUE
-fi
+###
+# calibrun can't submit to SLURM quite yet
+###
+#if [ $RUNLOCAL -ne 1 ]; then
+#    ARG=$ARG' -q '$QUEUE
+#fi
 
 if [ $DEPLOY == 1 ]; then
     ARG=$ARG' -D '
@@ -300,11 +335,31 @@ fi
 
 
 CREATE_TIME=`date '+%m_%d_%Y_%H:%M:%S'`
+printf -v RUNSTR "%04g" $RUN
+if [[ ( $RUNLOCAL -eq 1 ) && ( $HOSTNAME =~ 'psana' ) ]]; then
+    NXTCOFF=`ls /reg/d/psdm/$HUTCH/$EXP/xtc/*r*$RUNSTR*s0*xtc* | wc -l`
+    NXTCFFB=`ls /reg/d/ffb/$HUTCH/$EXP/xtc/*r*$RUNSTR*s0*xtc* | wc -l`
+    if [ $NXTCOFF -lt $NXTCFFB ]; then
+	echo Process FFB files.
+	FFB=1
+    else
+	FFB=0
+    fi
+fi
 if [ $FFB -eq 1 ]; then
+    echo check FFB files: 
+    ls -ltr /reg/d/ffb/$HUTCH/$EXP/xtc/*r$RUNSTR*s*xtc*
     detnames exp=${EXP}:run=${RUN}:dir=/reg/d/ffb/$HUTCH/$EXP/xtc:stream=0-79 > /tmp/detnames_$EXP\_$CREATE_TIME
 else
+    echo Process files: 
+    ls -ltr /reg/d/psdm/$HUTCH/$EXP/xtc/*r*$RUNSTR*s*xtc*
     detnames exp=${EXP}:run=${RUN}:stream=0-79 > /tmp/detnames_$EXP\_$CREATE_TIME
 fi
+#running local
+echo -----------------------
+echo 'XTC files contain:'
+cat /tmp/detnames_$EXP\_$CREATE_TIME
+echo -----------------------
 
 ####
 # Jungfrau related stuff. Different executable w/ different options. Ack.
@@ -314,6 +369,18 @@ HAVE_JUNGFRAU=`grep Jungfrau /tmp/detnames_$EXP\_$CREATE_TIME | wc -l`
 #HAVE_JUNGFRAU=`detnames exp=${EXP}:run=${RUN} | grep Jungfrau | wc -l`
 if [[ ( $HAVE_JUNGFRAU -ge 1 ) ]]; then
     
+    DETNAMES=`grep Jungfrau /tmp/detnames_$EXP\_$CREATE_TIME | awk  'BEGIN { FS = "|"}; {print $1}' | paste -d " " -s`
+    if [ -v GEOMETRY ]; then
+	GEODIR=`echo /reg/d/psdm/${GEOMETRY:0:3}/$GEOMETRY/calib/`
+	SUBDIR=`ls $GEODIR | grep Jungfrau | grep -v workdir`
+	DORGNAME=`ls $GEODIR/$SUBDIR | grep Jungfrau `
+	for JUNGFRAU in $DETNAMES; do
+	    DNAME=`grep $JUNGFRAU /tmp/detnames_$EXP\_$CREATE_TIME | awk  'BEGIN { FS = "|"}; {print $1}' | xargs`
+	    calibfile deploy -t geometry -e $EXP -r 0-end -s $DNAME -f $GEODIR/$SUBDIR/$DORGNAME/geometry/0-end.data
+	done
+	exit
+    fi
+
     DSNAME='exp='$EXP':run='$RUN':smd:stream=0-79'
     if [[ ( $OLD_JUNGFRAU -ge 1 ) ]]; then
 	#get the dataset name
@@ -324,10 +391,6 @@ if [[ ( $HAVE_JUNGFRAU -ge 1 ) ]]; then
     if [ $FFB -eq 1 ]; then
 	      DSNAME=$DSNAME':dir=/reg/d/ffb/'$HUTCH'/'$EXP'/xtc/'
     fi   
-
-    #detector names. This will only for for a single JF
-    #DETNAMES=`detnames exp=${EXP}:run=${RUN} | grep Jungfrau | awk  'BEGIN { FS = "|"}; {print $1}' | paste -d " " -s`
-    DETNAMES=`grep Jungfrau /tmp/detnames_$EXP\_$CREATE_TIME | awk  'BEGIN { FS = "|"}; {print $1}' | paste -d " " -s`
 
     #default arguments.
     JFARG=' -d '$DSNAME' -n '$NUMEVT' -D 1000000 -U 1000000 -L 1000000 -H 1000000 '
@@ -357,28 +420,42 @@ if [[ ( $HAVE_JUNGFRAU -ge 1 ) ]]; then
 
     echo -------------------- START JUNGFRAU PEDESTALS at $(date +"%T") ----------------------------
 
-    #now finally call the command
     if [ $RUNLOCAL -ne 1 ]; then
-        tmpScript=$(mktemp -p $WORKDIR jungfrau_multi_tmpXXXXX.sh)
-        trap "rm -f $tmpScript" EXIT
-        chmod u+x $tmpScript
-        printf '#!/bin/bash\nfor DET in %s\ndo jungfrau_ndarr_dark_proc %s -s $DET\ndone\n' "$DETNAMES" "$JFARG" > $tmpScript
-        echo "contents of $tmpScript:"
-        cat $tmpScript
-        jfCmd=`echo bsub -q $QUEUE -o $WORKDIR/jungfrau_${EXP}_RUN${RUN}_%J.out $tmpScript`
-        echo 'run in queue: ' $jfCmd
-        SUBMISSION=`$jfCmd`
-        echo $SUBMISSION
-        JOBNR=`echo $SUBMISSION | awk {'print $2'} | sed s/'<'//g | sed s/'>'//g`
-        echo "start to peek on jungfrau job after waiting for 30 seconds "
-        echo "please ctrl-c once job is finished"
-        sleep 30
-        bpeek -f $JOBNR
-        exit
-    else
-        cmd=`echo 'for DET in '$DETNAMES'; do jungfrau_ndarr_dark_proc '$JFARG' -s $DET; done'`
-        echo $cmd
-        bash -c "$cmd"
+        JOBIDS=()
+        NJOBS=0
+    fi
+    for JUNGFRAU in $DETNAMES; do
+        CMD=`echo jungfrau_ndarr_dark_proc $JFARG -s $JUNGFRAU`
+        #now finally call the command
+        if [ $RUNLOCAL -ne 1 ]; then
+            tmpScript=$(mktemp -p $WORKDIR jungfrau_multi_tmpXXXXX.sh)
+            #trap "rm -f $tmpScript" EXIT
+            chmod u+x $tmpScript
+            printf '#!/bin/bash\nsource /cds/sw/ds/ana/conda1/manage/bin/psconda.sh\n' > $tmpScript
+            printf '%s\n' "${CMD}" >> $tmpScript
+            #jfCmd=`echo bsub -q $QUEUE -o $WORKDIR/jungfrau_${EXP}_RUN${RUN}_%J.out $tmpScript`
+            jfCmd=`echo sbatch -p $QUEUE -o $WORKDIR/jungfrau_${EXP}_RUN${RUN}_%J.out $tmpScript`
+            echo 'run in queue: ' $jfCmd
+            SUBMISSION=`$jfCmd`
+            echo $SUBMISSION
+            THISJOBID=`echo $SUBMISSION | awk {'print $4'}`
+            JOBIDS+=( $THISJOBID )
+            NJOBS=$(($NJOBS+1))
+        else            
+            echo $CMD
+            $CMD
+        fi
+    done
+
+    if [ $RUNLOCAL -ne 1 ]; then
+        sleep 20
+        echo Running $NJOBS jobs are PIDS: ${JOBIDS[@]}
+        until check_running_jobs; do
+                echo 'Checking again in 10s'
+                sleep 10
+            done
+        echo 'All jobs finished'
+	ls -l /reg/d/psdm/${EXP:0:3}/$EXP/calib/J*/*/pedestals/*$RUN*data
     fi
     echo -------------------- END JUNGFRAU PEDESTALS at $(date +"%T") ----------------------------
 fi
@@ -387,56 +464,114 @@ fi
 # epix10k related stuff. Different executable w/ different options. Ack.
 ###
 #check if epix10k detectors are present
-#HAVE_EPIX10K=`detnames exp=${EXP}:run=${RUN} | grep Epix10ka | wc -l`
 HAVE_EPIX10K=`grep Epix10ka /tmp/detnames_$EXP\_$CREATE_TIME | wc -l`
-if [[ ( $HAVE_EPIX10K -ge 1 ) ]]; then
+if [[ ( $HAVE_EPIX10K -ge 1 ) && ( $WANT_ZYLA -eq 0 ) && ( $WANT_OPAL -eq 0 ) ]]; then
     echo -------------------- START EPIX10K PEDESTALS at $(date +"%T") ----------------------------
-    source /reg/g/psdm/etc/psconda.sh
-    EPIX10K=`detnames exp=${EXP}:run=${RUN} | grep Epix10ka | awk {'print $3'}`
-    echo Epix10ka name for $EXP is: $EPIX10K
-    ##run all at once - do not use
-    #CMD=`echo epix10ka_pedestals_calibration -d $EPIX10K -e $EXP -r $RUN -o $WORKDIR`
-    #echo $CMD
-    #$CMD
-    if [ $CHARGEINJECTION == 1 ]; then
-	for calibcycle in {0..105}; do
-            CMD=`echo epix10ka_pedestals_calibration -d $EPIX10K -e $EXP -r $RUN -c $calibcycle -o $WORKDIR`
-    	    echo ---------------EPIX10K PEDESTALS FOR CYCLE $calibcycle --------------------
-    	    echo $CMD
-     	    $CMD
-        done
-    else
-	#Do not use workdir as you'd need to run the full charge injection run there for this to work
-	#revisit when we run into permission problems.
-	for calibcycle in {0..5}; do
-	    if [ $FFB == 1 ]; then
-		CMD=`echo epix10ka_pedestals_calibration -d $EPIX10K -e $EXP -r $RUN -c $calibcycle -x /reg/d/ffb/$HUTCH/$EXP/xtc/:live:stream=0-79`
-		#CMD=`echo epix10ka_pedestals_calibration -d $EPIX10K -e $EXP -r $RUN -c $calibcycle -x /reg/d/ffb/$HUTCH/$EXP/xtc/`
-	    else
-		CMD=`echo epix10ka_pedestals_calibration -d $EPIX10K -e $EXP -r $RUN -c $calibcycle`
-	    fi
-    	    echo ---------------EPIX10K PEDESTALS FOR CYCLE $calibcycle --------------------
-    	    echo $CMD
-    	    $CMD
-	    #parallel calc, not working yet. fix later.
-            #epix10ka_pedestals_calibration -d $EPIX10K -e $EXP -r $RUN -c $calibcycle &
-        done
-	#sleep 20
-	#while [`find /reg/g/psdm/detector/gains/epix10k/panels/*/pedestals/*/*$EXP*$RUN* -mmin +1 | wc -l ` -gt 0 ]; do
-	#    echo 'processes are still running'
-	#    sleep 10
-	#done
-	#run all together
-        #CMD=`echo epix10ka_pedestals_calibration -d $EPIX10K -e $EXP -r $RUN`
-    	#echo ---------------EPIX10K PEDESTALS FOR ALL 5 CYCLES    -------------------
-    	#echo $CMD
-    	#$CMD
+    DETNAMES=`grep Epix10ka /tmp/detnames_$EXP\_$CREATE_TIME | awk  'BEGIN { FS = "|"}; {print $2}' | paste -d " " -s`
+    if [ $RUNLOCAL -ne 1 ]; then
+        JOBIDS=()
+        NJOBS=0
     fi
+    if [ -v GEOMETRY ]; then
+	GEODIR=`echo /reg/d/psdm/${GEOMETRY:0:3}/$GEOMETRY/calib/`
+	SUBDIR=`ls $GEODIR | grep Epix10k | grep -v workdir`
+	DORGNAME=`ls $GEODIR/$SUBDIR | grep Epix10k `
+	for EPIX10K in $DETNAMES; do
+	    DNAME=`grep $EPIX10K /tmp/detnames_$EXP\_$CREATE_TIME | awk  'BEGIN { FS = "|"}; {print $1}' | xargs`
+	    calibfile deploy -t geometry -e $EXP -r 0-end -s $DNAME -f $GEODIR/$SUBDIR/$DORGNAME/geometry/0-end.data
+	done
+	exit
+    fi
+    for EPIX10K in $DETNAMES; do
+        echo Epix10ka name for $EXP is: $EPIX10K
+        ##run all at once - do not use
+        if [ $CHARGEINJECTION == 1 ]; then
+    	    for calibcycle in {0..105}; do
+                CMD=`echo epix10ka_pedestals_calibration -d $EPIX10K -e $EXP -r $RUN -c $calibcycle -o $WORKDIR`
+    	        echo ---------------EPIX10K PEDESTALS FOR CYCLE $calibcycle --------------------
+       	        echo $CMD
+     	        $CMD
+            done
+        else
+	    #Do not use workdir as you'd need to run the full charge injection run there for this to work
+	    #revisit when we run into permission problems.
+	    for calibcycle in {0..4}; do
+	        if [ $FFB == 1 ]; then
+		    CMD=`echo epix10ka_pedestals_calibration -d $EPIX10K -e $EXP -r $RUN -c $calibcycle -x /reg/d/ffb/$HUTCH/$EXP/xtc/:live:stream=0-79`
+	        else 
+		    CMD=`echo epix10ka_pedestals_calibration -d $EPIX10K -e $EXP -r $RUN -c $calibcycle`
+	        fi
+    	        echo ---------------EPIX10K PEDESTALS FOR CYCLE $calibcycle --------------------
+                if [ $RUNLOCAL -ne 1 ]; then
+                    tmpScript=$(mktemp -p $WORKDIR epix10ka_pedestals_tmpXXXXX.sh)
+                    #trap "rm -f $tmpScript" EXIT
+                    chmod u+x $tmpScript
+                    printf '#!/bin/bash\nsource /cds/sw/ds/ana/conda1/manage/bin/psconda.sh\n' > $tmpScript
+                    printf '%s\n' "${CMD}" >> $tmpScript
+		    NTASKS=5
+		    if [[ $QUEUE == *'ana'* ]]; then
+			NTASKS=4
+		    fi
+                    ep10kaCmd=`echo sbatch -n $NTASKS -p $QUEUE -o $WORKDIR/${EPIX10K}_${EXP}_Run${RUN}_cycle${calibcycle}_%J.out $tmpScript`
+                    echo 'run in queue: ' $ep10kaCmd
+                    SUBMISSION=`$ep10kaCmd`
+                    echo $SUBMISSION
+                    THISJOBID=`echo $SUBMISSION | awk {'print $4'}`
+                    JOBIDS+=( $THISJOBID )
+                    NJOBS=$(($NJOBS+1))
+                else            
+                    echo $CMD
+                    $CMD
+                fi
+            done
+	    ALLJOBIDS=${JOBIDS[@]}
+        fi   
+    done
+    if [ $RUNLOCAL -ne 1 ]; then
+        sleep 20
+        echo Running $NJOBS jobs are PIDS: ${JOBIDS[@]}
+        until check_running_jobs; do
+                echo 'Checking again in 10s'
+                sleep 10
+            done
+        echo 'All jobs finished'
+	# and now check that none of the jobs have existed with an error code:
+	NFAILEDJOBS=0
+	for JOBID in ${ALLJOBIDS[@]}; do
+	    echo 'Checking job $JOBID'
+	    if grep -q 'exit code' $WORKDIR/*$JOBID.out; then
+		NFAILEDJOBS=$(($NFAILEDJOBS+1))
+	    fi
+	done
+	
+
+    fi
+
     echo ---------------EPIX10K PEDESTALS CALCULATED NOW DEPLOY     --------------------
     if [ $DEPLOY == 1 ]; then
-        CMD=`echo epix10ka_deploy_constants -D -d $EPIX10K -e $EXP -r $RUN`
-        echo $CMD
-        $CMD
+	if [ $NFAILEDJOBS -gt   0 ]; then
+	    read -p "$NFAILEDJOBS of the calibration tasks failed, do you want to quit here (y/n)"
+	    if [ "$REPLY" != "y" ];then
+		exit 1
+	    fi
+	fi
+
+        for EPIX10K in $DETNAMES; do
+            CMD=`echo epix10ka_deploy_constants -D -d $EPIX10K -e $EXP -r $RUN`
+            echo $CMD
+            $CMD
+        done
+        if [ $RUNLOCAL -ne 1 ]; then
+    	    echo 'Print Information abot batch jobs'
+	    JOBIDSTR=''
+    	    for JOBID in ${ALLJOBIDS[@]}; do
+		if [ $JOBIDSTR != '' ]; then 
+ 		    JOBIDSTR=$JOBIDSTR','
+		fi
+		JOBIDSTR=$JOBIDSTR$JOBID
+	    done
+	    sacct -j $JOBIDSTR --format=JobID,AveCPU,AveVMSize,CPUTime,Start,End,Elapsed
+        fi
     fi
     echo -------------------- STOP EPIX10K PEDESTALS at $(date +"%T") ----------------------------
 fi
@@ -450,10 +585,6 @@ HAVE_EPIX=`grep Epix100 /tmp/detnames_$EXP\_$CREATE_TIME | wc -l`
 HAVE_CSPAD=`grep Cspad /tmp/detnames_$EXP\_$CREATE_TIME | wc -l`
 HAVE_ZYLA=`grep Zyla /tmp/detnames_$EXP\_$CREATE_TIME | wc -l`
 HAVE_OPAL=`grep Opal /tmp/detnames_$EXP\_$CREATE_TIME | wc -l`
-#HAVE_EPIX=`detnames exp=${EXP}:run=${RUN} | grep -i Epix100 | wc -l`
-#HAVE_CSPAD=`detnames exp=${EXP}:run=${RUN} | grep -i Cspad | wc -l`
-#HAVE_ZYLA=`detnames exp=${EXP}:run=${RUN} | grep -i Zyla | wc -l`
-#HAVE_OPAL=`detnames exp=${EXP}:run=${RUN} | grep -i Opal | wc -l`
 
 #not like this: calculation
 let SPECIFIED_CUTS=MYNOISESIGMIN+MYNOISESIGMAX+MYADUMIN+MYADUMAX
@@ -498,7 +629,11 @@ fi
 
 
 if [[ ( $DETS == '' ) ]]; then
-    echo xxxxxxxx NO epix100/cspad/opal/... IN RUN $RUN -  END MAKEPEDS at $(date +"%T") XXXXXXXXXXXXXXXXXXXXX
+    T2="$(($(date +%s%N)-T))"
+    S="$((T2/1000000000))"
+    MIN="$((S/60))"
+    SEC="$((S-MIN*60))"
+    echo XXXX NO epix100/cspad/opal/... IN RUN $RUN - END MAKEPEDS at $(date +"%T") after  $MIN.$SEC XXXXXXXXXXXXXXXXX
     exit
 fi
 
@@ -550,16 +685,20 @@ for MYDET in $DETS; do
     fi
 
     echo -------------------- START CALIBRUN at $(date +"%T") for detector $MYDET----------------------------
+    source /reg/g/psdm/etc/psconda.sh
     if [ $FFB == 1 ]; then
-	cmd=`echo calibrun -r $RUN  -d $MYDET -P -e $EXP -x /reg/d/ffb/$HUTCH/$EXP/xtc/ $LOCARG`
-	echo $cmd
-	$cmd
+    	cmd=`echo calibrun -r $RUN  -d $MYDET -P -e $EXP -x /reg/d/ffb/$HUTCH/$EXP/xtc/ $LOCARG`
+    	echo $cmd
+    	$cmd
     else
-	cmd=`echo calibrun -r $RUN  -d $MYDET -P -e $EXP -m 10 $LOCARG`
-	echo $cmd
-	$cmd
+    	cmd=`echo calibrun -r $RUN  -d $MYDET -P -e $EXP -m 10 $LOCARG`
+    	echo $cmd
+    	$cmd
     fi
     echo -------------------- END CALIBRUN at $(date +"%T") for detector $MYDET----------------------------
 done
 rm /tmp/detnames_$EXP\_$CREATE_TIME
-echo xxxxxxxxxxxxxxxxxxxx END MAKEPEDS at $(date +"%T") XXXXXXXXXXXXXXXXXXXXXXXXXXXX
+T2="$(($(date +%s%N)-T))"
+S="$((T2/1000000000))"
+M="$((T2/1000000))"
+echo xxxxxxxxxxxxxxxxxxxx END MAKEPEDS at $(date +"%T") after  '$S'.'$M' XXXXXXXXXXXXXXXXXXXXXXXXXXXX

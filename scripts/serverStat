@@ -75,12 +75,9 @@ host_from_PV(){
 
 usage(){
 cat << EOF
-usage: $0 servername options
+usage: $0 <servername> [command] 
 
 Script to check status of servers & reboot/power cycle them
-
-SIGNATURE:
-serverStat <servername> [command]
 
 default command is 'status', list of commands:
 status      : print power status of machine, try to ping interfaces
@@ -90,7 +87,6 @@ cycle       : power cycle machine, uses "psipmi" cycle command
 reset       : reset machine (ideally try that before power cycling)
 console     : open the ipmi console where possible
 expert      : display info and run checks on server
-
 EOF
 }
 
@@ -115,7 +111,7 @@ if [[ $# < 2 ]]; then
 	usage
 	exit 1
         echo 'why here?'
-    elif [[ $1 =~ ^(h|-h|-help|--help) ]]; then
+    elif [[ ($1 == "--help") || ($1 == "-h") ]]; then
 	usage
 	exit 0
         echo 'why here?'

@@ -11,18 +11,20 @@ OPTIONS:
 -x instrument logbook
 -c controls logbook
 -u username
+-s script to run and post stdout as sublog entry
 EOF
 }
 
+source /reg/g/psdm/sw/conda2/manage/bin/psconda.sh ""
+export PYTHONPATH=/reg/g/psdm/web/ws/prod/apps/LogBookClient:${PYTHONPATH}
+export PATH=/reg/g/psdm/web/ws/prod/apps/LogBookClient/LogBookClient:${PATH}
+
 grab()
 {
-    if [[ $hutch == 'unknown_hutch' ]]; then
+    if [[ $HUTCH == 'unknown_hutch' ]]; then
 	echo 'I cannot determine the current hutch and thus not the current experiment. Try another machine (control room/psusr) or different directory like /reg/d/psdm/<hutch>/..... Will quit.'
 	exit
     fi
-    source /reg/g/psdm/sw/conda2/manage/bin/psconda.sh ""
-    export PYTHONPATH=/reg/g/psdm/web/ws/prod/apps/LogBookClient:${PYTHONPATH}
-    export PATH=/reg/g/psdm/web/ws/prod/apps/LogBookClient/LogBookClient:${PATH}
     LogBookGrabber_qt \
 	-i $HUTCH \
 	-e $1 \
@@ -32,11 +34,21 @@ grab()
     exit
 }
 
+# To try and avoid everything else going on
+grab_script()
+{
+	LogBookGrabber_qt \
+    -i $HUTCH \
+    -e $EXPNAME \
+    -u $USERNAME \
+    -p pcds \
+    -w https://pswww.slac.stanford.edu/ws-auth/lgbk \
+    -c $SCRIPT
+    exit 1
+}
+
 grab_user()
 {
-    source /reg/g/psdm/sw/conda2/manage/bin/psconda.sh ""
-    export PYTHONPATH=/reg/g/psdm/web/ws/prod/apps/LogBookClient:${PYTHONPATH}
-    export PATH=/reg/g/psdm/web/ws/prod/apps/LogBookClient/LogBookClient:${PATH}
     LogBookGrabber_qt \
 	-i $HUTCH \
 	-e $1 \
@@ -47,13 +59,10 @@ grab_user()
 
 grab_instrument()
 {
-    if [[ $hutch == 'unknown_hutch' ]]; then
+    if [[ $HUTCH == 'unknown_hutch' ]]; then
 	echo 'I cannot determine the current hutch and thus not the current experiment. Try another machine (control room/psusr) or different directory like /reg/d/psdm/<hutch>/..... Will quit.'
 	exit
     fi
-    source /reg/g/psdm/sw/conda2/manage/bin/psconda.sh ""
-    export PYTHONPATH=/reg/g/psdm/web/ws/prod/apps/LogBookClient:${PYTHONPATH}
-    export PATH=/reg/g/psdm/web/ws/prod/apps/LogBookClient/LogBookClient:${PATH}
     EXPNAME="$HUTCH Instrument"
     LogBookGrabber_qt \
 	-i OPS \
@@ -66,9 +75,6 @@ grab_instrument()
 
 grab_controls()
 {
-    source /reg/g/psdm/sw/conda2/manage/bin/psconda.sh ""
-    export PYTHONPATH=/reg/g/psdm/web/ws/prod/apps/LogBookClient:${PYTHONPATH}
-    export PATH=/reg/g/psdm/web/ws/prod/apps/LogBookClient/LogBookClient:${PATH}
     EXPNAME="Controls"
     LogBookGrabber_qt \
 	-i OPS \
@@ -79,36 +85,37 @@ grab_controls()
     exit
 }
 
+if [[ ($1 == "--help") || ($1 == "-h") ]]; then
+	usage
+	exit 0
+fi
+
 ##who am I doing this? Why don't just use the actual username?
 #USERNAME=`get_info --gethutch`opr
 USERNAME=`whoami`
 EXPNAME=current
-hutch=`get_info --gethutch`
-HUTCH=${hutch^^}
+HUTCH=`get_info --gethutch`
 
-while getopts "e:u:hxct" OPTION
+while getopts "e:u:s:xct" OPTION
 do
     case $OPTION in
 	e)
 	    EXPNAME=$OPTARG
-	    hutch=${EXPNAME:0:3}
-	    HUTCH=${hutch^^}
+	    HUTCH=${EXPNAME:0:3}
 	    ;;
 	u)
 	    USERNAME=$OPTARG
 	    grab_user $EXPNAME
 	    ;;
-	h)
-	    usage
-	    exit 1
+	s)
+	    SCRIPT=$OPTARG
+	    grab_script
 	    ;;
 	x)
 	    grab_instrument
-	    exit
 	    ;;
 	c)
 	    grab_controls
-	    exit
 	    ;;
 	?)
 	    usage

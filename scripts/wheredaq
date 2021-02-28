@@ -1,28 +1,26 @@
 #!/bin/bash
-HUTCH=`get_info --gethutch`
-if [ $HUTCH == 'xpp' ]; then
-   HOSTS="xpp-daq xpp-control xpp-hutch01"
-elif  [ $HUTCH == 'xcs' ]; then
-   HOSTS="xcs-daq xcs-control xcs-hutch01"
-elif  [ $HUTCH == 'mfx' ]; then
-   HOSTS="mfx-daq mfx-monitor"
-elif  [ $HUTCH == 'cxi' ]; then
-   HOSTS="cxi-daq cxi-monitor"
-elif  [ $HUTCH == 'mec' ]; then
-   HOSTS="mec-daq mec-console"
-elif  [ $HUTCH == 'det' ]; then
-   HOSTS="det-console daq-det-standalone"
-else
-   echo 'could not determine hutch or hutch not implemented, quit'
-   exit
+usage()
+{
+cat << EOF
+usage: $0
+
+Discover what host is running the daq in the current hutch, if any.
+EOF
+}
+
+if [[ ($1 == "--help") || ($1 == "-h") ]]; then
+	usage
+	exit 0
 fi
+
+HUTCH=`get_info --gethutch`
 NOTRUNNING='Not running'
 
 if  [ $HUTCH == 'cxi' ]; then
     if [ $HOSTNAME == 'cxi-daq' ]; then
-	STATUS=`/reg/g/pcds/dist/pds/$HUTCH/current/tools/procmgr/procmgr status /reg/g/pcds/dist/pds/$HUTCH/scripts/$HUTCH\_0.cnf | grep started`
+	STATUS=`/reg/g/pcds/dist/pds/$HUTCH/current/tools/procmgr/procmgr status /reg/g/pcds/dist/pds/$HUTCH/scripts/$HUTCH\_0.cnf control_gui | grep started`
 	if [[ $STATUS == *$NOTRUNNING* ]]; then
-	    echo 'cxi_0 - Main DAQ is not running'
+	    echo 'cxi_0 - ' $STATUS
 	else
 	    echo 'cxi_0 - Main DAQ is running on '$HOSTNAME
 	fi
@@ -39,23 +37,12 @@ if  [ $HUTCH == 'cxi' ]; then
     exit
 fi
 
-STATUS=`/reg/g/pcds/dist/pds/$HUTCH/current/tools/procmgr/procmgr status /reg/g/pcds/dist/pds/$HUTCH/scripts/$HUTCH.cnf | grep started`
+STATUS=`/reg/g/pcds/dist/pds/$HUTCH/current/tools/procmgr/procmgr status /reg/g/pcds/dist/pds/$HUTCH/scripts/$HUTCH.cnf control_gui | grep started`
 if [[ $STATUS == *$NOTRUNNING* ]]; then
-    echo 'DAQ is not running in' ${HUTCH^^}
+    echo 'DAQ in ' ${HUTCH^^}': ' $STATUS
     exit
+else
+   HOST=`echo $STATUS | awk {'print $5'}`
+   echo $HOST
 fi
-
-for HOST in $HOSTS;
-do
-    daqhost=''
-    if [[ $STATUS == *$HOST* ]]
-    then
-	daqhost=$HOST
-    fi
-    if [ ${#daqhost} != 0 ] 
-    then
-	echo $HOST
-	break
-    fi
-done
 

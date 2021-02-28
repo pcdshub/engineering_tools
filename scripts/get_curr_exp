@@ -1,5 +1,4 @@
 #!/bin/bash
-
 usage()
 {
 cat << EOF
@@ -12,13 +11,14 @@ EOF
 }
 INSTRUMENT='xxx'
 
-while getopts "H:i:hle" OPTION
+if [[ ($1 == "--help") || ($1 == "-h") ]]; then
+	usage
+	exit 0
+fi
+
+while getopts "H:i:le" OPTION
 do
     case $OPTION in
-	h)
-	    usage
-	    exit 1
-	    ;;
 	i) 
 	    INSTRUMENT=$OPTARG
 	    ;;
