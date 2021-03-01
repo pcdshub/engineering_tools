@@ -13,6 +13,32 @@ git tag -a R{tag} -m '{comment}'
 git push -u origin R{tag}
 ```
 
+## Creating a new script
+
+please add help options to your script following this style:
+```
+usage()
+{
+cat << EOF
+usage: $0 options
+
+start the eloggrabber, by default look at current exp
+
+OPTIONS:
+-e pass in an experiment to look at
+-x instrument logbook
+-c controls logbook
+-u username
+-s script to run and post stdout as sublog entry
+EOF
+}
+
+if [[ ($1 == "--help") || ($1 == "-h") ]]; then
+	usage
+	exit 0
+fi
+```
+
 ## Creating a new release
 ```
 # Clone the source code into a new folder
