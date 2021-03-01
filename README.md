@@ -14,7 +14,6 @@ git push -u origin R{tag}
 ```
 
 ## Creating a new script
-
 Please add help and options information to your script following this style,
 not including text after // which is included for your reference. Tailor
 one these usage messages to describe your script functionality.
