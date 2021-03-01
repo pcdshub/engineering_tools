@@ -15,21 +15,29 @@ git push -u origin R{tag}
 
 ## Creating a new script
 
-please add help options to your script following this style:
+Please add help and options information to your script following this style,
+not including text after // which is included for your reference. Tailor
+one these usage messages to describe your script functionality.
 ```
 usage()
 {
 cat << EOF
-usage: $0 options
+Usage: $0 [OPTION] // Can pick one option, no required args 
+Usage: $0 [OPTION]... // Multiple options, no req args
+Usage: $0 [OPTION] arg_name // Can pick one option for required arg_name
+Usage: $0 [OPTION]... arg_name // Multiple options for required arg_name
+Usage: $0 [OPTION]... [arg_name]... // Multiple options, any possible number args
+Usage: $0 [OPTION] arg_name0 [OPTION1]... arg_name1  // Pick one option for first required arg_name0
+can choose multiple options for required arg_name1.
+Usage: $0 [OPTION]... [-f file] // Multiple options, option f requires file 
 
-start the eloggrabber, by default look at current exp
+Start the eloggrabber, by default look at current exp // Description of script function. 
 
-OPTIONS:
--e pass in an experiment to look at
--x instrument logbook
--c controls logbook
--u username
--s script to run and post stdout as sublog entry
+OPTIONS: // Example options
+-f file
+   Name of file.
+-v Script prints verbose.
+-d Script runs in debug mode.
 EOF
 }
 
