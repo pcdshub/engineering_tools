@@ -33,11 +33,15 @@ Usage: $0 [OPTION]... [-f file] // Multiple options, option f requires file
 
 Start the eloggrabber, by default look at current exp // Description of script function. 
 
-OPTIONS: // Example options
+OPTION: // Example options
 -f file
    Name of file.
 -v Script prints verbose.
 -d Script runs in debug mode.
+
+OPTION1
+-r arg_name1 is a regex expression
+-u arg_name1 uses unsigned ints
 EOF
 }
 
