@@ -19,7 +19,14 @@ if [ -z "${1}" ]; then
   exit
 fi
 PYDEV_DIR=~/pydev
+
 full_path="$(readlink -f $1)"
+if [ ! -f $full_path ]; then
+  echo "File does not exist"
+  usage
+  exit
+fi
+
 if [ "${2}" == "module" ]; then
   link="${PYDEV_DIR}"
 elif [ "${2}" == "bin" ]; then
