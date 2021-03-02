@@ -20,8 +20,8 @@ if [ -z "${1}" ]; then
 fi
 PYDEV_DIR=~/pydev
 
-full_path="$(readlink -f $1)"
-if [ ! -f $full_path ]; then
+full_path="$(readlink -f "$1")"
+if [ ! -f "$full_path" ]; then
   echo "File does not exist"
   usage
   exit
