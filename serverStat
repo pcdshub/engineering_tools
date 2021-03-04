@@ -13,13 +13,13 @@ names_from_name(){
 	INNAME=`echo $INNAME | sed s/-ana//g`
     fi
     CDSNAME=$INNAME
-    CDSIP=`netconfig search $CDSNAME | grep IP: | awk {'print $2'}`
+    CDSIP=`netconfig search $CDSNAME | grep IP: | awk '{print $2}'`
     if [[ `netconfig search $NAME-ipmi --brief | wc -w` -gt 0 ]]; then
 	NAMEIPMI=$INNAME-ipmi
     fi
     if [[ `netconfig search $NAME-fez --brief | wc -w` -gt 0 ]]; then
 	FEZNAME=$INNAME-fez
-	FEZIP=`netconfig search $FEZNAME | grep IP: | awk {'print $2'}`
+	FEZIP=`netconfig search $FEZNAME | grep IP: | awk '{print $2}'`
     fi
 }
 
@@ -56,7 +56,7 @@ host_from_PV(){
 	exit
     fi
     if [[ ${NAME:0:3} == ${HUTCH^^} ]]; then
-        HOST=`cainfo $NAME | grep Host | awk {'print $2'} | awk 'BEGIN { FS = ":"}; {print $1}' | sed s/'.pcdsn'/''/g`
+        HOST=`cainfo $NAME | grep Host | awk '{print $2}' | awk 'BEGIN { FS = ":"}; {print $1}' | sed s/'.pcdsn'/''/g`
 	if [[ $HOST == *'disconnected'* ]]; then
 	    echo PV $NAME is disconnected
 	    exit
@@ -135,10 +135,10 @@ fi
 
 if [[ $NAME == *'172.21'* ]]; then
     ISSRV=1
-    NAME=`netconfig search $NAME --brief | awk {'print $1'}`
+    NAME=`netconfig search $NAME --brief | awk '{print $1}'`
     echo $DEV is an IP for $NAME
 else
-    ISSRV=`netconfig search $NAME | grep 'Found' | awk {'print $2'}`
+    ISSRV=`netconfig search $NAME | grep 'Found' | awk '{print $2}'`
 fi
 #exit
 
@@ -168,11 +168,11 @@ if [[ $ISSRV -lt 1 ]] && [[ $HUTCH != 'unknown_hutch' ]]; then
     if [[  $DEV == *'event'* ]]; then
 	DSSNODES=`grep dss_nodes /reg/g/pcds/dist/pds/${HUTCH}/scripts/${HUTCH}.cnf | grep -v '#' | head -n1`
 	i=$((${#DEV}-1));NEV=`echo "${DEV:$i:1}"`;AWKNUM=$(($NEV+4))
-	NAME=`echo $DSSNODES | awk -v temp=$AWKNUM {'print $temp'}  |  sed s/,// | sed s/_/-/g | sed s/\'//g | sed s/-fez//g`	
+	NAME=`echo $DSSNODES | awk -v temp=$AWKNUM '{print $temp}'  |  sed s/,// | sed s/_/-/g | sed s/\'//g | sed s/-fez//g`	
     else
 	NDEV=`grep $DEV /reg/g/pcds/dist/pds/${HUTCH}/scripts/${HUTCH}.cnf | grep -v '#' | grep host | wc -l`
 	if [ $NDEV -eq 1 ]; then
-	    NAME=`grep $DEV /reg/g/pcds/dist/pds/${HUTCH}/scripts/${HUTCH}.cnf | grep -v '#' | grep host | awk {'print $1'} | sed s/{host://g | sed s/,// | sed s/_/-/g | sed s/\'//g | sed s/-fez//g`
+	    NAME=`grep $DEV /reg/g/pcds/dist/pds/${HUTCH}/scripts/${HUTCH}.cnf | grep -v '#' | grep host | awk '{print $1}' | sed s/{host://g | sed s/,// | sed s/_/-/g | sed s/\'//g | sed s/-fez//g`
 	elif  [ $NDEV -eq 0 ]; then
 	    #check if we have a camera, will exit if yes.
 	    isCam
@@ -180,21 +180,21 @@ if [[ $ISSRV -lt 1 ]] && [[ $HUTCH != 'unknown_hutch' ]]; then
 	    echo 'no device of this name found, exit'
 	    exit
 	else
-	    NAME=`grep "$DEV'" /reg/g/pcds/dist/pds/${HUTCH}/scripts/${HUTCH}.cnf | grep -v '#' | grep host | awk {'print $1'} | sed s/{host://g | sed s/,// | sed s/_/-/g`
+	    NAME=`grep "$DEV'" /reg/g/pcds/dist/pds/${HUTCH}/scripts/${HUTCH}.cnf | grep -v '#' | grep host | awk '{print $1}' | sed s/{host://g | sed s/,// | sed s/_/-/g`
 	fi
     fi
-    ISSRV=`netconfig search $NAME | grep 'Found' | awk {'print $2'}`
+    ISSRV=`netconfig search $NAME | grep 'Found' | awk '{print $2}'`
     if [[ $ISSRV -lt 1 ]]; then
 	#after this is done, move head of first way ot getting NAME
 	echo 'does not have ipmi, is not DAQ device.'
 	exit
     fi
 
-    SRVIP=`netconfig search $NAME | grep IP: | awk {'print $2'}`
+    SRVIP=`netconfig search $NAME | grep IP: | awk '{print $2}'`
     #ips_from_ip $SRVIP
     echo 'server for ' $DEV ' is: ' $NAME 
 else
-    SRVIP=`netconfig search $DEV | grep IP: | awk {'print $2'}`
+    SRVIP=`netconfig search $DEV | grep IP: | awk '{print $2}'`
     #ips_from_ip $SRVIP
 fi
 
