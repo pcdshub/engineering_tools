@@ -55,7 +55,7 @@ host_from_PV(){
 	echo 'Getting info for a host of a PV currently only works on the hutch networks'
 	exit
     fi
-    if [[ ${NAME:0:3} == ${HUTCH^^} ]]; then
+    if [[ ${NAME:0:3} == "${HUTCH^^}" ]]; then
         HOST=`cainfo $NAME | grep Host | awk '{print $2}' | awk 'BEGIN { FS = ":"}; {print $1}' | sed s/'.pcdsn'/''/g`
 	if [[ $HOST == *'disconnected'* ]]; then
 	    echo PV $NAME is disconnected
