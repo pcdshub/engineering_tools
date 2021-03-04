@@ -302,7 +302,6 @@ elif [[ $CMD == "status" ]]; then
     fi
 
     PNG=`ping -c 1 $SRVIP | grep transmitted | awk '{print $4}'`
-    IFUP=0
     if [ $FEZNAME ]; then
 	if [[ $HOST_HAS_FEZ -ge 1 ]]; then
 	    PNGFEZ=`ping -c 1 $FEZNAME | grep transmitted | awk '{print $4}'`
