@@ -155,7 +155,7 @@ fi
 
 if  [[ $NAME == *rec* ]]; then
     if [[ $CMD == "off" ]] || [[ $CMD == "cycle" ]]; then
-	printf "This is a recorder, better not to power cycle unless necessary, try to reset first. Quit? " "$NAME" "$CMD"; read ANSWER		
+	echo "This is a recorder, better not to power cycle unless necessary, try to reset first. Quit? " "$NAME" "$CMD"; read ANSWER		
 	if [[ $ANSWER == 'y' ]] || [[ $ANSWER == 'Y' ]] || [[ $ANSWER == 'yes' ]]; then  
 	    printf 'quit now\n'
 	    exit
