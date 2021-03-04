@@ -21,9 +21,6 @@ names_from_name(){
 	FEZNAME=$INNAME-fez
 	FEZIP=`netconfig search $FEZNAME | grep IP: | awk {'print $2'}`
     fi
-    if [[ `netconfig search $NAME-ana --brief | wc -w` -gt 0 ]]; then
-	ANANAME=$INNAME-ana
-    fi
 }
 
 isCam(){
