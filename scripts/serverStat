@@ -29,15 +29,15 @@ isCam(){
 	ISGIGE=`grep $DEV /reg/g/pcds/pyps/config/*/camviewer.cfg | grep -v '#' | grep GIGE | wc -l`
 	if [ $ISGIGE -gt 0 ]; then
 	    read -p 'This is a gige camera, start the maim edm screen? (y/n)'
-	    if [ "$REPLY"=="y" ]; then
+	    if [ "$REPLY" == "y" ]; then
 		gige -c $DEV -m 
 	    else
 		read -p 'Do you want to restart acqisition (y/n)'
-		if [ "$REPLY"=="y" ]; then
+		if [ "$REPLY" == "y" ]; then
 		    gige -c $DEV -n
 		else
 		    read -p 'Do you want to reboot the IOC (y/n)'
-		    if [ "$REPLY"=="y" ]; then
+		    if [ "$REPLY" == "y" ]; then
 			gige -c $DEV -r
 		    fi
 		fi
