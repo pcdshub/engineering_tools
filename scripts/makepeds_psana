@@ -4,32 +4,47 @@ usage()
 cat << EOF
 usage: $0 options
 
-Make a pedestal file
+Make a pedestal file for offline use
 
 OPTIONS:
--r runnumber for pedestal
--e <expname> in case you do not want pedestals for the ongoing experiment
--H <hutch> in case you do not pass an experiment name
--Z pedestal for zyla
--O make pedestals for Opals
--j make pedestals for Jungfrau - 3 run version(default only cspad/EPIX detectors)
--D : dark run for XTCAV
--L : lasing off run for XTCAV (-b specifies the number of assumed bunches, def 1)
--l : donot send to batch queue
--g #: deploy geometry <needs experiment to take geometry from>
--F : use FFB
--f : full epix10k charge injection run
--v <str>: validity range (if not run#-end, e.g. 123-567 or 123-end)
--N # : use this number of events (default 1000)
--n # : if noise filecreated, write pixel mask file for pixels with noise above xxx (currently integer only...)
--C # : if noise filecreated, write pixel mask file for pixels with noise below xxx (currently integer only...)
--m # : write pixel mask file for pixels with pedestal below xxx (currently integer only...)
--x # : write pixel mask file for pixels with pedestal above xxx (currently integer only...)
--c <evtcode x> use events with eventcode <x> set
--i start calibman. -r 0: show all darks, -r n: show runs (n-25) - 25
--d give path for alternative calibdir
--t : test, do not deploy.
--y : when specify cuts for status mask, apply those for epix100.
+        -r|--run         
+               runnumber for pedestal
+        -e|--experiment <expname> 
+               in case you do not want pedestals for the ongoing experiment
+        -O|--opal         
+               make pedestals for Opals (default only cspad/EPIX detectors)
+        -Z|--zyla         
+               make pedestals for Zyla (default only cspad/EPIX detectors)
+        -j|--jungfrau3     
+               make pedestals for Jungfrau - 3 run version(default only cspad/EPIX detectors)
+        -q|--queue <queue>
+               queue for batch submisson
+        -g|--geometry <expname>
+                deploy geometry <needs experiment to take geometry from>
+        -D|--xtcav_dark
+                dark run for XTCAV
+        -L|--xtcav_lasingoff
+               lasing off run for XTCAV
+        -v|--valdity <str>
+               validity range (if not run#-end, e.g. 123-567 or 123-end)
+        -N|--nevents <#>  
+                use this number of events (default 1000). Needed when using -c as original events are counted
+        -c|--eventcode <evtcode x> 
+                use events with eventcode <x> set
+        -n|--noise_max <#> 
+                if you have created a noise file, then write pixel mask file for pixels with noise above #sigmas
+        -C|--noise_min <#> 
+                if noise filecreated, write pixel mask file for pixels with noise below xxx (currently integer only)
+        -m|--adu_min <#> 
+                write pixel mask file for pixels with pedestal below xxx (currently integer only)
+        -x|--adu_max <#>  
+                write pixel mask file for pixels with pedestal above xxx )currently integer only)
+        -i|--interactive 
+                start calibman. -r 0: show all darks, -r n: show runs (n-25) - 25
+        -d|--calibdir
+                give path for alternative calibdir
+        -b|--nbunch
+                number of bunches for the laseroff XTCAV calculations
 EOF
 }
 
@@ -55,7 +70,7 @@ check_running_jobs()
 
 xtcav_dark()
 {
-    if [ $RUNLOCAL == 1 ]; then
+    if [[ $RUNLOCAL == 1 ]]; then
 	python /reg/g/xpp/scripts/xtcav_calibration.py --run $RUN --exp $EXP --dark $ARG
     else
 	echo bsub -q $QUEUE -o $WORKDIR/xtcav_dark_RUN${RUN}_%J.out python /reg/g/xpp/scripts/xtcav_calibration.py --run $RUN --exp $EXP --dark $ARG
@@ -71,16 +86,15 @@ xtcav_dark()
 
 xtcav_lasOff()
 {
-    if [ $NUMBUNCH != 1 ] ; then
+    if [[ $NUMBUNCH != 1 ]] ; then
 	ARG=$ARG' -b '$NUMBUNCH
     fi
-    if [ $RUNLOCAL == 1 ]; then
+    if [[ $RUNLOCAL == 1 ]]; then
 	mpirun --mca btl ^openib python /reg/g/xpp/scripts/xtcav_calibration.py --run $RUN --exp $EXP --lasoff $ARG
 	#python /reg/g/xpp/scripts/xtcav_calibration.py --run $RUN --exp $EXP --lasoff $ARG
 	exit
     fi
     SUBMISSION=`bsub -n 8 -q $QUEUE -o $WORKDIR/xtcav_laseroff_RUN${RUN}_%J.out mpirun --mca btl ^openib python /reg/g/xpp/scripts/xtcav_calibration.py --run $RUN --exp $EXP --lasoff $ARG`
-    #SUBMISSION=`bsub -q $QUEUE -o $WORKDIR/xtcav_laseroff_RUN${RUN}_%J.out python /reg/g/xpp/scripts/xtcav_calibration.py --run $RUN --exp $EXP --lasoff $ARG`
     echo $SUBMISSION
     JOBNR=`echo $SUBMISSION | awk {'print $2'} | sed s/'<'//g | sed s/'>'//g`
     echo "start to peek on lasoff job"$JOBNR
@@ -89,167 +103,173 @@ xtcav_lasOff()
     exit
 }
 
-RUN=-1
-EXP='xxx'
-INTERACTIVE=0
-RUNLOCAL=0
-CALIBCODE=0
-VALSTR='xxx'
-HUTCH='xxx'
-NUMEVT=1000
-FFB=1
-XTCAV=0
-NUMBUNCH=1
-CALIBDIR='xxx'
-DEPLOY=1
-CHARGEINJECTION=0
-WANT_ZYLA=0
-WANT_OPAL=0
-OLD_JUNGFRAU=0
-CUT_EPIX100=0
-QUEUE='xxx'
 
-DET='CSPAD,CSPAD2x2'
-DET2='Epix100a'
-BOTH=0
-
-MYNOISESIGMIN=-1
-MYNOISESIGMAX=-1
-MYADUMIN=-1
-MYADUMAX=-1
-USEFFB=0
-
-if [[ ($1 == "--help") || ($1 == "-h") ]]; then
-	usage
-	exit 0
-fi
-
-while getopts "r:e:n:c:C:m:x:v:b:N:H:q:d:g:DLZOEjiltfF" OPTION
+POSITIONAL=()
+while [[ $# -gt 0 ]]
 do
-    case $OPTION in
-	r)
-	    RUN=$OPTARG
-	    ;;
-	e)
-	    EXP=$OPTARG
-	    FFB=0
-	    ;;
-	c)
-	    CALIBCODE=$OPTARG
-	    ;;
-	N)
-	    NUMEVT=$OPTARG
-	    ;;
-	d)
-	    CALIBDIR=$OPTARG
-	    ;;
-	H)
-	    HUTCH=$OPTARG
-	    ;;
-	v)
-	    VALSTR=$OPTARG
-	    ;;
-	i)
-	    INTERACTIVE=1
-	    ;;
-	l)
-	    RUNLOCAL=1
-	    ;;
-	t)
-	    DEPLOY=0
-	    ;;
-	f)
-	    CHARGEINJECTION=1
-	    ;;
-	F)
-	    USEFFB=1
-	    ;;
-	g)
-	    GEOMETRY=$OPTARG
-	    ;;
-	D)
-	    XTCAV=1
-	    ;;
-	L)
-	    XTCAV=2
-	    ;;
-	b)
-	    NUMBUNCH=$OPTARG
-	    ;;
-	Z)
-	    WANT_ZYLA=1
-	    ;;
-	O)
-	    WANT_OPAL=1
-	    ;;
-	j)
-	    OLD_JUNGFRAU=1
-	    ;;
-	y)
-	    CUT_EPIX100=1
-	    ;;
-	n)
-	    MYNOISESIGMAX=$OPTARG
-	    ;;
-	C)
-	    MYNOISESIGMIN=$OPTARG
-	    ;;
-	m)
-	    MYADUMIN=$OPTARG
-	    ;;
-	x)
-	    MYADUMAX=$OPTARG
-	    ;;
-	q)
-	    QUEUE=$OPTARG
-	    ;;
-	?)
-	    usage
-	    exit
-	    ;;
-    esac
-done
+        key="$1"
 
-shift $((OPTIND-1))
+	case $key in
+		-h|--help)
+			usage
+			exit
+			;;
+           	-D|--xtcav_dark)
+		        XTCAV=1
+			shift
+			;;
+           	-L|--xtcav_lasingoff)
+		        XTCAV=2
+			shift
+			;;
+           	-Z|--zyla)
+		        WANT_ZYLA=1
+			shift
+			;;
+           	-O|--opal)
+                        WANT_OPAL=1
+			shift
+			;;
+           	-j|--jungfrau3)
+		        OLD_JUNGFRAU=1
+			shift
+			;;
+           	-r|--run)
+		        RUN="$2"
+                        POSITIONAL+=("$1" "$2")
+			shift
+			shift
+			;;
+           	-e|--experiment)
+		        EXP="$2"
+                        POSITIONAL+=("$1" "$2")
+			shift
+			shift
+			;;
+           	-l|--local)
+		        RUNLOCAL=1
+			shift
+			;;
+           	-N|--nevents)
+		        NUMEVT=("$2")
+			shift
+			shift
+			;;
+                -q|--queue)
+		        QUEUE=("$2")
+			shift
+			shift
+			;;
+                -i|--interactive)
+		        INTERACTIVE=1
+			shift
+			;;
+                -c|--eventcode)
+		        CALIBCODE=("$2")
+			shift
+			shift
+			;;
+                -v|--validity)
+		        VALSTR=("$2")
+			shift
+			shift
+			;;
+                -g|--geometry)
+		        GEOMETRY=("$2")
+			shift
+			shift
+			;;
+                -d|--calibdir)
+		        CALIBDIR=("$2")
+			shift
+			shift
+			;;
+           	-t|--deploy)
+		        DEPLOY=0
+			shift
+			;;
+                -n|--noise_max)
+		        MYNOISESIGMAX=("$2")
+			shift
+			shift
+			;;
+                -C|--noise_min)
+		        MYNOISESIGMIN=("$2")
+			shift
+			shift
+			;;
+                -m|--adu_min)
+		        MYADMIN=("$2")
+			shift
+			shift
+			;;
+                -x|--adu_max)
+		        MYADMAX=("$2")
+			shift
+			shift
+			;;
+                -b|--nbunch)
+		        NUMBUNCH=("$2")
+			shift
+			shift
+			;;
+                 *)
+                        POSITIONAL+=("$1")
+			shift
+			;;
+	esac
+done
+set -- "${POSITIONAL[@]}"
+
 
 T="$(date +%s%N)"
-echo XXXXXXXXXXXXXXXXX START MAKEPEDS at $(date +"%T") on $HOSTNAME XXXXXXXXXXXXXXXXXXXXXXXXXXXX
+echo XXXXXXXXXXXXXXXXX START MAKEPEDS DEV at $(date +"%T") on $HOSTNAME XXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
-if [ $RUN -lt 0 ]; then
+RUN=${RUN:=0}
+EXP=${EXP:='xxx'}
+QUEUE=${QUEUE:='xxx'}
+NUMEVT=${NUMEVT:=1000}
+XTCAV=${XTCAV:=0}
+INTERACTIVE=${INTERACTIVE:=0}
+CALIBCODE=${CALIBCODE:=0}
+VALSTR=${VALSTR:='xxx'}
+CALIBDIR=${CALIBDIR:='xxx'}
+DEPLOY=${DEPLOY:=1}
+MYNOISESIGMIN=${MYNOISESIGMIN:=-1}
+MYNOISESIGMAX=${MYNOISESIGMAX:=-1}
+MYADUMIN=${MYADUMIN:=-1}
+MYADUMAX=${MYADUMAX:=-1}
+NUMBUNCH=${NUMBUNCH:=1}
+
+if [ $RUN == 0 ]; then
     if [ $INTERACTIVE -ne 1 ]; then
-	printf "Please enter a run number: \n"; read RUN
+	printf "Please enter a run number HERE: \n"; read RUN
     fi
 fi
 
-#using the request exp name (default: current exp)
 if [ $EXP == 'xxx' ]; then
-    if [ $HUTCH != 'xxx' ]; then
-	EXP=`/reg/g/pcds/engineering_tools/$HUTCH/scripts/get_info --exp --hutch $HUTCH`
-    else
-	EXP=`/reg/g/pcds/engineering_tools/$HUTCH/scripts/get_info --exp`
+    echo 'no experiment passed!!!'
+    HUTCH=`/reg/g/pcds/engineering_tools/latest-released/scripts/get_info --gethutch`
+    echo HUTCH $HUTCH
+    if [[ $HUTCH != 'unknown_hutch' ]]; then
+        EXP=`/reg/g/pcds/engineering_tools/latest-released/scripts/get_info --exp --hutch $HUTCH`
     fi
+else
+    HUTCH=${EXP:0:3}
+fi
+
+if [[ $EXP == 'xxx' ]]; then
+    printf "Please enter an experiment name HERE: \n"; read EXP
 fi
 
 # set the umask so all the files create are group writeable
 umask 0002
-
 source /reg/g/psdm/etc/psconda.sh
+conda activate ana-4.0.17 #ana-4.0.19 is broken for the 2M
 
-#I will be in the home area of whoever calls this script if called from <hutch>makepeds
-#thus we need to pass the experiment or the hutch from there.
-HUTCH=${EXP:0:3}
-if [ $USEFFB -ne 0 ]; then
-    FFB=1
-fi
-if [ $QUEUE == 'xxx' ]; then
-    QUEUE=psnehhiprioq
-    if [[ ( $HUTCH == 'xcs' ) ||  ( $HUTCH == 'cxi' ) ||  ( $HUTCH == 'mec' ) || ( $HUTCH == 'mfx' )]];  then
-        QUEUE=psfehhiprioq
-    fi
-    if [ $FFB -ne 1 ]; then
-        QUEUE=psfehq
-        #QUEUE=psanaq
-    fi
+#if you don't pass the queue, it'll run interactively 
+if [[ $QUEUE == 'xxx' ]]; then
+    RUNLOCAL=1
 fi
 
 #(hopefully) effectively turn off relative cuts for status bits. Defaults to 6. used in calibrun
@@ -265,16 +285,19 @@ fi
 ###########
 # setup work directory - always!
 ###########
-WORKDIR=/reg/d/psdm/${HUTCH}/$EXP/calib/pedestal_workdir
+CALIBDIR=/reg/d/psdm/${HUTCH}/$EXP/calib/
+if [[ $HOSTNAME =~ "drp-srcf" ]]; then
+    CALIBDIR=/cds/data/drpsrcf/${HUTCH}/$EXP/calib/
+fi
+WORKDIR=$CALIBDIR/pedestal_workdir
 if [ ! -d $WORKDIR ]; then
-    DIR=/reg/d/psdm/${HUTCH}/$EXP/calib/
-    if [ -d $DIR ]; then
+    if [ -d $CALIBDIR ]; then
 	mkdir -p $WORKDIR
 	if [ ! -d $WORKDIR ]; then
 	    #inexp=`groups | grep $EXP | wc -l`
 	    #inhutch=`groups | grep ps-$HUTCH | wc -l`
 	    #if [[ ( $inexp -gt 0 ) ||  ( $inhutch -gt 1 )]]; then
-	    echo 'Cannot create T=typical directory to store calib logfiles & results is not writeable, will attempt to work from /tmp, but things may fail'
+	    echo 'Cannot create typical directory to store calib logfiles & results is not writeable, will attempt to work from /tmp, but things may fail'
             $WORKDIR = '/tmp'
 	fi
 	#else
@@ -294,14 +317,13 @@ cd $WORKDIR
 ######################
 # work on the XTCAV
 ######################
-    
+
 if [ $XTCAV == 1 ]; then
     xtcav_dark
 fi
 if [ $XTCAV == 2 ]; then
     xtcav_lasOff
 fi
-
 ######################
 # endXTCAV - both functions will call exit!
 ######################
@@ -336,20 +358,11 @@ fi
 
 CREATE_TIME=`date '+%m_%d_%Y_%H:%M:%S'`
 printf -v RUNSTR "%04g" $RUN
-if [[ ( $RUNLOCAL -eq 1 ) && ( $HOSTNAME =~ 'psana' ) ]]; then
-    NXTCOFF=`ls /reg/d/psdm/$HUTCH/$EXP/xtc/*r*$RUNSTR*s0*xtc* | wc -l`
-    NXTCFFB=`ls /reg/d/ffb/$HUTCH/$EXP/xtc/*r*$RUNSTR*s0*xtc* | wc -l`
-    if [ $NXTCOFF -lt $NXTCFFB ]; then
-	echo Process FFB files.
-	FFB=1
-    else
-	FFB=0
-    fi
-fi
-if [ $FFB -eq 1 ]; then
+
+if [[ $HOSTNAME =~ "drp-srcf" ]]; then
     echo check FFB files: 
-    ls -ltr /reg/d/ffb/$HUTCH/$EXP/xtc/*r$RUNSTR*s*xtc*
-    detnames exp=${EXP}:run=${RUN}:dir=/reg/d/ffb/$HUTCH/$EXP/xtc:stream=0-79 > /tmp/detnames_$EXP\_$CREATE_TIME
+    ls -ltr /cds/data/drpsrcf/$HUTCH/$EXP/xtc/*r$RUNSTR*s*xtc*
+    detnames exp=${EXP}:run=${RUN}:dir=/cds/data/drpsrcf/$HUTCH/$EXP/xtc:stream=0-79 > /tmp/detnames_$EXP\_$CREATE_TIME
 else
     echo Process files: 
     ls -ltr /reg/d/psdm/$HUTCH/$EXP/xtc/*r*$RUNSTR*s*xtc*
@@ -376,7 +389,14 @@ if [[ ( $HAVE_JUNGFRAU -ge 1 ) ]]; then
 	DORGNAME=`ls $GEODIR/$SUBDIR | grep Jungfrau `
 	for JUNGFRAU in $DETNAMES; do
 	    DNAME=`grep $JUNGFRAU /tmp/detnames_$EXP\_$CREATE_TIME | awk  'BEGIN { FS = "|"}; {print $1}' | xargs`
-	    calibfile deploy -t geometry -e $EXP -r 0-end -s $DNAME -f $GEODIR/$SUBDIR/$DORGNAME/geometry/0-end.data
+	    #get the latest geometry file deployed
+            ORGFILE='0-end.data'
+            if test -f $GEODIR/$SUBDIR/$DORGNAME/geometry/HISTORY; then
+    	        ORGFILE=`tail -n 1 $GEODIR/$SUBDIR/$DORGNAME/geometry/HISTORY | awk {'print$1'} | sed s/'file:'//`
+	    fi
+	    CMD=`echo calibfile deploy -t geometry -e $EXP -r 0-end -s $DNAME -f $GEODIR/$SUBDIR/$DORGNAME/geometry/$ORGFILE`
+            echo $CMD
+	    $CMD
 	done
 	exit
     fi
@@ -388,13 +408,13 @@ if [[ ( $HAVE_JUNGFRAU -ge 1 ) ]]; then
 	let RUN2=RUN+2
 	DSNAME='exp='$EXP':run='$RUN','$RUN1','$RUN2':smd:stream=0-79'
     fi
-    if [ $FFB -eq 1 ]; then
-	      DSNAME=$DSNAME':dir=/reg/d/ffb/'$HUTCH'/'$EXP'/xtc/'
+    if [[ $HOSTNAME =~ "drp-srcf" ]]; then
+	      DSNAME=$DSNAME':dir=/cds/data/drpsrcf/'$HUTCH'/'$EXP'/xtc/'
     fi   
 
     #default arguments.
     JFARG=' -d '$DSNAME' -n '$NUMEVT' -D 1000000 -U 1000000 -L 1000000 -H 1000000 '
-    if [ $DEPLOY == 1 ]; then
+    if [[ $DEPLOY == 1 ]]; then
         JFARG=$JFARG' -u '
     fi
 
@@ -404,30 +424,31 @@ if [[ ( $HAVE_JUNGFRAU -ge 1 ) ]]; then
     NOISESIGMAX=16000
     NOISESIGMIN=0.001
     #NOISESIGMIN=1 #my script cannot deal with floats
-    if [ $MYNOISESIGMIN -ne -1 ]; then
+    if [[ $MYNOISESIGMIN -ne -1 ]]; then
 	      NOISESIGMIN=$MYNOISESIGMIN
     fi
-    if [ $MYNOISESIGMAX -ne -1 ]; then
+    if [[ $MYNOISESIGMAX -ne -1 ]]; then
 	      NOISESIGMAx=$MYNOISESIGMAX
     fi
-    if [ $MYADUMIN -ne -1 ]; then
+    if [[ $MYADUMIN -ne -1 ]]; then
 	      ADUMIN=$MYADUMIN
     fi
-    if [ $MYADUMAX -ne -1 ]; then
+    if [[ $MYADUMAX -ne -1 ]]; then
 	      ADUMAX=$MYADUMAX
     fi
     JFARG=$JFARG' --intlow='$ADUMIN' --inthig='$ADUMAX' --rmslow='$NOISESIGMIN' --rmshig='$NOISESIGMAX
 
     echo -------------------- START JUNGFRAU PEDESTALS at $(date +"%T") ----------------------------
 
-    if [ $RUNLOCAL -ne 1 ]; then
+    if [[ $RUNLOCAL != 1 ]]; then
         JOBIDS=()
         NJOBS=0
     fi
+ 
     for JUNGFRAU in $DETNAMES; do
         CMD=`echo jungfrau_ndarr_dark_proc $JFARG -s $JUNGFRAU`
         #now finally call the command
-        if [ $RUNLOCAL -ne 1 ]; then
+        if [[ $RUNLOCAL != 1 ]]; then
             tmpScript=$(mktemp -p $WORKDIR jungfrau_multi_tmpXXXXX.sh)
             #trap "rm -f $tmpScript" EXIT
             chmod u+x $tmpScript
@@ -447,7 +468,7 @@ if [[ ( $HAVE_JUNGFRAU -ge 1 ) ]]; then
         fi
     done
 
-    if [ $RUNLOCAL -ne 1 ]; then
+    if [[ $RUNLOCAL != 1 ]]; then
         sleep 20
         echo Running $NJOBS jobs are PIDS: ${JOBIDS[@]}
         until check_running_jobs; do
@@ -468,67 +489,65 @@ HAVE_EPIX10K=`grep Epix10ka /tmp/detnames_$EXP\_$CREATE_TIME | wc -l`
 if [[ ( $HAVE_EPIX10K -ge 1 ) && ( $WANT_ZYLA -eq 0 ) && ( $WANT_OPAL -eq 0 ) ]]; then
     echo -------------------- START EPIX10K PEDESTALS at $(date +"%T") ----------------------------
     DETNAMES=`grep Epix10ka /tmp/detnames_$EXP\_$CREATE_TIME | awk  'BEGIN { FS = "|"}; {print $2}' | paste -d " " -s`
-    if [ $RUNLOCAL -ne 1 ]; then
+    if [[ $RUNLOCAL -ne 1 ]]; then
         JOBIDS=()
         NJOBS=0
     fi
     if [ -v GEOMETRY ]; then
 	GEODIR=`echo /reg/d/psdm/${GEOMETRY:0:3}/$GEOMETRY/calib/`
-	SUBDIR=`ls $GEODIR | grep Epix10k | grep -v workdir`
-	DORGNAME=`ls $GEODIR/$SUBDIR | grep Epix10k `
 	for EPIX10K in $DETNAMES; do
+	    if ! [[ $EPIX10K =~ "2M" ]]; then
+		continue
+	    fi
+   	    SUBDIR=`ls $GEODIR | grep Epix10ka2M`
 	    DNAME=`grep $EPIX10K /tmp/detnames_$EXP\_$CREATE_TIME | awk  'BEGIN { FS = "|"}; {print $1}' | xargs`
-	    calibfile deploy -t geometry -e $EXP -r 0-end -s $DNAME -f $GEODIR/$SUBDIR/$DORGNAME/geometry/0-end.data
+	    #get the latest geometry file deployed
+            ORGFILE='0-end.data'
+            if test -f $GEODIR$SUBDIR/$DNAME/geometry/HISTORY; then
+    	        ORGFILE=`tail -n 1 $GEODIR/$SUBDIR/$DNAME/geometry/HISTORY | awk {'print$1'} | sed s/'file:'//`
+	    fi
+	    CMD=`echo calibfile deploy -t geometry -e $EXP -r 0-end -s $DNAME -f $GEODIR$SUBDIR/$DNAME/geometry/$ORGFILE`
+            echo $CMD
+	    $CMD
 	done
 	exit
     fi
     for EPIX10K in $DETNAMES; do
         echo Epix10ka name for $EXP is: $EPIX10K
         ##run all at once - do not use
-        if [ $CHARGEINJECTION == 1 ]; then
-    	    for calibcycle in {0..105}; do
-                CMD=`echo epix10ka_pedestals_calibration -d $EPIX10K -e $EXP -r $RUN -c $calibcycle -o $WORKDIR`
-    	        echo ---------------EPIX10K PEDESTALS FOR CYCLE $calibcycle --------------------
-       	        echo $CMD
-     	        $CMD
-            done
-        else
-	    #Do not use workdir as you'd need to run the full charge injection run there for this to work
-	    #revisit when we run into permission problems.
-	    for calibcycle in {0..4}; do
-	        if [ $FFB == 1 ]; then
-		    CMD=`echo epix10ka_pedestals_calibration -d $EPIX10K -e $EXP -r $RUN -c $calibcycle -x /reg/d/ffb/$HUTCH/$EXP/xtc/:live:stream=0-79`
-	        else 
-		    CMD=`echo epix10ka_pedestals_calibration -d $EPIX10K -e $EXP -r $RUN -c $calibcycle`
-	        fi
-    	        echo ---------------EPIX10K PEDESTALS FOR CYCLE $calibcycle --------------------
-                if [ $RUNLOCAL -ne 1 ]; then
-                    tmpScript=$(mktemp -p $WORKDIR epix10ka_pedestals_tmpXXXXX.sh)
-                    #trap "rm -f $tmpScript" EXIT
-                    chmod u+x $tmpScript
-                    printf '#!/bin/bash\nsource /cds/sw/ds/ana/conda1/manage/bin/psconda.sh\n' > $tmpScript
-                    printf '%s\n' "${CMD}" >> $tmpScript
-		    NTASKS=5
-		    if [[ $QUEUE == *'ana'* ]]; then
-			NTASKS=4
-		    fi
-                    ep10kaCmd=`echo sbatch -n $NTASKS -p $QUEUE -o $WORKDIR/${EPIX10K}_${EXP}_Run${RUN}_cycle${calibcycle}_%J.out $tmpScript`
-                    echo 'run in queue: ' $ep10kaCmd
-                    SUBMISSION=`$ep10kaCmd`
-                    echo $SUBMISSION
-                    THISJOBID=`echo $SUBMISSION | awk {'print $4'}`
-                    JOBIDS+=( $THISJOBID )
-                    NJOBS=$(($NJOBS+1))
-                else            
-                    echo $CMD
-                    $CMD
-                fi
-            done
-	    ALLJOBIDS=${JOBIDS[@]}
-        fi   
+	#Do not use workdir as you'd need to run the full charge injection run there for this to work
+	#revisit when we run into permission problems.
+
+	for calibcycle in {0..4}; do
+            if [[ $HOSTNAME =~ "drp-srcf" ]]; then
+		CMD=`echo epix10ka_pedestals_calibration -d $EPIX10K -e $EXP -r $RUN -c $calibcycle -x /cds/data/drpsrcf/$HUTCH/$EXP/xtc/:live:stream=0-79`
+	    else 
+		CMD=`echo epix10ka_pedestals_calibration -d $EPIX10K -e $EXP -r $RUN -c $calibcycle`
+	    fi
+    	    echo ---------------EPIX10K PEDESTALS FOR CYCLE $calibcycle --------------------
+            if [[ $RUNLOCAL != 1 ]]; then
+                tmpScript=$(mktemp -p $WORKDIR epix10ka_pedestals_tmpXXXXX.sh)
+                #trap "rm -f $tmpScript" EXIT
+                chmod u+x $tmpScript
+                printf '#!/bin/bash\nsource /cds/sw/ds/ana/conda1/manage/bin/psconda.sh\n' > $tmpScript
+                printf '%s\n' "${CMD}" >> $tmpScript
+                ep10kaCmd=`echo sbatch --exclusive -p $QUEUE -o $WORKDIR/${EPIX10K}_${EXP}_Run${RUN}_cycle${calibcycle}_%J.out $tmpScript`
+                echo 'run in queue: ' $ep10kaCmd
+                SUBMISSION=`$ep10kaCmd`
+                echo $SUBMISSION
+                THISJOBID=`echo $SUBMISSION | awk {'print $4'}`
+                JOBIDS+=( $THISJOBID )
+                NJOBS=$(($NJOBS+1))
+            else            
+                echo $CMD
+                $CMD
+            fi
+        done
+	ALLJOBIDS=${JOBIDS[@]}
     done
-    if [ $RUNLOCAL -ne 1 ]; then
-        sleep 20
+    if [[ $RUNLOCAL != 1 ]]; then
+	echo 'Wait for 1 1/2 minutes before checking jobs:'
+        sleep 90
         echo Running $NJOBS jobs are PIDS: ${JOBIDS[@]}
         until check_running_jobs; do
                 echo 'Checking again in 10s'
@@ -538,18 +557,17 @@ if [[ ( $HAVE_EPIX10K -ge 1 ) && ( $WANT_ZYLA -eq 0 ) && ( $WANT_OPAL -eq 0 ) ]]
 	# and now check that none of the jobs have existed with an error code:
 	NFAILEDJOBS=0
 	for JOBID in ${ALLJOBIDS[@]}; do
-	    echo 'Checking job $JOBID'
+	    echo 'Checking job '$JOBID
 	    if grep -q 'exit code' $WORKDIR/*$JOBID.out; then
 		NFAILEDJOBS=$(($NFAILEDJOBS+1))
 	    fi
 	done
 	
-
     fi
 
     echo ---------------EPIX10K PEDESTALS CALCULATED NOW DEPLOY     --------------------
     if [ $DEPLOY == 1 ]; then
-	if [ $NFAILEDJOBS -gt   0 ]; then
+	if [ $NFAILEDJOBS -gt 0 ]; then
 	    read -p "$NFAILEDJOBS of the calibration tasks failed, do you want to quit here (y/n)"
 	    if [ "$REPLY" != "y" ];then
 		exit 1
@@ -561,11 +579,11 @@ if [[ ( $HAVE_EPIX10K -ge 1 ) && ( $WANT_ZYLA -eq 0 ) && ( $WANT_OPAL -eq 0 ) ]]
             echo $CMD
             $CMD
         done
-        if [ $RUNLOCAL -ne 1 ]; then
+        if [[ $RUNLOCAL != 1 ]]; then
     	    echo 'Print Information abot batch jobs'
 	    JOBIDSTR=''
     	    for JOBID in ${ALLJOBIDS[@]}; do
-		if [ $JOBIDSTR != '' ]; then 
+		if [[ $JOBIDSTR != '' ]]; then 
  		    JOBIDSTR=$JOBIDSTR','
 		fi
 		JOBIDSTR=$JOBIDSTR$JOBID
@@ -598,16 +616,6 @@ fi
 if [[ ( $HAVE_EPIX -ge 1) ]]; then
     DETS=`echo $DETS ' Epix100a'`
 fi
-
-#if cuts are specified and both Epix&CsPad are present, check if Epix is requested.
-if [[ ( $HAVE_CSPAD -ge 1 ) && ( $HAVE_EPIX -ge 1 ) && ( $SPECIFIED_CUTS -ne -4 ) ]]; then
-    if [[ ( $CUT_EPIX100 -ge 1) ]]; then
-	DETS='Epix100a'
-    else
-	DETS='CSPAD,CSPAD2x2'
-    fi
-fi
-
 
 #add Zyla only on request
 if [[ ( $HAVE_ZYLA -ge 1 ) && ( $WANT_ZYLA -ge 1 ) ]]; then
@@ -686,8 +694,8 @@ for MYDET in $DETS; do
 
     echo -------------------- START CALIBRUN at $(date +"%T") for detector $MYDET----------------------------
     source /reg/g/psdm/etc/psconda.sh
-    if [ $FFB == 1 ]; then
-    	cmd=`echo calibrun -r $RUN  -d $MYDET -P -e $EXP -x /reg/d/ffb/$HUTCH/$EXP/xtc/ $LOCARG`
+    if [[ $HOSTNAME =~ "drp-srcf" ]]; then
+    	cmd=`echo calibrun -r $RUN  -d $MYDET -P -e $EXP -x /cds/data/drpsrcf/$HUTCH/$EXP/xtc/ $LOCARG`
     	echo $cmd
     	$cmd
     else
