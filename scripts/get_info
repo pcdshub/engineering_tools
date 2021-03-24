@@ -162,22 +162,24 @@ if args.run:
         exp = resp.json().get("value", {}).get("name")
         rundoc = requests.get(ws_url + "/lgbk/" + exp  + "/ws/current_run").json()["value"]
         if not rundoc:
-            logger.error("Invalid response from server")
-        if args.ended:
-            if rundoc.get('end_time', None):
-                print(int(rundoc['num']))
-            else:
-                print(int(rundoc['num'] - 1)) # Really bogus way to determine this; but copying over from previous code.
-        else:
-            print(int(rundoc['num']))
-            if args.live:
-                if not rundoc.get('end_time', None):
-                    print('live')
+            #logger.error("Invalid response from server")
+            print('No runs taken yet')
+        else:    
+            if args.ended:
+                if rundoc.get('end_time', None) is not None:
+                    print(int(rundoc['num']))
                 else:
-                    print('ended')
+                    print(int(rundoc['num'] - 1)) # Really bogus way to determine this; but copying over from previous code.
+            else:
+                print(int(rundoc['num']))
+                if args.live:
+                    if not rundoc.get('end_time', None):
+                        print('live')
+                    else:
+                        print('ended')
     except:
         logger.exception("No runs?")
-        print('no runs yet')
+        print('No runs taken yet')
 
 if args.files_for_run or args.nfiles_for_run:
     if args.files_for_run:
