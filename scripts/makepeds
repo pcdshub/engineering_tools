@@ -12,185 +12,192 @@ usage: $0 options
 Make a pedestal file for offline use
 
 OPTIONS:
--u user (needs to be able to log into the psananeh/feh)
--r runnumber for pedestal
--e <expname> in case you do not want pedestals for the ongoing experiment
--j make pedestals for Jungfrau - 3 run version(default only cspad/EPIX detectors)
--O make pedestals for Opals (default only cspad/EPIX detectors)
--Z make pedestals for Zyla (default only cspad/EPIX detectors)
--p <text>: add <text> to elog post
--c <evtcode x> use events with eventcode <x> set
--n # : if you have created a noise file, then write pixel mask file for pixels with noise above #sigmas
--N # : use this number of events (default 1000)
--D : dark run for XTCAV
--L : lasing off run for XTCAV
--v <str>: validity range (if not run#-end, e.g. 123-567 or 123-end)
--l: do NOT send to batch queue
--g #: deploy geometry <needs experiment to take geometry from>
--F : use the FFB (default if no experiment is passed)
--f : full epix10k charge injection run
--C # : if noise filecreated, write pixel mask file for pixels with noise below xxx (currently integer only...)
--m # : write pixel mask file for pixels with pedestal below xxx (currently integer only...)
--x # : write pixel mask file for pixels with pedestal above xxx (currently integer only...)
--i start calibman. -r 0: show all darks, -r n: show runs (n-25) - 25
--d give path for alternative calibdir
--q queue for batch submisson
+        -u|--user        
+               user (needs to be able to log into the psananeh/feh)
+        -r|--run         
+               runnumber for pedestal
+        -e|--experiment <expname> 
+               in case you do not want pedestals for the ongoing experiment
+        -O|--ppal         
+               make pedestals for Opals (default only cspad/EPIX detectors)
+        -Z|--zyla         
+               make pedestals for Zyla (default only cspad/EPIX detectors)
+        -j|--jungfrau3     
+               make pedestals for Jungfrau - 3 run version(default only cspad/EPIX detectors)
+        -p|--post <text>  
+               add <text> to elog post
+        -q|--queue <queue>
+               queue for batch submisson
+        -g|--geometry <expname>
+                deploy geometry <needs experiment to take geometry from>
+        -F|--ffb
+                run job on FFB system
+        -D|--xtcav_dark
+                dark run for XTCAV
+        -L|--xtcav_lasingoff
+               lasing off run for XTCAV
+        -v|--valdity <str>
+               validity range (if not run#-end, e.g. 123-567 or 123-end)
+        -N|--nevents <#>  
+                use this number of events (default 1000). Needed when using -c as original events are counted
+        -c|--eventcode <evtcode x> 
+                use events with eventcode <x> set
+        -n|--noise_max <#> 
+                if you have created a noise file, then write pixel mask file for pixels with noise above #sigmas
+        -C|--noise_min <#> 
+                if noise filecreated, write pixel mask file for pixels with noise below xxx (currently integer only)
+        -m|--adu_min <#> 
+                write pixel mask file for pixels with pedestal below xxx (currently integer only)
+        -x|--adu_max <#>  
+                write pixel mask file for pixels with pedestal above xxx )currently integer only)
+        -i|--interactive 
+                start calibman. -r 0: show all darks, -r n: show runs (n-25) - 25
+        -d|--calibdir
+                give path for alternative calibdir
+        -t|--test
+                do not deploy pedestals (epix10k only)
+        -b|--nbunch
+                number of bunches for the laseroff XTCAV calculations
 EOF
 }
 
-USER=`whoami`
-RUN=0
-EXP='xxx'
-RUNLOCAL=0
-GETFFBNODE=0
-RUNFFBNODE=0
-FFBNODE=psana1609
-VALSTR='xxx'
-NUMEVT=1000
-SPEC_ARG=''
-INTERACTIVE=0
-elogMessage="DARK"
-ELOGTEXT=""
 
-if [[ ($1 == "--help") || ($1 == "-h") ]]; then
-	usage
-	exit 0
-fi
-
-while getopts "u:r:e:n:p:c:v:N:m:x:d:C:q:g:DLZOEjiltfF" OPTION
+POSITIONAL=()
+while [[ $# -gt 0 ]]
 do
-    case $OPTION in
-	u)
-	    USER=$OPTARG
-	    ;;
-	r)
-	    RUN=$OPTARG
-	    ;;
-	e)
-	    EXP=$OPTARG
-	    ;;
-	c)
-	    SPEC_ARG=$SPEC_ARG' -c '$OPTARG
-	    ;;
-	d)
-	    SPEC_ARG=$SPEC_ARG' -d '$OPTARG
-	    ;;
-	n)
-	    SPEC_ARG=$SPEC_ARG' -n '$OPTARG
-	    ;;
-	q)
-	    SPEC_ARG=$SPEC_ARG' -q '$OPTARG
-	    ;;
-	f)
-	    SPEC_ARG=$SPEC_ARG' -f '
-	    ;;
-	F)
-	    SPEC_ARG=$SPEC_ARG' -F '
-	    ;;
-	v)
-	    VALSTR=$OPTARG
-	    ;;
-	N)
-	    NUMEVT=$OPTARG
-	    ;;
-	D)
-	    SPEC_ARG=$SPEC_ARG' -D '
-	    elogMessage="DARK for XTCAV"
-	    ;;
-	L)
-	    SPEC_ARG=$SPEC_ARG' -L '
-	    elogMessage="Lasing Off for XTCAV"
-	    ;;
-	i)
-	    SPEC_ARG=$SPEC_ARG' -i '
-	    ;;
-	Z)
-	    SPEC_ARG=$SPEC_ARG' -Z '
-	    elogMessage="DARK for Zyla"
-	    ;;
-	O)
-	    SPEC_ARG=$SPEC_ARG' -O '
-	    elogMessage="DARK for Opal"
-	    ;;
-	j)
-	    SPEC_ARG=$SPEC_ARG' -j '
-	    elogMessage="DARK for jungfrau, also next two runs."
-	    ;;
-	E)
-	    SPEC_ARG=$SPEC_ARG' -E '
-	    elogMessage="DARK for epix10k "
-	    ;;
-	l)
-	    SPEC_ARG=$SPEC_ARG' -l '
-	    ;;
-	t)
-	    SPEC_ARG=$SPEC_ARG' -t '
-	    ;;
-	p)
-	    ELOGTEXT=$OPTARG
-	    ;;
-	g)
-	    SPEC_ARG=$SPEC_ARG' -g '$OPTARG
-	    ;;
-	C)
-	    SPEC_ARG=$SPEC_ARG' -C '$OPTARG
-	    ;;
-	m)
-	    SPEC_ARG=$SPEC_ARG' -m '$OPTARG
-	    ;;
-	x)
-	    SPEC_ARG=$SPEC_ARG' -x '$OPTARG
-	    ;;
-	?)
-	    usage
-	    exit
-	    ;;
-    esac
- done
+        key="$1"
+	case $key in
+		-h|--help)x
+			usage
+			exit
+			;;
+		-p|--post)
+		        ELOGTEXT="$2"
+			shift
+			shift
+			;;
+           	-D|--xtcav_dark)
+                        POSITIONAL+=("$1")
+	                elogMessage="DARK for XTCAV"
+			shift
+			;;
+           	-L|--xtcav_lasingoff)
+                        POSITIONAL+=" $1"
+	                elogMessage="Lasing off for XTCAV"
+			shift
+			;;
+           	-i|--interactive)
+                        POSITIONAL+=("$1")
+	                elogMessage="start calibman GUI"
+			shift
+			;;
+           	-Z|--zyla)
+                        POSITIONAL+=("$1")
+	                elogMessage="DARK for Zyla"
+			shift
+			;;
+           	-O|--opal)
+                        POSITIONAL+=("$1")
+	                elogMessage="DARK for opal"
+			shift
+			;;
+           	-j|--jungfrau3)
+                        POSITIONAL+=("$1")
+	                elogMessage="DARK for jungfrau, also next two runs."
+			shift
+			;;
+           	-u|--user)
+		        USER="$2"
+			shift
+			shift
+			;;
+           	-r|--run)
+		        RUN="$2"
+                        POSITIONAL+=("--run $2")
+			shift
+			shift
+			;;
+           	-e|--experiment)
+		        EXP="$2"
+                        POSITIONAL+=("--experiment $2")
+			shift
+			shift
+			;;
+           	-F|--ffb)
+		        FFB=1
+			shift
+			;;
+           	-q|--queue)
+		        QUEUE="$2"
+                        POSITIONAL+=("--queue $2")
+			shift
+			shift
+			;;
+                 *)
+                        POSITIONAL+=("$1")
+			shift
+			;;
+	esac
+done
+set -- "${POSITIONAL[@]}"
+	
+elogMessage="DARK"
+ELOGTEXT=${ELOGTEXT:=""}
+RUN=${RUN:=0}
+EXP=${EXP:='xxx'}
+FFB=${FFB:=0}
+QUEUE=${QUEUE:='xxx'}
+INTERACTIVE=${INTERACTIVE:=0}
 
-if [[ $USER =~ "opr" ]]; then
-     printf "Please enter user name (cannot run as from operator account): \n"; read USER
- fi
+FFBQUEUES=('anaq' 'ffbh1q' 'ffbl1q' 'ffbh2q' 'ffbl2q' 'ffbh3q' 'ffbl3q')
+ANAQUEUES=('psanagpuq' 'psanaq' 'psfehq' 'psfehprioq' 'psfehhiprioq')
+for FFBQUEUE in ${FFBQUEUES[@]}; do
+    if [[ $QUEUE == $FFBQUEUE ]]; then 
+	FFB=1
+	break
+    fi
+done
 
- if [ $GETFFBNODE -eq 1 ]; then
-     printf "Please enter ffb node name (suggested psana1609): \n"; read FFBNODE
-     if [ `echo $FFBNODE | wc -c` -le 1 ]; then
-         FFBNODE=psana1609
-     fi    
- fi
+for ANAQUEUE in ${ANAQUEUES[@]}; do
+    if [[ $QUEUE == $ANAQUEUE ]]; then 
+	FFB=0
+	break
+    fi
+done
 
- if [ $RUN == 0 ]; then
-    if [ $INTERACTIVE -ne 1 ]; then
+if [[ $RUN == 0 ]]; then
+    if [[ $INTERACTIVE == 0 ]]; then
 	printf "Please enter a run number: \n"; read RUN
+        set -- "$@" '--run ' $RUN
     fi
 fi
 
-COMMAND_ARGS=' -r '$RUN' -N '$NUMEVT
-if [ $EXP != 'xxx' ]; then
-    COMMAND_ARGS=$COMMAND_ARGS' -e '$EXP
-    HUTCH=${EXP:0:3}
-else
-    #no experiment was passed, default to using the FFB
+if [[ $EXP == 'xxx' ]]; then
     HUTCH=`get_info --gethutch`
     EXP=`get_info --exp --hutch $HUTCH`
-    COMMAND_ARGS=$COMMAND_ARGS' -H '$HUTCH' -e '$EXP' -F'
-fi
-
-if [ $VALSTR != 'xxx' ]; then
-    COMMAND_ARGS=$COMMAND_ARGS' -v '$VALSTR
-fi
-
-COMMAND_ARGS=$COMMAND_ARGS$SPEC_ARG
-
-if [ $RUNFFBNODE -ne 0 ]; then
-    echo calling on $FFBNODE makepeds_psana $COMMAND_ARGS
-    ssh -Y $USER@psdev ssh -Y $FFBNODE "$DIR/makepeds_psana $COMMAND_ARGS"
+    set -- "$@" '--experiment ' $EXP
 else
-    echo calling:  makepeds_psana $COMMAND_ARGS
-    if [[ $HOSTNAME =~ "psana" ]]; then
-	    $DIR/makepeds_psana $COMMAND_ARGS
+    HUTCH=${EXP:0:3}
+fi
+
+if [[ $HOSTNAME =~ "psana" ]]; then
+    #echo $DIR/makepeds_psana $@
+    $DIR/makepeds_psana $@
+elif [[ $HOSTNAME =~ "drp-srcf" ]]; then
+    #echo $DIR/makepeds_psana $@
+    $DIR/makepeds_psana $@
+else
+    if [[ $USER =~ "opr" ]]; then
+        printf "Please enter user name (cannot run as from operator account): \n"; read USER
+    fi
+    if [[ $FFB -eq 0 ]]; then
+        echo calling on FFB system: makepeds_psana $@
+	echo ssh -Y $USER@psdev ssh -Y psffb "$DIR/makepeds_psana $@"
+	#ssh -Y $USER@psdev ssh -Y psffb "$DIR/makepeds_psana $@"
     else
-	ssh -Y $USER@psdev ssh -Y psana "$DIR/makepeds_psana $COMMAND_ARGS"
+        echo calling on offline system: makepeds_psana $@
+	echo ssh -Y $USER@psdev ssh -Y psana "$DIR/makepeds_psana $@"
+	#ssh -Y $USER@psdev ssh -Y psana "$DIR/makepeds_psana $@"
     fi
 fi
 
@@ -200,11 +207,15 @@ if [[ $elogMessage == 'DARK' ]]; then
     echo ---- Done processing pedestals for Run $RUN -----
     exit 0
 fi
+
+#DEBUG
+exit
+
 source pcds_conda
 
-# Need the following line until the controls conda is updated to pick up the latest elog package.
-export PYTHONPATH=/reg/g/pcds/pyps/apps/hutch-python/common/dev/elog:${PYTHONPATH}
-BINPATH=/reg/g/pcds/pyps/conda/py36/envs/pcds-3.3.1/bin/python
+## Need the following line until the controls conda is updated to pick up the latest elog package.
+#export PYTHONPATH=/reg/g/pcds/pyps/apps/hutch-python/common/dev/elog:${PYTHONPATH}
+BINPATH=/reg/g/pcds/pyps/conda/py36/envs/pcds-3.5.0/bin/python
 PYCMD=/reg/g/pcds/pyps/apps/hutch-python/common/dev/elog/scripts/LogBookPost.py
 if [[ `whoami` =~ "opr" ]]; then
     echo $BINPATH $PYCMD -i "${HUTCH^^}" -u `whoami` -e "$EXP"  -t DARK  -r $RUN -m "$elogMessage"
