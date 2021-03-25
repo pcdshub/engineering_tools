@@ -265,7 +265,7 @@ fi
 # set the umask so all the files create are group writeable
 umask 0002
 source /reg/g/psdm/etc/psconda.sh
-conda activate ana-4.0.17 #ana-4.0.19 is broken for the 2M
+#conda activate ana-4.0.17 #ana-4.0.19 is broken for the 2M
 
 #if you don't pass the queue, it'll run interactively 
 if [[ $QUEUE == 'xxx' ]]; then
