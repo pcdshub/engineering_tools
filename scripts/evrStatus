@@ -8,7 +8,7 @@ usage: $0 <hutch>|<PV>...[-evr] [-h] [-l] [--pvs [<hutch>...]] [ --show [ <keywo
 Displays a status GUI for the EVRs of the selected hutch or EVR PVs. GUI includes links to event code expert screens. The List of EVRs is not exhaustive, but rather displays one EVR per host.
 
 OPTION: 
-    -evr                     Prompt to enter in EVR PVs manually line by line.
+    -evr                     Prompt user to enter in EVR PVs manually line by line.
     -h                       Display this help text.
     -l                       List available hutches to display EVR status.
     --pvs [<hutch>...]       Display the EVR PVs for a requested hutch that are built into this script.
@@ -296,19 +296,21 @@ except_handling() {
 keyword_search(){
 
 count=0
-command_args_string=${command_args_string^^}
+command_args_string="${command_args_string^^}"
 
-for i in ${command_args_string[@]}; do
+IFS=" " 
+read -ra command_args <<< "$command_args_string"
 
-    if [[ $i != "--SHOW" ]]; then
+for i in "${command_args[@]}"; do
+    if  [[ $i != "--SHOW" ]]; then
         keywords+=("$i")
     fi
 
 done 
 
-    for keyword in ${keywords[@]}; do
+    for keyword in "${keywords[@]}"; do
  
-        keyword_in_evrs=$(echo "${evrs[@]}" | grep -o $keyword | wc -w) # 1 or 0 depending if user input returns a match or not
+        keyword_in_evrs=$(echo "${evrs[@]}" | grep -o "$keyword" | wc -w) # 1 or 0 depending if user input returns a match or not
         
 	if [[ $keyword_in_evrs -eq 0 ]]; then
             echo "Sorry your search:" "$keyword"
@@ -316,6 +318,7 @@ done
 	    printf "\n"
 	  
  	else
+	    matches+=("$keyword")
 	    count=$((count + 1))   
             for evr in "${evrs[@]}"; do
                 if [[ $evr =~ $keyword ]]; then
@@ -324,7 +327,7 @@ done
 	    done
 	fi
     done
-export req_evrs count
+export req_evrs count matches
 }
 
 
@@ -349,7 +352,7 @@ if [[ "${opt_args[*]}" == *"--SHOW"* ]]; then
     
     if [[ $count -gt 0 ]]; then
         to_display
-        echo "Terms containing: " "$2" "$3" "$4" "$5" "$6" "$7" "$8" "$9"  
+        echo "Terms containing: " "${matches[@]}" 
         exit
     fi
 fi
