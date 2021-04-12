@@ -5,47 +5,6 @@
 #iocs/pvs live in/reg/d/iocData/ioc*/iocInfo/IOC.pvlist
 
 
-#list iocs that use the PV
-function iocfpv {
-     grep_pv $1 | sed -n 's/\/reg\/d\/iocData\/\(\S*\)\/iocInfo/\1/p'
-}
-# read the file for a PV
-function rffpv { 
-    iocname=$(iocfpv $1)
-    echo $iocname
-    rffioc $iocname
-}
-# read the file for an ioc
-function rffioc { 
-    iocname=$@
-    for ioc in $iocname
-    do
-        iocpath=""
-        iocpath=$(grep_ioc $ioc all | grep "id:'$ioc'" | sed -n "s/^.*dir: '\(\S*\)'.*$/\1/p");
-        if [[ $iocpath == "" ]]; then
-            echo "Did not find ${ioc} running anywhere. Exiting..."
-            return 1
-        fi
-        if [[ ! $iocpath =~ ^/.* ]]; then
-            iocpath=/reg/g/pcds/epics/${iocpath}
-        fi
-        iocfile=${iocpath}/${ioc}.cfg;
-        if [ -f "$iocfile" ]; then
-            less $iocfile
-        else
-            iocfile=${iocpath}/iocBoot/${ioc}/st.cmd
-            if [ -f "$iocfile" ]; then
-                less $iocfile
-            else
-                echo -e "Neither file found:\n${iocpath}/${ioc}.cfg\n$iocfile"
-            fi
-        fi
-    done
-
-function info {
-
-
-}
 
 usage(){
 cat << EOF
@@ -77,93 +36,21 @@ EOF
 
  #can be either a ioc or pv
 if [$# -lt 1]; then
-	echo  'need arguments: input ioc or pv name'
-	fi
+   echo  'need arguments: input ioc or pv name'
+fi
 	
 NAME=$1
-if [[ $NAME == *':'* ]]; then
-	iocname=find_pv $NAME | grep "*-*" | sed 's_'  #por que noooo???	 
-	$NAME == $iocname
+CMD=$2
+
+#where a pv will be converted to an ioc
+
+if [ $CMD == "name" ]; then
+   echo "$NAME"
+
+elif [ "dir" ]; then
+   echo "grep_ioc $NAME all | grep "dir:''" 
+   
+
+
+
 fi
-if [[ $NAME 
-
-else
-	$NAME == $1
-
-
-fi
-
-
-
-if [[ $CMD == "name" ]]; then
-	echo $NAME
-elif [[ $CMD == "cfg" ]]; then #gives path
-	
-	iocpath=""
-        iocpath=$(grep_ioc $NAME all | grep "id:'$NAME'" | sed -n "s/^.*dir: '\(\S*\)'.*$/\1/p");
-        if [[ $iocpath == "" ]]; then
-            echo "Did not find ${ioc} running anywhere. Exiting..."
-            return 1
-        fi
-        if [[ ! $iocpath =~ ^/.* ]]; then
-            iocpath=/reg/g/pcds/epics/${iocpath}
-        fi
-        iocfile=${iocpath}/${ioc}.cfg;
-        if [ -f "$iocfile" ]; then
-            less $iocfile
-        else
-            iocfile=${iocpath}/iocBoot/$NAME/st.cmd
-            if [ -f "$iocfile" ]; then
-                less $iocfile
-            else
-                echo -e "Neither file found:\n${iocpath}/${ioc}.cfg\n$iocfile"
-            fi
-        fi
-
-elif [[ $CMD == "less" ]]; then
-	rffioc $NAME
- 
-	echo 
-elif [[ $CMD == "dir" ]] ; then
-	iocpath=""
-        iocpath=$(grep_ioc $NAME all | grep "id:'$NAME'" | sed -n "s/^.*dir: '\(\S*\)'.*$/\1/p");
-        if [[ $iocpath == "" ]]; then
-            echo "Did not find ${NAME} running anywhere. Exiting..."
-            return 1
-        fi
-        if [[ ! $iocpath =~ ^/.* ]]; then
-            iocpath=/reg/g/pcds/epics/${iocpath}
-        fi
-
-	echo $iocpath
-
-elif [[ $CMD == "cddir" ]]; then
-	cd 
-	
-elif [[ $CMD == "telnet" ]]; then 
-	INFO=`grep_ioc $NAME`
-	HOST=`sed -r "s/^.*host:'\(\S*\)'.*$/\1/p" $INFO`
-	PORT=`sed -r "s/^.*port: " $INFO`
-	telnet 
-elif [[ $CMD == "data" ]]; then
-
-	cd /reg/d/iocData/ioc*/iocInfo/IOC.pvlist
-	echo 
-
-grep "id:'$ioc'" 
-
-
-
-
-
-
-
-
-name : returns the name of the ioc
-cfg : returns cfg file if it exists, otherwise st.cmd (path)
-less : opens the cfg (or st.cmd) in less
-dir : returns the directory the ioc is running from
-cddir : open the directory the ioc is running from 
-telnet : starts a telnet session with the ioc 
-data : returns the path of the appropriate iocData directory if it exists
-
