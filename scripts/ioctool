@@ -35,7 +35,7 @@ EOF
 #returning the name of the ioc given the pv or name itself
 
  #can be either a ioc or pv
-if [$# -lt 1]; then
+if [ $# -lt 1 ]; then
    echo  'need arguments: input ioc or pv name'
 fi
 	
@@ -47,9 +47,16 @@ CMD=$2
 if [ $CMD == "name" ]; then
    echo "$NAME"
 
-elif [ "dir" ]; then
-   echo "grep_ioc $NAME all | grep "dir:''" 
-   
+elif [ $CMD ==  "dir" ]; then
+   iocpath=""
+   iocpath=$(grep_ioc $NAME all | grep "id:'$NAME'" | sed -n "s/^.*dir: '\(\S*\)'.*$/\1/p"); 
+   if [ $iocpath == "" ]; then
+      echo "Did not find ${NAME} running anywhere. Exiting..."
+  
+   else [ ! $iocpath == ^/.* ];
+      iocpath=/reg/g/pcds/epics/${iocpath}
+      echo "$iocpath"
+   fi
 
 
 
