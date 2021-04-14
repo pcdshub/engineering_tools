@@ -137,7 +137,7 @@ elif [ "$CMD" == "less" ]; then
 
 elif [ "$CMD" == "data" ]; then
    iocdatapath=/reg/d/iocData/"${NAME}"/iocInfo
-
+   echo "$iocdatapath"
 #################################################################
 
 elif [ "$CMD" == "telnet" ]; then
