@@ -50,9 +50,10 @@ CMD=$2
 #################################################################
 
 
-#where a pv will be converted to an ioc###
+#where a pv will be converted to an ioc...can use 'cainfo'or find_pv
 
-
+if [[ $NAME = "*':'*" ]]; then
+   $NAME=                                                                                                                                         
 #################################################################
 
 if [ "$CMD" == "name" ]; then
@@ -143,3 +144,4 @@ elif [ "$CMD" == "telnet" ]; then
    telnet "$HOST" "$PORT"
 
 fi
+
