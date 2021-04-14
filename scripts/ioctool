@@ -47,6 +47,7 @@ fi
 NAME=$1
 CMD=$2
 
+#################################################################
 
 
 #where a pv will be converted to an ioc###
@@ -136,7 +137,9 @@ elif [ "$CMD" == "data" ]; then
 
 elif [ "$CMD" == "telnet" ]; then
    HOST=$(grep_ioc "$NAME" all | grep "id:'$NAME'" | sed -n "s/^.*host: '\(\S*\)'.*$/\1/p");
-   PORT=$(grep_ioc "$NAME" all | grep "id:'$NAME'" | sed -n "s/^.*port: '\(\S*\)'.*$/\1/p");
+   PORT=$(grep_ioc "$NAME" all | grep "id:'$NAME'" | sed -n "s/^.*port: \(\S*\),.*$/\1/p");
+   echo "$HOST"
+   echo "$PORT"
    telnet "$HOST" "$PORT"
 
 fi
