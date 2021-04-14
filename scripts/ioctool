@@ -127,4 +127,16 @@ elif [ "$CMD" == "less" ]; then
       fi
    fi
 
+#################################################################
+
+elif [ "$CMD" == "data" ]; then
+   iocdatapath=/reg/d/iocData/"${NAME}"/iocInfo
+
+#################################################################
+
+elif [ "$CMD" == "telnet" ]; then
+   HOST=$(grep_ioc "$NAME" all | grep "id:'$NAME'" | sed -n "s/^.*host: '\(\S*\)'.*$/\1/p");
+   PORT=$(grep_ioc "$NAME" all | grep "id:'$NAME'" | sed -n "s/^.*port: '\(\S*\)'.*$/\1/p");
+   telnet "$HOST" "$PORT"
+
 fi
