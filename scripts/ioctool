@@ -5,7 +5,6 @@
 #iocs/pvs live in/reg/d/iocData/ioc*/iocInfo/IOC.pvlist
 
 
-
 usage(){
 cat << EOF
 usage: $0 ioc|pv [options]
@@ -29,6 +28,12 @@ data : returns the path of the appropriate iocData directory if it exists
 EOF
 }
 
+if [[ ($1 == "--help") || ($1 == "-h") ]]; then
+        usage
+        exit 0
+fi
+
+
    
 #<2 ---- error channel implementation needed 
 
@@ -42,22 +47,40 @@ fi
 NAME=$1
 CMD=$2
 
-#where a pv will be converted to an ioc
 
-if [ $CMD == "name" ]; then
+
+#where a pv will be converted to an ioc###
+
+
+
+
+if [ "$CMD" == "name" ]; then
    echo "$NAME"
 
-elif [ $CMD ==  "dir" ]; then
+elif [ "$CMD" ==  "dir" ]; then
    iocpath=""
-   iocpath=$(grep_ioc $NAME all | grep "id:'$NAME'" | sed -n "s/^.*dir: '\(\S*\)'.*$/\1/p"); 
-   if [ $iocpath == "" ]; then
+   iocpath=$(grep_ioc "$NAME" all | grep "id:'$NAME'" | sed -n "s/^.*dir: '\(\S*\)'.*$/\1/p"); 
+   if [ "$iocpath" == "" ]; then
       echo "Did not find ${NAME} running anywhere. Exiting..."
+      return 1
+   fi
   
-   else [ ! $iocpath == ^/.* ];
+   if [[ ! $iocpath =~ ^/.* ]]; then
       iocpath=/reg/g/pcds/epics/${iocpath}
-      echo "$iocpath"
+   fi
+   echo "$iocpath"
+
+elif [ "$CMD" == "cddir" ]; then
+   iocpath=""
+   iocpath=$(grep_ioc "$NAME" all | grep "id:'$NAME'" | sed -n "s/^.*dir: '\(\S*\)'.*$/\1/p");
+   if [ "$iocpath" == "" ]; then
+      echo "Did not find ${NAME} running anywhere. Exiting..."
+      return 1
    fi
 
-
-
+   if [[ ! $iocpath =~ ^/.* ]]; then
+      iocpath=/reg/g/pcds/epics/${iocpath}
+      #iocs= "${iocpath}"
+      cd "${iocpath}"
+   fi
 fi
