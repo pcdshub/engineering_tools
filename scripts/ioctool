@@ -1,8 +1,9 @@
 #!/bin/bash
 
-# Shell environment variables are now all loaded from scripts located
-# in /reg/g/pcds/setup
+
 #iocs/pvs live in/reg/d/iocData/ioc*/iocInfo/IOC.pvlist
+
+
 
 
 usage(){
@@ -13,17 +14,14 @@ Script that  returns information about an ioc given its name or a PV associated 
 
 Signature:
 iocTool <ioc>|<pv> [command] #que es <ioc>|<pv>
-d
 
 default command is 'name', list of commands:
 name : returns the name of the ioc
-cfg : returns cfg file if it exists, otherwise st.cmd (path)
-less : opens the cfg (or st.cmd) in less
 dir : returns the directory the ioc is running from
 cddir : open the directory the ioc is running from 
-telnet : starts a telnet session with the ioc 
+less : opens the cfg (or st.cmd) in less
 data : returns the path of the appropriate iocData directory if it exists
-
+telnet : starts a telnet session with the ioc 
 
 EOF
 }
@@ -93,20 +91,6 @@ elif [ "$CMD" == "cddir" ]; then
       #iocs= "${iocpath}"
    fi
    cd "${iocpath}"
-
-#################################################################
-
-elif [ "$CMD" == "cfg" ]; then
-   iocpath=""
-   iocpath=$(grep_ioc "$NAME" all | grep "id:'$NAME'" | sed -n "s/^.*dir: '\(\S*\)'.*$/\1/p");
-   if [ "$iocpath" == "" ]; then
-      echo "Did not find ${NAME} running anywhere. Exiting..."
-      return 1
-   fi
-
-   if [[ ! $iocpath =~ ^/.* ]]; then
-      iocpath=/reg/g/pcds/epics/${iocpath}
-   fi
 
 #################################################################
 
