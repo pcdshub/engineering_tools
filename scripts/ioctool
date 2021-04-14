@@ -52,10 +52,12 @@ CMD=$2
 #where a pv will be converted to an ioc###
 
 
-
+#################################################################
 
 if [ "$CMD" == "name" ]; then
    echo "$NAME"
+
+#################################################################
 
 elif [ "$CMD" ==  "dir" ]; then
    iocpath=""
@@ -70,6 +72,8 @@ elif [ "$CMD" ==  "dir" ]; then
    fi
    echo "$iocpath"
 
+#################################################################
+
 elif [ "$CMD" == "cddir" ]; then
    iocpath=""
    iocpath=$(grep_ioc "$NAME" all | grep "id:'$NAME'" | sed -n "s/^.*dir: '\(\S*\)'.*$/\1/p");
@@ -81,6 +85,46 @@ elif [ "$CMD" == "cddir" ]; then
    if [[ ! $iocpath =~ ^/.* ]]; then
       iocpath=/reg/g/pcds/epics/${iocpath}
       #iocs= "${iocpath}"
-      cd "${iocpath}"
    fi
+   cd "${iocpath}"
+
+#################################################################
+
+elif [ "$CMD" == "cfg" ]; then
+   iocpath=""
+   iocpath=$(grep_ioc "$NAME" all | grep "id:'$NAME'" | sed -n "s/^.*dir: '\(\S*\)'.*$/\1/p");
+   if [ "$iocpath" == "" ]; then
+      echo "Did not find ${NAME} running anywhere. Exiting..."
+      return 1
+   fi
+
+   if [[ ! $iocpath =~ ^/.* ]]; then
+      iocpath=/reg/g/pcds/epics/${iocpath}
+   fi
+
+#################################################################
+
+elif [ "$CMD" == "less" ]; then
+   iocpath=""
+   iocpath=$(grep_ioc "$NAME" all | grep "id:'$NAME'" | sed -n "s/^.*dir: '\(\S*\)'.*$/\1/p");
+   if [ "$iocpath" == "" ]; then
+      echo "Did not find ${NAME} running anywhere. Exiting..."
+      return 1
+   fi
+
+   if [[ ! $iocpath =~ ^/.* ]]; then
+      iocpath=/reg/g/pcds/epics/${iocpath}
+   fi
+   iocfile="${iocpath}"/"$NAME".cfg;
+   if [ -f "$iocfile" ]; then
+      less $iocfile
+   else
+      iocfile=${iocpath}/iocBoot/${NAME}/st.cmd
+      if [ -f "$iocfile" ]; then
+         less "$iocfile"
+      else
+         echo -e "Neither file found:\n"${iocpath}"/"${NAME}".cfg\n$iocfile"
+      fi
+   fi
+
 fi
