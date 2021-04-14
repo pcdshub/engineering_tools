@@ -52,8 +52,12 @@ CMD=$2
 
 #where a pv will be converted to an ioc...can use 'cainfo'or find_pv
 
-if [[ $NAME = "*':'*" ]]; then
-   $NAME=                                                                                                                                         
+if [[ $NAME == *':'* ]]; then
+   NAME=$(grep_pv "$NAME" | sed -n 's/\/reg\/d\/iocData\/\(\S*\)\/iocInfo/\1/p')
+elif [[ $NAME == *'-'* ]]; then
+   NAME=$1
+fi
+
 #################################################################
 
 if [ "$CMD" == "name" ]; then
