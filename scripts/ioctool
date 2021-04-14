@@ -1,11 +1,5 @@
 #!/bin/bash
 
-
-#iocs/pvs live in/reg/d/iocData/ioc*/iocInfo/IOC.pvlist
-
-
-
-
 usage(){
 cat << EOF
 usage: $0 ioc|pv [options]
@@ -35,9 +29,6 @@ fi
    
 #<2 ---- error channel implementation needed 
 
-#returning the name of the ioc given the pv or name itself
-
- #can be either a ioc or pv
 if [ $# -lt 1 ]; then
    echo  'need arguments: input ioc or pv name'
 fi
@@ -46,9 +37,6 @@ NAME=$1
 CMD=$2
 
 #################################################################
-
-
-#where a pv will be converted to an ioc...can use 'cainfo'or find_pv
 
 if [[ $NAME == *':'* ]]; then
    NAME=$(grep_pv "$NAME" | sed -n 's/\/reg\/d\/iocData\/\(\S*\)\/iocInfo/\1/p')
