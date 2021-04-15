@@ -1,13 +1,18 @@
-#!/bin/bash
+#! /usr/bin/env bash
+
+
+function cd {
+    builtin cd "$@" && ls
+}
 
 usage(){
 cat << EOF
 usage: $0 ioc|pv [options]
 
-Script that  returns information about an ioc given its name or a PV associated with it
+Script that returns information about an ioc given its name or a PV associated with it
 
 Signature:
-iocTool <ioc>|<pv> [command] #que es <ioc>|<pv>
+iocTool <ioc>|<pv> [command] <ioc>|<pv>
 
 default command is 'name', list of commands:
 name : returns the name of the ioc
@@ -47,8 +52,16 @@ fi
 #################################################################
 
 if [ "$CMD" == "name" ]; then
-   echo "$NAME"
+   iocpath=""
+   iocpath=$(grep_ioc "$NAME" all | grep "id:'$NAME'" | sed -n "s/^.*dir: '\(\S*\)'.*$/\1/p");
+   if [ "$iocpath" == "" ]; then
+      echo "Did not find ${NAME} running anywhere. Exiting..."
+      return 1
+   fi
 
+   if [[ ! $iocpath =~ ^/.* ]]; then
+   echo "$NAME"
+   fi
 #################################################################
 
 elif [ "$CMD" ==  "dir" ]; then
@@ -77,10 +90,10 @@ elif [ "$CMD" == "cddir" ]; then
    if [[ ! $iocpath =~ ^/.* ]]; then
       iocpath=/reg/g/pcds/epics/${iocpath}
       #iocs= "${iocpath}"
+      cd "${iocpath}"
+      exec bash
    fi
-   cd "${iocpath}"
-
-#################################################################
+ #################################################################
 
 elif [ "$CMD" == "less" ]; then
    iocpath=""
@@ -104,20 +117,38 @@ elif [ "$CMD" == "less" ]; then
          echo -e "Neither file found:\n"${iocpath}"/"${NAME}".cfg\n$iocfile"
       fi
    fi
-
 #################################################################
 
 elif [ "$CMD" == "data" ]; then
+   iocpath=""
+   iocpath=$(grep_ioc "$NAME" all | grep "id:'$NAME'" | sed -n "s/^.*dir: '\(\S*\)'.*$/\1/p");
+   if [ "$iocpath" == "" ]; then
+      echo "Did not find ${NAME} running anywhere. Exiting..."
+      return 1
+   fi
+
+   if [[ ! $iocpath =~ ^/.* ]]; then
+
    iocdatapath=/reg/d/iocData/"${NAME}"/iocInfo
    echo "$iocdatapath"
+   fi
 #################################################################
 
 elif [ "$CMD" == "telnet" ]; then
+   iocpath=""
+   iocpath=$(grep_ioc "$NAME" all | grep "id:'$NAME'" | sed -n "s/^.*dir: '\(\S*\)'.*$/\1/p");
+   if [ "$iocpath" == "" ]; then
+      echo "Did not find ${NAME} running anywhere. Exiting..."
+      return 1
+   fi
+
+   if [[ ! $iocpath =~ ^/.* ]]; then
+
    HOST=$(grep_ioc "$NAME" all | grep "id:'$NAME'" | sed -n "s/^.*host: '\(\S*\)'.*$/\1/p");
    PORT=$(grep_ioc "$NAME" all | grep "id:'$NAME'" | sed -n "s/^.*port: \(\S*\),.*$/\1/p");
    echo "$HOST"
    echo "$PORT"
    telnet "$HOST" "$PORT"
-
+   fi
 fi
 
