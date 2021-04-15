@@ -1,9 +1,7 @@
 #! /usr/bin/env bash
 
 
-function cd {
-    builtin cd "$@" && ls
-}
+#function error{}
 
 usage(){
 cat << EOF
@@ -52,6 +50,12 @@ fi
 #################################################################
 
 if [ "$CMD" == "name" ]; then
+   error "$NAME"   
+   echo "$NAME"
+#################################################################
+
+elif [ "$CMD" ==  "dir" ]; then
+
    iocpath=""
    iocpath=$(grep_ioc "$NAME" all | grep "id:'$NAME'" | sed -n "s/^.*dir: '\(\S*\)'.*$/\1/p");
    if [ "$iocpath" == "" ]; then
@@ -60,23 +64,11 @@ if [ "$CMD" == "name" ]; then
    fi
 
    if [[ ! $iocpath =~ ^/.* ]]; then
-   echo "$NAME"
-   fi
-#################################################################
-
-elif [ "$CMD" ==  "dir" ]; then
-   iocpath=""
-   iocpath=$(grep_ioc "$NAME" all | grep "id:'$NAME'" | sed -n "s/^.*dir: '\(\S*\)'.*$/\1/p"); 
-   if [ "$iocpath" == "" ]; then
-      echo "Did not find ${NAME} running anywhere. Exiting..."
+      iocpath=/reg/g/pcds/epics/"${iocpath}"
+   else
       return 1
    fi
-  
-   if [[ ! $iocpath =~ ^/.* ]]; then
-      iocpath=/reg/g/pcds/epics/${iocpath}
-   fi
    echo "$iocpath"
-
 #################################################################
 
 elif [ "$CMD" == "cddir" ]; then
@@ -91,7 +83,6 @@ elif [ "$CMD" == "cddir" ]; then
       iocpath=/reg/g/pcds/epics/${iocpath}
       #iocs= "${iocpath}"
       cd "${iocpath}"
-      exec bash
    fi
  #################################################################
 
@@ -120,35 +111,19 @@ elif [ "$CMD" == "less" ]; then
 #################################################################
 
 elif [ "$CMD" == "data" ]; then
-   iocpath=""
-   iocpath=$(grep_ioc "$NAME" all | grep "id:'$NAME'" | sed -n "s/^.*dir: '\(\S*\)'.*$/\1/p");
-   if [ "$iocpath" == "" ]; then
-      echo "Did not find ${NAME} running anywhere. Exiting..."
-      return 1
-   fi
-
-   if [[ ! $iocpath =~ ^/.* ]]; then
-
    iocdatapath=/reg/d/iocData/"${NAME}"/iocInfo
    echo "$iocdatapath"
-   fi
+
+
 #################################################################
 
 elif [ "$CMD" == "telnet" ]; then
-   iocpath=""
-   iocpath=$(grep_ioc "$NAME" all | grep "id:'$NAME'" | sed -n "s/^.*dir: '\(\S*\)'.*$/\1/p");
-   if [ "$iocpath" == "" ]; then
-      echo "Did not find ${NAME} running anywhere. Exiting..."
-      return 1
-   fi
-
-   if [[ ! $iocpath =~ ^/.* ]]; then
-
-   HOST=$(grep_ioc "$NAME" all | grep "id:'$NAME'" | sed -n "s/^.*host: '\(\S*\)'.*$/\1/p");
-   PORT=$(grep_ioc "$NAME" all | grep "id:'$NAME'" | sed -n "s/^.*port: \(\S*\),.*$/\1/p");
+   INFO=$(grep_ioc "$NAME" all)
+   HOST=$(sed -n "s/^.*host: '\(\S*\)'.*$/\1/p" | $INFO)
+   PORT=$(sed -n "s/^.*port: \(\S*\),.*$/\1/p"| $INFO);
    echo "$HOST"
    echo "$PORT"
    telnet "$HOST" "$PORT"
-   fi
+
 fi
 
