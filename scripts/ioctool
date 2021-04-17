@@ -27,9 +27,9 @@ usage: $0 ioc|pv [options]
 Script that returns information about an ioc given its name or a PV associated with it
 
 Signature:
-iocTool <ioc>|<pv> [command] <ioc>|<pv>
+iocTool <ioc>|<pv> [option] <ioc>|<pv>
 
-default command is 'name', list of commands:
+default command is 'name', list of options:
 name : returns the name of the ioc
 dir : returns the directory the ioc is running from
 cddir : open the directory the ioc is running from 
