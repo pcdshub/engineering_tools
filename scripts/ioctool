@@ -1,7 +1,24 @@
 #! /usr/bin/env bash
 
+function iocfpv {
+     grep_pv $1 | sed -n 's/\/reg\/d\/iocData\/\(\S*\)\/iocInfo/\1/p'
+}
 
-#function error{}
+
+function error {
+   iocname=$@
+   for ioc in $iocname
+   do
+      iocpath=""
+      iocpath=$(grep_ioc $ioc all | grep "id:'$ioc'" | sed -n "s/^.*dir: '\(\S*\)'.*$/\1/p");
+      if [[ $iocpath == "" ]]; then
+         echo "Did not find ${ioc} running anywhere. Exiting..."
+         return 1
+      fi
+   done
+
+}  
+
 
 usage(){
 cat << EOF
@@ -42,42 +59,52 @@ CMD=$2
 #################################################################
 
 if [[ $NAME == *':'* ]]; then
-   NAME=$(grep_pv "$NAME" | sed -n 's/\/reg\/d\/iocData\/\(\S*\)\/iocInfo/\1/p')
+   NAME=$(iocfpv "$NAME")
 elif [[ $NAME == *'-'* ]]; then
    NAME=$1
-fi
+else
+   echo "Did not find ${NAME} running anywhere. Exiting..."
+  
+   exit 0
+fi   
+
 
 #################################################################
 
 if [ "$CMD" == "name" ]; then
-   error "$NAME"   
-   echo "$NAME"
+#   error "$NAME"   
+   echo "IOC: $NAME"
+elif [[ "$CMD" == "" ]]; then
+   echo "IOC: $NAME"
+
 #################################################################
 
 elif [ "$CMD" ==  "dir" ]; then
 
-   iocpath=""
-   iocpath=$(grep_ioc "$NAME" all | grep "id:'$NAME'" | sed -n "s/^.*dir: '\(\S*\)'.*$/\1/p");
-   if [ "$iocpath" == "" ]; then
-      echo "Did not find ${NAME} running anywhere. Exiting..."
-      return 1
-   fi
-
+#   iocpath=""
+#   iocpath=$(grep_ioc "$NAME" all | grep "id:'$NAME'" | sed -n "s/^.*dir: '\(\S*\)'.*$/\1/p");
+#   if [ "$iocpath" == "" ]; then
+#      echo "Did not find ${NAME} running anywhere. Exiting..."
+#      return 1
+#      exit 0
+#
+#   fi
+   error "$NAME"
    if [[ ! $iocpath =~ ^/.* ]]; then
       iocpath=/reg/g/pcds/epics/"${iocpath}"
+     echo "IOC path: $iocpath"
+
+   elif [[ ! $iocpath = ^/.* ]]; then
+      iocpath= "${iocpath}"
+      echo "IOC path: $iocpath"
    else
-      return 1
+      exit 0
    fi
-   echo "$iocpath"
+#   echo "IOC path: $iocpath"
 #################################################################
 
 elif [ "$CMD" == "cddir" ]; then
-   iocpath=""
-   iocpath=$(grep_ioc "$NAME" all | grep "id:'$NAME'" | sed -n "s/^.*dir: '\(\S*\)'.*$/\1/p");
-   if [ "$iocpath" == "" ]; then
-      echo "Did not find ${NAME} running anywhere. Exiting..."
-      return 1
-   fi
+   error "$NAME"
 
    if [[ ! $iocpath =~ ^/.* ]]; then
       iocpath=/reg/g/pcds/epics/${iocpath}
@@ -87,12 +114,7 @@ elif [ "$CMD" == "cddir" ]; then
  #################################################################
 
 elif [ "$CMD" == "less" ]; then
-   iocpath=""
-   iocpath=$(grep_ioc "$NAME" all | grep "id:'$NAME'" | sed -n "s/^.*dir: '\(\S*\)'.*$/\1/p");
-   if [ "$iocpath" == "" ]; then
-      echo "Did not find ${NAME} running anywhere. Exiting..."
-      return 1
-   fi
+   error "$NAME"
 
    if [[ ! $iocpath =~ ^/.* ]]; then
       iocpath=/reg/g/pcds/epics/${iocpath}
@@ -106,24 +128,36 @@ elif [ "$CMD" == "less" ]; then
          less "$iocfile"
       else
          echo -e "Neither file found:\n"${iocpath}"/"${NAME}".cfg\n$iocfile"
+         return 1
+         exit 0
       fi
    fi
 #################################################################
 
 elif [ "$CMD" == "data" ]; then
-   iocdatapath=/reg/d/iocData/"${NAME}"/iocInfo
-   echo "$iocdatapath"
+   error "$NAME"
+
+   if [[ ! $iocpath =~ ^/.* ]]; then
+      iocdatapath=/reg/d/iocData/"${NAME}"/iocInfo
+         echo "${iocdatapath}"
+   elif [[ ! $iocpath = ^/.* ]]; then
+      iocdatapath=/reg/d/iocData/"${NAME}"/iocInfo
+         echo "$iocdatapath"
+   fi
+
+
 
 
 #################################################################
 
 elif [ "$CMD" == "telnet" ]; then
-   INFO=$(grep_ioc "$NAME" all)
-   HOST=$(sed -n "s/^.*host: '\(\S*\)'.*$/\1/p" | $INFO)
-   PORT=$(sed -n "s/^.*port: \(\S*\),.*$/\1/p"| $INFO);
+
+   HOST=$(grep_ioc "$NAME" all | grep "id:'$NAME'" | sed -n "s/^.*host: '\(\S*\)'.*$/\1/p")
+   PORT=$(grep_ioc "$NAME" all | grep "id:'$NAME'" | sed -n "s/^.*port: \(\S*\),.*$/\1/p");
    echo "$HOST"
    echo "$PORT"
    telnet "$HOST" "$PORT"
+
 
 fi
 
