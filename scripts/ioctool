@@ -27,7 +27,7 @@ usage: $0 ioc|pv [options]
 Script that returns information about an ioc given its name or a PV associated with it
 
 Signature:
-iocTool <ioc>|<pv> [option] <ioc>|<pv>
+iocTool <ioc>|<pv> [option]
 
 default command is 'name', list of options:
 name : returns the name of the ioc
