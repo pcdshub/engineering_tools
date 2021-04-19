@@ -59,13 +59,18 @@ CMD=$2
 #################################################################
 
 if [[ $NAME == *':'* ]]; then
+   ioc=''
    NAME=$(iocfpv "$NAME")
 elif [[ $NAME == *'-'* ]]; then
-   NAME=$1
-else
-   echo "Did not find ${NAME} running anywhere. Exiting..."
-  
-   exit 0
+   ioc=""
+   ioc=$(grep_ioc "$NAME" | grep "id:'$ioc'" | sed -n "s/^.*host: '\(\S*\)'.*$/\1/p");
+   if [[ $iocpath == "" ]]; then
+      echo "Did not find ${ioc} running anywhere. Exiting..."
+      exit 0
+   
+   else
+      NAME=$1
+   fi
 fi   
 
 
