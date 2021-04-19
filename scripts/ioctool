@@ -66,6 +66,7 @@ elif [[ $NAME == *'-'* ]]; then
    ioc=$(grep_ioc "$NAME" | grep "id:'$ioc'" | sed -n "s/^.*host: '\(\S*\)'.*$/\1/p");
    if [[ $iocpath == "" ]]; then
       echo "Did not find ${ioc} running anywhere. Exiting..."
+      return 1
       exit 0
    
    else
