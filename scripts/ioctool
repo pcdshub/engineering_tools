@@ -32,7 +32,7 @@ iocTool <ioc>|<pv> [option] <ioc>|<pv>
 default command is 'name', list of options:
 name : returns the name of the ioc
 dir : returns the directory the ioc is running from
-cddir : open the directory the ioc is running from 
+cddir : open the directory the ioc is running from (put a "." with a space after, before calling script with option) 
 less : opens the cfg (or st.cmd) in less
 data : returns the path of the appropriate iocData directory if it exists
 telnet : starts a telnet session with the ioc 
