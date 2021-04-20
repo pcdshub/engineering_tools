@@ -108,6 +108,7 @@ elif [ "$CMD" ==  "dir" ]; then
       iocpath= "${iocpath}"
       echo "IOC path: $iocpath"
    else
+      return 1
       exit 0
    fi
 #   echo "IOC path: $iocpath"
@@ -125,6 +126,7 @@ elif [ "$CMD" == "cddir" ]; then
       iocpath= "${iocpath}"
       cd "${iocpath}"
    else
+      return 1
       exit 0
    fi
 
