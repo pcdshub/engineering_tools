@@ -1,9 +1,14 @@
 #! /usr/bin/env bash
 
 function iocfpv {
-     grep_pv $1 | sed -n 's/\/reg\/d\/iocData\/\(\S*\)\/iocInfo/\1/p'
+      ioc=""
+      ioc=$(grep_pv $1 | sed -n 's/\/reg\/d\/iocData\/\(\S*\)\/iocInfo/\1/p')
+      if [ "$ioc" == "" ]; then
+      echo "Did not find ${NAME} running anywhere. Exiting..."
+      
+      exit 1
+      fi
 }
-
 
 function error {
    iocname=$@
@@ -19,38 +24,34 @@ function error {
 
 }  
 
-
 usage(){
 cat << EOF
-usage: $0 ioc|pv [options]
+usage: $BASH_SOURCE <ioc>|<pv> [option]
 
 Script that returns information about an ioc given its name or a PV associated with it
 
-Signature:
-iocTool <ioc>|<pv> [option]
-
 default command is 'name', list of options:
-name : returns the name of the ioc
-dir : returns the directory the ioc is running from
-cddir : open the directory the ioc is running from (put a "." with a space after, before calling script with option) 
-less : opens the cfg (or st.cmd) in less
-data : returns the path of the appropriate iocData directory if it exists
+name   : returns the name of the ioc
+dir    : returns the directory the ioc is running from
+cddir  : open the directory the ioc is running from (put a "." with a space after, before calling script with this option)
+less   : opens the cfg (or st.cmd) in less
+data   : returns the path of the appropriate iocData directory if it exists
 telnet : starts a telnet session with the ioc 
 
 EOF
 }
 
 if [[ ($1 == "--help") || ($1 == "-h") ]]; then
-        usage
-        exit 0
+         usage
+         exit 0
 fi
-
-
    
 #<2 ---- error channel implementation needed 
 
 if [ $# -lt 1 ]; then
    echo  'need arguments: input ioc or pv name'
+   usage
+   exit 1
 fi
 	
 NAME=$1
@@ -59,8 +60,7 @@ CMD=$2
 #################################################################
 
 if [[ $NAME == *':'* ]]; then
-   ioc=''
-   NAME=$(iocfpv "$NAME")
+   NAME=$(iocfpv $NAME)
 
 elif [[ $NAME == *'-'* ]]; then
    NAME=$1
@@ -78,14 +78,13 @@ elif [[ $NAME == *'-'* ]]; then
   # fi
 fi   
 
-
 #################################################################
 
 if [ "$CMD" == "name" ]; then
 #   error "$NAME"   
-   echo "IOC: $NAME"
+   echo "$NAME"
 elif [[ "$CMD" == "" ]]; then
-   echo "IOC: $NAME"
+   echo "$NAME"
 
 #################################################################
 
@@ -112,6 +111,7 @@ elif [ "$CMD" ==  "dir" ]; then
       exit 0
    fi
 #   echo "IOC path: $iocpath"
+
 #################################################################
 
 elif [ "$CMD" == "cddir" ]; then
@@ -130,7 +130,7 @@ elif [ "$CMD" == "cddir" ]; then
       exit 0
    fi
 
- #################################################################
+#################################################################
 
 elif [ "$CMD" == "less" ]; then
    error "$NAME"
@@ -148,9 +148,10 @@ elif [ "$CMD" == "less" ]; then
       else
          echo -e "Neither file found:\n"${iocpath}"/"${NAME}".cfg\n$iocfile"
          return 1
-         exit 0
+         exit 1
       fi
    fi
+
 #################################################################
 
 elif [ "$CMD" == "data" ]; then
@@ -164,19 +165,14 @@ elif [ "$CMD" == "data" ]; then
          echo "$iocdatapath"
    fi
 
-
-
-
 #################################################################
 
 elif [ "$CMD" == "telnet" ]; then
    error "$NAME"
    HOST=$(grep_ioc "$NAME" all | grep "id:'$NAME'" | sed -n "s/^.*host: '\(\S*\)'.*$/\1/p")
    PORT=$(grep_ioc "$NAME" all | grep "id:'$NAME'" | sed -n "s/^.*port: \(\S*\),.*$/\1/p");
-   echo "$HOST"
-   echo "$PORT"
+   echo "$HOST" "$PORT"
    telnet "$HOST" "$PORT"
 
 
 fi
-
