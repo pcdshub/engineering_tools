@@ -38,6 +38,24 @@ function iocdir {
 
 }
 
+function ioccfg {
+   iocdir "$1"
+   iocfile="${iocpath}"/"$1".cfg;
+   if [ -f "$iocfile" ]; then
+      iocfile="$iocfile"
+   else
+      iocfile=${iocpath}/iocBoot/${1}/st.cmd
+      if [ -f "$iocfile" ]; then
+         iocfile="$iocfile"
+      else
+         echo -e "Neither file found:\n"${iocpath}"/"${1}".cfg\n$iocfile"
+         return 1
+         exit 1
+      fi
+   fi
+
+}
+
 usage(){
 cat << EOF
 usage: $BASH_SOURCE <ioc>|<pv> [option]
@@ -108,23 +126,16 @@ cd "${iocpath}"
 
 #################################################################
 
+elif [ "$CMD" == "cfg" ]; then
+   
+   ioccfg "$NAME"
+   echo "$iocfile"
+
+#################################################################
+
 elif [ "$CMD" == "less" ]; then
-
-
-   iocdir "$NAME"
-   iocfile="${iocpath}"/"$NAME".cfg;
-   if [ -f "$iocfile" ]; then
-      less $iocfile
-   else
-      iocfile=${iocpath}/iocBoot/${NAME}/st.cmd
-      if [ -f "$iocfile" ]; then
-         less "$iocfile"
-      else
-         echo -e "Neither file found:\n"${iocpath}"/"${NAME}".cfg\n$iocfile"
-         return 1
-         exit 1
-      fi
-   fi
+   ioccfg "$NAME"
+   less $iocfile
 
 #################################################################
 
@@ -134,9 +145,7 @@ elif [ "$CMD" == "data" ]; then
    if [[ ! $iocpath =~ ^/.* ]]; then
       iocdatapath=/reg/d/iocData/"${NAME}"/iocInfo
       echo "${iocdatapath}"
-   elif [[ ! $iocpath = ^/.* ]]; then
-      iocdatapath=/reg/d/iocData/"${NAME}"/iocInfo
-      echo "$iocdatapath"
+
    fi
 
 #################################################################
