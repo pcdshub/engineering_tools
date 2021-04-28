@@ -254,17 +254,17 @@ fi
 #ENABLE-e
 if [ $ENABLE -gt 0 ]; then 
     echo $CAMNAME 'cam is enabling...'
-    IOC=`iocfpv ${CAMPVFULL}`
+    IOC=$(iocfpv "${CAMPVFULL}")
     echo "$IOC" "$hutch"
-    $imgr $IOC --hutch $hutch --enable   
+    $imgr "$IOC" --hutch "$hutch" --enable   
     exit
 fi
 #DISABLE-d
 if [ $DISABLE -gt 0 ]; then
     echo $CAMNAME 'cam is disabling...'
-    IOC=`iocfpv ${CAMPVFULL}`
+    IOC=$(iocfpv "${CAMPVFULL}")
     echo "$IOC" "$hutch"
-    $imgr $IOC --disable    
+    $imgr "$IOC" --hutch "$hutch" --disable    
     exit
 fi
 
