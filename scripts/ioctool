@@ -4,22 +4,10 @@ function iocfpv {
    ioc=""
    ioc=$(grep_pv $1 | sed -n 's/\/reg\/d\/iocData\/\(\S*\)\/iocInfo/\1/p')
    if [ "$ioc" == "" ]; then
-      echo "Did find an ioc associated with this PV." 
+      echo "Did not find an ioc associated with this PV." 
       exit 1
    fi
 }
-
-function error {
-   ioc=$1
-   
-   iocpath=""
-   iocpath=$(grep_ioc $ioc all | grep "id:'$ioc'" | sed -n "s/^.*dir: '\(\S*\)'.*$/\1/p");
-   if [[ $iocpath == "" ]]; then
-      echo "Did not find ${ioc} running anywhere. Exiting..."
-      exit 1
-   fi
-
-}  
 
 function iocdir {
    ioc=$1
@@ -95,6 +83,12 @@ if [[ $NAME == *':'* ]]; then
    iocfpv $NAME
    NAME="$ioc"
 elif [[ $NAME == *'-'* ]]; then
+   ioc=""
+   ioc=$(grep_ioc $NAME all | grep "id:'$NAME'" | sed -n "s/^.*dir: '\(\S*\)'.*$/\1/p");
+   if [[ $ioc == "" ]]; then
+      echo "Could not find ${NAME}. Exiting..."
+      exit 1
+   fi
    NAME=$1
 else
    echo "Could not find $NAME. Exiting..."
@@ -104,7 +98,6 @@ fi
 #################################################################
 
 if [ "$CMD" == "name" ]; then
-#   error "$NAME"   
    echo "$NAME"
 elif [[ "$CMD" == "" ]]; then
    echo "$NAME"
@@ -112,22 +105,18 @@ elif [[ "$CMD" == "" ]]; then
 #################################################################
 
 elif [ "$CMD" ==  "dir" ]; then
-
-iocdir "$NAME"
-echo "$iocpath"
+   iocdir "$NAME"
+   echo "$iocpath"
 
 #################################################################
 
 elif [ "$CMD" == "cddir" ]; then
-
-
-iocdir "$NAME"
-cd "${iocpath}"
+   iocdir "$NAME"
+   cd "${iocpath}"
 
 #################################################################
 
 elif [ "$CMD" == "cfg" ]; then
-   
    ioccfg "$NAME"
    echo "$iocfile"
 
@@ -140,18 +129,12 @@ elif [ "$CMD" == "less" ]; then
 #################################################################
 
 elif [ "$CMD" == "data" ]; then
-   error "$NAME"
-
-   if [[ ! $iocpath =~ ^/.* ]]; then
-      iocdatapath=/reg/d/iocData/"${NAME}"/iocInfo
-      echo "${iocdatapath}"
-
-   fi
+   iocdatapath=/reg/d/iocData/"${NAME}"/iocInfo
+   echo "${iocdatapath}"
 
 #################################################################
 
 elif [ "$CMD" == "telnet" ]; then
-   error "$NAME"
    HOST=$(grep_ioc "$NAME" all | grep "id:'$NAME'" | sed -n "s/^.*host: '\(\S*\)'.*$/\1/p")
    PORT=$(grep_ioc "$NAME" all | grep "id:'$NAME'" | sed -n "s/^.*port: \(\S*\),.*$/\1/p");
    echo "$HOST":"$PORT"
