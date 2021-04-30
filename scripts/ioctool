@@ -2,7 +2,7 @@
 
 function iocfpv {
    ioc=""
-   ioc=$(grep_pv $1 | sed -n 's/\/reg\/d\/iocData\/\(\S*\)\/iocInfo/\1/p')
+   ioc=$(grep_pv "$1" | sed -n 's/\/reg\/d\/iocData\/\(\S*\)\/iocInfo/\1/p')
    if [ -z "$ioc" ]; then
       echo "Did not find an ioc associated with this PV." >&2 
       exit 1
@@ -12,7 +12,7 @@ function iocfpv {
 function iocdir {
    ioc=$1
    iocpath=""
-   iocpath=$(grep_ioc $ioc all | grep "id:'$ioc'" | sed -n "s/^.*dir: '\(\S*\)'.*$/\1/p");
+   iocpath=$(grep_ioc "$ioc" all | grep "id:'$ioc'" | sed -n "s/^.*dir: '\(\S*\)'.*$/\1/p");
    if [[ -z $iocpath ]]; then
       echo "Did not find ${ioc} running anywhere. Exiting..." >&2
       exit 1
@@ -36,7 +36,7 @@ function ioccfg {
       if [ -f "$iocfile" ]; then
          iocfile="$iocfile"
       else
-         echo -e "Neither file found:\n"${iocpath}"/"${1}".cfg\n$iocfile" >&2
+         echo -e "Neither file found:\n${iocpath}/${1}.cfg\n$iocfile" >&2
          return 1
          exit 1
       fi
@@ -47,7 +47,7 @@ function ioccfg {
 
 usage(){
 cat << EOF
-usage: $BASH_SOURCE <ioc>|<pv> [option]
+usage: $0 <ioc>|<pv> [option]
 
 Script that returns information about an ioc given its name or a PV it hosts
 
@@ -81,7 +81,7 @@ CMD=$2
 #################################################################
 
 if [[ $NAME == *':'* ]]; then
-   iocfpv $NAME
+   iocfpv "$NAME"
    NAME="$ioc"
 elif [[ $NAME == *'-'* ]]; then
    NAME=$1
@@ -107,7 +107,7 @@ elif [ "$CMD" ==  "dir" ]; then
 
 elif [ "$CMD" == "cddir" ]; then
    iocdir "$NAME"
-   cd "${iocpath}"
+   cd "${iocpath}" || exit
 
 #################################################################
 
@@ -119,7 +119,7 @@ elif [ "$CMD" == "cfg" ]; then
 
 elif [ "$CMD" == "less" ]; then
    ioccfg "$NAME"
-   less $iocfile
+   less "$iocfile"
 
 #################################################################
 
