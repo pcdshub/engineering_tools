@@ -47,7 +47,7 @@ function ioccfg {
 
 usage(){
 cat << EOF
-usage: $0 <ioc>|<pv> [option]
+usage: ${BASH_SOURCE[0]} <ioc>|<pv> [option]
 
 Script that returns information about an ioc given its name or a PV it hosts
 
