@@ -250,15 +250,13 @@ if [ $REBOOT -gt 0 ]; then
     exit
 fi
 
-
-#ENABLE-e
 if [ $ENABLE -gt 0 ]; then 
-    echo "Enabling ${CAMNAME}
+    echo "Enabling ${CAMNAME}"
     IOC=$(iocfpv "${CAMPVFULL}")
     $imgr "$IOC" --hutch "$hutch" --enable   
     exit
 fi
-#DISABLE-d
+
 if [ $DISABLE -gt 0 ]; then
     echo "Disabling ${CAMNAME}
     IOC=$(iocfpv "${CAMPVFULL}")
