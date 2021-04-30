@@ -3,8 +3,8 @@
 function iocfpv {
    ioc=""
    ioc=$(grep_pv $1 | sed -n 's/\/reg\/d\/iocData\/\(\S*\)\/iocInfo/\1/p')
-   if [ "$ioc" == "" ]; then
-      echo "Did not find an ioc associated with this PV." 
+   if [ -z "$ioc" ]; then
+      echo "Did not find an ioc associated with this PV." >&2 
       exit 1
    fi
 }
@@ -13,8 +13,8 @@ function iocdir {
    ioc=$1
    iocpath=""
    iocpath=$(grep_ioc $ioc all | grep "id:'$ioc'" | sed -n "s/^.*dir: '\(\S*\)'.*$/\1/p");
-   if [[ $iocpath == "" ]]; then
-      echo "Did not find ${ioc} running anywhere. Exiting..."
+   if [[ -z $iocpath ]]; then
+      echo "Did not find ${ioc} running anywhere. Exiting..." >&2
       exit 1
    fi
    
@@ -36,13 +36,14 @@ function ioccfg {
       if [ -f "$iocfile" ]; then
          iocfile="$iocfile"
       else
-         echo -e "Neither file found:\n"${iocpath}"/"${1}".cfg\n$iocfile"
+         echo -e "Neither file found:\n"${iocpath}"/"${1}".cfg\n$iocfile" >&2
          return 1
          exit 1
       fi
    fi
 
 }
+
 
 usage(){
 cat << EOF
@@ -69,7 +70,7 @@ fi
 
 
 if [ $# -lt 1 ]; then
-   echo  'need arguments: input ioc or pv name'
+   echo  'need arguments: input ioc or pv name' >&2
    usage
    exit 1
 fi
@@ -83,15 +84,9 @@ if [[ $NAME == *':'* ]]; then
    iocfpv $NAME
    NAME="$ioc"
 elif [[ $NAME == *'-'* ]]; then
-   ioc=""
-   ioc=$(grep_ioc $NAME all | grep "id:'$NAME'" | sed -n "s/^.*dir: '\(\S*\)'.*$/\1/p");
-   if [[ $ioc == "" ]]; then
-      echo "Could not find ${NAME}. Exiting..."
-      exit 1
-   fi
    NAME=$1
 else
-   echo "Could not find $NAME. Exiting..."
+   echo "Could not find ${NAME}. Exiting..."
    exit 1
 fi   
 
@@ -130,13 +125,21 @@ elif [ "$CMD" == "less" ]; then
 
 elif [ "$CMD" == "data" ]; then
    iocdatapath=/reg/d/iocData/"${NAME}"/iocInfo
-   echo "${iocdatapath}"
-
+   if [ -d "$iocdatapath" ]; then
+      echo "${iocdatapath}"
+   else
+      echo "Data for $NAME could not be found. Exiting..."
+   fi
 #################################################################
 
 elif [ "$CMD" == "telnet" ]; then
-   HOST=$(grep_ioc "$NAME" all | grep "id:'$NAME'" | sed -n "s/^.*host: '\(\S*\)'.*$/\1/p")
-   PORT=$(grep_ioc "$NAME" all | grep "id:'$NAME'" | sed -n "s/^.*port: \(\S*\),.*$/\1/p");
+   INFO=$(grep_ioc "$NAME" all | grep "id:'$NAME'")
+   if [ -z "$INFO" ]; then
+      echo "IOC $NAME could not be found. Exiting..." >&2
+      exit 1
+   fi
+   HOST=$(echo "$INFO" | sed -n "s/^.*host: '\(\S*\)'.*$/\1/p")
+   PORT=$(echo "$INFO" | sed -n "s/^.*port: \(\S*\),.*$/\1/p")
    echo "$HOST":"$PORT"
    telnet "$HOST" "$PORT"
 
