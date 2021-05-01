@@ -64,6 +64,8 @@ usage: /reg/g/pcds/engineering_tools/latest/scripts/camViewer options<br/>
     -w # (wait for # hours to ask to renew, default 2 and 12 for GIGEs)<br/>
     -u # update rate limit (default 5)<br/>
     -H hutch: use a specific hutches camviewer config file<br/>
+    -e enable camera ioc<br/>
+    -d disable camera ioc<br/>
     </td>
 </tr>
 
