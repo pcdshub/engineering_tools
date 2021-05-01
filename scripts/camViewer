@@ -123,6 +123,10 @@ done
 
 }
 
+iocfpv() {
+     grep_pv $1 | sed -n 's/\/reg\/d\/iocData\/\(\S*\)\/iocInfo/\1/p'
+}
+
 usage()
 {
 cat << EOF
@@ -138,6 +142,8 @@ OPTIONS:
 -w # (wait for # hours to ask to renew, default 2 and 12 for GIGEs)
 -u # update rate limit (default 5)
 -H hutch: use a specific hutches camviewer config file
+-e enable camera ioc
+-d disable camera ioc
 EOF
 }
 
@@ -159,12 +165,16 @@ MAINSCREEN=0
 
 EXE=/reg/g/pcds/pyps/config/$hutch/camviewer/run_viewer.csh
 PVLIST=/reg/g/pcds/pyps/config/$hutch/camviewer.cfg
+imgr=/reg/g/pcds/pyps/apps/iocmanager/latest/imgr
 CAMNUM=0
 WAIT=0
 RATE=-1
 REBOOT=0
+ENABLE=0
+DISABLE=0
 
-while getopts "c:w:u:H:lmr" OPTION
+
+while getopts "c:w:u:H:lmred" OPTION
 do
     case $OPTION in
 	l)
@@ -196,6 +206,12 @@ do
 	r)
 	    REBOOT=1
 	    ;;
+        e)
+            ENABLE=1
+            ;;
+        d)
+            DISABLE=1
+            ;;
 	esac
 done
 
@@ -234,6 +250,19 @@ if [ $REBOOT -gt 0 ]; then
     exit
 fi
 
+if [ $ENABLE -gt 0 ]; then 
+    echo "Enabling ${CAMNAME}"
+    IOC=$(iocfpv "${CAMPVFULL}")
+    $imgr "$IOC" --hutch "$hutch" --enable   
+    exit
+fi
+
+if [ $DISABLE -gt 0 ]; then
+    echo "Disabling ${CAMNAME}
+    IOC=$(iocfpv "${CAMPVFULL}")
+    $imgr "$IOC" --hutch "$hutch" --disable    
+    exit
+fi
 
 IS_ACQUIRING=`caget -t -n $CAMPVFULL:Acquire_RBV`
 if isNum $IS_ACQUIRING; then
