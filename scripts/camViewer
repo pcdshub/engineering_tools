@@ -258,7 +258,7 @@ if [ $ENABLE -gt 0 ]; then
 fi
 
 if [ $DISABLE -gt 0 ]; then
-    echo "Disabling ${CAMNAME}
+    echo "Disabling ${CAMNAME}"
     IOC=$(iocfpv "${CAMPVFULL}")
     $imgr "$IOC" --hutch "$hutch" --disable    
     exit
