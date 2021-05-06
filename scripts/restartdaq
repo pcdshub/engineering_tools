@@ -51,6 +51,10 @@ if [[ `whoami` != *'opr'* ]]; then
     exit
 fi
 
+#clean the enviroment before sourcing any conda env.
+unset PYTHONPATH
+unset LD_LIBRARY_PATH
+
 CNFEXT=.cnf
 if [[ $AIMHOST == 'cxi-daq' ]]; then
     CNFEXT=_0.cnf
@@ -59,27 +63,23 @@ elif [[ $AIMHOST == 'cxi-monitor' ]]; then
 fi
 
 HUTCH=`get_hutch_name`
-if [[ $HUTCH == 'xpp' ]]; then
-    FEZ='172.21.22'
-elif [[ $HUTCH == 'xcs' ]]; then
-    FEZ='172.21.25'
-elif [[ $HUTCH == 'sxr' ]]; then
-    FEZ='172.21.21'
-elif [[ $HUTCH == 'mec' ]]; then
-    FEZ='172.21.27'
-elif [[ $HUTCH == 'mfx' ]]; then
-    FEZ='172.21.24'
-elif [[ $HUTCH == 'cxi' ]]; then
-    FEZ='172.21.26'
-elif [[ $HUTCH == 'amo' ]]; then
-    FEZ='172.21.20'
-elif [[ $HUTCH == 'det' ]]; then
-    FEZ='172.21.59'
-fi
-IS_DAQ_HOST=`/sbin/ifconfig | grep inet | grep $FEZ | wc -l`
+HNAME=`cat /etc/hostname`
 
+#go to hutches DAQ scripts directory (puts pid file in consistent location)
+cd /reg/g/pcds/dist/pds/$HUTCH/scripts/
+
+DAQNETWORK='fez'
+if [[ ($HUTCH == 'tmo') || ($HUTCH == 'rix') ]]; then
+    source /reg/g/pcds/dist/pds/$HUTCH/scripts/setup_env.sh
+    PROCMGR='procmgr'
+    DAQNETWORK='drp'
+else
+    PROCMGR='/reg/g/pcds/dist/pds/tools/procmgr/procmgr'
+fi
+
+IS_DAQ_HOST=`netconfig search $HNAME-$DAQNETWORK --brief | grep $DAQNETWORK | wc -l`
 if [ $IS_DAQ_HOST == 0 ]; then
-    HOSTS=`netconfig search $HUTCH-*-fez --brief | sed s/-fez//g`
+    HOSTS=`netconfig search $HUTCH-*-$DAQNETWORK --brief | sed s/-$DAQNETWORK//g`
     WORKINGHOSTS=''
     #make sure at least cds is up.
     for HOST in $HOSTS; do
@@ -88,20 +88,16 @@ if [ $IS_DAQ_HOST == 0 ]; then
 	    WORKINGHOSTS=$WORKINGHOSTS' '$HOST
 	fi
     done
-    echo $AIMHOST does not have FEZ, please choose one of the following machines to run the DAQ: $WORKINGHOSTS
-    echo '"restartdaq <machine_with_FEZ>"'
+    echo $AIMHOST does not have $DADQNETWORK, please choose one of the following machines to run the DAQ: $WORKINGHOSTS
+    echo '"restartdaq <machine_with_$DAQNETWORK>"'
     exit
 fi
 
-#go to hutches DAQ scripts directory (puts pid file in consistent location)
-cd /reg/g/pcds/dist/pds/$HUTCH/scripts/
-
-#/reg/g/xpp/scripts/stopdaq
 DAQHOST=`wheredaq`
 if [[ $DAQHOST != *$NOTRUNNING* ]]; then
     echo stop the DAQ on $DAQHOST from $HOSTNAME
     T="$(date +%s%N)"
-    /reg/g/pcds/dist/pds/$HUTCH/current/tools/procmgr/procmgr stop \
+    $PROCMGR stop \
 	/reg/g/pcds/dist/pds/$HUTCH/scripts/$HUTCH$CNFEXT 
 
     PLATFORM=`grep 'if not platform' /reg/g/pcds/dist/pds/$HUTCH/scripts/$HUTCH$CNFEXT | awk '{print $NF}' | sed s/\'//g`
@@ -118,7 +114,7 @@ else
     if [ -f /reg/g/pcds/dist/pds/$HUTCH/scripts/p$PLATFORM$CNFEXT.running ]; then
 	echo while DAQ reports to not run, will stop the DAQ on $DAQHOST from $HOSTNAME to clear the p$PLATFORM$CNFEXT.running file
 	T="$(date +%s%N)"
-	/reg/g/pcds/dist/pds/$HUTCH/current/tools/procmgr/procmgr stop \
+	$PROCMGR stop \
 	    /reg/g/pcds/dist/pds/$HUTCH/scripts/$HUTCH$CNFEXT 
 
         if [ -f /reg/g/pcds/dist/pds/$HUTCH/scripts/p$PLATFORM$CNFEXT.running ]; then
@@ -136,9 +132,7 @@ fi
 T="$(date +%s%N)"
 echo start DAQ on $AIMHOST
 if [ $HOSTNAME == $AIMHOST ]; then
-    unset PYTHONPATH
-    unset LD_LIBRARY_PATH
-    /reg/g/pcds/dist/pds/$HUTCH/current/tools/procmgr/procmgr start \
+    $PROCMGR start \
 	/reg/g/pcds/dist/pds/$HUTCH/scripts/$HUTCH$CNFEXT -c 2000000000 -o /reg/g/pcds/pds/$HUTCH/logfiles
 else
     ssh -Y $AIMHOST restartdaq

@@ -14,35 +14,23 @@ if [[ ($1 == "--help") || ($1 == "-h") ]]; then
 fi
 
 HUTCH=`get_info --gethutch`
-NOTRUNNING='Not running'
+CNFEXT=.cnf
+PLATFORM=0
+if [ $HOSTNAME == 'cxi-monitor' ]; then
+    PLATFORM=1
+elif [ $HUTCH == 'rix' ]; then
+    PLATFORM=2
+fi
 
-if  [ $HUTCH == 'cxi' ]; then
+if [[ ! -f /reg/g/pcds/dist/pds/$HUTCH/scripts/p$PLATFORM.cnf.running ]]; then
     if [ $HOSTNAME == 'cxi-daq' ]; then
-	STATUS=`/reg/g/pcds/dist/pds/$HUTCH/current/tools/procmgr/procmgr status /reg/g/pcds/dist/pds/$HUTCH/scripts/$HUTCH\_0.cnf control_gui | grep started`
-	if [[ $STATUS == *$NOTRUNNING* ]]; then
-	    echo 'cxi_0 - ' $STATUS
-	else
-	    echo 'cxi_0 - Main DAQ is running on '$HOSTNAME
-	fi
+	echo 'Main DAQ cxi_0 is not running on $HOSTNAME '
     elif [ $HOSTNAME == 'cxi-monitor' ]; then
-	STATUS=`/reg/g/pcds/dist/pds/$HUTCH/current/tools/procmgr/procmgr status /reg/g/pcds/dist/pds/$HUTCH/scripts/$HUTCH\_1.cnf | grep started`
-	if [[ $STATUS == *$NOTRUNNING* ]]; then
-	    echo 'cxi_1  - Secondary DAQ is not running'
-	else
-	    echo 'cxi_1 - Secondary DAQ is running on '$HOSTNAME
-	fi
-    else 
-	echo 'This machine ('$HOSTNAME') is not a cxi DAQ host'
+	echo 'Secondary DAQ cxi_1 is not running on $HOSTNAME '
+    else
+	echo 'DAQ is not running in '$HUTCH
     fi
-    exit
-fi
-
-STATUS=`/reg/g/pcds/dist/pds/$HUTCH/current/tools/procmgr/procmgr status /reg/g/pcds/dist/pds/$HUTCH/scripts/$HUTCH.cnf control_gui | grep started`
-if [[ $STATUS == *$NOTRUNNING* ]]; then
-    echo 'DAQ in ' ${HUTCH^^}': ' $STATUS
-    exit
 else
-   HOST=`echo $STATUS | awk {'print $5'}`
-   echo $HOST
+    DAQ_HOST=`grep HOST /reg/g/pcds/dist/pds/$HUTCH/scripts/p$PLATFORM.cnf.running | awk {'print $3'} | sed s/\'//g`
+    echo 'DAQ is running on '$DAQ_HOST
 fi
-

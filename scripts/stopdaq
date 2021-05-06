@@ -22,16 +22,29 @@ elif [ $HOSTNAME == 'cxi-monitor' ]; then
     CNFEXT=_1.cnf
 fi
 
+#clean the enviroment before sourcing any conda env.
+unset PYTHONPATH
+unset LD_LIBRARY_PATH
+
+#go to hutches DAQ scripts directory 
+#(puts pid file in consistent location - necessary for stopping for LCLS-II DAQ)
+cd /reg/g/pcds/dist/pds/$HUTCH/scripts/
+
+if  [[ ($HUTCH == 'tmo') || ($HUTCH == 'rix') ]]; then
+    source /reg/g/pcds/dist/pds/$HUTCH/scripts/setup_env.sh
+    PROCMGR='procmgr'
+else
+    PROCMGR='/reg/g/pcds/dist/pds/tools/procmgr/procmgr'
+fi
+
 if [[ $DAQHOST != 'DAQ is not running' ]]; then
     T="$(date +%s%N)"
     echo stop the DAQ from $HOSTNAME
-    /reg/g/pcds/dist/pds/tools/procmgr/procmgr stop \
-	/reg/g/pcds/dist/pds/$HUTCH/scripts/$HUTCH$CNFEXT 
-    #source /reg/g/pcds/dist/pds/$HUTCH\/scripts/stop_$HUTCH\_daq.csh
+    $PROCMGR stop /reg/g/pcds/dist/pds/$HUTCH/scripts/$HUTCH$CNFEXT 
 
     PLATFORM=`grep 'if not platform' /reg/g/pcds/dist/pds/$HUTCH/scripts/$HUTCH$CNFEXT | awk '{print $NF}' | sed s/\'//g`
     if [ -f /reg/g/pcds/dist/pds/$HUTCH/scripts/p$PLATFORM$CNFEXT.running ]; then
-	echo 'the DAQ did not stop properly, exit now and try again or call Silke or the DAQ phone'
+	echo 'the DAQ did not stop properly, exit now and try again or call your POC or the DAQ phone'
 	exit
     fi
     T2="$(($(date +%s%N)-T))"
