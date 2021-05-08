@@ -46,9 +46,9 @@ Script that returns information about an ioc given its name or a PV it hosts
 default option is 'name', list of options:
 name   : returns the name of the ioc
 dir    : returns the directory the ioc is running from
-cddir  : open the directory the ioc is running from (put a "." with a space after, before calling script with this option)
-cfg    : returns the file name of the cfg (or st.cmd)
-less   : opens the cfg (or st.cmd) in less
+cddir  : open the directory the ioc is running from (start with "source" before calling script with this option)
+cfg    : returns the file name of the ioc .cfg (or st.cmd)
+less   : opens the ioc .cfg (or st.cmd) in less
 data   : returns the path of the appropriate iocData directory if it exists
 telnet : starts a telnet session with the ioc 
 
