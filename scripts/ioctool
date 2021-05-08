@@ -77,15 +77,13 @@ if [[ $NAME == *':'* ]]; then
 elif [[ $NAME == *'-'* ]]; then
    NAME=$1
 else
-   echo "Could not find ${NAME}. Exiting..."
+   echo "${NAME} does not match the format for PVs or IOC names. Exiting..."
    exit 1
 fi   
 
 #################################################################
 
-if [ "$CMD" == "name" ]; then
-   echo "$NAME"
-elif [[ "$CMD" == "" ]]; then
+if [ "$CMD" == "name" ] || [ "$CMD" == "" ]; then
    echo "$NAME"
 
 #################################################################
