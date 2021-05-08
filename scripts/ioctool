@@ -18,10 +18,8 @@ function iocdir {
       exit 1
    fi
    
-
    if [[ ! $iocpath =~ ^/.* ]]; then
-      iocpath=/reg/g/pcds/epics/"${iocpath}"
-     
+      iocpath=/reg/g/pcds/epics/"${iocpath}"  
    fi
 
 }
