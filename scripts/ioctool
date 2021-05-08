@@ -118,20 +118,20 @@ elif [ "$CMD" == "data" ]; then
    if [ -d "$iocdatapath" ]; then
       echo "${iocdatapath}"
    else
-      echo "Data for $NAME could not be found. Exiting..."
+      echo "Data directory for $iocdatapath could not be found. Exiting..."
    fi
 #################################################################
 
 elif [ "$CMD" == "telnet" ]; then
    INFO=$(grep_ioc "$NAME" all | grep "id:'$NAME'")
    if [ -z "$INFO" ]; then
-      echo "IOC $NAME could not be found. Exiting..." >&2
+      echo "$NAME could not be found. Exiting..." >&2
       exit 1
    fi
    HOST=$(echo "$INFO" | sed -n "s/^.*host: '\(\S*\)'.*$/\1/p")
    PORT=$(echo "$INFO" | sed -n "s/^.*port: \(\S*\),.*$/\1/p")
+   #if [[ 39000 >= "$PORT" >=39999 ]];
+    #  echo "Host no in subnet that connect"
    echo "$HOST":"$PORT"
    telnet "$HOST" "$PORT"
-
-
 fi
