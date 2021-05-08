@@ -29,13 +29,9 @@ function iocdir {
 function ioccfg {
    iocdir "$1"
    iocfile="${iocpath}"/"$1".cfg;
-   if [ -f "$iocfile" ]; then
-      :
-   else
+   if [ ! -f "$iocfile" ]; then
       iocfile=${iocpath}/iocBoot/${1}/st.cmd
-      if [ -f "$iocfile" ]; then
-         :
-      else
+      if [ ! -f "$iocfile" ]; then
          echo -e "Neither file found:\n${iocpath}/${1}.cfg\n$iocfile" >&2
          exit 1
       fi
