@@ -75,7 +75,7 @@ if [[ $NAME == *':'* ]]; then
    iocfpv "$NAME"
    NAME="$ioc"
 elif [[ $NAME == *'-'* ]]; then
-   NAME=$1
+   :
 else
    echo "${NAME} does not match the format for PVs or IOC names. Exiting..."
    exit 1
