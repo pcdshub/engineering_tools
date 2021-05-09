@@ -97,7 +97,7 @@ elif [ "$CMD" ==  "dir" ]; then
 elif [ "$CMD" == "cddir" ]; then
    iocdir "$NAME"
    [[ "${BASH_SOURCE[0]}" = "${0}" ]] && echo "Script ${BASH_SOURCE[0]} is not being sourced" && usage 
-   cd "${iocpath}" 
+   cd "${iocpath}" || exit 
  
 #################################################################
 
