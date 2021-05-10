@@ -94,8 +94,8 @@ elif [ "$CMD" ==  "dir" ]; then
 
 elif [ "$CMD" == "cddir" ]; then
    iocdir "$NAME"
-   [[ "${BASH_SOURCE[0]}" = "${0}" ]] && echo "Script ${BASH_SOURCE[0]} is not being sourced" && usage 
-   cd "${iocpath}" || exit 
+   [[ "$_" = "${0}" ]] && echo "Script ${BASH_SOURCE[0]} is not being sourced. Start with \source before calling script with this option" 
+   cd "${iocpath}" 
  
 #################################################################
 
@@ -116,8 +116,9 @@ elif [ "$CMD" == "data" ]; then
    if [ -d "$iocdatapath" ]; then
       echo "${iocdatapath}"
    else
-      echo "Data directory for $iocdatapath could not be found. Exiting..."
+      echo "$iocdatapath could not be found. Exiting..."
    fi
+
 #################################################################
 
 elif [ "$CMD" == "telnet" ]; then
