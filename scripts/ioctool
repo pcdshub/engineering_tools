@@ -71,12 +71,10 @@ CMD=$2
 
 #################################################################
 
-if [[ $NAME == *':'* ]]; then
+if [[ $NAME == *':'* ]]; then #we are assuming that PVs have a colon in them
    iocfpv "$NAME"
    NAME="$ioc"
-elif [[ $NAME == *'-'* ]]; then
-   :
-else
+elif [[ ! $NAME == *'-'* ]]; then #We are assuming that ioc names contain an a dash in them
    echo "${NAME} does not match the format for PVs or IOC names. Exiting..."
    exit 1
 fi   
