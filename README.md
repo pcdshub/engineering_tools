@@ -240,6 +240,26 @@ usage: ipmConfigEpics [-b boxname] [-H hutch] [-d] [-h] [-l]<br/>
 </tr>
 
 <tr>
+    <td>ioctool</td>
+    <td>
+usage: ${BASH_SOURCE[0]} [ioc]|[pv] [option]<br/>
+        <br/>
+    Script that returns information about an ioc given its name or a PV it hosts
+        <br/>
+
+    default option  is 'name', list of options:<br/>
+    status : print power status of machine, try to ping interfaces<br/>
+    name     : returns the name of the ioc<br/>
+    dir     : returns the path to the directory the ioc is running from<br/>
+    cddir  :opens the directory the ioc is running from (start with "source" before calling script with this option)<br/>
+    cfg  : returns the the file name of the ioc .cfg (or st.cmd)<br/>
+    less: opens the ioc .cfg (or st.cmd) in less<br/>
+    data : returns the path of the appropriate iocData directory if it exists<br/>
+    telnet : starts a telnet session with the ioc<br/>
+    </td>
+</tr>
+
+<tr>
     <td>makepeds</td>
     <td>
 usage: makepeds options<br/>
