@@ -55,15 +55,15 @@ telnet : starts a telnet session with the ioc
 EOF
 }
 
+if [ $# -lt 1 ]; then
+   echo 'need arguments: input ioc or pv name' >&2
+   usage
+   exit 1
+fi 
+
 if [[ ($1 == "--help") || ($1 == "-h") ]]; then
    usage
    exit 0
-fi
-
-if [ $# -lt 1 ]; then
-   echo  'need arguments: input ioc or pv name' >&2
-   usage
-   exit 1
 fi
 	
 NAME=$1
