@@ -228,18 +228,6 @@ iocmanager [hutch]<br/>
 </tr>
 
 <tr>
-    <td>ipmConfigEpics</td>
-    <td>
-usage: ipmConfigEpics [-b boxname] [-H hutch] [-d] [-h] [-l]<br/>
-          -b: specify boxname to view<br/>
-      -H: specify a hutch to use, overriding the automated selection<br/>
-      -d: fix issues with Bld Damage (likely camera IOC w/plugins on same machine)<br/>
-      -h: display this help text<br/>
-      -l: list available boxnames
-    </td>
-</tr>
-
-<tr>
     <td>ioctool</td>
     <td>
 usage: ${BASH_SOURCE[0]} [ioc]|[pv] [option]<br/>
@@ -256,6 +244,18 @@ usage: ${BASH_SOURCE[0]} [ioc]|[pv] [option]<br/>
     less: opens the ioc .cfg (or st.cmd) in less<br/>
     data : returns the path of the appropriate iocData directory if it exists<br/>
     telnet : starts a telnet session with the ioc<br/>
+    </td>
+</tr>          
+
+<tr>
+    <td>ipmConfigEpics</td>
+    <td>
+usage: ipmConfigEpics [-b boxname] [-H hutch] [-d] [-h] [-l]<br/>
+          -b: specify boxname to view<br/>
+      -H: specify a hutch to use, overriding the automated selection<br/>
+      -d: fix issues with Bld Damage (likely camera IOC w/plugins on same machine)<br/>
+      -h: display this help text<br/>
+      -l: list available boxnames
     </td>
 </tr>
 
