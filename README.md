@@ -230,7 +230,7 @@ iocmanager [hutch]<br/>
 <tr>
     <td>ioctool</td>
     <td>
-usage: ioctool <ioc>>|<pv> [option]<br/>
+usage: ioctool <ioc>|<pv> [option]<br/>
         <br/>
     Script that returns information about an ioc given its name or a PV it hosts
         <br/>
