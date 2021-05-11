@@ -230,9 +230,10 @@ iocmanager [hutch]<br/>
 <tr>
     <td>ioctool</td>
     <td>
-usage: ioctool ioc|pv [option]<br/>
-
+usage: ioctool &lt;ioc&gt;|&lt;pv&gt; [option]<br/>
+<br/>
     Script that returns information about an ioc given its name or a PV it hosts<br/>
+<br/>
 
     default option  is 'name', list of options:<br/>
     name   : returns the name of the ioc<br/>
