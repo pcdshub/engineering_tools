@@ -1,0 +1,135 @@
+#!/bin/bash
+
+function iocfpv {
+   ioc=""
+   ioc=$(grep_pv "$1" | sed -n 's/\/reg\/d\/iocData\/\(\S*\)\/iocInfo/\1/p')
+   if [ -z "$ioc" ]; then
+      echo "Did not find an ioc associated with this PV." >&2 
+      exit 1
+   fi
+}
+
+function iocdir {
+   ioc=$1
+   iocpath=""
+   iocpath=$(grep_ioc "$ioc" all | grep "id:'$ioc'" | sed -n "s/^.*dir: '\(\S*\)'.*$/\1/p");
+   if [[ -z $iocpath ]]; then
+      echo "Did not find ${ioc} running anywhere. Exiting..." >&2
+      exit 1
+   fi
+   
+   if [[ ! $iocpath =~ ^/.* ]]; then
+      iocpath=/reg/g/pcds/epics/"${iocpath}"  
+   fi
+
+}
+
+function ioccfg {
+   iocdir "$1"
+   iocfile="${iocpath}"/"$1".cfg;
+   if [ ! -f "$iocfile" ]; then
+      iocfile=${iocpath}/iocBoot/${1}/st.cmd
+      if [ ! -f "$iocfile" ]; then
+         echo -e "Neither file found:\n${iocpath}/${1}.cfg\n$iocfile" >&2
+         exit 1
+      fi
+   fi
+
+}
+
+usage(){
+cat << EOF
+usage: ${BASH_SOURCE[0]} <ioc>|<pv> [option]
+
+Script that returns information about an ioc given its name or a PV it hosts
+
+default option is 'name', list of options:
+name   : returns the name of the ioc
+dir    : returns the directory the ioc is running from
+cddir  : open the directory the ioc is running from (start with "source" before calling script with this option)
+cfg    : returns the file name of the ioc .cfg (or st.cmd)
+less   : opens the ioc .cfg (or st.cmd) in less
+data   : returns the path of the appropriate iocData directory if it exists
+telnet : starts a telnet session with the ioc 
+
+EOF
+}
+
+if [ $# -lt 1 ]; then
+   echo 'need arguments: input ioc or pv name' >&2
+   usage
+   exit 1
+fi 
+
+if [[ ($1 == "--help") || ($1 == "-h") ]]; then
+   usage
+   exit 0
+fi
+	
+NAME=$1
+CMD=$2
+
+#################################################################
+
+if [[ $NAME == *':'* ]]; then #we are assuming that PVs have a colon in them
+   iocfpv "$NAME"
+   NAME="$ioc"
+elif [[ ! $NAME == *'-'* ]]; then #We are assuming that ioc names contain an a dash in them
+   echo "${NAME} does not match the format for PVs or IOC names. Exiting..."
+   exit 1
+fi   
+
+#################################################################
+
+if [ "$CMD" == "name" ] || [ "$CMD" == "" ]; then
+   echo "$NAME"
+
+#################################################################
+
+elif [ "$CMD" ==  "dir" ]; then
+   iocdir "$NAME"
+   echo "$iocpath"
+
+#################################################################
+
+elif [ "$CMD" == "cddir" ]; then
+   iocdir "$NAME"
+   [[ "${BASH_SOURCE[0]}" == "$0" ]] && echo "Script is not being sourced. Start with 'source ${BASH_SOURCE[0]}' before calling script with this option." || cd "${iocpath}" 
+ 
+#################################################################
+
+elif [ "$CMD" == "cfg" ]; then
+   ioccfg "$NAME"
+   echo "$iocfile"
+
+#################################################################
+
+elif [ "$CMD" == "less" ]; then
+   ioccfg "$NAME"
+   less "$iocfile"
+
+#################################################################
+
+elif [ "$CMD" == "data" ]; then
+   iocdatapath=/reg/d/iocData/"${NAME}"/iocInfo
+   if [ -d "$iocdatapath" ]; then
+      echo "${iocdatapath}"
+   else
+      echo "$iocdatapath could not be found. Exiting..."
+   fi
+
+#################################################################
+
+elif [ "$CMD" == "telnet" ]; then
+   INFO=$(grep_ioc "$NAME" all | grep "id:'$NAME'")
+   if [ -z "$INFO" ]; then
+      echo "$NAME could not be found. Exiting..." >&2
+      exit 1
+   fi
+   HOST=$(echo "$INFO" | sed -n "s/^.*host: '\(\S*\)'.*$/\1/p")
+   PORT=$(echo "$INFO" | sed -n "s/^.*port: \(\S*\),.*$/\1/p")
+   #if [[ 39000 >= "$PORT" >=39999 ]];
+    #  echo "Host no in subnet that connect"
+   echo "$HOST":"$PORT"
+   telnet "$HOST" "$PORT"
+fi
