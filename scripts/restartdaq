@@ -11,7 +11,7 @@ OPTIONS:
 EOF
 }
 
-NOTRUNNING='Not running'
+NOTRUNNING='not running'
 AIMHOST=$HOSTNAME
 SELPART=''
 DOWIN=''
@@ -74,7 +74,7 @@ if [[ ($HUTCH == 'tmo') || ($HUTCH == 'rix') ]]; then
     PROCMGR='procmgr'
     DAQNETWORK='drp'
 else
-    PROCMGR='/reg/g/pcds/dist/pds/tools/procmgr/procmgr'
+    PROCMGR="/reg/g/pcds/dist/pds/$HUTCH/current/tools/procmgr/procmgr"
 fi
 
 IS_DAQ_HOST=`netconfig search $HNAME-$DAQNETWORK --brief | grep $DAQNETWORK | wc -l`
