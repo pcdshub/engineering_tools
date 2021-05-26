@@ -21,19 +21,13 @@ if [[ ($1 == "--help") || ($1 == "-h") ]]; then
 fi
 
 HUTCH=`get_info --gethutch`
-if [ $HUTCH == 'xpp' ]; then
-   HOSTS="xpp-daq xpp-control xpp-hutch01"
-elif  [ $HUTCH == 'xcs' ]; then
-   HOSTS="xcs-daq xcs-control xcs-hutch01"
-elif  [ $HUTCH == 'mfx' ]; then
-   HOSTS="mfx-daq mfx-monitor"
-elif  [ $HUTCH == 'cxi' ]; then
-   HOSTS="cxi-daq cxi-monitor"
-elif  [ $HUTCH == 'mec' ]; then
-   HOSTS="mec-daq mec-console"
-elif  [ $HUTCH == 'det' ]; then
-   HOSTS="det-console daq-det-standalone"
-else
+for i in "xpp" "xcs" "mfx" "cxi" "mec" "det"; do
+   if [ $HUTCH == $i ]; then
+      FOUNDHUTCH=1
+      break
+   fi
+done
+if [ -z $FOUNDHUTCH ]; then
    echo 'could not determine hutch or hutch not implemented, quit'
    exit
 fi
