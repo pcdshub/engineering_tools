@@ -216,10 +216,10 @@ do
 done
 
 if [ $CAMNUM -eq 0 ]; then
-    if [ $hutch = "amo" ]; then
-        CAMNAME='UNIQ:01'
-    elif [ $hutch = "sxr" ]; then
-	CAMNAME=P1
+    if [ $hutch = "tmo" ]; then
+        CAMNAME=IM2K0
+    elif [ $hutch = "rix" ]; then
+	CAMNAME=IM1K1
     elif [ $hutch = "xpp" ]; then
 	CAMNAME=hx2_shared
     else

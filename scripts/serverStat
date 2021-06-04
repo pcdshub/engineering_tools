@@ -93,7 +93,7 @@ DIR=$( cd "$DIRTMP" && pwd -P )
 PATH=$PATH:$DIR
 
 HUTCH=$(get_hutch_name)
-for name in "amo" "sxr" "xpp" "xcs" "mfx" "cxi" "mec" "det"; do
+for name in "tmo" "rix" "txi" "xpp" "xcs" "mfx" "cxi" "mec" "det"; do
     if [[ $DEV == *$name* ]]; then
 	HUTCH=$name
 	break
