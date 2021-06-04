@@ -24,13 +24,13 @@ fi
 
 if [[ ! -f /reg/g/pcds/dist/pds/$HUTCH/scripts/p$PLATFORM.cnf.running ]]; then
     if [ $HOSTNAME == 'cxi-daq' ]; then
-	echo 'Main DAQ cxi_0 is not running on $HOSTNAME '
+	echo 'Main DAQ cxi_0 is not running on '$HOSTNAME
     elif [ $HOSTNAME == 'cxi-monitor' ]; then
-	echo 'Secondary DAQ cxi_1 is not running on $HOSTNAME '
+	echo 'Secondary DAQ cxi_1 is not running on '$HOSTNAME
     else
 	echo 'DAQ is not running in '$HUTCH
     fi
 else
-    DAQ_HOST=`grep HOST /reg/g/pcds/dist/pds/$HUTCH/scripts/p$PLATFORM.cnf.running | awk {'print $3'} | sed s/\'//g`
+    DAQ_HOST=`grep "'HOST'" /reg/g/pcds/dist/pds/$HUTCH/scripts/p$PLATFORM.cnf.running | awk {'print $3'} | sed s/\'//g`
     echo 'DAQ is running on '$DAQ_HOST
 fi
