@@ -15,6 +15,8 @@ OPTIONS:
                make pedestals for Opals (default only cspad/EPIX detectors)
         -Z|--zyla         
                make pedestals for Zyla (default only cspad/EPIX detectors)
+        -R|--Rayonix
+               make pedestals for Rayonix (please note that this is not the correct procedure for this detector)
         -j|--jungfrau3     
                make pedestals for Jungfrau - 3 run version(default only cspad/EPIX detectors)
         -q|--queue <queue>
@@ -128,6 +130,10 @@ do
 			;;
            	-O|--opal)
                         WANT_OPAL=1
+			shift
+			;;
+           	-R|--rayonix)
+		        WANT_RAYONIX=1
 			shift
 			;;
            	-j|--jungfrau3)
@@ -263,7 +269,7 @@ if [[ $EXP == 'xxx' ]]; then
 fi
 
 # set the umask so all the files create are group writeable
-umask 0002
+#umask 002
 source /reg/g/psdm/etc/psconda.sh
 #conda activate ana-4.0.17 #ana-4.0.19 is broken for the 2M
 
@@ -278,16 +284,18 @@ if [ $VALSTR != 'xxx' ]; then
     ARG=$ARG' -v '$VALSTR
 fi
 
-if [ $CALIBDIR != 'xxx' ]; then
-    ARG=$ARG' -c '$CALIBDIR
-fi
-
 ###########
 # setup work directory - always!
 ###########
-CALIBDIR=/reg/d/psdm/${HUTCH}/$EXP/calib/
-if [[ $HOSTNAME =~ "drp-srcf" ]]; then
-    CALIBDIR=/cds/data/drpsrcf/${HUTCH}/$EXP/calib/
+if [ $CALIBDIR != 'xxx' ]; then
+    ARG=$ARG' -c '$CALIBDIR
+    JFARG=' -C '$CALIBDIR
+else
+    JFARG=''
+    CALIBDIR=/reg/d/psdm/${HUTCH}/$EXP/calib/
+    if [[ $HOSTNAME =~ "drp-srcf" ]]; then
+        CALIBDIR=/cds/data/drpsrcf/${HUTCH}/$EXP/calib/
+    fi
 fi
 WORKDIR=$CALIBDIR/pedestal_workdir
 if [ ! -d $WORKDIR ]; then
@@ -332,7 +340,8 @@ fi
 # few generic parameters
 ###########
 if [ $INTERACTIVE == 1 ]; then
-    echo 'now calling calibman (GUI)'
+    echo 'now calling calibman (GUI) - switch to old release for now'
+    source /reg/g/psdm/etc/psconda.sh.old
     calibman
     exit
 fi
@@ -398,6 +407,9 @@ if [[ ( $HAVE_JUNGFRAU -ge 1 ) ]]; then
             echo $CMD
 	    $CMD
 	done
+	#echo 'Deploy the other jungfrau gain constants'
+	#jungfrau_gain_constants -d exp=${EXP}:run=${RUN} -D
+	#echo 'Deployed the other jungfrau gain constants'
 	exit
     fi
 
@@ -486,7 +498,7 @@ fi
 ###
 #check if epix10k detectors are present
 HAVE_EPIX10K=`grep Epix10ka /tmp/detnames_$EXP\_$CREATE_TIME | wc -l`
-if [[ ( $HAVE_EPIX10K -ge 1 ) && ( $WANT_ZYLA -eq 0 ) && ( $WANT_OPAL -eq 0 ) ]]; then
+if [[ ( $HAVE_EPIX10K -ge 1 ) && ( $WANT_ZYLA -eq 0 ) && ( $WANT_OPAL -eq 0 )  && ( $WANT_RAYONIX -eq 0 ) ]]; then
     echo -------------------- START EPIX10K PEDESTALS at $(date +"%T") ----------------------------
     DETNAMES=`grep Epix10ka /tmp/detnames_$EXP\_$CREATE_TIME | awk  'BEGIN { FS = "|"}; {print $2}' | paste -d " " -s`
     if [[ $RUNLOCAL -ne 1 ]]; then
@@ -494,12 +506,29 @@ if [[ ( $HAVE_EPIX10K -ge 1 ) && ( $WANT_ZYLA -eq 0 ) && ( $WANT_OPAL -eq 0 ) ]]
         NJOBS=0
     fi
     if [ -v GEOMETRY ]; then
+	echo 'doing geometry.....DEBUG'
 	GEODIR=`echo /reg/d/psdm/${GEOMETRY:0:3}/$GEOMETRY/calib/`
 	for EPIX10K in $DETNAMES; do
 	    if ! [[ $EPIX10K =~ "2M" ]]; then
 		continue
 	    fi
    	    SUBDIR=`ls $GEODIR | grep Epix10ka2M`
+	    DNAME=`grep $EPIX10K /tmp/detnames_$EXP\_$CREATE_TIME | awk  'BEGIN { FS = "|"}; {print $1}' | xargs`
+	    #get the latest geometry file deployed
+            ORGFILE='0-end.data'
+            if test -f $GEODIR$SUBDIR/$DNAME/geometry/HISTORY; then
+    	        ORGFILE=`tail -n 1 $GEODIR/$SUBDIR/$DNAME/geometry/HISTORY | awk {'print$1'} | sed s/'file:'//`
+	    fi
+	    CMD=`echo calibfile deploy -t geometry -e $EXP -r 0-end -s $DNAME -f $GEODIR$SUBDIR/$DNAME/geometry/$ORGFILE`
+            echo $CMD
+	    $CMD
+	done
+	#this is so ugly - a second loop for the quad.
+	for EPIX10K in $DETNAMES; do
+	    if ! [[ $EPIX10K =~ "Quad" ]]; then
+		continue
+	    fi
+   	    SUBDIR=`ls $GEODIR | grep Epix10kaQuad`
 	    DNAME=`grep $EPIX10K /tmp/detnames_$EXP\_$CREATE_TIME | awk  'BEGIN { FS = "|"}; {print $1}' | xargs`
 	    #get the latest geometry file deployed
             ORGFILE='0-end.data'
@@ -603,6 +632,7 @@ HAVE_EPIX=`grep Epix100 /tmp/detnames_$EXP\_$CREATE_TIME | wc -l`
 HAVE_CSPAD=`grep Cspad /tmp/detnames_$EXP\_$CREATE_TIME | wc -l`
 HAVE_ZYLA=`grep Zyla /tmp/detnames_$EXP\_$CREATE_TIME | wc -l`
 HAVE_OPAL=`grep Opal /tmp/detnames_$EXP\_$CREATE_TIME | wc -l`
+HAVE_RAYONIX=`grep Rayonix /tmp/detnames_$EXP\_$CREATE_TIME | wc -l`
 
 #not like this: calculation
 let SPECIFIED_CUTS=MYNOISESIGMIN+MYNOISESIGMAX+MYADUMIN+MYADUMAX
@@ -635,6 +665,20 @@ if [[ ( $HAVE_OPAL -ge 1 ) && ( $WANT_OPAL -ge 1 ) ]]; then
     fi
 fi
 
+#add Rayonix only on request
+if [[ ( $HAVE_RAYONIX -ge 1 ) && ( $WANT_RAYONIX -ge 1 ) ]]; then
+    if [ $SPECIFIED_CUTS -eq -4 ]; then
+	DETS=`echo $DETS' Rayonix'`
+    else
+	DETS='Rayonix'	
+    fi
+    ARG=$ARG' --zeropeds'
+    #not sure if deplotgeo needs -P -D....
+    if [ -v GEOMETRY ]; then
+	calibrun -r $RUN -e $EXP -d $DETS --deploygeo -P -D
+	exit
+    fi
+fi
 
 if [[ ( $DETS == '' ) ]]; then
     T2="$(($(date +%s%N)-T))"
@@ -662,6 +706,11 @@ for MYDET in $DETS; do
 	ADUMIN=1        
 	NOISESIGMAX=100  
 	NOISESIGMIN=1
+    elif [[ ( $MYDET == 'Rayonix') ]]; then
+	ADUMAX=16000
+	ADUMIN=1        
+	NOISESIGMAX=10000  
+	NOISESIGMIN=0
     elif [[ ( $MYDET == 'Epix100a') ]]; then
 	ADUMAX=10000
 	ADUMIN=10
@@ -694,6 +743,7 @@ for MYDET in $DETS; do
 
     echo -------------------- START CALIBRUN at $(date +"%T") for detector $MYDET----------------------------
     source /reg/g/psdm/etc/psconda.sh
+    conda activate ana-4.0.22 #needed due to permissions problems in calibrun for 4.0.23+24
     if [[ $HOSTNAME =~ "drp-srcf" ]]; then
     	cmd=`echo calibrun -r $RUN  -d $MYDET -P -e $EXP -x /cds/data/drpsrcf/$HUTCH/$EXP/xtc/ $LOCARG`
     	echo $cmd

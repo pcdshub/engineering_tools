@@ -22,6 +22,8 @@ OPTIONS:
                make pedestals for Opals (default only cspad/EPIX detectors)
         -Z|--zyla         
                make pedestals for Zyla (default only cspad/EPIX detectors)
+        -R|--Rayonix
+               make pedestals for Rayonix (please note that this is not the correct procedure for this detector)
         -j|--jungfrau3     
                make pedestals for Jungfrau - 3 run version(default only cspad/EPIX detectors)
         -p|--post <text>  
@@ -99,6 +101,11 @@ do
            	-O|--opal)
                         POSITIONAL+=("$1")
 	                elogMessage="DARK for opal"
+			shift
+			;;
+           	-R|--rayonix)
+                        POSITIONAL+=("$1")
+	                elogMessage="DARK for Rayonix"
 			shift
 			;;
            	-j|--jungfrau3)
@@ -182,7 +189,9 @@ fi
 
 if [[ $HOSTNAME =~ "psana" ]]; then
     #echo $DIR/makepeds_psana $@
-    $DIR/makepeds_psana $@
+    #$DIR/makepeds_psana $@
+    #just for testing
+    ./makepeds_psana $@
 elif [[ $HOSTNAME =~ "drp-srcf" ]]; then
     #echo $DIR/makepeds_psana $@
     $DIR/makepeds_psana $@
@@ -202,6 +211,9 @@ else
     fi
 fi
 
+source pcds_conda
+elog_par_post --file pedestal -e "$EXP" -r $RUN
+
 elogMessage+=$ELOGTEXT
 #if this is a default pedestal run, then do not post as this is handled in the pedestal scripts
 if [[ $elogMessage == 'DARK' ]]; then
@@ -209,10 +221,6 @@ if [[ $elogMessage == 'DARK' ]]; then
     exit 0
 fi
 
-#DEBUG
-exit
-
-source pcds_conda
 
 ## Need the following line until the controls conda is updated to pick up the latest elog package.
 #export PYTHONPATH=/reg/g/pcds/pyps/apps/hutch-python/common/dev/elog:${PYTHONPATH}
@@ -225,6 +233,7 @@ if [[ `whoami` =~ "opr" ]]; then
     else
         $BINPATH $PYCMD -i "${HUTCH^^}" -u `whoami` -p pcds -e "$EXP"  -t DARK  -r $RUN -m "$elogMessage"&
     fi
+    elog_par_post --file pedestal -e "$EXP" -r $RUN
 else
     echo $BINPATH $PYCMD -i "${HUTCH^^}" -e "$EXP"  -t DARK -r $RUN -m "$elogMessage"
     if [[ $HOSTNAME == 'cxi-monitor' ]]; then
