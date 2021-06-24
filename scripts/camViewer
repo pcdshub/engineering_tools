@@ -107,11 +107,11 @@ VIEWERCFGLFE=/reg/g/pcds/pyps/config/lfe/camviewer.cfg
 VIEWERCFG=/reg/g/pcds/pyps/config/$hutch/camviewer.cfg
 VIEWERCFGXRT=/reg/g/pcds/pyps/config/xrt/camviewer.cfg
 
-for gige_cam in `grep -v '#' $VIEWERCFGLFE | awk -F, '{print $4 "\n" }'`; do
-    echo $gige_cam
-done
-
 if  [ $hutch != 'tmo' ] && [ $hutch != 'rix' ]; then
+    for gige_cam in `grep -v '#' $VIEWERCFGLFE | awk -F, '{print $4 "\n" }'`; do
+        echo $gige_cam
+    done
+
     for gige_cam in `grep -v '#' $VIEWERCFGXRT | awk -F, '{print $4 "\n" }'`; do
 	echo $gige_cam
     done
