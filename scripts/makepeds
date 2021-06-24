@@ -189,9 +189,9 @@ fi
 
 if [[ $HOSTNAME =~ "psana" ]]; then
     #echo $DIR/makepeds_psana $@
-    #$DIR/makepeds_psana $@
+    $DIR/makepeds_psana $@
     #just for testing
-    ./makepeds_psana $@
+    #./makepeds_psana $@
 elif [[ $HOSTNAME =~ "drp-srcf" ]]; then
     #echo $DIR/makepeds_psana $@
     $DIR/makepeds_psana $@
