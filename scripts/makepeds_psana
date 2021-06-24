@@ -406,10 +406,11 @@ if [[ ( $HAVE_JUNGFRAU -ge 1 ) ]]; then
 	    CMD=`echo calibfile deploy -t geometry -e $EXP -r 0-end -s $DNAME -f $GEODIR/$SUBDIR/$DORGNAME/geometry/$ORGFILE`
             echo $CMD
 	    $CMD
-	done
-	#echo 'Deploy the other jungfrau gain constants'
-	#jungfrau_gain_constants -d exp=${EXP}:run=${RUN} -D
-	#echo 'Deployed the other jungfrau gain constants'
+	    
+            echo 'Deploy the other jungfrau gain constants'
+	    jungfrau_gain_constants -d exp=${EXP}:run=${RUN} -D
+	    echo 'Deployed the other jungfrau gain constants'
+ 	done
 	exit
     fi
 
