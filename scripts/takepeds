@@ -1,0 +1,22 @@
+#!/bin/bash
+
+DAQ_RELEASE=/cds/group/pcds/dist/pds/current
+
+# -R: for norecord , -r forces recording
+$DAQ_RELEASE/tools/scanning/take_pedestals -p 0 -r
+
+elogMessage="DARK"
+source pcds_conda
+export PYTHONPATH=/reg/g/pcds/pyps/apps/hutch-python/common/dev/elog:${PYTHONPATH}
+PYCMD=LogBookPost.py
+
+EXP=`get_curr_exp`
+RUN=`get_lastRun`
+HUTCH=${EXP:0:3}
+echo $PYCMD -i "${HUTCH^^}" -u `whoami` -e "$EXP"  -t DARK  -r $RUN -m "$elogMessage"
+$PYCMD -i "${HUTCH^^}" -u `whoami` -p pcds -e "$EXP"  -t DARK  -r $RUN -m "$elogMessage"&
+
+echo 'please call: makepeds -u <userID> [-F -q <queue>] -r '`get_lastRun`
+#echo 'we need to use the offline data to process pedestals right now, make sure files have moved, otherwise a very silent failure might happen'
+#echo 'please call: makepeds -u <userID> -e '`get_curr_exp`' -r '`get_lastRun`' -q psfehhiprioq'
+
