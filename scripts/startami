@@ -35,6 +35,11 @@ do
 done
 shift "$(($OPTIND-1))"
 
+if [[ `whoami` != *'opr'* ]]; then
+    echo "Please run ami from the operator account!"
+    exit
+fi
+
 HUTCH=`get_hutch_name`
 EXPNAME=`get_curr_exp`
 CNFEXT=.cnf
