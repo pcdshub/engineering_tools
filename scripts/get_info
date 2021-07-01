@@ -119,6 +119,8 @@ if hutch.lower() in ['cxi']:
             station = 0
     daq_base = '{:}_{:}'.format(hutch.lower(),station)
     instrument = '{:}:{:}'.format(hutch.upper(),station)
+elif hutch.lower() in ['rix']:
+    station=2
 else:
     daq_base = hutch.lower()
     instrument = hutch.upper()
@@ -128,7 +130,7 @@ else:
     else:
         station=0
 
-if station >= nstations:
+if hutch.lower()!='rix' and station >= nstations:
     print("Invalid --station={:} keyword set for hutch {:}".format(hutch))
     sys.exit()
 
