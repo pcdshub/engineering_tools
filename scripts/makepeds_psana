@@ -632,6 +632,7 @@ fi
 HAVE_EPIX=`grep Epix100 /tmp/detnames_$EXP\_$CREATE_TIME | wc -l`
 HAVE_CSPAD=`grep Cspad /tmp/detnames_$EXP\_$CREATE_TIME | wc -l`
 HAVE_ZYLA=`grep Zyla /tmp/detnames_$EXP\_$CREATE_TIME | wc -l`
+HAVE_ISTAR=`grep iStar /tmp/detnames_$EXP\_$CREATE_TIME | wc -l`
 HAVE_OPAL=`grep Opal /tmp/detnames_$EXP\_$CREATE_TIME | wc -l`
 HAVE_RAYONIX=`grep Rayonix /tmp/detnames_$EXP\_$CREATE_TIME | wc -l`
 
@@ -654,6 +655,14 @@ if [[ ( $HAVE_ZYLA -ge 1 ) && ( $WANT_ZYLA -ge 1 ) ]]; then
 	DETS=`echo $DETS' Zyla'`
     else
 	DETS='Zyla'
+    fi
+fi
+#add iStar only on request
+if [[ ( $HAVE_ISTAR -ge 1 ) && ( $WANT_ZYLA -ge 1 ) ]]; then
+    if [ $SPECIFIED_CUTS -eq -4 ]; then
+	DETS=`echo $DETS' iStar'`
+    else
+	DETS='iStar'
     fi
 fi
 
@@ -702,6 +711,11 @@ for MYDET in $DETS; do
 	ADUMIN=1        
 	NOISESIGMAX=100  
 	NOISESIGMIN=1
+    elif [[ ( $MYDET == 'iStar') ]]; then
+	ADUMAX=10000
+	ADUMIN=1        
+	NOISESIGMAX=100  
+	NOISESIGMIN=1
     elif [[ ( $MYDET == 'Opal') ]]; then
 	ADUMAX=10000
 	ADUMIN=1        
@@ -738,13 +752,14 @@ for MYDET in $DETS; do
     fi
 
     LOCARG=$ARG' --thr_int_min '$ADUMIN' --thr_int_max '$ADUMAX' --thr_rms_min '$NOISESIGMIN' --thr_rms '$NOISESIGMAX
+    #this was likely to work with runs where the zyla rate was < readout rate....
     if [[ ( $MYDET == 'Zyla') ]]; then
 	LOCARG=$LOCARG' -m 100'
     fi
 
     echo -------------------- START CALIBRUN at $(date +"%T") for detector $MYDET----------------------------
     source /reg/g/psdm/etc/psconda.sh
-    conda activate ana-4.0.22 #needed due to permissions problems in calibrun for 4.0.23+24
+    #conda activate ana-4.0.26 #needed due to permissions problems in calibrun for 4.0.23 - fixed in 4.0.24
     if [[ $HOSTNAME =~ "drp-srcf" ]]; then
     	cmd=`echo calibrun -r $RUN  -d $MYDET -P -e $EXP -x /cds/data/drpsrcf/$HUTCH/$EXP/xtc/ $LOCARG`
     	echo $cmd
