@@ -8,8 +8,12 @@ OPTIONS:
 -w sort windows after start
 -p select partition (same as used last)
 -s silent (do not email jana)
+-c enable core files
 EOF
 }
+
+
+
 
 NOTRUNNING='not running'
 AIMHOST=$HOSTNAME
@@ -23,7 +27,8 @@ if [[ ($1 == "--help") || ($1 == "-h") ]]; then
 	exit 0
 fi
 
-while getopts "m:pws" OPTION
+CORESIZE=0
+while getopts "m:pwsc" OPTION
 do
     case $OPTION in
 	p)
@@ -38,6 +43,9 @@ do
 	m) 
 	    AIMHOST=$OPTARG
 	    ;;
+ 	c) 
+ 	    CORESIZE=2000000000 
+ 	    ;;
 	?)
 	    usage
 	    exit 1
@@ -133,7 +141,7 @@ T="$(date +%s%N)"
 echo start DAQ on $AIMHOST
 if [ $HOSTNAME == $AIMHOST ]; then
     $PROCMGR start \
-	/reg/g/pcds/dist/pds/$HUTCH/scripts/$HUTCH$CNFEXT -c 2000000000 -o /reg/g/pcds/pds/$HUTCH/logfiles
+        /reg/g/pcds/dist/pds/$HUTCH/scripts/$HUTCH$CNFEXT -c $CORESIZE -o /reg/g/pcds/pds/$HUTCH/logfiles
 else
     ssh -Y $AIMHOST restartdaq
 fi
