@@ -22,21 +22,24 @@ source /cds/group/pcds/setup/epics-ca-env.sh
 # Source the bash setup
 PYPS_ROOT="/cds/group/pcds/pyps"
 APPS_ROOT="${PYPS_ROOT}/apps"
-CONDA_ROOT="${PYPS_ROOT}/conda/py36"
-source "${CONDA_ROOT}/etc/profile.d/conda.sh"
+CONDA_ROOT="${PYPS_ROOT}/conda"
+BASE_ENV="${CONDA_ROOT}/py39"
+source "${BASE_ENV}/etc/profile.d/conda.sh"
 
 # Activate base env first so things like conda build are available
 conda activate
 # Default to dev pcds release
 conda activate dev
 
+PCDSDEVICES_DEV_UI="${APPS_ROOT}/dev/pcdsdevices/pcdsdevices/ui"
+
 EPICS_ROOT="/cds/group/pcds/epics-dev"
 
 export PYTHONPATH="${APPS_ROOT}/dev/pythonpath"
-export PYQTDESIGNERPATH="${PYPS_ROOT}/conda/dev_designer_plugins/:${PYQTDESIGNERPATH}"
+export PYQTDESIGNERPATH="${CONDA_ROOT}/dev_designer_plugins/:${PYQTDESIGNERPATH}"
 export PYDM_CONFIRM_QUIT=0
 export PYDM_DESIGNER_ONLINE=1
-export PYDM_DISPLAYS_PATH="${EPICS_ROOT}/screens/pydm:${EPICS_ROOT}:${APPS_ROOT}/dev/pcdsdevices/pcdsdevices/ui"
+export PYDM_DISPLAYS_PATH="${PCDSDEVICES_DEV_UI}:${EPICS_ROOT}/screens/pydm:${EPICS_ROOT}"
 export PYDM_STYLESHEET="${EPICS_ROOT}/screens/pydm/vacuumscreens/styleSheet/masterStyleSheet.qss"
 export PYDM_STYLESHEET_INCLUDE_DEFAULT=1
 export LUCID_CONFIG="${APPS_ROOT}/hutch-python/lucid_config/"
@@ -44,7 +47,8 @@ export HAPPI_CFG="${APPS_ROOT}/hutch-python/device_config/happi.cfg"
 export TYPHOS_JIRA_EMAIL_SUFFIX="@slac.stanford.edu"
 
 # Keep tokens off of github
-source "${PYPS_ROOT}/conda/.tokens.sh"
+TOKEN_DIR="${CONDA_ROOT}/.tokens"
+source "${TOKEN_DIR}/typhos.sh"
 
 # Revert to Software Raster when SSH to avoid issues with QtQuick.
 # The same was done with PyDM and this fixes Designer and friends.

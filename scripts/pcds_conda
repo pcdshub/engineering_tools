@@ -24,27 +24,94 @@ source /cds/group/pcds/setup/epics-ca-env.sh
 # Source the bash setup
 PYPS_ROOT="/cds/group/pcds/pyps"
 APPS_ROOT="${PYPS_ROOT}/apps"
-CONDA_ROOT="${PYPS_ROOT}/conda/py36"
-source "${CONDA_ROOT}/etc/profile.d/conda.sh"
+CONDA_ROOT="${PYPS_ROOT}/conda"
 
-# Activate base env first so things like conda build are available
-conda activate
-if [ -z "${PCDS_CONDA_VER}" ]; then
-  # Default to latest pcds release
-  conda activate "$(command ls ${CONDA_ROOT}/envs | command grep pcds- | command tail -1)"
-elif [ -z "${PCDS_CONDA_VER##*-*}" ]; then
-  # If you had a dash, assume this is a full environment name
-  conda activate "${PCDS_CONDA_VER}"
+# BASE_ENV transition points
+FIRST_PCDS_PY38="4.0.0"
+FIRST_PCDS_PY39="4.2.0"
+
+version_ge () {
+  # Is first version greater than or equal to the second?
+  # Assumes no prefix, just numbers, major.minor.bugfix
+  first_ver = "$1"
+  second_ver = "$2"
+  first_maj = echo "$first_ver" | cut -d . -f 1
+  first_min = echo "$first_ver" | cut -d . -f 2
+  first_bug = echo "$first_ver" | cut -d . -f 3
+  second_maj = echo "$second_ver" | cut -d . -f 1
+  second_min = echo "$second_ver" | cut -d . -f 2
+  second_bug = echo "$second_ver" | cut -d . -f 3
+  if [[ "$first_maj" -gt "$second_maj" ]]; then
+    return 1
+  elif [[ "$first_maj" -lt "$second_maj" ]]; then
+    return 0
+  else
+    if [[ "$first_min" -gt "$second_min" ]]; then
+      return 1
+    elif [[ "$first_min" -lt "$second_min" ]]; then
+      return 0
+    else
+      if [[ "$first_bug" -ge "$second_bug" ]]; then
+        return 1
+      else
+        return 0
+      fi
+    fi
+  fi
+}
+
+
+if [[ -z "${PCDS_CONDA_VER}" ]]; then
+  # If env var unset, then default to latest
+  BASE_ENV="${CONDA_ROOT}/py39"
+  PYTHON_VER="3.9"
+  PCDS_CONDA_VER="$(command ls ${BASE_ENV}/envs | command grep pcds- | command tail -1)"
 else
-  # Otherwise, assume pcds- prefix
-  conda activate "pcds-${PCDS_CONDA_VER}"
+  # Figure out which base to use
+  if [[ -z "${PCDS_CONDA_VER##*-*}" ]]; then
+    # We had a dash, there must be a prefix in the name
+    SERIES=echo "${PCDS_CONDA_VER}" | cut -d - -f 1
+    VER_NUM=echo "${PCDS_CONDA_VER}" | cut -d - -f 2
+  else
+    # We didn't have a dash or a prefix, assume it is pcds
+    SERIES="pcds"
+    VER_NUM="${PCDS_CONDA_VER}"
+    PCDS_CONDA_VER="pcds-${PCDS_CONDA_VER}"
+  fi
+  # Figure out where the base environment is
+  # Base environment should be updated with every new python version
+  # But in practice this can be skipped
+  if [[ "${SERIES}" -eq "pcds" ]]; then
+    if [[ version_ge "${VER_NUM}" "${FIRST_PCDS_PY39}" ]]; then
+      BASE_ENV="${CONDA_ROOT}/py39"
+      PYTHON_VER="3.9"
+    elif [[ version_ge "${VER_NUM}" "${FIRST_PCDS_PY38}" ]]; then
+      BASE_ENV="${CONDA_ROOT}/py36"
+      PYTHON_VER="3.8"
+    else
+      BASE_ENV="${CONDA_ROOT}/py36"
+      PYTHON_VER="3.6"
+    fi
+  else
+    BASE_ENV="${CONDA_ROOT}/py39"
+    PYTHON_VER="3.9"
+  fi
 fi
+
+source "${BASE_ENV}/etc/profile.d/conda.sh"
+conda activate "${PCDS_CONDA_VER}"
+
+ENV_FILES="${BASE_ENV}/envs/${PCDS_CONDA_VER}"
+SITE_PACKAGES="${ENV_FILES}/lib/python${PYTHON_VER}/site-packages"
+PCDSDEVICES_PROD_UI="${SITE_PACKAGES}/pcdsdevices/ui"
+PCDSDEVICES_DEV_UI="${APPS_ROOT}/dev/pcdsdevices/pcdsdevices/ui"
+TYPHOS_PROD_DEVICES_UI="${SITE_PACKAGES}/typhos/ui/devices"
 
 EPICS_ROOT="/cds/group/pcds/epics-dev"
 
 export PYDM_CONFIRM_QUIT=0
 export PYDM_DESIGNER_ONLINE=1
-export PYDM_DISPLAYS_PATH="${EPICS_ROOT}/screens/pydm:${EPICS_ROOT}"
+export PYDM_DISPLAYS_PATH="${PCDSDEVICES_PROD_UI}:${TYPHOS_PROD_DEVICES_UI}:${PCDSDEVICES_DEV_UI}:${EPICS_ROOT}/screens/pydm:${EPICS_ROOT}"
 export PYDM_STYLESHEET="${EPICS_ROOT}/screens/pydm/vacuumscreens/styleSheet/masterStyleSheet.qss"
 export PYDM_STYLESHEET_INCLUDE_DEFAULT=1
 export LUCID_CONFIG="${APPS_ROOT}/hutch-python/lucid_config/"
@@ -52,7 +119,8 @@ export HAPPI_CFG="${APPS_ROOT}/hutch-python/device_config/happi.cfg"
 export TYPHOS_JIRA_EMAIL_SUFFIX="@slac.stanford.edu"
 
 # Keep tokens off of github
-source "${PYPS_ROOT}/conda/.tokens.sh"
+TOKEN_DIR="${CONDA_ROOT}/.tokens"
+source "${TOKEN_DIR}/typhos.sh"
 
 # Revert to Software Raster when SSH to avoid issues with QtQuick.
 # The same was done with PyDM and this fixes Designer and friends.
