@@ -66,6 +66,8 @@ if [[ -z "${PCDS_CONDA_VER}" ]]; then
   BASE_ENV="${CONDA_ROOT}/py39"
   PYTHON_VER="3.9"
   PCDS_CONDA_VER="$(command ls ${BASE_ENV}/envs | command grep pcds- | command tail -1)"
+  SERIES="pcds"
+  VER_NUM=echo "${PCDS_CONDA_VER}" | cut -d - -f 2
 else
   # Figure out which base to use
   if [[ -z "${PCDS_CONDA_VER##*-*}" ]]; then
