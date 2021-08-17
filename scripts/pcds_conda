@@ -19,10 +19,12 @@ unset LD_LIBRARY_PATH
 unset PYTHONPATH
 
 # Pick up EPICS environment variable settings just in case user did not
-source /reg/g/pcds/setup/epics-ca-env.sh
+source /cds/group/pcds/setup/epics-ca-env.sh
 
 # Source the bash setup
-CONDA_ROOT="/reg/g/pcds/pyps/conda/py36"
+PYPS_ROOT="/cds/group/pcds/pyps"
+APPS_ROOT="${PYPS_ROOT}/apps"
+CONDA_ROOT="${PYPS_ROOT}/conda/py36"
 source "${CONDA_ROOT}/etc/profile.d/conda.sh"
 
 # Activate base env first so things like conda build are available
@@ -38,14 +40,19 @@ else
   conda activate "pcds-${PCDS_CONDA_VER}"
 fi
 
-EPICS_ROOT="/reg/g/pcds/epics-dev"
+EPICS_ROOT="/cds/group/pcds/epics-dev"
 
+export PYDM_CONFIRM_QUIT=0
 export PYDM_DESIGNER_ONLINE=1
-export PYDM_DISPLAYS_PATH=$EPICS_ROOT/screens/pydm:$EPICS_ROOT
-export PYDM_STYLESHEET=$EPICS_ROOT/screens/pydm/vacuumscreens/styleSheet/masterStyleSheet.qss
+export PYDM_DISPLAYS_PATH="${EPICS_ROOT}/screens/pydm:${EPICS_ROOT}"
+export PYDM_STYLESHEET="${EPICS_ROOT}/screens/pydm/vacuumscreens/styleSheet/masterStyleSheet.qss"
 export PYDM_STYLESHEET_INCLUDE_DEFAULT=1
-export LUCID_CONFIG=/reg/g/pcds/pyps/apps/hutch-python/lucid_config/
-export HAPPI_CFG=/reg/g/pcds/pyps/apps/hutch-python/device_config/happi.cfg
+export LUCID_CONFIG="${APPS_ROOT}/hutch-python/lucid_config/"
+export HAPPI_CFG="${APPS_ROOT}/hutch-python/device_config/happi.cfg"
+export TYPHOS_JIRA_EMAIL_SUFFIX="@slac.stanford.edu"
+
+# Keep tokens off of github
+source "${PYPS_ROOT}/conda/.tokens.sh"
 
 # Revert to Software Raster when SSH to avoid issues with QtQuick.
 # The same was done with PyDM and this fixes Designer and friends.
