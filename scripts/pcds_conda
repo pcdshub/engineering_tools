@@ -42,19 +42,19 @@ version_ge () {
   second_min="$(echo "${second_ver}" | cut -d . -f 2)"
   second_bug="$(echo "${second_ver}" | cut -d . -f 3)"
   if [[ "${first_maj}" -gt "${second_maj}" ]]; then
-    return 1
-  elif [[ "${first_maj}" -lt "${second_maj}" ]]; then
     return 0
+  elif [[ "${first_maj}" -lt "${second_maj}" ]]; then
+    return 1
   else
     if [[ "${first_min}" -gt "${second_min}" ]]; then
-      return 1
-    elif [[ "${first_min}" -lt "${second_min}" ]]; then
       return 0
+    elif [[ "${first_min}" -lt "${second_min}" ]]; then
+      return 1
     else
       if [[ "${first_bug}" -ge "${second_bug}" ]]; then
-        return 1
-      else
         return 0
+      else
+        return 1
       fi
     fi
   fi
