@@ -33,25 +33,25 @@ FIRST_PCDS_PY39="4.2.0"
 version_ge () {
   # Is first version greater than or equal to the second?
   # Assumes no prefix, just numbers, major.minor.bugfix
-  first_ver = "$1"
-  second_ver = "$2"
-  first_maj = echo "$first_ver" | cut -d . -f 1
-  first_min = echo "$first_ver" | cut -d . -f 2
-  first_bug = echo "$first_ver" | cut -d . -f 3
-  second_maj = echo "$second_ver" | cut -d . -f 1
-  second_min = echo "$second_ver" | cut -d . -f 2
-  second_bug = echo "$second_ver" | cut -d . -f 3
-  if [[ "$first_maj" -gt "$second_maj" ]]; then
+  first_ver="$1"
+  second_ver="$2"
+  first_maj="$(echo $first_ver | cut -d . -f 1)"
+  first_min="$(echo "$first_ver" | cut -d . -f 2)"
+  first_bug="$(echo "$first_ver" | cut -d . -f 3)"
+  second_maj="$(echo "$second_ver" | cut -d . -f 1)"
+  second_min="$(echo "$second_ver" | cut -d . -f 2)"
+  second_bug="$(echo "$second_ver" | cut -d . -f 3)"
+  if [[ "${first_maj}" -gt "${second_maj}" ]]; then
     return 1
-  elif [[ "$first_maj" -lt "$second_maj" ]]; then
+  elif [[ "${first_maj}" -lt "${second_maj}" ]]; then
     return 0
   else
-    if [[ "$first_min" -gt "$second_min" ]]; then
+    if [[ "${first_min}" -gt "${second_min}" ]]; then
       return 1
-    elif [[ "$first_min" -lt "$second_min" ]]; then
+    elif [[ "${first_min}" -lt "${second_min}" ]]; then
       return 0
     else
-      if [[ "$first_bug" -ge "$second_bug" ]]; then
+      if [[ "${first_bug}" -ge "${second_bug}" ]]; then
         return 1
       else
         return 0
@@ -67,13 +67,13 @@ if [[ -z "${PCDS_CONDA_VER}" ]]; then
   PYTHON_VER="3.9"
   PCDS_CONDA_VER="$(command ls ${BASE_ENV}/envs | command grep pcds- | command tail -1)"
   SERIES="pcds"
-  VER_NUM=echo "${PCDS_CONDA_VER}" | cut -d - -f 2
+  VER_NUM="$(echo ${PCDS_CONDA_VER} | cut -d - -f 2)"
 else
   # Figure out which base to use
   if [[ -z "${PCDS_CONDA_VER##*-*}" ]]; then
     # We had a dash, there must be a prefix in the name
-    SERIES=echo "${PCDS_CONDA_VER}" | cut -d - -f 1
-    VER_NUM=echo "${PCDS_CONDA_VER}" | cut -d - -f 2
+    SERIES="$(echo "${PCDS_CONDA_VER}" | cut -d - -f 1)"
+    VER_NUM="$(echo "${PCDS_CONDA_VER}" | cut -d - -f 2)"
   else
     # We didn't have a dash or a prefix, assume it is pcds
     SERIES="pcds"
@@ -84,10 +84,10 @@ else
   # Base environment should be updated with every new python version
   # But in practice this can be skipped
   if [[ "${SERIES}" -eq "pcds" ]]; then
-    if [[ version_ge "${VER_NUM}" "${FIRST_PCDS_PY39}" ]]; then
+    if [ version_ge "${VER_NUM}" "${FIRST_PCDS_PY39}" ]; then
       BASE_ENV="${CONDA_ROOT}/py39"
       PYTHON_VER="3.9"
-    elif [[ version_ge "${VER_NUM}" "${FIRST_PCDS_PY38}" ]]; then
+    elif [ version_ge "${VER_NUM}" "${FIRST_PCDS_PY38}" ]; then
       BASE_ENV="${CONDA_ROOT}/py36"
       PYTHON_VER="3.8"
     else
