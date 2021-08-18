@@ -1,6 +1,6 @@
 #!/reg/g/pcds/pyps/conda/py36/envs/pcds-4.1.6/bin/python
 import os
-#import argparse
+import argparse
 
 def main():
     #######clean the file output use to store the information in lists#####
@@ -8,12 +8,13 @@ def main():
     a_file.truncate()
     a_file.close()
 
-    #parser = argparse.ArgumentParser(description=__doc__)
-    #parser.add_argument('-r', '--run', help='run number',
-    #                    required=True)
-   # args = parser.parse_args()
+    parser = argparse.ArgumentParser(description='Checks duplicates Alias and Pvs in an epicsArch file. Warns about the Pvs with no aliases assigned.')
+    parser.add_argument('pathname', help='Full pathname of the file to check. e.g /xpp/misc/epicsArch3.txt',type=str)
+    args = parser.parse_args()
+
+    fullpath = args.pathname
     
-    fullpath = input("Enter the fullpath name of the fil(include\"\"):")
+    #fullpath = input("Enter the fullpath name of the file:")
     #fullpath = "/reg/g/pcds/dist/pds/xpp/misc/epicsArch.txt" #Real data
     #fullpath = "/cds/home/o/oter1234/intershipLCLS_ECS/epicsArch_checker/List.txt"
     dirpath = os.path.dirname(fullpath)
@@ -271,8 +272,8 @@ def display(fileName, T_Keys, T_Pvs, ind_keys,ind_pvs):
     if c_key:
         print("\n------------------------------------Duplicates by Alias------------------------------------\n")
         for i in c_key:
-	    if " " in i:
-	    	print("Duplicate Alias: ", i, " ***Aliases should not have spaces***")
+            if " " in i:
+                print("Duplicate Alias: ", i, " ***Aliases should not have spaces***")
 
             else:
                 print("Duplicate Alias: ", i)
@@ -297,11 +298,12 @@ def display(fileName, T_Keys, T_Pvs, ind_keys,ind_pvs):
             print(90*"=")
             for j in range(len(T_Pvs)):
                 if i == T_Pvs[j]:
-		      if " " in T_Keys[j]:
-			  print(str(T_Keys[j]).center(size_per_col), str(fileName[j]).center(size_per_col), "   ***Aliases should not have spaces***")
+                    if " " in T_Keys[j]:
+                        print(str(T_Keys[j]).center(size_per_col),
+                        str(fileName[j]).center(size_per_col), ("**This alias has a space**").center(size_per_col),)
 
-                      else:
-		          print(str(T_Keys[j]).center(size_per_col), str(fileName[j]).center(size_per_col))
+                    else:
+                        print(str(T_Keys[j]).center(size_per_col), str(fileName[j]).center(size_per_col))
 
             print(90*"=")
             print("\n")
