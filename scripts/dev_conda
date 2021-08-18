@@ -52,7 +52,7 @@ source "${TOKEN_DIR}/typhos.sh"
 
 # Revert to Software Raster when SSH to avoid issues with QtQuick.
 # The same was done with PyDM and this fixes Designer and friends.
-if [ -n "SSH_CONNECTION" ]; then
+if [ -n "${SSH_CONNECTION}" ]; then
 	echo "Using SSH, reverting QtQuick rendering to Software."
 	export QT_QUICK_BACKEND="software"
 fi

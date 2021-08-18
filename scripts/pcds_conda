@@ -35,12 +35,12 @@ version_ge () {
   # Assumes no prefix, just numbers, major.minor.bugfix
   first_ver="$1"
   second_ver="$2"
-  first_maj="$(echo $first_ver | cut -d . -f 1)"
-  first_min="$(echo "$first_ver" | cut -d . -f 2)"
-  first_bug="$(echo "$first_ver" | cut -d . -f 3)"
-  second_maj="$(echo "$second_ver" | cut -d . -f 1)"
-  second_min="$(echo "$second_ver" | cut -d . -f 2)"
-  second_bug="$(echo "$second_ver" | cut -d . -f 3)"
+  first_maj="$(echo "${first_ver}" | cut -d . -f 1)"
+  first_min="$(echo "${first_ver}" | cut -d . -f 2)"
+  first_bug="$(echo "${first_ver}" | cut -d . -f 3)"
+  second_maj="$(echo "${second_ver}" | cut -d . -f 1)"
+  second_min="$(echo "${second_ver}" | cut -d . -f 2)"
+  second_bug="$(echo "${second_ver}" | cut -d . -f 3)"
   if [[ "${first_maj}" -gt "${second_maj}" ]]; then
     return 1
   elif [[ "${first_maj}" -lt "${second_maj}" ]]; then
@@ -65,9 +65,9 @@ if [[ -z "${PCDS_CONDA_VER}" ]]; then
   # If env var unset, then default to latest
   BASE_ENV="${CONDA_ROOT}/py39"
   PYTHON_VER="3.9"
-  PCDS_CONDA_VER="$(command ls ${BASE_ENV}/envs | command grep pcds- | command tail -1)"
+  PCDS_CONDA_VER="$(command ls "${BASE_ENV}/envs" | command grep pcds- | command tail -1)"
   SERIES="pcds"
-  VER_NUM="$(echo ${PCDS_CONDA_VER} | cut -d - -f 2)"
+  VER_NUM="$(echo "${PCDS_CONDA_VER}" | cut -d - -f 2)"
 else
   # Figure out which base to use
   if [[ -z "${PCDS_CONDA_VER##*-*}" ]]; then
@@ -83,7 +83,7 @@ else
   # Figure out where the base environment is
   # Base environment should be updated with every new python version
   # But in practice this can be skipped
-  if [[ "${SERIES}" -eq "pcds" ]]; then
+  if [[ "${SERIES}" == "pcds" ]]; then
     if version_ge "${VER_NUM}" "${FIRST_PCDS_PY39}"; then
       BASE_ENV="${CONDA_ROOT}/py39"
       PYTHON_VER="3.9"
@@ -126,7 +126,7 @@ source "${TOKEN_DIR}/typhos.sh"
 
 # Revert to Software Raster when SSH to avoid issues with QtQuick.
 # The same was done with PyDM and this fixes Designer and friends.
-if [ -n "SSH_CONNECTION" ]; then
+if [ -n "${SSH_CONNECTION}" ]; then
 	echo "Using SSH, reverting QtQuick rendering to Software."
 	export QT_QUICK_BACKEND="software"
 fi
