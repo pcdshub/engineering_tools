@@ -1,0 +1,251 @@
+#!/reg/g/pcds/pyps/conda/py36/envs/pcds-4.1.6/bin/python
+import os
+
+def main():
+    #######clean the file output use to store the information in lists#####
+    a_file = open("/tmp/output.txt", "w")
+    a_file.truncate()
+    a_file.close()
+    
+    fullpath = input("Enter the fullpath name of the fil(include\"\"):")
+    #fullpath = "/reg/g/pcds/dist/pds/xpp/misc/epicsArch.txt" #Real data
+    #fullpath = "/cds/home/o/oter1234/intershipLCLS_ECS/epicsArch_checker/List.txt"
+    dirpath = os.path.dirname(fullpath)
+    filename = os.path.basename(fullpath)
+    os.chdir(dirpath)
+    
+    create_lists (filename)
+    read_file_result()
+    pass
+
+
+def create_lists(filename):
+    
+    #mainFile = filename
+    myKeys = [] 
+    myPvs = []
+    fils = []
+    cNokey = 0
+    with open(filename, 'r') as f: 
+        
+        for line in f: 
+            
+            if line[0] == "<":
+                s_filename = line[2:].strip()
+                create_lists(s_filename)
+
+            elif line[0] == "*":
+                if line[0] != " ":
+                    myKeys.append(line[1:].strip())
+                    fils.append(filename)
+            else:
+                if line[0] != "\n":
+                    if line[0] != "#":
+                        myPvs.append(line.strip())
+                if len(myKeys) < len(myPvs):
+                    myKeys.append(line.strip())
+                    fils.append(filename)
+    #return myKeys, fils, myPvs
+    ##########Flag##########
+    #if fils:
+        '''print("***********" + filename + "***********")
+        print(fils)
+        print(myKeys)
+        print(myPvs)
+        print('\n')'''
+    #print("counter: ", counterFile) ##########Flag##########
+    
+    input_file_result(myKeys, myPvs, fils)#######Call the fucntion to store each list from each file to compare later.
+    pass
+
+def input_file_result(myKeys, myPvs, fils):
+    #######write the file outout with the lists created in the previous fucntion########
+    MyFile=open('/tmp/output.txt','a')
+    #le = len(myKeys)
+    
+    if myKeys:
+        MyFile.write('#####File name####')
+        MyFile.write('\n')
+        
+        for element3 in fils:
+            MyFile.write("< ")
+            MyFile.write(element3)
+            MyFile.write('\n')
+        
+        MyFile.write('\n')
+        MyFile.write('#####keys######')
+        MyFile.write('\n')
+        for element in myKeys:
+            MyFile.write("*")
+            MyFile.write(element)
+            MyFile.write('\n')
+                
+        MyFile.write('\n')
+        MyFile.write('######Pvs######')
+        MyFile.write('\n')
+        for element1 in myPvs:
+            MyFile.write(element1)
+            MyFile.write('\n')
+                
+        MyFile.write('\n')
+        MyFile.write('\n')
+    
+    
+    MyFile.close()  
+    
+    pass
+
+def read_file_result():
+    
+    T_Keys = [] 
+    T_Pvs = []
+    fileName = []
+   
+    with open('/tmp/output.txt', 'r') as f: 
+        for line in f:
+            if line[0] == "<":
+                fileName.append(line[2:].strip())
+            if line[0] == "*":
+                T_Keys.append(line[1:].strip())
+            else:
+                if line[0] != "\n":
+                    if line[0] != "#":
+                        if line[0] != "<":
+                            T_Pvs.append(line.strip())
+    
+    
+    '''print(len(fileName))
+    print(len(T_Keys))
+    print(len(T_Pvs))####flag####
+    
+    print(fileName)
+    print(T_Keys)
+    print(T_Pvs)####flag####'''
+    check_duplicates(T_Keys, T_Pvs, fileName)
+    
+    pass
+
+def check_duplicates(T_Keys, T_Pvs, fileName):
+    
+    ######Checks the list of Aliases for duplicates######################
+    #print("****Duplicates*****")####flag####
+    S_keys = sorted(T_Keys)
+    
+    D_myKeys=[]
+    
+    for i in S_keys:
+        if S_keys.count(i)>1:
+            if i not in D_myKeys:
+                D_myKeys.append(i)
+ 
+    #print(D_myKeys)####flag####
+    
+    ######Checks the list of Pvs for duplicates######################
+    S_Pvs = sorted(T_Pvs)
+    
+    D_myPvs=[]
+    
+    for i in S_Pvs:
+        if S_Pvs.count(i)>1:
+            if i not in D_myPvs:
+                D_myPvs.append(i)
+ 
+    #print(D_myPvs) ####flag####
+    
+    find_index(D_myKeys, D_myPvs, T_Keys, T_Pvs, fileName)
+    pass
+
+def find_index(D_myKeys, D_myPvs, T_Keys, T_Pvs, fileName):
+    
+    ind_keys = []
+    ind_pvs = []
+    indexT =[]
+
+    for i in range(len(D_myKeys)):
+        for j in range(len(T_Keys)):
+            if D_myKeys[i]== T_Keys[j]:
+                ind_keys.append(j)
+
+    #print(ind_keys)####flag####
+    
+    
+    for i in range(len(D_myPvs)):
+        
+        for j in range(len(T_Pvs)):
+            if D_myPvs[i]== T_Pvs[j]:
+                ind_pvs.append(j)
+
+    #print(ind_pvs)####flag####
+
+        
+    display(fileName, T_Keys, T_Pvs, ind_keys,ind_pvs)
+    
+    pass
+
+def display(fileName, T_Keys, T_Pvs, ind_keys,ind_pvs):
+    
+    duplikey = []
+    duplipvs= []
+    
+    for j in ind_keys:
+        duplikey.append(T_Keys[j])
+    
+    for j in ind_pvs:
+        duplipvs.append(T_Pvs[j])
+    
+    c_key = sorted(set(duplikey))
+    c_pv = sorted(set(duplipvs))
+    #print(c_key)####flag####
+    #print(c_pv)####flag####
+    
+    for j in range(len(T_Pvs)):
+        if T_Keys[j] == T_Pvs[j]:
+            print("Report of Pvs with no Alias: \n" )
+            break
+        
+   
+    for j in range(len(T_Pvs)):
+        if T_Keys[j] == T_Pvs[j]:
+            print("***WARNING***", "Alias:", T_Keys[j], "Pv:", T_Pvs[j],"Location:", 
+                  fileName[j],"You must assign an Alias for this Pv.")
+    print("\n")
+    
+    if c_key and c_pv:
+        print("Report of duplicate Aliases and Pvs from the input file: \n")
+        
+    elif c_pv:
+        print("Report of duplicate Pvs from the input file: \n")
+    elif c_key:
+        print("Report of duplicate Aliases from the input file: \n")
+        
+        
+    size_per_col = 40
+    
+    if c_key:
+        print("\n------------------------------------Duplicates by Alias------------------------------------\n")
+        for i in c_key:
+            print("Duplicate Alias: ", i)
+            print("\n")
+            print("\t\t\t\tPv\t\t\t\t\tLocation")
+            print(90*"=")
+            for j in range(len(T_Keys)):
+                if i == T_Keys[j]:
+                    print(str(T_Pvs[j]).center(size_per_col), str(fileName[j]).center(size_per_col))
+            print(90*"=")
+            print("\n")
+    
+    if c_pv:
+        print("------------------------------------Duplicates by Pvs------------------------------------\n")
+        for i in c_pv:
+            print("Duplicate Pv: ", i, "\n")
+            print("\t\t Alias\t\t\t\t\t Location")
+            print(90*"=")
+            for j in range(len(T_Pvs)):
+                if i == T_Pvs[j]:
+                    print(str(T_Keys[j]).center(size_per_col), str(fileName[j]).center(size_per_col))
+            print(90*"=")
+            print("\n")
+    pass
+
+if __name__ == "__main__":
+    main()
