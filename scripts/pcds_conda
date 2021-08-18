@@ -84,10 +84,10 @@ else
   # Base environment should be updated with every new python version
   # But in practice this can be skipped
   if [[ "${SERIES}" -eq "pcds" ]]; then
-    if [ version_ge "${VER_NUM}" "${FIRST_PCDS_PY39}" ]; then
+    if version_ge "${VER_NUM}" "${FIRST_PCDS_PY39}"; then
       BASE_ENV="${CONDA_ROOT}/py39"
       PYTHON_VER="3.9"
-    elif [ version_ge "${VER_NUM}" "${FIRST_PCDS_PY38}" ]; then
+    elif version_ge "${VER_NUM}" "${FIRST_PCDS_PY38}"; then
       BASE_ENV="${CONDA_ROOT}/py36"
       PYTHON_VER="3.8"
     else
