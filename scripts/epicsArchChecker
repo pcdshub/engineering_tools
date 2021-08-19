@@ -7,9 +7,11 @@ def main():
     a_file = open("/tmp/output.txt", "w")
     a_file.truncate()
     a_file.close()
-    parser = argparse.ArgumentParser(description='Checks duplicates Aliasfrom a file')
+    parser = argparse.ArgumentParser(description='Checks duplicates Alias'
+                                     'from a file')
     parser.add_argument('pathname',
-                        help='Full pathname of the file to check. e.g /xpp/misc/epicsArch3.txt',
+                        help='Full pathname of the file to check'
+                        ' e.g /xpp/misc/epicsArch3.txt',
                         type=str)
     args = parser.parse_args()
 
