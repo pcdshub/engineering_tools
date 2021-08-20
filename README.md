@@ -550,7 +550,7 @@ Optional arguments:<br/>
 <tr>
     <td>epicsArchChecker</td>
     <td>
-Usage: epicsArchChecker <Fullpath-name-file><br/>
+Usage: epicsArchChecker [Fullpath-name-file] <br/>
 Checks duplicates Alias and Pvsfrom a epicsArch.txt files.Checks id Pv does not have and Alias..<br/>
 Optional arguments:<br/>
 -h, --help  show this help message and exit<br/>
