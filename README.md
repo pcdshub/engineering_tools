@@ -133,7 +133,15 @@ usage: eloggrabber options<br/>
     -u username
     </td>
 </tr>
-
+<tr>
+    <td>epicsArchChecker</td>
+    <td>
+Usage: epicsArchChecker <Fullpath-name-file> <br/>
+Creates a report with the Pvs with no aliases, the duplicates aliases, and if there are not existing PVS.<br/>
+Optional arguments:<br/>
+-h, --help  show this help message and exit<br/>
+    </td>
+</tr>
 <tr>
     <td>get_curr_exp</td>
     <td>
@@ -547,13 +555,5 @@ Optional arguments:<br/>
     </td>
 </tr>
 
-<tr>
-    <td>epicsArchChecker</td>
-    <td>
-Usage: epicsArchChecker [Fullpath-name-file] <br/>
-Checks duplicates Alias and Pvsfrom a epicsArch.txt files.Checks id Pv does not have and Alias..<br/>
-Optional arguments:<br/>
--h, --help  show this help message and exit<br/>
-    </td>
-</tr>
+
 </table>
