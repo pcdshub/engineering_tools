@@ -136,7 +136,7 @@ usage: eloggrabber options<br/>
 <tr>
     <td>epicsArchChecker</td>
     <td>
-Usage: epicsArchChecker <Fullpath-name-file> <br/>
+Usage: epicsArchChecker <epicsArch filepath> <br/>
 Creates a report with the Pvs with no aliases, the duplicates aliases, and if there are not existing PVS.<br/>
 Optional arguments:<br/>
 -h, --help  show this help message and exit<br/>
