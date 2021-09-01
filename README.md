@@ -137,7 +137,11 @@ usage: eloggrabber options<br/>
     <td>epicsArchChecker</td>
     <td>
 Usage: epicsArchChecker <epicsArch filepath> <br/>
-Creates a report with the Pvs with no aliases, the duplicates aliases, and if there are not existing PVS.<br/>
+It creates a report with:
+        Pvs and Aliases duplicated. and if there are not existing PVS.
+        Pvs with no alias and aliases with no Pv.
+        Pvs no connected.
+        <br/>
 Optional arguments:<br/>
 -h, --help  show this help message and exit<br/>
     </td>
