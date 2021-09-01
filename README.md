@@ -143,7 +143,8 @@ It creates a report with:
         -Pvs with no alias and aliases with no Pv.
         -Pvs no connected.
         <br/>
-Optional arguments:<br/>
+        <br/>
+OPTIONS:<br/>
 -h, --help  show this help message and exit<br/>
     </td>
 </tr>
