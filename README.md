@@ -133,7 +133,21 @@ usage: eloggrabber options<br/>
     -u username
     </td>
 </tr>
-
+<tr>
+    <td>epicsArchChecker</td>
+    <td>
+Usage: epicsArchChecker <epicsArch filepath> <br/>
+        <br/>
+It creates a report with:
+        -Pvs and Aliases duplicated.
+        -Pvs with no alias and aliases with no Pv.
+        -Pvs no connected.
+        <br/>
+        <br/>
+OPTIONS:<br/>
+-h, --help  show this help message and exit<br/>
+    </td>
+</tr>
 <tr>
     <td>get_curr_exp</td>
     <td>
@@ -546,5 +560,6 @@ Optional arguments:<br/>
 -d      Also show information about dss node mapping<br/>
     </td>
 </tr>
+
 
 </table>
