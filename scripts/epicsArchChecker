@@ -1,15 +1,30 @@
 #!/reg/g/pcds/pyps/conda/py36/envs/pcds-4.1.6/bin/python
+
+"""
+epicsArch Checker
+This script helps the engineers and scientists to verify
+if the epicsArch files have errors by creating 3 types
+of report:
+
+1. Pvs and Aliases duplicated.
+2. Pvs with no alias and Aliases with no pvs.
+3. Pvs no connected.
+"""
 import os
 import argparse
+import ophyd.signal
+from prettytable import PrettyTable
 
 
 def main():
     a_file = open("/tmp/output.txt", "w")
     a_file.truncate()
     a_file.close()
-    parser = argparse.ArgumentParser(description='Checks duplicates Alias and'
-                                     ' Pvs from a epicsArch.txt files.'
-                                     ' Checks id Pv does not have and Alias.'
+    parser = argparse.ArgumentParser(description='It creates a report with:'
+                                     ' Pvs and Aliases duplicated.'
+                                     ' Pvs with no alias and aliases'
+                                     ' with no Pv.'
+                                     ' Pvs no connected.'
                                      ' Usage: epicsArchChecker'
                                      ' <Fullpath-name-file>. ')
     parser.add_argument('pathname',
@@ -22,188 +37,162 @@ def main():
     dirpath = os.path.dirname(fullpath)
     filename = os.path.basename(fullpath)
     os.chdir(dirpath)
-    create_lists(filename)
-    read_file_result()
-    pass
+    filenamesList = filenames(filename)
+    info = readFiles(filenamesList, filename)
+    myKeys, myPvs, myFiles, warnings = createLists(info)
+    dmyKeys, dmyPvs, myKeys, myPvs, myFiles = checkDuplicates(
+        myKeys, myPvs, myFiles
+    )
+    indKeys, indPvs, myKeys, myPvs, myFiles = findIndex(
+        dmyKeys, dmyPvs, myKeys, myPvs, myFiles
+    )
+    reportDuplicates(indKeys, indPvs, myKeys, myPvs, myFiles)
+    reportWarnings(warnings)
+    ReportStatusPv(myKeys, myPvs, myFiles)
 
 
-'''This fucntion reads recursively
-the main file, then classifies and
-stores the alises, Pvs, and filenames
-from each file read'''
-
-
-def create_lists(filename):
-    myKeys = []
-    myPvs = []
-    files = []
-
+def filenames(filename):
+    """
+    This function will interate throught all the files inside of the main file,
+    recolecting those file names and storing them into a list.
+    """
+    filenamesList = []
     with open(filename, 'r') as f:
         for line in f:
             if line[0] == "<":
-                s_filename = line[2:].strip()
-                create_lists(s_filename)
-
-            elif line[0] == "*":
-                if line[0] != " ":
-                    myKeys.append(line[1:].strip())
-                    files.append(filename)
-            else:
-                if line[0] != "\n":
-                    if line[0] != "#":
-                        myPvs.append(line.strip())
-                if len(myKeys) < len(myPvs):
-                    myKeys.append(line.strip())
-                    files.append(filename)
-    input_file_result(myKeys, myPvs, files)
-    pass
+                readfilename = line[2:].strip()
+                filenamesList.append(readfilename)
+                filenamesList += filenames(readfilename)
+    return(filenamesList)
 
 
-'''This fucntion stores the lists:
-myKeys, myPvs, and files
-and the name of the files
-in a tmp file.'''
+def readFiles(filenamesList, filename):
+    """
+    This function will use the filenamesList to open the files an collect the a
+    list per file with the name of the file, the aliases, and the pvs.
+    """
+    filenamesList.append(filename)
+    info = []
+    for i in filenamesList:
+        myinfo = [filename]
+        with open(i, 'r') as f:
+            myinfo.append(i)
+            for line in f:
+                if (line[0] != "<") and (line[0] == "*"):
+                    myinfo.append(line.strip())
+                elif (line[0].isalpha() or line[0].isnumeric()):
+                    myinfo.append(line.strip())
+            info.append(myinfo)
+    return(info)
 
 
-def input_file_result(myKeys, myPvs, files):
-    MyFile = open('/tmp/output.txt', 'a')
-    if myKeys:
-        MyFile.write('#####File name####')
-        MyFile.write('\n')
-        for element3 in files:
-            MyFile.write("< ")
-            MyFile.write(element3)
-            MyFile.write('\n')
-        MyFile.write('\n')
-        MyFile.write('#####keys######')
-        MyFile.write('\n')
-        for element in myKeys:
-            MyFile.write("*")
-            MyFile.write(element)
-            MyFile.write('\n')
-        MyFile.write('\n')
-        MyFile.write('######Pvs######')
-        MyFile.write('\n')
-        for element1 in myPvs:
-            MyFile.write(element1)
-            MyFile.write('\n')
-        MyFile.write('\n')
-        MyFile.write('\n')
-    MyFile.close()
-    pass
+def createLists(info):
+    """
+    This fucntion will separate the information collected per file
+    and it will separte the alliases, pvs and filename, by storing
+    them in three different lists. It will also store in a list the
+    Pvs with no alias and the Aliases with no PV.
+    """
+    myKeys = []
+    myPvs = []
+    myFiles = []
+    warnings = []
+    for i in range(len(info)):
+        if len(info[i]) > 2:
+            for index, elem in enumerate(info[i]):
+                warning = []
+                if (index < len(info[i]) and index - 2 >= 0):
+                    if elem == info[i][-1]:
+                        if "*" in elem:
+                            warning.append(elem)
+                            warning.append('No Pv!')
+                            warning.append(info[i][1])
+                        else:
+                            if "*" not in info[i][index - 1]:
+                                warning.append('No Alias!')
+                                warning.append(elem)
+                                warning.append(info[i][1])
+                            else:
+                                myPvs.append(elem)
+                    if elem != info[i][-1]:
+                        if "*" in elem and "*" in info[i][index - 1]:
+                            if "*" in info[i][index + 1]:
+                                warning.append(elem)
+                                warning.append('No Pv!')
+                                warning.append(info[i][1])
+                            else:
+                                myKeys.append(elem)
+                                myFiles.append(info[i][1])
+                        elif "*" in elem and "*" not in info[i][index - 1]:
+                            if "*" in info[i][index + 1]:
+                                warning.append(elem)
+                                warning.append('No Pv!')
+                                warning.append(info[i][1])
+                            else:
+                                myKeys.append(elem)
+                                myFiles.append(info[i][1])
+                        elif "*" not in elem:
+                            if "*" not in info[i][index - 1]:
+                                warning.append('No Alias!')
+                                warning.append(elem)
+                                warning.append(info[i][1])
+                            else:
+                                myPvs.append(elem)
+                if warning:
+                    warnings.append(warning)
+    return(myKeys, myPvs, myFiles, warnings)
 
 
-'''This fucntion reads the temp file
-which contains the aliases and pvs
-and the name of the file where they
-belong. Then it will create three
-lists:T_Keys (total aliases)
-T_Pvs (Total Pvs)
-fileName (name of the files)'''
+def checkDuplicates(myKeys, myPvs, myFiles):
+    """
+    This fucntion will check the duplicated elements inside of
+    the lists myKeys, and myPvs.
+    """
+    sKeys = sorted(myKeys)
+    dmyKeys = []
+    for i in sKeys:
+        if sKeys.count(i) > 1:
+            if i not in dmyKeys:
+                dmyKeys.append(i)
+    sPvs = sorted(myPvs)
+    dmyPvs = []
+    for i in sPvs:
+        if sPvs.count(i) > 1:
+            if i not in dmyPvs:
+                dmyPvs.append(i)
+    return(dmyKeys, dmyPvs, myKeys, myPvs, myFiles)
 
 
-def read_file_result():
-    T_Keys = []
-    T_Pvs = []
-    fileName = []
-    with open('/tmp/output.txt', 'r') as f:
-        for line in f:
-            if line[0] == "<":
-                fileName.append(line[2:].strip())
-            if line[0] == "*":
-                T_Keys.append(line[1:].strip())
-            else:
-                if line[0] != "\n":
-                    if line[0] != "#":
-                        if line[0] != "<":
-                            T_Pvs.append(line.strip())
-
-    '''print(len(fileName))
-    print(len(T_Keys))
-    print(len(T_Pvs))####flag####
-    print(fileName)
-    print(T_Keys)
-    print(T_Pvs)####flag####'''
-    check_duplicates(T_Keys, T_Pvs, fileName)
-    pass
+def findIndex(dmyKeys, dmyPvs, myKeys, myPvs, myFiles):
+    """
+    This fucntion will find the index of each duplicated
+    element inside of the lists myKeys, and myPvs.
+    """
+    indKeys = []
+    indPvs = []
+    for i in range(len(dmyKeys)):
+        for j in range(len(myKeys)):
+            if dmyKeys[i] == myKeys[j]:
+                indKeys.append(j)
+    for i in range(len(dmyPvs)):
+        for j in range(len(myPvs)):
+            if dmyPvs[i] == myPvs[j]:
+                indPvs.append(j)
+    return(indKeys, indPvs, myKeys, myPvs, myFiles)
 
 
-'''This fucntion finds and stores the
-duplicates aliases and pvs in the
-lists: T_Keys (total aliases)
-T_Pvs (Total Pvs)'''
-
-
-def check_duplicates(T_Keys, T_Pvs, fileName):
-    S_keys = sorted(T_Keys)
-    D_myKeys = []
-    for i in S_keys:
-        if S_keys.count(i) > 1:
-            if i not in D_myKeys:
-                D_myKeys.append(i)
-    S_Pvs = sorted(T_Pvs)
-    D_myPvs = []
-    for i in S_Pvs:
-        if S_Pvs.count(i) > 1:
-            if i not in D_myPvs:
-                D_myPvs.append(i)
-    find_index(D_myKeys, D_myPvs, T_Keys, T_Pvs, fileName)
-    pass
-
-
-'''This fucntion finds and stores
-the indexes of the the duplicates
-in the lists: T_Keys (total aliases)
-T_Pvs (Total Pvs)'''
-
-
-def find_index(D_myKeys, D_myPvs, T_Keys, T_Pvs, fileName):
-    ind_keys = []
-    ind_pvs = []
-
-    for i in range(len(D_myKeys)):
-        for j in range(len(T_Keys)):
-            if D_myKeys[i] == T_Keys[j]:
-                ind_keys.append(j)
-
-    for i in range(len(D_myPvs)):
-        for j in range(len(T_Pvs)):
-            if D_myPvs[i] == T_Pvs[j]:
-                ind_pvs.append(j)
-
-    display(fileName, T_Keys, T_Pvs, ind_keys, ind_pvs)
-    pass
-
-
-'''This fucntion displays three
-reports: Pvs with no aliases asigned
-Duplicates by Alias and PV
-(Under construction) Status of the Pv'''
-
-
-def display(fileName, T_Keys, T_Pvs, ind_keys, ind_pvs):
+def reportDuplicates(indKeys, indPvs, myKeys, myPvs, myFiles):
+    """This fucntion will display the duplicate Pvs and/or  Aliases."""
     duplikey = []
     duplipvs = []
-    for j in ind_keys:
-        duplikey.append(T_Keys[j])
-    for j in ind_pvs:
-        duplipvs.append(T_Pvs[j])
+    for j in indKeys:
+        duplikey.append(myKeys[j])
+    for j in indPvs:
+        duplipvs.append(myPvs[j])
 
     c_key = sorted(set(duplikey))
     c_pv = sorted(set(duplipvs))
 
-    for j in range(len(T_Pvs)):
-        if T_Keys[j] == T_Pvs[j]:
-            print("Report of Pvs with no Alias: \n")
-            break
-    for j in range(len(T_Pvs)):
-        if T_Keys[j] == T_Pvs[j]:
-            print("***WARNING***", "Alias:",
-                  T_Keys[j], "Pv:",
-                  T_Pvs[j], "Location:",
-                  fileName[j],
-                  "You must assign an Alias for this Pv.")
-    print("\n")
     if c_key and c_pv:
         print("Report of duplicate Aliases and Pvs from the input file: \n")
     elif c_pv:
@@ -214,6 +203,8 @@ def display(fileName, T_Keys, T_Pvs, ind_keys, ind_pvs):
     nameA = "Alias"
     nameL = "Location"
     nameP = "Pv"
+    ms0 = "**Alias assigned to a pv with other alias**"
+    ms1 = "**Alias name has an space**"
     if c_key:
         print("\n------------------------------------",
               "Duplicate by Aliases"
@@ -222,22 +213,23 @@ def display(fileName, T_Keys, T_Pvs, ind_keys, ind_pvs):
             if " " in i:
                 print("Duplicate Alias: ", i,
                       " ***Aliases should not have spaces***")
-
             else:
                 print("Duplicate Alias: ", i)
             print("\n")
-
             print(str(nameP).center(size_per_col),
                   str(nameL).center(size_per_col))
             print(90*"=")
-
-            for j in range(len(T_Keys)):
-                if i == T_Keys[j]:
-                    print(str(T_Pvs[j]).center(size_per_col),
-                          str(fileName[j]).center(size_per_col))
+            for j in range(len(myKeys)):
+                if i == myKeys[j]:
+                    if i == myPvs[j]:
+                        print(str(myPvs[j]).center(size_per_col),
+                              str(myFiles[j]).center(size_per_col),
+                              (ms0).center(size_per_col))
+                    else:
+                        print(str(myPvs[j]).center(size_per_col),
+                              str(myFiles[j]).center(size_per_col))
             print(90*"=")
             print("\n")
-    ms = "**This alias has a space**"
     if c_pv:
         print("------------------------------------",
               "Duplicate by Pvs",
@@ -248,20 +240,53 @@ def display(fileName, T_Keys, T_Pvs, ind_keys, ind_pvs):
             print(str(nameA).center(size_per_col),
                   str(nameL).center(size_per_col))
             print(90*"=")
-            for j in range(len(T_Pvs)):
-                if i == T_Pvs[j]:
-                    if " " in T_Keys[j]:
-                        print(str(T_Keys[j]).center(size_per_col),
-                              str(fileName[j]).center(size_per_col),
-                              (ms).center(size_per_col))
-
+            for j in range(len(myPvs)):
+                if i == myPvs[j]:
+                    if " " in myKeys[j]:
+                        print(str(myKeys[j]).center(size_per_col),
+                              str(myFiles[j]).center(size_per_col),
+                              (ms1).center(size_per_col))
                     else:
-                        print(str(T_Keys[j]).center(size_per_col),
-                              str(fileName[j]).center(size_per_col))
-
+                        print(str(myKeys[j]).center(size_per_col),
+                              str(myFiles[j]).center(size_per_col))
             print(90*"=")
             print("\n")
-    pass
+
+
+def reportWarnings(warnings):
+    """
+    This fucntion will display the Pvs with no alias
+    and/or Aliases with no pv.
+    """
+    print("Pvs with no alias and Aliases with no pv, WARNING!!!!:")
+    sorted_list = sorted(warnings, key=lambda x: x[1])
+    table = PrettyTable()
+    table.field_names = ["Alias", "Pv name", "Location"]
+    table.add_rows(sorted_list)
+    print(table)
+    print("\n")
+
+
+def ReportStatusPv(myKeys, myPvs, myFiles):
+    """This fucntion will display the no connected Pvs."""
+    totalInfo = []
+    for i in range(len(myPvs)):
+        statusPv = []
+        try:
+            ophyd.signal.EpicsSignal(myPvs[i]).get()
+        except Exception:
+            statusPv.append(myPvs[i])
+            statusPv.append("No connected!")
+            statusPv.append(myKeys[i])
+            statusPv.append(myFiles[i])
+        if statusPv:
+            totalInfo.append(statusPv)
+    print("Pvs NO connected:")
+    sorted_list = sorted(totalInfo, key=lambda x: x[3])
+    table = PrettyTable()
+    table.field_names = ["Pv Name", "Status", "Alias", "Location"]
+    table.add_rows(sorted_list)
+    print(table)
 
 
 if __name__ == "__main__":
