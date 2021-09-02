@@ -5,7 +5,6 @@ epicsArch Checker
 This script helps the engineers and scientists to verify
 if the epicsArch files have errors by creating 3 types
 of report:
-
 1. Pvs and Aliases duplicated.
 2. Pvs with no alias and Aliases with no pvs.
 3. Pvs no connected.
@@ -264,7 +263,7 @@ def reportWarnings(warnings):
     table.field_names = ["Alias", "Pv name", "Location"]
     table.add_rows(sorted_list)
     print(table)
-    print("\n")
+
 
 
 def ReportStatusPv(myKeys, myPvs, myFiles):
