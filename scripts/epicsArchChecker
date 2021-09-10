@@ -25,10 +25,10 @@ def main():
                         ' e.g /reg/g/pcds/dist/pds/xpp/misc/epicsArch.txt',
                         type=str)
     parser.add_argument('-w', '--warnings', action='store_true',
-                        help='Displays: -Pvs and Aliases duplicated. '
-                        '-Pvs with no alias and aliases no Pvs')
+                        help='Displays a report of duplicate' 
+                        ' and missing PVs or aliases')
     parser.add_argument('-s', '--status', action='store_true',
-                        help='Displays the Pv no conected.')
+                        help='Displays a report of unconnected the PVs')
     args = parser.parse_args()
 
     fullpath = args.filepath
