@@ -136,16 +136,19 @@ usage: eloggrabber options<br/>
 <tr>
     <td>epicsArchChecker</td>
     <td>
-Usage: epicsArchChecker <epicsArch filepath> <br/>
+usage: epicsArchChecker [-h] [-w] [-s] filepath <br/>
         <br/>
-It creates a report with:
-        -Pvs and Aliases duplicated.
-        -Pvs with no alias and aliases with no Pv.
-        -Pvs no connected.
+Checks epicsArch files for mismatches of PVs and aliases, missing files, and unconnected PVs.
         <br/>
         <br/>
-OPTIONS:<br/>
--h, --help  show this help message and exit<br/>
+positional arguments:<br/>
+  filepath        Full filepath of the file to check e.g /reg/g/pcds/dist/pds/xpp/misc/epicsArch.txt
+        <br/>
+        <br/>
+optional arguments:<br/>
+  -h, --help      show this help message and exit<br/>
+  -w, --warnings  Displays: -Pvs and Aliases duplicated. -Pvs with no alias and aliases no Pvs.<br/>
+  -s, --status    Displays the Pv no conected.<br/>
     </td>
 </tr>
 <tr>
