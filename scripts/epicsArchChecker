@@ -17,22 +17,16 @@ from prettytable import PrettyTable
 
 
 def main():
-    parser = argparse.ArgumentParser(description='It creates a report with:'
-                                     ' Pvs and Aliases duplicated.'
-                                     ' Pvs with no alias and aliases'
-                                     ' with no Pv.'
-                                     ' If a file is not found.'
-                                     ' Pvs no connected. '
-                                     ' Usage: epicsArchChecker'
-                                     ' <Fullpath-name-file> '
-                                     ' [command]')
+    parser = argparse.ArgumentParser(description='Checks epicsArch files for'
+                                     ' mismatches of PVs and aliases,'
+                                     ' missing files, and unconnected PVs.')                                      
     parser.add_argument('filepath',
                         help='Full filepath of the file to check'
-                        ' e.g /xpp/misc/epicsArch3.txt',
+                        ' e.g /reg/g/pcds/dist/pds/xpp/misc/epicsArch.txt',
                         type=str)
     parser.add_argument('-w', '--warnings', action='store_true',
                         help='Displays: -Pvs and Aliases duplicated. '
-                        '-Pvs with no alias and aliases no Pvs')
+                        '-Pvs with no alias and aliases no Pvs.')
     parser.add_argument('-s', '--status', action='store_true',
                         help='Displays the Pv no conected.')
     args = parser.parse_args()
