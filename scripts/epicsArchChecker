@@ -1,5 +1,4 @@
 #!/reg/g/pcds/pyps/conda/py36/envs/pcds-4.1.6/bin/python
-
 """
 epicsArch Checker
 This script helps the engineers and scientists to verify
@@ -19,7 +18,7 @@ from prettytable import PrettyTable
 def main():
     parser = argparse.ArgumentParser(description='Checks epicsArch files for'
                                      ' mismatches of PVs and aliases,'
-                                     ' missing files, and unconnected PVs.')                                      
+                                     ' missing files, and unconnected PVs.')
     parser.add_argument('filepath',
                         help='Full filepath of the file to check'
                         ' e.g /reg/g/pcds/dist/pds/xpp/misc/epicsArch.txt',
@@ -28,21 +27,17 @@ def main():
                         help='Displays: -Pvs and Aliases duplicated. '
                         '-Pvs with no alias and aliases no Pvs.')
     parser.add_argument('-s', '--status', action='store_true',
-                        help='Displays the Pv no conected.')
+                        help='Displays Pvs not connected.')
     args = parser.parse_args()
 
     fullpath = args.filepath
     dirpath = os.path.dirname(fullpath)
     filename = os.path.basename(fullpath)
     os.chdir(dirpath)
-
     entries, extraKeys, noKeyPVs = readFile(filename)
-
     if args.warnings:
         myKeys, myPvs, myFiles, lineNumbers = createLists(entries)
-        dmyKeys, dmyPvs = checkDuplicates(myKeys, myPvs, myFiles)
-        indKeys, indPvs = findIndex(dmyKeys, dmyPvs, myKeys,
-                                    myPvs, myFiles)
+        indKeys, indPvs = findIndex(myKeys, myPvs, myFiles)
         reportDuplicates(indKeys, indPvs, myKeys, myPvs, myFiles, lineNumbers)
         reportWarnings(extraKeys, noKeyPVs)
     elif args.status:
@@ -50,9 +45,7 @@ def main():
         ReportStatusPv(myKeys, myPvs, myFiles)
     else:
         myKeys, myPvs, myFiles, lineNumbers = createLists(entries)
-        dmyKeys, dmyPvs = checkDuplicates(myKeys, myPvs, myFiles)
-        indKeys, indPvs = findIndex(dmyKeys, dmyPvs, myKeys,
-                                    myPvs, myFiles)
+        indKeys, indPvs = findIndex(myKeys, myPvs, myFiles)
         reportDuplicates(indKeys, indPvs, myKeys, myPvs, myFiles, lineNumbers)
         reportWarnings(extraKeys, noKeyPVs)
         ReportStatusPv(myKeys, myPvs, myFiles)
@@ -76,10 +69,11 @@ def readFile(filename):
     try:
         with open(filename, 'r') as file:
             lineNum = 0
+            keyline = 0
             for line in file:
+                lineNum += 1
                 line = line.strip()
                 if not line:
-                    lineNum += 1
                     continue
                 if line[0] == '<':
                     if '/' not in filename:
@@ -91,7 +85,7 @@ def readFile(filename):
                         noKeyPVs += subnoKeyPVs
                     elif '/' in filename:
                         folderName = filename.rpartition('/')
-                        subfilename = folderName[0] + '/' +\
+                        subfilename = folderName[0] + '/' + \
                             line[1:].lstrip().strip()
                         (subentries, subextraKeys, subnoKeyPVs) =\
                             readFile(subfilename)
@@ -100,19 +94,16 @@ def readFile(filename):
                         noKeyPVs += subnoKeyPVs
                 elif line[0] == '*':
                     if key != '':
-                        extraKeys.append((key, 'No Pv!', filename,
-                                          '№ ' + str(lineNum)))
+                        extraKeys.append((key, filename, keyline))
                     key = line[1:].strip()
+                    keyline = lineNum
                 elif line[0].isalnum():
                     pv = line.strip()
                     if key == '':
-                        noKeyPVs.append(('No Alias!', pv, filename,
-                                         '№ ' + str(lineNum + 1)))
-                        entries.append((pv, pv, filename, lineNum))
+                        noKeyPVs.append((pv, filename, lineNum))
                     else:
                         entries.append((key, pv, filename, lineNum))
                         key = ''
-                lineNum += 1
     except FileNotFoundError as errorDetail:
         print(filename, ' File not found!')
         print(errorDetail)
@@ -136,37 +127,24 @@ def createLists(entries):
         myPvs.append(entry[1])
         myFiles.append(entry[2])
         lineNumbers.append('№ ' + str(entry[3]))
-
     return(myKeys, myPvs, myFiles, lineNumbers)
 
 
-def checkDuplicates(myKeys, myPvs, myFiles):
+def findIndex(myKeys, myPvs, myFiles):
     """
     This function will check the duplicated elements inside of
-    the lists myKeys, and myPvs.
-    """
-    sKeys = sorted(myKeys)
-    dmyKeys = []
-    for key in sKeys:
-        if sKeys.count(key) > 1:
-            if key not in dmyKeys:
-                dmyKeys.append(key)
-    sPvs = sorted(myPvs)
-    dmyPvs = []
-    for pv in sPvs:
-        if sPvs.count(pv) > 1:
-            if pv not in dmyPvs:
-                dmyPvs.append(pv)
-    return(dmyKeys, dmyPvs)
-
-
-def findIndex(dmyKeys, dmyPvs, myKeys, myPvs, myFiles):
-    """
-    This function will find the index of each duplicated
-    element inside of the lists myKeys, and myPvs.
+    the lists myKeys, and myPvs.It will also find the
+    index of each duplicated element inside of the lists
+    myKeys, and myPvs.
     """
     indKeys = []
     indPvs = []
+
+    sKeys = sorted(myKeys)
+    dmyKeys = [dkey for dkey in sKeys if sKeys.count(dkey) > 1]
+    sPvs = sorted(myPvs)
+    dmyPvs = [dpv for dpv in sPvs if sPvs.count(dpv) > 1]
+
     for dkey in range(len(dmyKeys)):
         for key in range(len(myKeys)):
             if dmyKeys[dkey] == myKeys[key]:
@@ -175,21 +153,17 @@ def findIndex(dmyKeys, dmyPvs, myKeys, myPvs, myFiles):
         for pv in range(len(myPvs)):
             if dmyPvs[dpv] == myPvs[pv]:
                 indPvs.append(pv)
+
     return(indKeys, indPvs)
 
 
 def reportDuplicates(indKeys, indPvs, myKeys, myPvs, myFiles, numLines):
     """This function will display the duplicate Pvs and/or  Aliases."""
-    duplikey = []
-    duplipvs = []
-    for index in indKeys:
-        duplikey.append(myKeys[index])
-    for index in indPvs:
-        duplipvs.append(myPvs[index])
 
+    duplikey = [myKeys[key] for key in indKeys]
+    duplipvs = [myPvs[pv] for pv in indPvs]
     copyKey = sorted(set(duplikey))
     copyPv = sorted(set(duplipvs))
-
     if copyKey and copyPv:
         print("Report of duplicate Aliases and Pvs from the input file: \n")
     elif copyPv:
@@ -265,7 +239,7 @@ def reportWarnings(extraKeys, noKeyPVs):
         print("Aliases with no pv, WARNING!!!!:")
         sortedListKeys = sorted(extraKeys, key=lambda x: x[1])
         table = PrettyTable()
-        table.field_names = ["Alias", "Pv name", "Location",
+        table.field_names = ["Alias", "Location",
                              "Line number error"]
         table.add_rows(sortedListKeys)
         print(table)
@@ -273,7 +247,7 @@ def reportWarnings(extraKeys, noKeyPVs):
         print("PVs with no Alias, WARNING!!!!:")
         sortedListPvs = sorted(noKeyPVs, key=lambda x: x[1])
         table = PrettyTable()
-        table.field_names = ["Alias", "Pv name", "Location",
+        table.field_names = ["Pv name", "Location",
                              "Line number error"]
         table.add_rows(sortedListPvs)
         print(table)
