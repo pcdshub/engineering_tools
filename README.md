@@ -148,7 +148,7 @@ positional arguments:<br/>
 optional arguments:<br/>
   -h, --help      show this help message and exit<br/>
   -w, --warnings  Displays: -Pvs and Aliases duplicated. -Pvs with no alias and aliases no Pvs.<br/>
-  -s, --status    Displays the Pv no conected.<br/>
+  -s, --status    Displays Pvs not connected.<br/>
     </td>
 </tr>
 <tr>
