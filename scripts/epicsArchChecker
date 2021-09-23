@@ -42,13 +42,13 @@ def main():
         reportWarnings(extraKeys, noKeyPVs)
     elif args.status:
         myKeys, myPvs, myFiles, lineNumbers = createLists(entries)
-        ReportStatusPv(myKeys, myPvs, myFiles)
+        reportStatusPv(myKeys, myPvs, myFiles)
     else:
         myKeys, myPvs, myFiles, lineNumbers = createLists(entries)
         indKeys, indPvs = findIndex(myKeys, myPvs, myFiles)
         reportDuplicates(indKeys, indPvs, myKeys, myPvs, myFiles, lineNumbers)
         reportWarnings(extraKeys, noKeyPVs)
-        ReportStatusPv(myKeys, myPvs, myFiles)
+        reportStatusPv(myKeys, myPvs, myFiles)
 
 
 def readFile(filename):
@@ -253,7 +253,7 @@ def reportWarnings(extraKeys, noKeyPVs):
         print(table)
 
 
-def ReportStatusPv(myKeys, myPvs, myFiles):
+def reportStatusPv(myKeys, myPvs, myFiles):
     """This function will display the no connected Pvs."""
     totalInfo = []
     for pv in range(len(myPvs)):
