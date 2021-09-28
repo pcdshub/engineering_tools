@@ -34,24 +34,24 @@ def main():
     dirpath = os.path.dirname(fullpath)
     filename = os.path.basename(fullpath)
     os.chdir(dirpath)
-    entries, extraKeys, noKeyPVs = readFile(filename)
+    entries, extraKeys, noKeyPVs = read_file(filename)
     if args.warnings:
-        myKeys, myPvs, myFiles, lineNumbers = createLists(entries)
-        indKeys, indPvs = findIndex(myKeys, myPvs, myFiles)
-        reportDuplicates(indKeys, indPvs, myKeys, myPvs, myFiles, lineNumbers)
-        reportWarnings(extraKeys, noKeyPVs)
+        myKeys, myPvs, myFiles, lineumbers = create_Lists(entries)
+        indKeys, indPvs = find_index(myKeys, myPvs, myFiles)
+        report_duplicates(indKeys, indPvs, myKeys, myPvs, myFiles, lineNumbers)
+        report_warning(extraKeys, noKeyPVs)
     elif args.status:
-        myKeys, myPvs, myFiles, lineNumbers = createLists(entries)
-        reportStatusPv(myKeys, myPvs, myFiles)
+        myKeys, myPvs, myFiles, lineNumbers = create_Lists(entries)
+        report_statusPv(myKeys, myPvs, myFiles)
     else:
-        myKeys, myPvs, myFiles, lineNumbers = createLists(entries)
-        indKeys, indPvs = findIndex(myKeys, myPvs, myFiles)
-        reportDuplicates(indKeys, indPvs, myKeys, myPvs, myFiles, lineNumbers)
-        reportWarnings(extraKeys, noKeyPVs)
-        reportStatusPv(myKeys, myPvs, myFiles)
+        myKeys, myPvs, myFiles, lineNumbers = create_Lists(entries)
+        indKeys, indPvs = find_index(myKeys, myPvs, myFiles)
+        report_duplicates(indKeys, indPvs, myKeys, myPvs, myFiles, lineNumbers)
+        report_warnings(extraKeys, noKeyPVs)
+        report_statusPv(myKeys, myPvs, myFiles)
 
 
-def readFile(filename):
+def read_file(filename):
     """
     This function iterates through all the files inside of
     the main file. Then it stores the names of the file into
@@ -79,7 +79,7 @@ def readFile(filename):
                     if '/' not in filename:
                         subfilename = line[1:].lstrip().strip()
                         (subentries, subextraKeys, subnoKeyPVs) =\
-                            readFile(subfilename)
+                            read_file(subfilename)
                         entries += subentries
                         extraKeys += subextraKeys
                         noKeyPVs += subnoKeyPVs
@@ -88,7 +88,7 @@ def readFile(filename):
                         subfilename = folderName[0] + '/' + \
                             line[1:].lstrip().strip()
                         (subentries, subextraKeys, subnoKeyPVs) =\
-                            readFile(subfilename)
+                            read_file(subfilename)
                         entries += subentries
                         extraKeys += subextraKeys
                         noKeyPVs += subnoKeyPVs
@@ -111,7 +111,7 @@ def readFile(filename):
     return (entries, extraKeys, noKeyPVs)
 
 
-def createLists(entries):
+def create_Lists(entries):
     """
     This function will separate the information collected per file
     and it will separate the aliases, pvs, line error and filename,
@@ -130,7 +130,7 @@ def createLists(entries):
     return(myKeys, myPvs, myFiles, lineNumbers)
 
 
-def findIndex(myKeys, myPvs, myFiles):
+def find_index(myKeys, myPvs, myFiles):
     """
     This function will check the duplicated elements inside of
     the lists myKeys, and myPvs.It will also find the
@@ -157,7 +157,7 @@ def findIndex(myKeys, myPvs, myFiles):
     return(indKeys, indPvs)
 
 
-def reportDuplicates(indKeys, indPvs, myKeys, myPvs, myFiles, numLines):
+def report_duplicates(indKeys, indPvs, myKeys, myPvs, myFiles, numLines):
     """This function will display the duplicate Pvs and/or  Aliases."""
 
     duplikey = [myKeys[key] for key in indKeys]
@@ -230,7 +230,7 @@ def reportDuplicates(indKeys, indPvs, myKeys, myPvs, myFiles, numLines):
             print("\n")
 
 
-def reportWarnings(extraKeys, noKeyPVs):
+def report_warnings(extraKeys, noKeyPVs):
     """
     This function will display the Pvs with no alias
     and/or Aliases with no pv.
@@ -253,7 +253,7 @@ def reportWarnings(extraKeys, noKeyPVs):
         print(table)
 
 
-def reportStatusPv(myKeys, myPvs, myFiles):
+def report_statusPv(myKeys, myPvs, myFiles):
     """This function will display the no connected Pvs."""
     totalInfo = []
     for pv in range(len(myPvs)):
