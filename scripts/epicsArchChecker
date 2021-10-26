@@ -36,10 +36,10 @@ def main():
     os.chdir(dirpath)
     entries, extraKeys, noKeyPVs = read_file(filename)
     if args.warnings:
-        myKeys, myPvs, myFiles, lineumbers = create_Lists(entries)
+        myKeys, myPvs, myFiles, lineNumbers = create_Lists(entries)
         indKeys, indPvs = find_index(myKeys, myPvs, myFiles)
         report_duplicates(indKeys, indPvs, myKeys, myPvs, myFiles, lineNumbers)
-        report_warning(extraKeys, noKeyPVs)
+        report_warnings(extraKeys, noKeyPVs)
     elif args.status:
         myKeys, myPvs, myFiles, lineNumbers = create_Lists(entries)
         report_statusPv(myKeys, myPvs, myFiles)
