@@ -221,7 +221,13 @@ if [ $CAMNUM -eq 0 ]; then
     elif [ $hutch = "rix" ]; then
 	CAMNAME=IM1K1
     elif [ $hutch = "xpp" ]; then
-	CAMNAME=hx2_shared
+	CAMNAME=hx2_sb1_yag
+    elif [ $hutch = "mfx" ]; then
+        CAMNAME=mfx_dg1_yag
+    elif [ $hutch = "cxi" ]; then
+        CAMNAME=cxi_dg1_yag
+    elif [ $hutch = "mec" ]; then
+        CAMNAME=GigE_Questar1
     else
 	CAMNAME=xcs_yag2
     fi
