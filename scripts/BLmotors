@@ -193,7 +193,7 @@ def motorsInfo(motors, motorsName, cfg):
                     infoperRecord.append(mconf)
                     infoperRecord.append("Yes")
 
-            except pm.NoConfig:
+            except:
                 infoperRecord.append(motors[motor])
                 infoperRecord.append(motorPtwo)
                 infoperRecord.append("None")
