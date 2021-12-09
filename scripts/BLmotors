@@ -193,12 +193,12 @@ def motorsInfo(motors, motorsName, cfg):
                     infoperRecord.append(mconf)
                     infoperRecord.append("Yes")
 
-            except:
+            except Exception:
                 infoperRecord.append(motors[motor])
                 infoperRecord.append(motorPtwo)
                 infoperRecord.append("None")
                 infoperRecord.append(" ")
-        except:
+        except Exception:
             try:
                 mconf = pm.get_config(motors[motor])
                 exConfig = pm.diff_config(motors[motor])
@@ -212,7 +212,7 @@ def motorsInfo(motors, motorsName, cfg):
                     infoperRecord.append("No found!")
                     infoperRecord.append(mconf)
                     infoperRecord.append("Yes")
-            except:
+            except Exception:
                 infoperRecord.append(motors[motor])
                 infoperRecord.append("No found!")
                 infoperRecord.append(" ")
