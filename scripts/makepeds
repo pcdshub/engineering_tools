@@ -38,8 +38,8 @@ OPTIONS:
                 dark run for XTCAV
         -L|--xtcav_lasingoff
                lasing off run for XTCAV
-        -v|--valdity <str>
-               validity range (if not run#-end, e.g. 123-567 or 123-end)
+        -v|--valdity_start <val_run>
+               validity range (set to <val_run>-end)
         -N|--nevents <#>  
                 use this number of events (default 1000). Needed when using -c as original events are counted
         -c|--eventcode <evtcode x> 
