@@ -1,17 +1,19 @@
 #!/reg/g/pcds/pyps/conda/py36/envs/pcds-4.1.6/bin/python
 
-
 """
 Beam Line motors Report
 This script helps the engineers and scientists to know
-if the beam line motors have a configuration saved in the
-parameter manager.
+if the IMS motors configuration status.
 
 The script will generate a report for:
-1. The IMS motors with their rela PV name.
-2. The current configuration on it.
-3. If the current configuration matches or not
-with the appripite one.
+1. Motors with no configuration.
+2. Motors with configurations that have values different
+from the configured.
+3. Motors are not found.
+4. Full report with all the motors and their status
+(If they have configuration assigned, if that configuration
+matches or not with the configured values,  and if the
+motors are not found).
 """
 import os
 import argparse
