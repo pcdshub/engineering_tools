@@ -1,7 +1,8 @@
 #!/reg/g/pcds/pyps/conda/py36/envs/pcds-4.1.6/bin/python
 
 """
-Beam Line motors Report
+Beamline Motors Report
+
 This script helps the engineers and scientists to know
 if the IMS motors configuration status.
 
