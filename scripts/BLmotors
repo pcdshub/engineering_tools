@@ -1,20 +1,17 @@
 #!/reg/g/pcds/pyps/conda/py36/envs/pcds-4.1.6/bin/python
 
-"""
-Beamline Motors Report
 
+"""
+Beamline motors Report
 This script helps the engineers and scientists to know
-if the IMS motors configuration status.
+if the beamline motors have a configuration saved in the
+parameter manager.
 
 The script will generate a report for:
-1. Motors with no configuration.
-2. Motors with configurations that have values different
-from the configured.
-3. Motors are not found.
-4. Full report with all the motors and their status
-(If they have configuration assigned, if that configuration
-matches or not with the configured values,  and if the
-motors are not found).
+1. The IMS motors with their rela PV name.
+2. The current configuration on it.
+3. If the current configuration matches or not with the
+appropriate values.
 """
 import os
 import argparse
@@ -22,17 +19,19 @@ import ophyd.signal
 from pmgr import pmgrAPI
 from prettytable import PrettyTable
 
-
+PYPS_ROOT = os.getenv("PYPS_ROOT", "/cds/group/pcds/pyps")
 HOST_DIR = "%s/config/.host" % os.getenv("PYPS_ROOT")
 CONFIG_DIR = "%s/config/" % os.getenv("PYPS_ROOT")
 CONFIG_FILE = "%s/config/%%s/iocmanager.cfg" % os.getenv("PYPS_ROOT")
 
 
 def main():
-    parser = argparse.ArgumentParser(description='Checks for '
-                                                 'the IMS motor\'s'
-                                                 ' configuration, name,'
-                                                 ' and mismatches.')
+    parser = argparse.ArgumentParser(
+        description=(
+            "Checks for the IMS motor's  configuration, name, and "
+            "mismatches."
+        )
+    )
     parser.add_argument('hutch_name', help='The hutch name in lowercase'
                         ' e.g xpp', type=str)
     parser.add_argument('-n', '--noconf', action='store_true',
@@ -41,40 +40,44 @@ def main():
                         help='Displays the motors with configuration'
                              ' not matching.')
     parser.add_argument('-f', '--found', action='store_true',
-                        help='Displays the motors are not found!.')
+                        help='Displays the motors with not'
+                        'found real PV name.')
     parser.add_argument('-a', '--aliasconf', action='store_true',
                         help='Displays alias motors with directly'
                               ' assigned configuration.')
+    parser.add_argument('-t', '--total', action='store_true',
+                        help='Displays all the information'
+                        ' of the IMS motors.')
+
     args = parser.parse_args()
-    cfg = args.hutch_name
-    argNoconf = args.noconf
-    argMatch = args.match
-    argFound = args.found
-    argsaliasConf = args.aliasconf
+    cfg = args.hutch_name.lower()
+    arg_no_conf = args.noconf
+    arg_match = args.match
+    arg_found = args.found
+    args_alias_conf = args.aliasconf
+    args_total = args.total
 
-    config = readConfig(cfg)
-    listId = findId(config)
-    listsPath = assignFullpath(listId)
-    motors, motorsName = createListMotors(listsPath)
-    totalinfo = motorsInfo(motors, motorsName, cfg)
-    displayfullInfo(totalinfo, argNoconf, argMatch,
-                    argFound, argsaliasConf, cfg)
+    config = read_configuration(cfg)
+    ioc_names = find_ioc_names(config)
+    lists_path = assign_full_path(ioc_names)
+    motors, motors_name = create_list_motors(lists_path)
+    total_info = motors_information(motors, motors_name, cfg)
+    display_information(total_info, arg_no_conf, arg_match,
+                        arg_found, args_alias_conf, args_total, cfg)
 
 
-def readConfig(cfg, time=None, silent=False, do_os=False):
+def read_configuration(cfg):
     """
-    This Function read the information from the parameter manager,
-    and creates a tuple with the informartion.
+    This Function read the information from the IOC manager,
+    and creates a dictionary with the informartion.
     """
     config = {'procmgr_config': None, 'hosts': None, 'dir': 'dir',
               'id': 'id', 'cmd': 'cmd', 'flags': 'flags', 'port': 'port',
               'host': 'host', 'disable': 'disable', 'history': 'history',
               'delay': 'delay', 'alias': 'alias', 'hard': 'hard'}
     vs = set(config.keys())
-    if len(cfg.split('/')) > 1:
-        cfgfn = cfg
-    else:
-        cfgfn = CONFIG_FILE % cfg
+
+    cfgfn = CONFIG_FILE % cfg
     try:
         f = open(cfgfn, "r")
     except open.CanNotOpenFile:
@@ -120,54 +123,51 @@ def readConfig(cfg, time=None, silent=False, do_os=False):
     return config
 
 
-def findId(config):
+def find_ioc_names(config):
     """
     This function takes the list of lists 'procmgr_config'
-    from the tuple 'config' and searchs for the IMS motors.
-    Then stores the id of them into a list.
+    from the dictitonary 'config' and searchs for the IMS motors.
+    Then stores the ioc name of them into a list.
     """
-    configFile = config['procmgr_config']
-    listId = []
-    ims = "/ims/"
-    for confile in range(len(configFile)):
-        if (ims in configFile[confile]['dir']) and\
-           (configFile[confile]['disable'] is False):
-            listId.append(configFile[confile]['id'])
-    return listId
+    ioc_names = []
+    for ioc_info in config['procmgr_config']:
+        if '/ims/' in ioc_info['dir'] and not ioc_info['disable']:
+            ioc_names.append(ioc_info['id'])
+    return ioc_names
 
 
-def assignFullpath(listId):
+def assign_full_path(ioc_names):
     """
     This function creates a list with the pathname
     for each ims motor's id from the list 'listId'
     """
-    listsPath = []
-    for id in range(len(listId)):
-        listsPath.append('/reg/d/iocData/' + listId[id] +
-                         '/iocInfo/IOC.pvlist')
-    return listsPath
+    lists_path = []
+    for name in range(len(ioc_names)):
+        lists_path.append('/reg/d/iocData/' + ioc_names[name] +
+                          '/iocInfo/IOC.pvlist')
+    return lists_path
 
 
-def createListMotors(listsPath):
+def create_list_motors(lists_path):
     """
-    This function iterates through the listsPath, opening
+    This function iterates through the lists_path, opening
     each IOC.pvlist file to collect all the records (aliases)
     with the IMS tag. Then it will store them in a list.
     """
     motors = []
-    motorsName = []
-    for path in range(len(listsPath)):
-        filename = listsPath[path]
+    motors_name = []
+    for path in range(len(lists_path)):
+        filename = lists_path[path]
         with open(filename, 'r') as file:
             for line in file:
                 comma = line.find(',')
                 if "ims" in line:
                     motors.append(line[0:comma])
-                    motorsName.append(line[0:comma] + '.NAME')
-    return motors, motorsName
+                    motors_name.append(line[0:comma] + '.NAME')
+    return motors, motors_name
 
 
-def motorsInfo(motors, motorsName, cfg):
+def motors_information(motors, motors_name, cfg):
     """
     This function finds the real Pv name for each
     record (alias), the cconfiguration name, and if
@@ -176,135 +176,125 @@ def motorsInfo(motors, motorsName, cfg):
     per each record and finally it will be addes to
     another list.
     """
-    pm = pmgrAPI.pmgrAPI("ims_motor", cfg)
-    totalinfo = []
+
+    parameter_manager = pmgrAPI.pmgrAPI("ims_motor", cfg)
+    total_info = []
     for motor in range(len(motors)):
-        infoperRecord = []
+        info_per_record = []
         try:
-            motorPtwo = ophyd.signal.EpicsSignal(motorsName[motor]).get()
+            real_pv_name = ophyd.signal.EpicsSignal(motors_name[motor]).get()
             try:
-                mconf = pm.get_config(motors[motor])
-                exConfig = pm.diff_config(motors[motor])
-                if exConfig:
-                    infoperRecord.append(motors[motor])
-                    infoperRecord.append(motorPtwo)
-                    infoperRecord.append(mconf)
-                    infoperRecord.append("No")
+                motor_conf = parameter_manager.get_config(motors[motor])
+                diff_config = parameter_manager.diff_config(motors[motor])
+                if diff_config:
+                    info_per_record.append(motors[motor])
+                    info_per_record.append(real_pv_name)
+                    info_per_record.append(motor_conf)
+                    info_per_record.append("No")
                 else:
-                    infoperRecord.append(motors[motor])
-                    infoperRecord.append(motorPtwo)
-                    infoperRecord.append(mconf)
-                    infoperRecord.append("Yes")
+                    info_per_record.append(motors[motor])
+                    info_per_record.append(real_pv_name)
+                    info_per_record.append(motor_conf)
+                    info_per_record.append("Yes")
 
             except Exception:
-                infoperRecord.append(motors[motor])
-                infoperRecord.append(motorPtwo)
-                infoperRecord.append("None")
-                infoperRecord.append(" ")
+                info_per_record.append(motors[motor])
+                info_per_record.append(real_pv_name)
+                info_per_record.append("None")
+                info_per_record.append(" ")
         except Exception:
-            try:
-                mconf = pm.get_config(motors[motor])
-                exConfig = pm.diff_config(motors[motor])
-                if exConfig:
-                    infoperRecord.append(motors[motor])
-                    infoperRecord.append("No found!")
-                    infoperRecord.append(mconf)
-                    infoperRecord.append("No")
-                else:
-                    infoperRecord.append(motors[motor])
-                    infoperRecord.append("No found!")
-                    infoperRecord.append(mconf)
-                    infoperRecord.append("Yes")
-            except Exception:
-                infoperRecord.append(motors[motor])
-                infoperRecord.append("No found!")
-                infoperRecord.append(" ")
-                infoperRecord.append(" ")
-        totalinfo.append(infoperRecord)
-    return totalinfo
+            info_per_record.append(motors[motor])
+            info_per_record.append("Not found!")
+            info_per_record.append(" ")
+            info_per_record.append(" ")
+        total_info.append(info_per_record)
+    return total_info
 
 
-def displayfullInfo(totalinfo, argNoconf, argMatch,
-                    argFound, argsaliasConf, cfg):
+def display_information(total_info, arg_no_conf, arg_match,
+                        arg_found, args_alias_conf, args_total, cfg):
     """
     This function displays in a table the information
     of all the ims motors by selection of the user.
     """
-    noConf = [info for info in totalinfo if info[0] == info[1]
-              and info[2] == "None" or info[0] != info[1]
-              and info[3] != "None" and info[1] != "No found!"]
-    noMatchConf = [info for info in totalinfo if info[3] == "No"]
-    noFound = [info for info in totalinfo if info[1] == "Not found!"]
-    aliasConf = [info for info in totalinfo if info[0] != info[1]
-                 and info[1] != "No found!" and info[2] != "None"]
+    no_configuration = [info for info in total_info if info[0] == info[1]
+                        and info[2] == "None"]
+    no_match_configuration = [info for info in total_info if info[3] == "No"]
+    no_found = [info for info in total_info if info[1] == "Not found!"]
+    alias_configured = [info for info in total_info if info[0] != info[1]
+                        and info[1] != "Not found!" and info[2] != "None"
+                        and info[2] != " "]
 
-    if argNoconf:
-        if noConf:
+    if arg_no_conf:
+        if no_configuration:
             print('Motors with no Configuration')
-            sortedListNoconf = sorted(noConf, key=lambda x: x[1])
-            tableNoconf = PrettyTable()
-            tableNoconf.field_names = ["Record Name", "Pv Name",
-                                       "Configuration",
-                                       "Configuration Matches"]
-            tableNoconf.add_rows(sortedListNoconf)
-            print(tableNoconf)
+            sorted_list_no_conf = sorted(no_configuration, key=lambda x: x[1])
+            table_no_conf = PrettyTable()
+            table_no_conf.field_names = ["Record Name", "Pv Name",
+                                         "Configuration",
+                                         "Configuration Matches"]
+            table_no_conf.add_rows(sorted_list_no_conf)
+            print(table_no_conf)
         else:
             print('The IMS motors have a configuration or/and',
                   ' the IMS motors were not found!')
 
-    elif argMatch:
-        if noMatchConf:
+    if arg_match:
+        if no_match_configuration:
             print('Motors with no Matching Configuration')
-            sortedlistnomaconf = sorted(noMatchConf, key=lambda x: x[1])
-            tableNomatch = PrettyTable()
-            tableNomatch.field_names = ["Record Name", "Pv Name",
-                                        "Configuration",
-                                        "Configuration Matches"]
-            tableNomatch.add_rows(sortedlistnomaconf)
-            print(tableNomatch)
+            sorted_list_no_match_conf = sorted(no_match_configuration,
+                                               key=lambda x: x[1])
+            table_no_match = PrettyTable()
+            table_no_match.field_names = ["Record Name", "Pv Name",
+                                          "Configuration",
+                                          "Configuration Matches"]
+            table_no_match.add_rows(sorted_list_no_match_conf)
+            print(table_no_match)
         else:
-            errorone = [conf for conf in noConf if conf[3] == "Yes"]
-            print(len(errorone))
-            print(len(noConf))
-            if len(errorone) == len(noConf):
+            conf_matching = [conf for conf in no_match_configuration
+                             if conf[3] == "Yes"]
+            print(len(conf_matching))
+            print(len(no_match_configuration))
+            if len(conf_matching) == len(no_match_configuration):
                 print('The IMS motors have a matching configuration!')
             else:
                 print('The IMS motors have a matching configuration or/and',
                       ' the IMS motors do not have configuration')
-    elif argFound:
-        if noFound:
+    if arg_found:
+        if no_found:
             print('Motors not found!')
-            sortedlistnofound = sorted(noFound, key=lambda x: x[1])
-            tableNofound = PrettyTable()
-            tableNofound.field_names = ["Record Name", "Pv Name",
-                                        "Configuration",
-                                        "Configuration Matches"]
-            tableNofound.add_rows(sortedlistnofound)
-            print(tableNofound)
+            sorted_list_no_found = sorted(no_found, key=lambda x: x[1])
+            table_no_found = PrettyTable()
+            table_no_found.field_names = ["Record Name", "Pv Name",
+                                          "Configuration",
+                                          "Configuration Matches"]
+            table_no_found.add_rows(sorted_list_no_found)
+            print(table_no_found)
         else:
             print('All the IMS motors were found in the system')
 
-    elif argsaliasConf:
-        if aliasConf:
+    if args_alias_conf:
+        if alias_configured:
             print('Alias with configuration assigned')
-            sortedlistaliasConf = sorted(aliasConf, key=lambda x: x[1])
-            tablealiasConf = PrettyTable()
-            tablealiasConf.field_names = ["Record Name", "Pv Name",
-                                          "Configuration",
-                                          "Configuration Matches"]
-            tablealiasConf.add_rows(sortedlistaliasConf)
-            print(tablealiasConf)
+            sorted_list_alias_conf = sorted(alias_configured,
+                                            key=lambda x: x[1])
+            table_alias_conf = PrettyTable()
+            table_alias_conf.field_names = ["Record Name", "Pv Name",
+                                            "Configuration",
+                                            "Configuration Matches"]
+            table_alias_conf.add_rows(sorted_list_alias_conf)
+            print(table_alias_conf)
         else:
             print('There are no alias motors with configuration assigned.')
-    else:
-        print('Total informations of the IMS motors in the HUTCH', cfg)
-        sortedlistTinfo = sorted(totalinfo, key=lambda x: x[1])
-        tableTinfo = PrettyTable()
-        tableTinfo.field_names = ["Record Name", "Pv Name",
-                                  "Configuration",
-                                  "Configuration Matches"]
-        tableTinfo.add_rows(sortedlistTinfo)
-        print(tableTinfo)
+    if args_total:
+        print('Total information of the IMS motors in the HUTCH', cfg)
+        sorted_list_total_info = sorted(total_info, key=lambda x: x[1])
+        table_total_info = PrettyTable()
+        table_total_info.field_names = ["Record Name", "Pv Name",
+                                        "Configuration",
+                                        "Configuration Matches"]
+        table_total_info.add_rows(sorted_list_total_info)
+        print(table_total_info)
 
 
 if __name__ == "__main__":
