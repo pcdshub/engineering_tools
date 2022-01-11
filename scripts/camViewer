@@ -142,8 +142,8 @@ OPTIONS:
 -w # (wait for # hours to ask to renew, default 2 and 12 for GIGEs)
 -u # update rate limit (default 5)
 -H hutch: use a specific hutches camviewer config file
--e enable camera ioc
--d disable camera ioc
+-e/--enable enable camera ioc
+-d/--disable disable camera ioc
 EOF
 }
 
@@ -174,7 +174,7 @@ ENABLE=0
 DISABLE=0
 
 
-while getopts "c:w:u:H:lmred" OPTION
+while getopts "c:w:u:H:lmred":"-enab":"-disab" OPTION
 do
     case $OPTION in
 	l)
@@ -211,6 +211,12 @@ do
             ;;
         d)
             DISABLE=1
+            ;;
+        -disable)
+            DISABLE=1
+            ;;
+        -enable)
+            ENABLE=1
             ;;
 	esac
 done
