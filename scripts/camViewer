@@ -127,6 +127,8 @@ iocfpv() {
      grep_pv $1 | sed -n 's/\/reg\/d\/iocData\/\(\S*\)\/iocInfo/\1/p'
 }
 
+
+
 usage()
 {
 cat << EOF
@@ -153,9 +155,11 @@ if [[ ($1 == "--help") || ($1 == "-h") ]]; then
 fi
 
 hutch=`get_info --gethutch`
+
 if [ $hutch = unknown_hutch ]; then
     echo 'unknown hutch, cannot use camViewer script'
     exit 1
+   
 fi
 
 CAMNUM=0
@@ -166,6 +170,8 @@ MAINSCREEN=0
 EXE=/reg/g/pcds/pyps/config/$hutch/camviewer/run_viewer.csh
 PVLIST=/reg/g/pcds/pyps/config/$hutch/camviewer.cfg
 imgr=/reg/g/pcds/pyps/apps/iocmanager/latest/imgr
+
+
 CAMNUM=0
 WAIT=0
 RATE=-1
@@ -264,15 +270,44 @@ fi
 
 if [ $ENABLE -gt 0 ]; then 
     echo "Enabling ${CAMNAME}"
-    IOC=$(iocfpv "${CAMPVFULL}")
-    $imgr "$IOC" --hutch "$hutch" --enable   
+    for ioc in `iocfpv "$CAMPVFULL:IMAGE1"`; do
+        
+        INFO=$(grep_ioc "$ioc" all | grep "id:'$ioc'")
+        if [ -z "$INFO" ]; then
+             
+            >&2
+        else
+            
+            IOC=$(echo "$INFO" | sed -n "s/^.*id: '\(\S*\)'.*$/\1/p")
+            IOCHOST=$(echo "$INFO" | sed -n "s/^.*host: '\(\S*\)'.*$/\1/p")
+
+            iochutch=$(echo $INFO | grep "/reg/g/pcds/pyps/config/*" | cut -d'/' -f7)
+
+        fi
+    done
+
+    $imgr "$ioc" --hutch "$iochutch" --enable   
     exit
 fi
 
 if [ $DISABLE -gt 0 ]; then
     echo "Disabling ${CAMNAME}"
-    IOC=$(iocfpv "${CAMPVFULL}")
-    $imgr "$IOC" --hutch "$hutch" --disable    
+    for ioc in `iocfpv "$CAMPVFULL:IMAGE1"`; do
+
+        INFO=$(grep_ioc "$ioc" all | grep "id:'$ioc'")
+        if [ -z "$INFO" ]; then
+
+            >&2 
+        else
+
+            IOC=$(echo "$INFO" | sed -n "s/^.*id: '\(\S*\)'.*$/\1/p")
+            IOCHOST=$(echo "$INFO" | sed -n "s/^.*host: '\(\S*\)'.*$/\1/p")
+            iochutch=$(echo $INFO | grep "/reg/g/pcds/pyps/config/*" | cut -d'/' -f7)
+
+        fi
+    done
+
+    $imgr "$ioc" --hutch "$iochutch" --disable    
     exit
 fi
 
