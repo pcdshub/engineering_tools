@@ -154,23 +154,6 @@ if [[ ($1 == "--help") || ($1 == "-h") ]]; then
 	exit 0
 fi
 
-hutch=`get_info --gethutch`
-
-if [ $hutch = unknown_hutch ]; then
-    echo 'unknown hutch, cannot use camViewer script'
-    exit 1
-   
-fi
-
-CAMNUM=0
-WAIT=0
-RATE=-1
-MAINSCREEN=0
-
-EXE=/reg/g/pcds/pyps/config/$hutch/camviewer/run_viewer.csh
-PVLIST=/reg/g/pcds/pyps/config/$hutch/camviewer.cfg
-imgr=/reg/g/pcds/pyps/apps/iocmanager/latest/imgr
-
 
 CAMNUM=0
 WAIT=0
@@ -178,7 +161,9 @@ RATE=-1
 REBOOT=0
 ENABLE=0
 DISABLE=0
+MAINSCREEN=0
 
+#hutch=""
 
 while getopts "c:w:u:H:lmred":"-enab":"-disab" OPTION
 do
@@ -227,6 +212,24 @@ do
 	esac
 done
 
+
+if [ $hutch = ''  ]; then
+    $hutch = `get_info --gethutch`
+    if [ $hutch = unknown_hutch ]; then
+        echo 'unknown hutch, cannot use camViewer script'
+        exit 1
+else
+    $hutch = $1
+    fi
+fi
+
+
+EXE=/reg/g/pcds/pyps/config/$hutch/camviewer/run_viewer.csh
+PVLIST=/reg/g/pcds/pyps/config/$hutch/camviewer.cfg
+imgr=/reg/g/pcds/pyps/apps/iocmanager/latest/imgr
+
+
+
 if [ $CAMNUM -eq 0 ]; then
     if [ $hutch = "tmo" ]; then
         CAMNAME=IM2K0
@@ -247,6 +250,7 @@ fi
     
 export EPICS_CA_MAX_ARRAY_BYTES=24000000
 echo working with camera of name: $CAMNAME
+echo pv directory: "$PVLIST"
 
 name_to_pv "$CAMNAME" $hutch
 
