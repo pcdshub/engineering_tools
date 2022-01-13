@@ -8,17 +8,24 @@ Usage: $0 IOCNAME [--hutch HUTCH] --COMMAND
 Script to control an ioc. 
 
 List of commands:
-reboot soft
-reboot hard
-enable
-disable
-upgrade RELEASE_DIR
-move HOST
-move HOST:PORT
-list [--host HOST] [--enabled_only|--disabled_only]
+$0 IOCNAME [--hutch HUTCH] --reboot soft
+$0 IOCNAME [--hutch HUTCH] --reboot hard
+$0 IOCNAME [--hutch HUTCH] --enable
+$0 IOCNAME [--hutch HUTCH] --disable
+$0 IOCNAME [--hutch HUTCH] --upgrade RELEASE_DIR
+$0 IOCNAME [--hutch HUTCH] --move HOST
+$0 IOCNAME [--hutch HUTCH] --move HOST:PORT
+$0 [--hutch HUTCH] --list [--host HOST] [--enabled_only|--disabled_only]
  
 EOF
 }
+
+if [ $# -lt 1 ]; then
+   echo 'need arguments' >&2
+   usage
+   exit 0
+fi
+
 
 if [[ ($1 == "--help") || ($1 == "-h") ]]; then
    usage
@@ -35,7 +42,22 @@ DIR="$( cd $DIRTMP && pwd -P )"
 pathmunge $DIR
 
 
+if [[ $1 == *'-'* ]]; then
+    if [[ $# -eq 4 ]]; then
+        /reg/g/pcds/pyps/apps/iocmanager/latest/imgr "$1" --hutch $3 "$4"  > /dev/null &
+    elif [[ $5 == *':'* && $# -eq 5 ]]; then
+        /reg/g/pcds/pyps/apps/iocmanager/latest/imgr "$1" --hutch $3 "$4" "$5" > /dev/null &
+    elif [[ $3 == *'list'* && $# -eq 6 ]]; then
+        /reg/g/pcds/pyps/apps/iocmanager/latest/imgr --hutch $2 --list --host "$5" "$6"
+    elif [[ $# -eq 5 && $5 != *':'* || $3 != *'list'* ]]; then
+        /reg/g/pcds/pyps/apps/iocmanager/latest/imgr "$1" --hutch $3 "$4" "$5" > /dev/null &
+    else
+        echo 'Conditions not met'
+    fi
+else
+    echo 'Ioc does not exist' >&2
+fi
 
 
-/reg/g/pcds/pyps/apps/iocmanager/latest/imgr $1 --hutch $3 "$4" > /dev/null &
+
 
