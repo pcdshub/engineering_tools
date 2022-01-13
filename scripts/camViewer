@@ -137,15 +137,15 @@ usage: $0 options
 start the viewer for controls cameras
 
 OPTIONS:
--c camera name as in camera list or gige #
--m bring up the edm screen
--r reboot the IOC
--l print list of cameras
--w # (wait for # hours to ask to renew, default 2 and 12 for GIGEs)
--u # update rate limit (default 5)
--H hutch: use a specific hutches camviewer config file
--e/--enable enable camera ioc
--d/--disable disable camera ioc
+-c:            camera name as in camera list or gige #
+-m:            bring up the edm screen
+-r:            reboot the IOC
+-l:            print list of cameras
+-w #:         (wait for # hours to ask to renew, default 2 and 12 for GIGEs)
+-u #:          update rate limit (default 5)
+-H hutch:      use a specific hutches camviewer config file
+-e/--enable:   enable camera ioc
+-d/--disable:  disable camera ioc
 EOF
 }
 
@@ -163,7 +163,6 @@ ENABLE=0
 DISABLE=0
 MAINSCREEN=0
 
-#hutch=""
 
 while getopts "c:w:u:H:lmred":"-enab":"-disab" OPTION
 do
@@ -213,20 +212,21 @@ do
 done
 
 
-if [ $hutch = ''  ]; then
-    $hutch = `get_info --gethutch`
-    if [ $hutch = unknown_hutch ]; then
+
+if [ "$hutch" == ""  ]; then
+    hutch=`get_info --gethutch`
+    if [ "$hutch" == unknown_hutch ]; then
         echo 'unknown hutch, cannot use camViewer script'
         exit 1
-else
-    $hutch = $1
     fi
+else
+    hutch=$hutch
 fi
+
 
 
 EXE=/reg/g/pcds/pyps/config/$hutch/camviewer/run_viewer.csh
 PVLIST=/reg/g/pcds/pyps/config/$hutch/camviewer.cfg
-imgr=/reg/g/pcds/pyps/apps/iocmanager/latest/imgr
 
 
 
@@ -250,7 +250,7 @@ fi
     
 export EPICS_CA_MAX_ARRAY_BYTES=24000000
 echo working with camera of name: $CAMNAME
-echo pv directory: "$PVLIST"
+
 
 name_to_pv "$CAMNAME" $hutch
 
@@ -290,7 +290,7 @@ if [ $ENABLE -gt 0 ]; then
         fi
     done
 
-    $imgr "$ioc" --hutch "$iochutch" --enable   
+    imgr "$ioc" --hutch "$iochutch" --enable   
     exit
 fi
 
@@ -311,7 +311,7 @@ if [ $DISABLE -gt 0 ]; then
         fi
     done
 
-    $imgr "$ioc" --hutch "$iochutch" --disable    
+    imgr "$ioc" --hutch "$iochutch" --disable    
     exit
 fi
 
