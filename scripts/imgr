@@ -1,0 +1,41 @@
+#!/bin/bash
+
+usage()
+{
+cat << EOF
+Usage: $0 IOCNAME [--hutch HUTCH] --COMMAND
+
+Script to control an ioc. 
+
+List of commands:
+reboot soft
+reboot hard
+enable
+disable
+upgrade RELEASE_DIR
+move HOST
+move HOST:PORT
+list [--host HOST] [--enabled_only|--disabled_only]
+ 
+EOF
+}
+
+if [[ ($1 == "--help") || ($1 == "-h") ]]; then
+   usage
+   exit 0
+fi
+
+ulimit -c unlimited 
+
+source /reg/g/pcds/setup/pathmunge.sh
+ldpathmunge /usr/local/lib
+
+DIRTMP=`dirname  "${BASH_SOURCE[0]}"`
+DIR="$( cd $DIRTMP && pwd -P )"
+pathmunge $DIR
+
+
+
+
+/reg/g/pcds/pyps/apps/iocmanager/latest/imgr $1 --hutch $3 "$4" > /dev/null &
+
