@@ -277,14 +277,14 @@ fi
 if [ $ENABLE -gt 0 ]; then 
     echo "Enabling ${CAMNAME}"
     iocinfo
-    ./imgr "$ioc" --hutch "$iochutch" --enable   
+    imgr "$ioc" --hutch "$iochutch" --enable   
     exit
 fi
 
 if [ $DISABLE -gt 0 ]; then
     echo "Disabling ${CAMNAME}"
     iocinfo
-    ./imgr "$ioc" --hutch "$iochutch" --disable    
+    imgr "$ioc" --hutch "$iochutch" --disable    
     exit
 fi
 
