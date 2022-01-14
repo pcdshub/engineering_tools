@@ -127,7 +127,17 @@ iocfpv() {
      grep_pv $1 | sed -n 's/\/reg\/d\/iocData\/\(\S*\)\/iocInfo/\1/p'
 }
 
+iocinfo() {
+     for ioc in `iocfpv "$CAMPVFULL:IMAGE1"`; do
 
+        INFO=$(grep_ioc "$ioc" all | grep "id:'$ioc'")
+        if [ -z "$INFO" ]; then
+            :            
+        else
+            iochutch=$(echo $INFO | cut -d'/' -f7)
+        fi
+    done
+}    
 
 usage()
 {
@@ -274,44 +284,15 @@ fi
 
 if [ $ENABLE -gt 0 ]; then 
     echo "Enabling ${CAMNAME}"
-    for ioc in `iocfpv "$CAMPVFULL:IMAGE1"`; do
-        
-        INFO=$(grep_ioc "$ioc" all | grep "id:'$ioc'")
-        if [ -z "$INFO" ]; then
-             
-            >&2
-        else
-            
-            IOC=$(echo "$INFO" | sed -n "s/^.*id: '\(\S*\)'.*$/\1/p")
-            IOCHOST=$(echo "$INFO" | sed -n "s/^.*host: '\(\S*\)'.*$/\1/p")
-
-            iochutch=$(echo $INFO | grep "/reg/g/pcds/pyps/config/*" | cut -d'/' -f7)
-
-        fi
-    done
-
-    imgr "$ioc" --hutch "$iochutch" --enable   
+    iocinfo
+    ./imgr "$ioc" --hutch "$iochutch" --enable   
     exit
 fi
 
 if [ $DISABLE -gt 0 ]; then
     echo "Disabling ${CAMNAME}"
-    for ioc in `iocfpv "$CAMPVFULL:IMAGE1"`; do
-
-        INFO=$(grep_ioc "$ioc" all | grep "id:'$ioc'")
-        if [ -z "$INFO" ]; then
-
-            >&2 
-        else
-
-            IOC=$(echo "$INFO" | sed -n "s/^.*id: '\(\S*\)'.*$/\1/p")
-            IOCHOST=$(echo "$INFO" | sed -n "s/^.*host: '\(\S*\)'.*$/\1/p")
-            iochutch=$(echo $INFO | grep "/reg/g/pcds/pyps/config/*" | cut -d'/' -f7)
-
-        fi
-    done
-
-    imgr "$ioc" --hutch "$iochutch" --disable    
+    iocinfo
+    ./imgr "$ioc" --hutch "$iochutch" --disable    
     exit
 fi
 
