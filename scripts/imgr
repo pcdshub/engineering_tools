@@ -41,23 +41,5 @@ DIRTMP=`dirname  "${BASH_SOURCE[0]}"`
 DIR="$( cd $DIRTMP && pwd -P )"
 pathmunge $DIR
 
-
-if [[ $1 == *'-'* ]]; then
-    if [[ $# -eq 4 ]]; then
-        /reg/g/pcds/pyps/apps/iocmanager/latest/imgr "$1" --hutch $3 "$4"  > /dev/null &
-    elif [[ $5 == *':'* && $# -eq 5 ]]; then
-        /reg/g/pcds/pyps/apps/iocmanager/latest/imgr "$1" --hutch $3 "$4" "$5" > /dev/null &
-    elif [[ $3 == *'list'* && $# -eq 6 ]]; then
-        /reg/g/pcds/pyps/apps/iocmanager/latest/imgr --hutch $2 --list --host "$5" "$6"
-    elif [[ $# -eq 5 && $5 != *':'* || $3 != *'list'* ]]; then
-        /reg/g/pcds/pyps/apps/iocmanager/latest/imgr "$1" --hutch $3 "$4" "$5" > /dev/null &
-    else
-        echo 'Conditions not met'
-    fi
-else
-    echo 'Ioc does not exist' >&2
-fi
-
-
-
+/reg/g/pcds/pyps/apps/iocmanager/latest/imgr $@
 
