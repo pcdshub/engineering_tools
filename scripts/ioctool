@@ -48,9 +48,10 @@ default option is 'name', list of options:
 name   : returns the name of the ioc
 dir    : returns the directory the ioc is running from
 cddir  : open the directory the ioc is running from (start with "source" before calling script with this option)
-cfg    : returns the file name of the ioc .cfg (or st.cmd)
+cfg    : returns the file name of the ioc .cfg (or st.cmd)i
 less   : opens the ioc .cfg (or st.cmd) in less
 data   : returns the path of the appropriate iocData directory if it exists
+autosave : opens the ioc most recent autosave in less
 telnet : starts a telnet session with the ioc 
 
 EOF
@@ -121,12 +122,23 @@ elif [ "$CMD" == "data" ]; then
 
 #################################################################
 
+elif [ "$CMD" == "autosave" ]; then
+   autosavefile=/reg/d/iocData/"${NAME}"/autosave/${NAME}.sav
+   if [ -f "$autosavefile" ]; then
+      less "$autosavefile"
+   else
+      echo "Autosave file could not be found."
+   fi
+
+#################################################################
+
 elif [ "$CMD" == "telnet" ]; then
    INFO=$(grep_ioc "$NAME" all | grep "id:'$NAME'")
    if [ -z "$INFO" ]; then
       echo "$NAME could not be found. Exiting..." >&2
       exit 1
    fi
+   
    HOST=$(echo "$INFO" | sed -n "s/^.*host: '\(\S*\)'.*$/\1/p")
    PORT=$(echo "$INFO" | sed -n "s/^.*port: \(\S*\),.*$/\1/p")
    #if [[ 39000 >= "$PORT" >=39999 ]];
