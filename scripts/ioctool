@@ -51,7 +51,9 @@ cddir  : open the directory the ioc is running from (start with "source" before 
 cfg    : returns the file name of the ioc .cfg (or st.cmd)i
 less   : opens the ioc .cfg (or st.cmd) in less
 data   : returns the path of the appropriate iocData directory if it exists
-autosave : opens the ioc most recent autosave in less
+autosave : opens the ioc most recent autosave file in less
+archive  : opens the ioc most recent archive file in less
+log    : opens the most recent log file in less
 telnet : starts a telnet session with the ioc 
 
 EOF
@@ -127,7 +129,27 @@ elif [ "$CMD" == "autosave" ]; then
    if [ -f "$autosavefile" ]; then
       less "$autosavefile"
    else
-      echo "Autosave file could not be found."
+      echo "Recent autosave file could not be found."
+   fi
+
+#################################################################
+
+elif [ "$CMD" == "archive" ]; then
+   archivefile=/reg/d/iocData/"${NAME}"/archive/${NAME}.archive
+   if [ -f "$archivefile" ]; then
+      less "$archivefile"
+   else
+      echo "Archive file could not be found."
+   fi
+
+#################################################################
+
+elif [ "$CMD" == "log" ]; then
+   logfile=/reg/d/iocData/"${NAME}"/iocInfo/ioc.log
+   if [ -f "$logfile" ]; then
+      less "$logfile"
+   else
+      echo "Recent log file could not be found."
    fi
 
 #################################################################
