@@ -1,5 +1,8 @@
 #!/bin/bash
 
+DIR=$(readlink -f $(dirname "${BASH_SOURCE[0]}"))
+PATH=$PATH:$DIR
+
 #
 # find_pv: use find_pv to get to the sysreset PV of the IOC for rebooting.
 # --> does not work. Need to know more. Maybe just use in case of gige, assuming naming convention.
