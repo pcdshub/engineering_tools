@@ -37,8 +37,8 @@ ulimit -c unlimited
 source /reg/g/pcds/setup/pathmunge.sh
 ldpathmunge /usr/local/lib
 
-DIRTMP=`dirname  "${BASH_SOURCE[0]}"`
-DIR="$( cd $DIRTMP && pwd -P )"
+DIR=$(readlink -f $(dirname "${BASH_SOURCE[0]}"))
+PATH=$PATH:$DIR
 pathmunge $DIR
 
 /reg/g/pcds/pyps/apps/iocmanager/latest/imgr $@
