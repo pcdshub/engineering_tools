@@ -131,9 +131,7 @@ iocinfo() {
      for ioc in `iocfpv "$CAMPVFULL:IMAGE1"`; do
 
         INFO=$(grep_ioc "$ioc" all | grep "id:'$ioc'")
-        if [ -z "$INFO" ]; then
-            :            
-        else
+        if [ -n "$INFO" ]; then
             iochutch=$(echo $INFO | cut -d'/' -f7)
         fi
     done
