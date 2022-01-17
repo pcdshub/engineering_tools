@@ -70,6 +70,7 @@ dir    : returns the directory the ioc is running from
 cddir  : open the directory the ioc is running from (start with "source" before calling script with this option)
 cfg    : returns the file name of the ioc .cfg (or st.cmd)i
 less   : opens the ioc .cfg (or st.cmd) in less
+cat    : opens the ioc .cfg (or st.cmd) in cat
 data   : returns the path of the appropriate iocData directory if it exists
 autosave : opens the ioc most recent autosave file in less
 archive  : opens the ioc most recent archive file in less
@@ -142,7 +143,7 @@ elif [ "$CMD" == "less" ]; then
 
 #################################################################
 
-elif [ "$CMD" == "less" ]; then
+elif [ "$CMD" == "cat" ]; then
    ioccfg "$NAME"
    cat "$iocfile"
 
