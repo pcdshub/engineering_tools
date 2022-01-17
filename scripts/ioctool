@@ -2,11 +2,31 @@
 
 function iocfpv {
    ioc=""
-   ioc=$(grep_pv "$1" | sed -n 's/\/reg\/d\/iocData\/\(\S*\)\/iocInfo/\1/p')
+   ioc=$(grep_pv $1 | cut -d'/' -f5 | sed -r '/^('$1').*/d' | sed -r '/^IOC.*/d')
    if [ -z "$ioc" ]; then
       echo "Did not find an ioc associated with this PV." >&2 
       exit 1
+   elif [[ $ioc = *[[:space:]]* ]]; then #assuming multiple iocs are separeated by a space
+      declare -a ioc_array     
+      for entry in $ioc; do
+         ioc_array+=($entry)
+      done 
+      echo "$1 is found in ${#ioc_array[@]} places"
+      if [[ ${#ioc_array[@]} -gt 1 ]]; then
+         echo "Which ioc do care about here?"
+         printf '%s\n' "${ioc_array[@]}" 
+         read chosenioc
+         if [[ -z "$chosenioc" ]]; then
+             ioc="nothing"
+             echo "Please pick an ioc."
+             exit 0
+         fi   
+         ioc=$chosenioc      
+      echo "You have chosen" $ioc
+       
+      fi
    fi
+   
 }
 
 function iocdir {
@@ -40,7 +60,7 @@ function ioccfg {
 
 usage(){
 cat << EOF
-usage: ${BASH_SOURCE[0]} <ioc>|<pv> [option]
+usage: $0 <ioc>|<pv> [option]
 
 Script that returns information about an ioc given its name or a PV it hosts
 
@@ -78,10 +98,18 @@ CMD=$2
 if [[ $NAME == *':'* ]]; then #we are assuming that PVs have a colon in them
    iocfpv "$NAME"
    NAME="$ioc"
+   
 elif [[ ! $NAME == *'-'* ]]; then #We are assuming that ioc names contain an a dash in them
    echo "${NAME} does not match the format for PVs or IOC names. Exiting..."
-   exit 1
-fi   
+   exit 1  
+
+else
+   INFO=$(grep_ioc "$NAME" all | grep "id:'$NAME'")
+      if [ -z "$INFO" ]; then
+         NAME=$(echo $INFO | sed -n "s/^.*id: '\(\S*\)'.*$/\1/p")
+      fi   
+fi
+    
 
 #################################################################
 
@@ -98,7 +126,7 @@ elif [ "$CMD" ==  "dir" ]; then
 
 elif [ "$CMD" == "cddir" ]; then
    iocdir "$NAME"
-   [[ "${BASH_SOURCE[0]}" == "$0" ]] && echo "Script is not being sourced. Start with 'source ${BASH_SOURCE[0]}' before calling script with this option." || cd "${iocpath}" 
+   [[ "${BASH_SOURCE[0]}" == "$0" ]] && echo "Script is not being sourced. Start with 'source $0' before calling script with this option." || cd "${iocpath}" 
  
 #################################################################
 
