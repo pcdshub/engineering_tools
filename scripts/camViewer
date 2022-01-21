@@ -131,7 +131,7 @@ iocfpv() {
 }
 
 iocinfo() {
-     for ioc in `iocfpv "$CAMPVFULL:IMAGE1"`; do
+    for ioc in `iocfpv "$CAMPVFULL:IMAGE1"`; do
 
         INFO=$(grep_ioc "$ioc" all | grep "id:'$ioc'")
         if [ -n "$INFO" ]; then
@@ -165,8 +165,9 @@ if [[ ($1 == "--help") || ($1 == "-h") ]]; then
 	exit 0
 fi
 
-
+LIST=0
 CAMNUM=0
+CAMNAME=0
 WAIT=0
 RATE=-1
 REBOOT=0
@@ -180,18 +181,10 @@ while getopts " -o c:w:u:H:lmre:(enable)d:(disable)" OPTION
 do
     case $OPTION in
 	l)
-	    list_cams $hutch
-	    exit 1
+	    LIST=1	  
 	    ;;
 	c)
 	    CAM=$OPTARG
-	    if isNum $CAM; then
-		CAMNUM=$CAM
-		CAMNAME=`gige_num_to_name $hutch $CAM`
-	    else
-		CAMNAME=$CAM
-		CAMNUM=-1
-	    fi
 	    ;;
 	w)
 	    WAIT=$OPTARG
@@ -228,9 +221,21 @@ fi
 
 
 
-EXE=/reg/g/pcds/pyps/config/$hutch/camviewer/run_viewer.csh
-PVLIST=/reg/g/pcds/pyps/config/$hutch/camviewer.cfg
+EXE="/reg/g/pcds/pyps/config/$hutch/camviewer/run_viewer.csh"
+PVLIST="/reg/g/pcds/pyps/config/$hutch/camviewer.cfg"
 
+if [ $LIST -gt 0 ]; then
+    list_cams $hutch
+    exit 1
+fi
+
+if isNum $CAM; then
+    CAMNUM=$CAM
+    CAMNAME=$(gige_num_to_name $hutch $CAM)
+else
+    CAMNAME=$CAM
+    CAMNUM=-1
+fi
 
 
 if [ $CAMNUM -eq 0 ]; then
