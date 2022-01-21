@@ -214,7 +214,7 @@ done
 if [ "$hutch" == ""  ]; then
     hutch=`get_info --gethutch`
     if [ "$hutch" == unknown_hutch ]; then
-        echo 'unknown hutch, cannot use camViewer script'
+        echo 'unknown hutch, specify using -H option'
         exit 1
     fi
 fi
