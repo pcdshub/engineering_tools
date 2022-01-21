@@ -78,9 +78,9 @@ function camname_to_pv {
    tmp=/tmp/cv.$$
    cat "$VIEWERCFG" | grep -i "$CAMNAME" | grep -v '#' | awk -F, '{ if (split($2,a,";")==1) n=$2; else n=a[2]; gsub(" ","",n); gsub(" ","",$4); printf "%s %s\n", n, $4; }' >$tmp
    c=$(wc -l <$tmp)
-   if [ "$c" -eq 0 ]; then
-      VIEWERCFG=/reg/g/pcds/pyps/config/*/camviewer.cfg
-      cat $VIEWERCFG | grep -i "$CAMNAME" | grep -v '#' | awk -F, '{ if (split($2,a,";")==1) n=$2; else n=a[2]; gsub(" ","",n); gsub(" ","",$4); printf "%s %s\n", n, $4; }' >$tmp
+   if [ "$c" -eq 0 ]; then 
+      VIEWERCFG="/reg/g/pcds/pyps/config/*/camviewer.cfg"
+      cat "$VIEWERCFG" | grep -i "$CAMNAME" | grep -v '#' | awk -F, '{ if (split($2,a,";")==1) n=$2; else n=a[2]; gsub(" ","",n); gsub(" ","",$4); printf "%s %s\n", n, $4; }' >$tmp
       c=$(wc -l <$tmp)
       if [ "$c" -eq 0 ]; then
          echo "No match for $1"
@@ -94,14 +94,14 @@ function camname_to_pv {
       return
    fi
    # OK, ambiguous.  Look for a complete match on the second word.
-   if [ $(grep -E -i "$CAMNAME\$" < $tmp | wc -l) -eq 1 ]; then
+   if [ "$(grep -E -i "$CAMNAME\$" < $tmp | wc -l)" -eq 1 ]; then
       campv=$(grep -E -i " $CAMNAME\$" < $tmp | awk '{print $1;}')
       rm -f $tmp
       return
    fi
    # What about just a match at the end? (That is, if we are searching
    # for "yag1", prefer "mec_yag1" to "mec_yag11".)
-   if [ $(grep -E -i "$CAMNAME\$" < $tmp | wc -l) -eq 1 ]; then
+   if [ "$(grep -E -i "$CAMNAME\$" < $tmp | wc -l)" -eq 1 ]; then
       campv=$(grep -E -i "$CAMNAME\$" < $tmp | awk '{print $1;}')
       rm -f $tmp
       return
@@ -197,7 +197,7 @@ elif [ "$CMD" ==  "dir" ]; then
 
 elif [ "$CMD" == "cddir" ]; then
    iocdir "$NAME"
-   [[ "${BASH_SOURCE[0]}" == "$0" ]] && echo "Script is not being sourced. Start with 'source $0' before calling script with this option." || cd "${iocpath}"
+   [[ "${BASH_SOURCE[0]}" == "$0" ]] && echo "Script is not being sourced. Start with 'source $0' before calling script with this option." || cd "${iocpath}" || return
  
 #################################################################
 
