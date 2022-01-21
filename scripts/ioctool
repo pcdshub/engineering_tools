@@ -2,27 +2,27 @@
 
 function iocfpv {
    ioc=""
-   ioc=$(grep_pv $1 | cut -d'/' -f5 | sed -r '/^('$1').*/d' | sed -r '/^IOC.*/d')
+   ioc=$(grep_pv "$1" | cut -d'/' -f5 | sed -r '/^('"$1"').*/d' | sed -r '/^IOC.*/d')
    if [ -z "$ioc" ]; then
       echo "Did not find an ioc associated with this PV." >&2 
       exit 1
    elif [[ $ioc = *[[:space:]]* ]]; then #assuming multiple iocs are separeated by a space
       declare -a ioc_array     
       for entry in $ioc; do
-         ioc_array+=($entry)
+         ioc_array+=("$entry")
       done 
       echo "$1 is found in ${#ioc_array[@]} places"
       if [[ ${#ioc_array[@]} -gt 1 ]]; then
          echo "Which ioc do care about here?"
          printf '%s\n' "${ioc_array[@]}" 
-         read chosenioc
+         read -r chosenioc
          if [[ -z "$chosenioc" ]]; then
              ioc="nothing"
              echo "Please pick an ioc."
              exit 0
          fi   
          ioc=$chosenioc      
-      echo "You have chosen" $ioc
+      echo "You have chosen" "$ioc"
        
       fi
    fi
@@ -46,9 +46,9 @@ function iocdir {
 
 function ioccfg {
    iocdir "$1"
-   iocfile=$(find ${iocpath} -name "$1.cfg")
+   iocfile=$(find "${iocpath}" -name "$1.cfg")
    if [ -z  "$iocfile" ]; then
-      iocfile=$(find ${iocpath} -name "st.cmd")
+      iocfile=$(find "${iocpath}" -name "st.cmd")
       if [ -z "$iocfile" ]; then
          echo -e "No files found for that ioc" >&2
 
@@ -61,46 +61,54 @@ function ioccfg {
 function camname_to_pv {
    #A function that will loop through camviewer.cfg files throughout all hutches to find the name then use that to search for its PV 
    campv=""
-   hutch=`get_info --gethutch`
+   hutch=$(get_info --gethutch)
    VIEWERCFG=/reg/g/pcds/pyps/config/$hutch/camviewer.cfg
-   CAMNAME=`echo $1 | sed -e 's/-/ /g' -e 's/_/ /g' -e 's/ /[-_ ]/g'`
-   
+   CAMNAME=$(echo "$1" | sed -e 's/-/ /g' -e 's/_/ /g' -e 's/ /[-_ ]/g')
+
+   # The story here: 
+   # See how many matches we have in the hutch.
+   # If 0, try looking in all of the hutches.
+   # If 1, then we're done.
+   # Otherwise:
+   # Look for a complete match, anchored on both sides.
+   # Look for a match anchored at the end.
+   # If there is more than one, return "ambiguous"
+   #
+   # Make a temp file with just the PVs and camera names that match.
    tmp=/tmp/cv.$$
-   cat $VIEWERCFG | grep -i "$CAMNAME" | grep -v '#' | awk -F, '{ if (split($2,a,";")==1) n=$2; else n=a[2]; gsub(" ","",n); gsub(" ","",$4); printf "%s %s\n", n, $4; }' >$tmp
-   c=`wc -l <$tmp`
-   if [ $c -eq 0 ]; then
+   cat "$VIEWERCFG" | grep -i "$CAMNAME" | grep -v '#' | awk -F, '{ if (split($2,a,";")==1) n=$2; else n=a[2]; gsub(" ","",n); gsub(" ","",$4); printf "%s %s\n", n, $4; }' >$tmp
+   c=$(wc -l <$tmp)
+   if [ "$c" -eq 0 ]; then
       VIEWERCFG=/reg/g/pcds/pyps/config/*/camviewer.cfg
       cat $VIEWERCFG | grep -i "$CAMNAME" | grep -v '#' | awk -F, '{ if (split($2,a,";")==1) n=$2; else n=a[2]; gsub(" ","",n); gsub(" ","",$4); printf "%s %s\n", n, $4; }' >$tmp
-      c=`wc -l <$tmp`
-      if [ $c -eq 0 ]; then
+      c=$(wc -l <$tmp)
+      if [ "$c" -eq 0 ]; then
          echo "No match for $1"
          rm -f $tmp
          exit
-      fi      
-         
+      fi    
    fi
-   if [ $c -eq 1 ]; then
-      campv=`awk '{print $1;}' <$tmp`
+   if [ "$c" -eq 1 ]; then
+      campv=$(awk '{print $1;}' <$tmp)
       rm -f $tmp
       return
    fi
-   if [ `egrep -i " $CAMNAME\$" < $tmp | wc -l` -eq 1 ]; then
-      campv=`egrep -i " $CAMNAME\$" < $tmp | awk '{print $1;}'`
+   # OK, ambiguous.  Look for a complete match on the second word.
+   if [ $(grep -E -i "$CAMNAME\$" < $tmp | wc -l) -eq 1 ]; then
+      campv=$(grep -E -i " $CAMNAME\$" < $tmp | awk '{print $1;}')
       rm -f $tmp
       return
    fi
-   if [ `egrep -i "$CAMNAME\$" < $tmp | wc -l` -eq 1 ]; then
-      campv=`egrep -i "$CAMNAME\$" < $tmp | awk '{print $1;}'`
+   # What about just a match at the end? (That is, if we are searching
+   # for "yag1", prefer "mec_yag1" to "mec_yag11".)
+   if [ $(grep -E -i "$CAMNAME\$" < $tmp | wc -l) -eq 1 ]; then
+      campv=$(grep -E -i "$CAMNAME\$" < $tmp | awk '{print $1;}')
       rm -f $tmp
       return
    fi
-   echo '"'$1'" is ambiguous:'
+   echo '"'"$1"'" is ambiguous:'
    rm -f $tmp
    exit
-
-
-   
-
 
 }
 
@@ -146,24 +154,31 @@ if [[ $NAME == *':'* ]]; then #we are assuming that PVs have a colon in them
    iocfpv "$NAME"
    NAME="$ioc"
 
-elif [[ $NAME == *[[:space:]]* || *'-'* || *'_'* || ^[[:alnum:]]+$ ]]; then
-   camname_to_pv $NAME
-   iocfpv "$campv"
-   NAME="$ioc"
-   
-elif [[ ! $NAME == *'-'* ]]; then #We are assuming that ioc names contain an a dash in them
-   echo "${NAME} does not match the format for PVs or IOC names. Exiting..."
-   exit 1   
- 
-else
+elif [[ $NAME == *'-'* ]]; then
    INFO=$(grep_ioc "$NAME" all | grep "id:'$NAME'")
       if [ -z "$INFO" ]; then
+         camname_to_pv "$NAME"
+         iocfpv "$campv"
+         NAME="$ioc"
+        
+      elif [[ -z "$NAME" ]]; then
          echo "Did not find ${NAME} running anywhere. Exiting..." >&2
          exit 1
-      else
-         NAME=$(echo $INFO | sed -n "s/^.*id: '\(\S*\)'.*$/\1/p")
-      fi
+      fi 
+
+elif [[ ! $NAME == *'-'* ]]; then #We are assuming that ioc names contain an a dash in them
+   echo "${NAME} does not match the format for PVs or IOC names. Exiting..."
+   exit 1
    
+#else
+#   INFO=$(grep_ioc "$NAME" all | grep "id:'$NAME'")
+#      if [ -z "$INFO" ]; then
+#         echo "Did not find ${NAME} running anywhere. Exiting..." >&2
+#         exit 1
+#      else
+#         NAME=$(echo $INFO | sed -n "s/^.*id: '\(\S*\)'.*$/\1/p")
+#      fi
+#   
 fi
 
 
@@ -182,7 +197,7 @@ elif [ "$CMD" ==  "dir" ]; then
 
 elif [ "$CMD" == "cddir" ]; then
    iocdir "$NAME"
-   [[ "${BASH_SOURCE[0]}" == "$0" ]] && echo "Script is not being sourced. Start with 'source $0' before calling script with this option." || cd "${iocpath}" 
+   [[ "${BASH_SOURCE[0]}" == "$0" ]] && echo "Script is not being sourced. Start with 'source $0' before calling script with this option." || cd "${iocpath}"
  
 #################################################################
 
