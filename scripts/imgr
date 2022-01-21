@@ -26,12 +26,6 @@ if [ $# -lt 1 ]; then
    exit 0
 fi
 
-
-if [[ ($1 == "--help") || ($1 == "-h") ]]; then
-   usage
-   exit 0
-fi
-
 ulimit -c unlimited 
 
 source /reg/g/pcds/setup/pathmunge.sh
@@ -39,7 +33,14 @@ ldpathmunge /usr/local/lib
 
 DIR=$(readlink -f $(dirname "${BASH_SOURCE[0]}"))
 PATH=$PATH:$DIR
-pathmunge $DIR
 
-/reg/g/pcds/pyps/apps/iocmanager/latest/imgr $@
+hutch=$(get_info --gethutch)
+
+if [ "$hutch" == unknown_hutch ]; then
+    echo 'unknown hutch, cannot use camViewer script'
+    exit 1
+fi
+
+
+/reg/g/pcds/pyps/config/$hutch/iocmanager/imgr $@
 
