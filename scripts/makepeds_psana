@@ -629,7 +629,7 @@ if [[ ( $HAVE_EPIX10K -ge 1 ) && ( $WANT_ZYLA -eq 0 ) && ( $WANT_OPAL -eq 0 )  &
         echo 'All jobs finished'
         # and now check that none of the jobs have existed with an error code:
         # currently, the epix10k jobs print DONE at the end. 
-        # Second check necessary as kobs can fail without printing an exit code to the logfile
+# Second check necessary as jobs can fail without printing an exit code to the logfile
 	NFAILEDJOBS=0
 	for JOBID in ${ALLJOBIDS[@]}; do
 	    echo 'Checking job '$JOBID
