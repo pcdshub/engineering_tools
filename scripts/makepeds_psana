@@ -175,7 +175,7 @@ do
 			shift
 			shift
 			;;
-                -v|--validity)
+                -v|--validity_start)
 		        VALSTR=("$2")
 			shift
 			shift
@@ -619,19 +619,23 @@ if [[ ( $HAVE_EPIX10K -ge 1 ) && ( $WANT_ZYLA -eq 0 ) && ( $WANT_OPAL -eq 0 )  &
 	ALLJOBIDS=${JOBIDS[@]}
     done
     if [[ $RUNLOCAL != 1 ]]; then
-	echo 'Wait for 1 1/2 minutes before checking jobs:'
-        sleep 90
+	echo 'Wait for 1 minute before checking jobs:'
+        sleep 60
         echo Running $NJOBS jobs are PIDS: ${JOBIDS[@]}
         until check_running_jobs; do
                 echo 'Checking again in 10s'
                 sleep 10
             done
         echo 'All jobs finished'
-	# and now check that none of the jobs have existed with an error code:
+        # and now check that none of the jobs have existed with an error code:
+        # currently, the epix10k jobs print DONE at the end. 
+# Second check necessary as jobs can fail without printing an exit code to the logfile
 	NFAILEDJOBS=0
 	for JOBID in ${ALLJOBIDS[@]}; do
 	    echo 'Checking job '$JOBID
 	    if grep -q 'exit code' $WORKDIR/*$JOBID.out; then
+		NFAILEDJOBS=$(($NFAILEDJOBS+1))
+	    elif ! grep -q 'DONE' $WORKDIR/*$JOBID.out; then
 		NFAILEDJOBS=$(($NFAILEDJOBS+1))
 	    fi
 	done
@@ -641,7 +645,7 @@ if [[ ( $HAVE_EPIX10K -ge 1 ) && ( $WANT_ZYLA -eq 0 ) && ( $WANT_OPAL -eq 0 )  &
     echo ---------------EPIX10K PEDESTALS CALCULATED NOW DEPLOY     --------------------
     if [ $DEPLOY == 1 ]; then
 	if [ $NFAILEDJOBS -gt 0 ]; then
-	    read -p "$NFAILEDJOBS of the calibration tasks failed, do you want to quit here (y/n)"
+	    read -p "$NFAILEDJOBS of the calibration tasks failed, do you want to continue anyways (y/n)?"
 	    if [ "$REPLY" != "y" ];then
 		exit 1
 	    fi
