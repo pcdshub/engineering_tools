@@ -1,0 +1,44 @@
+#!/bin/sh
+
+# Setup environment
+if [ -x /etc/pathinit ]; then
+    source /etc/pathinit
+else
+    export PSPKG_ROOT=/cds/group/pcds/pkg_mgr
+    export PYPS_ROOT=/cds/group/pcds/pyps
+    export IOC_ROOT=/cds/group/pcds/epics/ioc
+    export CAMRECORD_ROOT=/cds/group/pcds/controls/camrecord
+    export IOC_DATA=/cds/data/iocData
+    export IOC_COMMON=/cds/data/iocCommon
+fi
+export PSPKG_OS=`${PSPKG_ROOT}/etc/pspkg_os.sh`
+if [ $PSPKG_OS == rhel5 ]; then
+    echo "IocManager 2.0.0 and higher does not run on RHEL5!" >&2
+    exit 1
+fi
+export QT_XKB_CONFIG_ROOT=/usr/share/X11/xkb
+export PSPKG_RELEASE=controls-0.1.9
+source $PSPKG_ROOT/etc/set_env.sh
+
+# Search for hutch in args
+for (( i=1; i<=$#; i++)); do
+    if [[ "${!i}" == "--hutch" ]]; then
+        ARGHUTCH_INDEX=$((i+1))
+        ARGHUTCH=${!ARGHUTCH_INDEX}
+        break
+    fi
+done
+
+# Hutch choice priority order:
+# 1. --hutch arg
+# 2. HUTCH environment variable
+# 3. get_hutch_name
+HUTCH=${ARGHUTCH:-$HUTCH}
+HUTCH=${HUTCH:-`get_hutch_name`}
+
+if [[ "$HUTCH" == "unknown_hutch" ]]; then
+    echo "Unknown hutch, please use --hutch argument" >&2
+    exit 1
+else
+    /reg/g/pcds/pyps/config/${HUTCH}/iocmanager/imgr.py "$@" --hutch $HUTCH
+fi
