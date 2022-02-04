@@ -7,10 +7,9 @@ usage: $0 options
 We will run ami_offline
 
 OPTIONS:
--u user (needs to be able to log into the psananeh/feh, if not on psana already)
 -e <expnumber> 
 -R rebinning (binned to 640x640)
--n no timetool plugin
+-n no plugins
 EOF
 }
 
@@ -25,9 +24,6 @@ ARGSTR='-Z '
 while getopts "u:e:ntR" OPTION
 do
     case $OPTION in
-	u)
-	    USER=$OPTARG
-	    ;;
 	e)
 	    EXP=$OPTARG
 	    ;;
@@ -59,14 +55,19 @@ if [ -z $REBIN ]; then
     ARGSTR=$ARGSTR' -R'
 fi
 
-jet_hutches="xpp xcs"
+jet_hutches="xpp xcs mec"
 if [ `echo $jet_hutches | grep $HUTCH | wc -l` -gt 0 ]; then
     ARGSTR=$ARGSTR' -C mono,jet'
 fi
 
+CNF=$HUTCH'.cnf'
+if [[ $HUTCH == 'cxi' ]]; then
+    CNF=$HUTCH'_1.cnf'
+fi
+
 #get executable
-ami_base_path=`grep ami_base_path /reg/g/pcds/dist/pds/$HUTCH/scripts/$HUTCH.cnf | grep -v '#' | grep -v 'ami_base_path+' | tail -n 1 | awk 'BEGIN { FS = "=" }; { print $2}' | sed s/\'//g`
-ami_path=$ami_base_path`grep ami_path /reg/g/pcds/dist/pds/$HUTCH/scripts/$HUTCH.cnf | grep -v 'ami_path+' | grep -v '#' | awk 'BEGIN { FS = "= " }; { print $2}' | sed s/ami_base_path+//g | sed s/\'//g`
+ami_base_path=`grep ami_base_path /reg/g/pcds/dist/pds/$HUTCH/scripts/$CNF | grep -v '#' | grep -v 'ami_base_path+' | tail -n 1 | awk 'BEGIN { FS = "=" }; { print $2}' | sed s/\'//g`
+ami_path=$ami_base_path`grep ami_path /reg/g/pcds/dist/pds/$HUTCH/scripts/$CNF | grep -v 'ami_path+' | grep -v '#' | awk 'BEGIN { FS = "= " }; { print $2}' | sed s/ami_base_path+//g | sed s/\'//g`
 
 if [ ! -f  $ami_path/offline_ami ]; then
     echo 'could not find offline_ami executable in $ami_path'
@@ -74,13 +75,10 @@ if [ ! -f  $ami_path/offline_ami ]; then
 fi
 
 #plugin_path & plugin string.
-plugin_path=$ami_base_path`grep plugin_path /reg/g/pcds/dist/pds/$HUTCH/scripts/$HUTCH.cnf | grep -v 'plugin_path+' | grep -v '#' | awk 'BEGIN { FS = "= " }; { print $2}' | sed s/ami_base_path+//g | sed s/\'//g`
-if [ $HUTCH == 'xpp' ]; then
-    plugin_string=`grep 'ami_opts =' /reg/g/pcds/dist/pds/$HUTCH/scripts/$HUTCH.cnf | grep -v '#' | awk 'BEGIN { FS = "-L " }; { print $2}'`
-    plugin_str=`echo $plugin_string | sed "s:'+plugin_path+':$plugin_path:g" | sed "s:, :\,:g"`
-else
-    plugin_str=$pluging_path'/libtimetoolbdb.so' 
-fi
+pp=`grep plugin_path /reg/g/pcds/dist/pds/$HUTCH/scripts/$CNF | grep ami_base | grep -v '#' | awk 'BEGIN { FS = "= " }; { print $2}' | sed s/ami_base_path+//g | sed s/\'//g`
+plugin_path=$ami_base_path`grep plugin_path /reg/g/pcds/dist/pds/$HUTCH/scripts/$CNF | grep ami_base | grep -v '#' | awk 'BEGIN { FS = "= " }; { print $2}' | sed s/ami_base_path+//g | sed s/\'//g`
+plugin_path=$ami_base_path$pp
+plugin_str=$plugin_path'/libtimetoolbdb.so'
 
 if [ -z $NOPLUG ]; then
     ARGSTR=$ARGSTR' -L '$plugin_str
@@ -92,13 +90,15 @@ if [ ${HOSTNAME:0:5} == 'psana' ]; then
     XTCDIR=/reg/d/psdm/$HUTCH/$EXP/xtc
     HAVE_RUNS=`find $XTCDIR/*r* | wc -l `
     if [ $HAVE_RUNS == 0 ]; then
-	echo 'did not find any xtc files in /reg/d/psdm/'$HUTCH'/'$EXP', will look on the ffb now'
-	XTCDIR=/reg/d/ffb/$HUTCH/$EXP/xtc
-	HAVE_RUNS=`find $XTCDIR/*r* | wc -l `
-	if [ $HAVE_RUNS == 0 ]; then
-	    echo 'did not find any xtc files in /reg/d/<psdm/ffb>/'$HUTCH'/'$EXP', please specify a different experiment with the -e option or check wether the chose offline node has the data disks mounted....'
-	    exit
-	fi
+	echo 'did not find any xtc files in /reg/d/psdm/'$HUTCH'/'$EXP', will exit'
+	exit
+    fi 
+elif [ ${HOSTNAME:0:5} == 'drp' ]; then
+    XTCDIR=/cds/data/drpsrcf/$HUTCH/$EXP/xtc
+    HAVE_RUNS=`find $XTCDIR/*r* | wc -l `
+    if [ $HAVE_RUNS == 0 ]; then
+	echo 'did not find any xtc files in /cds/data/drpsrcf/'$HUTCH'/'$EXP', will exit'
+	exit
     fi 
 elif  [ ${HOSTNAME:8:3} == 'rec' ]; then
     #EXPID=`get_info --setExp $EXP --experimentNumber`
