@@ -14,23 +14,41 @@ if [[ ($1 == "--help") || ($1 == "-h") ]]; then
 	exit 0
 fi
 
+if [ -x /etc/pathinit ]; then
+    source /etc/pathinit
+else
+    export PSPKG_ROOT=/reg/g/pcds/pkg_mgr
+    export PYPS_ROOT=/reg/g/pcds/pyps
+    export IOC_ROOT=/reg/g/pcds/epics/ioc
+    export CAMRECORD_ROOT=/reg/g/pcds/controls/camrecord
+    export IOC_DATA=/reg/d/iocData
+    export IOC_COMMON=/reg/d/iocCommon
+fi
+export PSPKG_OS=`${PSPKG_ROOT}/etc/pspkg_os.sh`
+if [ $PSPKG_OS == rhel5 ]; then
+    echo "IocManager 2.0.0 and higher does not run on RHEL5!"
+    exit 1
+fi
+export QT_XKB_CONFIG_ROOT=/usr/share/X11/xkb
+export PSPKG_RELEASE=controls-0.1.9
+source $PSPKG_ROOT/etc/set_env.sh
 ulimit -c unlimited
 
-source /reg/g/pcds/setup/pathmunge.sh
-ldpathmunge /usr/local/lib
+DIR=$(readlink -f $(dirname "${BASH_SOURCE[0]}"))
+PATH=$PATH:$DIR
 
-DIRTMP=`dirname  "${BASH_SOURCE[0]}"`
-DIR="$( cd $DIRTMP && pwd -P )"
-pathmunge $DIR
-#PATH=$PATH:$DIR
-
-if [ "$#" -ne 1 ]; then
+if [ "$#" -eq 0 ]; then
     HUTCH=`get_hutch_name`
 else
     HUTCH=$1
 fi
 
-/reg/g/pcds/pyps/config/${HUTCH}/iocmanager/IocManager --hutch $HUTCH > /dev/null &
+if [[ "$HUTCH" == "unknown_hutch" ]]; then
+    echo "Unknown hutch, please specify e.g. 'iocmanager xrt'" >&2
+    exit 1
+else
+    /reg/g/pcds/pyps/config/${HUTCH}/iocmanager/IocManager.py --hutch $HUTCH > /dev/null &
+fi
 
 if [ `whoami` == "xppopr" ]; then
     window_id=`xdotool search --sync --onlyvisible --name 'IocManager'` 
