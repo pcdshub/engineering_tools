@@ -71,7 +71,6 @@ elif [[ $AIMHOST == 'cxi-monitor' ]]; then
 fi
 
 HUTCH=`get_hutch_name`
-HNAME=`cat /etc/hostname`
 
 #go to hutches DAQ scripts directory (puts pid file in consistent location)
 cd /reg/g/pcds/dist/pds/$HUTCH/scripts/
@@ -85,7 +84,7 @@ else
     PROCMGR="/reg/g/pcds/dist/pds/$HUTCH/current/tools/procmgr/procmgr"
 fi
 
-IS_DAQ_HOST=`netconfig search $HNAME-$DAQNETWORK --brief | grep $DAQNETWORK | wc -l`
+IS_DAQ_HOST=`netconfig search $AIMHOST-$DAQNETWORK --brief | grep $DAQNETWORK | wc -l`
 if [ $IS_DAQ_HOST == 0 ]; then
     HOSTS=`netconfig search $HUTCH-*-$DAQNETWORK --brief | sed s/-$DAQNETWORK//g`
     WORKINGHOSTS=''
@@ -96,8 +95,8 @@ if [ $IS_DAQ_HOST == 0 ]; then
 	    WORKINGHOSTS=$WORKINGHOSTS' '$HOST
 	fi
     done
-    echo $AIMHOST does not have $DADQNETWORK, please choose one of the following machines to run the DAQ: $WORKINGHOSTS
-    echo '"restartdaq <machine_with_$DAQNETWORK>"'
+    echo $AIMHOST does not have $DAQNETWORK, please choose one of the following machines to run the DAQ: $WORKINGHOSTS
+    echo "restartdaq -m <machine_with_$DAQNETWORK>"
     exit
 fi
 
@@ -148,7 +147,7 @@ fi
 
 DAQHOST=`wheredaq`
 if [[ $DAQHOST == *$NOTRUNNING* ]]; then
-    echo 'we tried restarting the DAQ, but wheredaq does not return a host!'
+    echo 'We tried restarting the DAQ, but wheredaq says its still off!'
     if [[ $DAQHOST != $AIMHOST ]]; then
 	echo 'We tried to run the DAQ on another host: target '$AIMHOST' from '$HOSTNAME
     fi
