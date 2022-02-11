@@ -76,7 +76,6 @@ fi
 
 #plugin_path & plugin string.
 pp=`grep plugin_path /reg/g/pcds/dist/pds/$HUTCH/scripts/$CNF | grep ami_base | grep -v '#' | awk 'BEGIN { FS = "= " }; { print $2}' | sed s/ami_base_path+//g | sed s/\'//g`
-plugin_path=$ami_base_path`grep plugin_path /reg/g/pcds/dist/pds/$HUTCH/scripts/$CNF | grep ami_base | grep -v '#' | awk 'BEGIN { FS = "= " }; { print $2}' | sed s/ami_base_path+//g | sed s/\'//g`
 plugin_path=$ami_base_path$pp
 plugin_str=$plugin_path'/libtimetooldbd.so'
 
