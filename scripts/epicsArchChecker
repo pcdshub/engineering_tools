@@ -4,9 +4,9 @@ epicsArch Checker
 This script helps the engineers and scientists to verify
 if the epicsArch files have errors by creating 3 types
 of reports:
-1. Pvs and Aliases duplicated.
-2. Pvs with no alias and Aliases with no PVS.
-3. Pvs no connected.
+1. PVs and Aliases duplicated.
+2. PVs with no alias and Aliases with no PVS.
+3. PVs no connected.
 4. Files that do not exist.
 """
 import os
@@ -24,7 +24,7 @@ def main():
                         ' e.g /reg/g/pcds/dist/pds/xpp/misc/epicsArch.txt',
                         type=str)
     parser.add_argument('-s', '--status', action='store_true',
-                        help='Displays Pvs not connected (default:False.)', default=False)
+                        help='Displays PVs not connected (default:False.)', default=False)
     args = parser.parse_args()
 
     fullpath = os.path.abspath(args.filepath)
@@ -33,12 +33,12 @@ def main():
     os.chdir(dirpath)
     entries, extraKeys, noKeyPVs = read_file(filename)
 
-    myKeys, myPvs, myFiles, lineNumbers = create_Lists(entries)
-    indKeys, indPvs = find_index(myKeys, myPvs, myFiles)
-    report_duplicates(indKeys, indPvs, myKeys, myPvs, myFiles, lineNumbers)
+    myKeys, myPVs, myFiles, lineNumbers = create_Lists(entries)
+    indKeys, indPVs = find_index(myKeys, myPVs, myFiles)
+    report_duplicates(indKeys, indPVs, myKeys, myPVs, myFiles, lineNumbers)
     report_warnings(extraKeys, noKeyPVs)
     if args.status:
-        report_statusPv(myKeys, myPvs, myFiles)
+        report_statusPV(myKeys, myPVs, myFiles)
 
 
 def read_file(filename):
@@ -109,55 +109,55 @@ def create_Lists(entries):
     """
 
     myKeys = []
-    myPvs = []
+    myPVs = []
     myFiles = []
     lineNumbers = []
     for entry in entries:
         myKeys.append(entry[0])
-        myPvs.append(entry[1])
+        myPVs.append(entry[1])
         myFiles.append(entry[2])
         lineNumbers.append('№ ' + str(entry[3]))
-    return(myKeys, myPvs, myFiles, lineNumbers)
+    return(myKeys, myPVs, myFiles, lineNumbers)
 
 
-def find_index(myKeys, myPvs, myFiles):
+def find_index(myKeys, myPVs, myFiles):
     """
     This function will check the duplicated elements inside of
-    the lists myKeys, and myPvs.It will also find the
+    the lists myKeys, and myPVs.It will also find the
     index of each duplicated element inside of the lists
-    myKeys, and myPvs.
+    myKeys, and myPVs.
     """
     indKeys = []
-    indPvs = []
+    indPVs = []
 
     sKeys = sorted(myKeys)
     dmyKeys = [dkey for dkey in sKeys if sKeys.count(dkey) > 1]
-    sPvs = sorted(myPvs)
-    dmyPvs = [dpv for dpv in sPvs if sPvs.count(dpv) > 1]
+    sPVs = sorted(myPVs)
+    dmyPVs = [dpv for dpv in sPVs if sPVs.count(dpv) > 1]
 
     for dkey in range(len(dmyKeys)):
         for key in range(len(myKeys)):
             if dmyKeys[dkey] == myKeys[key]:
                 indKeys.append(key)
-    for dpv in range(len(dmyPvs)):
-        for pv in range(len(myPvs)):
-            if dmyPvs[dpv] == myPvs[pv]:
-                indPvs.append(pv)
+    for dpv in range(len(dmyPVs)):
+        for pv in range(len(myPVs)):
+            if dmyPVs[dpv] == myPVs[pv]:
+                indPVs.append(pv)
 
-    return(indKeys, indPvs)
+    return(indKeys, indPVs)
 
 
-def report_duplicates(indKeys, indPvs, myKeys, myPvs, myFiles, numLines):
-    """This function will display the duplicate Pvs and/or  Aliases."""
+def report_duplicates(indKeys, indPVs, myKeys, myPVs, myFiles, numLines):
+    """This function will display the duplicate PVs and/or  Aliases."""
 
     duplikey = [myKeys[key] for key in indKeys]
-    duplipvs = [myPvs[pv] for pv in indPvs]
+    duplipvs = [myPVs[pv] for pv in indPVs]
     copyKey = sorted(set(duplikey))
-    copyPv = sorted(set(duplipvs))
+    copyPV = sorted(set(duplipvs))
     size_per_col = 35
     nameA = "Alias"
     nameL = "Location"
-    nameP = "Pv"
+    nameP = "PV"
     nLine = "Line number error"
     ms1 = "Alias name has an space!!!!!"
     if copyKey:
@@ -177,29 +177,29 @@ def report_duplicates(indKeys, indPvs, myKeys, myPvs, myFiles, numLines):
             print(110*"=")
             for value in range(len(myKeys)):
                 if nameKey == myKeys[value]:
-                    if nameKey == myPvs[value]:
-                        print(str(myPvs[value]).center(size_per_col),
+                    if nameKey == myPVs[value]:
+                        print(str(myPVs[value]).center(size_per_col),
                               str(myFiles[value]).center(size_per_col),
                               str(numLines[value]).center(size_per_col))
                     else:
-                        print(str(myPvs[value]).center(size_per_col),
+                        print(str(myPVs[value]).center(size_per_col),
                               str(myFiles[value]).center(size_per_col),
                               str(numLines[value]).center(size_per_col))
             print(105*"=")
             print("\n")
-    if copyPv:
+    if copyPV:
         print("--------------------------------------------",
-              "Duplicate by Pvs",
+              "Duplicate by PVs",
               "--------------------------------------------\n")
-        for namePv in copyPv:
-            print("Duplicate Pv: ", namePv)
+        for namePV in copyPV:
+            print("Duplicate PV: ", namePV)
             print("\n")
             print(str(nameA).center(size_per_col),
                   str(nameL).center(size_per_col),
                   str(nLine).center(size_per_col))
             print(105*"=")
-            for value in range(len(myPvs)):
-                if namePv == myPvs[value]:
+            for value in range(len(myPVs)):
+                if namePV == myPVs[value]:
                     if " " in myKeys[value]:
                         print(str(myKeys[value]).center(size_per_col),
                               str(myFiles[value]).center(size_per_col),
@@ -216,7 +216,7 @@ def report_duplicates(indKeys, indPvs, myKeys, myPvs, myFiles, numLines):
 
 def report_warnings(extraKeys, noKeyPVs):
     """
-    This function will display the Pvs with no alias
+    This function will display the PVs with no alias
     and/or Aliases with no pv.
     """
     if extraKeys:
@@ -229,37 +229,37 @@ def report_warnings(extraKeys, noKeyPVs):
         print(table)
     if noKeyPVs:
         print("PVs with no Alias, WARNING!!!!:")
-        sortedListPvs = sorted(noKeyPVs, key=lambda x: x[1])
+        sortedListPVs = sorted(noKeyPVs, key=lambda x: x[1])
         table = PrettyTable()
-        table.field_names = ["Pv name", "Location",
+        table.field_names = ["PV name", "Location",
                              "Line number error"]
-        table.add_rows(sortedListPvs)
+        table.add_rows(sortedListPVs)
         print(table)
 
 
-def report_statusPv(myKeys, myPvs, myFiles):
-    """This function will display the no connected Pvs."""
+def report_statusPV(myKeys, myPVs, myFiles):
+    """This function will display the no connected PVs."""
     totalInfo = []
-    for pv in range(len(myPvs)):
-        statusPv = []
+    for pv in range(len(myPVs)):
+        statusPV = []
         try:
-            ophyd.signal.EpicsSignal(myPvs[pv]).get()
+            ophyd.signal.EpicsSignal(myPVs[pv]).get()
         except Exception:
-            statusPv.append(myPvs[pv])
-            statusPv.append("No connected!")
-            statusPv.append(myKeys[pv])
-            statusPv.append(myFiles[pv])
-        if statusPv:
-            totalInfo.append(statusPv)
+            statusPV.append(myPVs[pv])
+            statusPV.append("No connected!")
+            statusPV.append(myKeys[pv])
+            statusPV.append(myFiles[pv])
+        if statusPV:
+            totalInfo.append(statusPV)
     if totalInfo:
         sortedList = sorted(totalInfo, key=lambda x: x[3])
         table = PrettyTable()
-        print("Pvs NO connected:")
-        table.field_names = ["Pv Name", "Status", "Alias", "Location"]
+        print("PVs NO connected:")
+        table.field_names = ["PV Name", "Status", "Alias", "Location"]
         table.add_rows(sortedList)
         print(table)
     else:
-        print("All the Pvs are connected!")
+        print("All the PVs are connected!")
 
 
 if __name__ == "__main__":
