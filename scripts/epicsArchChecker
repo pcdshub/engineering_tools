@@ -154,12 +154,6 @@ def report_duplicates(indKeys, indPvs, myKeys, myPvs, myFiles, numLines):
     duplipvs = [myPvs[pv] for pv in indPvs]
     copyKey = sorted(set(duplikey))
     copyPv = sorted(set(duplipvs))
-    if copyKey and copyPv:
-        print("Report of duplicate Aliases and Pvs from the input file: \n")
-    elif copyPv:
-        print("Report of duplicate Pvs from the input file: \n")
-    elif copyKey:
-        print("Report of duplicate Aliases from the input file: \n")
     size_per_col = 35
     nameA = "Alias"
     nameL = "Location"
