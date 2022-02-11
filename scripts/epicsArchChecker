@@ -20,14 +20,14 @@ def main():
                                      ' mismatches of PVs and aliases,'
                                      ' missing files, and unconnected PVs.')
     parser.add_argument('filepath',
-                        help='Full filepath of the file to check'
+                        help='Path of the file to check'
                         ' e.g /reg/g/pcds/dist/pds/xpp/misc/epicsArch.txt',
                         type=str)
     parser.add_argument('-s', '--status', action='store_true',
                         help='Displays Pvs not connected (default:False.)', default=False)
     args = parser.parse_args()
 
-    fullpath = args.filepath
+    fullpath = os.path.abspath(args.filepath)
     dirpath = os.path.dirname(fullpath)
     filename = os.path.basename(fullpath)
     os.chdir(dirpath)
