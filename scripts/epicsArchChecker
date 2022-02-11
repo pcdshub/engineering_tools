@@ -23,11 +23,8 @@ def main():
                         help='Full filepath of the file to check'
                         ' e.g /reg/g/pcds/dist/pds/xpp/misc/epicsArch.txt',
                         type=str)
-    parser.add_argument('-w', '--warnings', action='store_true',
-                        help='Displays: -Pvs and Aliases duplicated. '
-                        '-Pvs with no alias and aliases no Pvs.')
     parser.add_argument('-s', '--status', action='store_true',
-                        help='Displays Pvs not connected.')
+                        help='Displays Pvs not connected (default:False.)', default=False)
     args = parser.parse_args()
 
     fullpath = args.filepath
@@ -35,19 +32,12 @@ def main():
     filename = os.path.basename(fullpath)
     os.chdir(dirpath)
     entries, extraKeys, noKeyPVs = read_file(filename)
-    if args.warnings:
-        myKeys, myPvs, myFiles, lineNumbers = create_Lists(entries)
-        indKeys, indPvs = find_index(myKeys, myPvs, myFiles)
-        report_duplicates(indKeys, indPvs, myKeys, myPvs, myFiles, lineNumbers)
-        report_warnings(extraKeys, noKeyPVs)
-    elif args.status:
-        myKeys, myPvs, myFiles, lineNumbers = create_Lists(entries)
-        report_statusPv(myKeys, myPvs, myFiles)
-    else:
-        myKeys, myPvs, myFiles, lineNumbers = create_Lists(entries)
-        indKeys, indPvs = find_index(myKeys, myPvs, myFiles)
-        report_duplicates(indKeys, indPvs, myKeys, myPvs, myFiles, lineNumbers)
-        report_warnings(extraKeys, noKeyPVs)
+
+    myKeys, myPvs, myFiles, lineNumbers = create_Lists(entries)
+    indKeys, indPvs = find_index(myKeys, myPvs, myFiles)
+    report_duplicates(indKeys, indPvs, myKeys, myPvs, myFiles, lineNumbers)
+    report_warnings(extraKeys, noKeyPVs)
+    if args.status:
         report_statusPv(myKeys, myPvs, myFiles)
 
 
@@ -98,7 +88,7 @@ def read_file(filename):
                     key = line[1:].strip()
                     keyline = lineNum
                 elif line[0].isalnum():
-                    pv = line.strip()
+                    pv = line.replace(' ca','').replace(' pva','').strip()
                     if key == '':
                         noKeyPVs.append((pv, filename, lineNum))
                     else:
