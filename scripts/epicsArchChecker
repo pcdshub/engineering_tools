@@ -24,7 +24,8 @@ def main():
                         ' e.g /reg/g/pcds/dist/pds/xpp/misc/epicsArch.txt',
                         type=str)
     parser.add_argument('-s', '--status', action='store_true',
-                        help='Displays PVs not connected (default:False.)', default=False)
+                        help='Displays PVs not connected (default:False.)',
+                        default=False)
     args = parser.parse_args()
 
     fullpath = os.path.abspath(args.filepath)
@@ -88,7 +89,7 @@ def read_file(filename):
                     key = line[1:].strip()
                     keyline = lineNum
                 elif line[0].isalnum():
-                    pv = line.replace(' ca','').replace(' pva','').strip()
+                    pv = line.replace(' ca', '').replace(' pva', '').strip()
                     if key == '':
                         noKeyPVs.append((pv, filename, lineNum))
                     else:
