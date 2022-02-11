@@ -62,7 +62,7 @@ fi
 
 CNF=$HUTCH'.cnf'
 if [[ $HUTCH == 'cxi' ]]; then
-    CNF=$HUTCH'_1.cnf'
+    CNF=$HUTCH'_0.cnf'
 fi
 
 #get executable
@@ -78,7 +78,7 @@ fi
 pp=`grep plugin_path /reg/g/pcds/dist/pds/$HUTCH/scripts/$CNF | grep ami_base | grep -v '#' | awk 'BEGIN { FS = "= " }; { print $2}' | sed s/ami_base_path+//g | sed s/\'//g`
 plugin_path=$ami_base_path`grep plugin_path /reg/g/pcds/dist/pds/$HUTCH/scripts/$CNF | grep ami_base | grep -v '#' | awk 'BEGIN { FS = "= " }; { print $2}' | sed s/ami_base_path+//g | sed s/\'//g`
 plugin_path=$ami_base_path$pp
-plugin_str=$plugin_path'/libtimetoolbdb.so'
+plugin_str=$plugin_path'/libtimetooldbd.so'
 
 if [ -z $NOPLUG ]; then
     ARGSTR=$ARGSTR' -L '$plugin_str
