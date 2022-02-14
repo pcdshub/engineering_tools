@@ -20,6 +20,8 @@ fi
 export QT_XKB_CONFIG_ROOT=/usr/share/X11/xkb
 export PSPKG_RELEASE=controls-0.1.9
 source $PSPKG_ROOT/etc/set_env.sh
+DIR=$(readlink -f "$(dirname "${BASH_SOURCE[0]}")")
+PATH=$PATH:$DIR
 
 # Search for hutch in args
 for (( i=1; i<=$#; i++)); do
