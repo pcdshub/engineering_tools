@@ -17,7 +17,7 @@ fi
 if [ -z "${1}" ]; then
   usage
   exit
-elif [ ! -f "${1}" ]; then
+elif [ ! -e "${1}" ]; then
   echo "Path Does Not Exist"
   usage
   exit
