@@ -1,5 +1,35 @@
 #!/bin/bash
 
+# Define usage here for faster return
+usage()
+{
+cat << EOF
+usage: imgr <IOCNAME> [--hutch HUTCH] <OPTION>
+
+Control status of all IOCs running in a particular hutch from the command line.
+Current hutch is used if not provided.
+
+List of options:
+imgr IOCNAME [--hutch HUTCH] --reboot soft
+imgr IOCNAME [--hutch HUTCH] --reboot hard
+imgr IOCNAME [--hutch HUTCH] --enable
+imgr IOCNAME [--hutch HUTCH] --disable
+imgr IOCNAME [--hutch HUTCH] --upgrade RELEASE_DIR
+imgr IOCNAME [--hutch HUTCH] --move HOST
+imgr IOCNAME [--hutch HUTCH] --move HOST:PORT
+imgr [--hutch HUTCH] --list [--host HOST] [--enabled_only|--disabled_only]
+ 
+EOF
+}
+if [ $# -lt 1 ]; then
+    echo 'Missing required arguments' >&2
+    usage
+    exit 1
+elif [[ ($1 == "--help") || ($1 == "-h") ]]; then
+    usage
+    exit 0
+fi
+
 # Setup environment
 if [ -x /etc/pathinit ]; then
     source /etc/pathinit

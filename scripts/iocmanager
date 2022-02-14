@@ -1,14 +1,15 @@
 #!/bin/bash
+
+# Define usage here for faster return
 usage()
 {
 cat << EOF
-usage: $0 [hutch]
+usage: iocmanager [hutch]
 
 Control status of all IOCs running in a particular hutch in an interactive GUI.
 Current hutch is used if not provided.
 EOF
 }
-
 if [[ ($1 == "--help") || ($1 == "-h") ]]; then
 	usage
 	exit 0
