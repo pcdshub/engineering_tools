@@ -35,15 +35,11 @@ export QT_XKB_CONFIG_ROOT=/usr/share/X11/xkb
 export PSPKG_RELEASE=controls-0.1.9
 source $PSPKG_ROOT/etc/set_env.sh
 ulimit -c unlimited
-
 DIR=$(readlink -f "$(dirname "${BASH_SOURCE[0]}")")
 PATH=$PATH:$DIR
 
-if [ "$#" -eq 0 ]; then
-    HUTCH=$(get_hutch_name)
-else
-    HUTCH=$1
-fi
+# Check hutch
+HUTCH=${1:-$(get_hutch_name)}
 
 # Run if possible
 if [[ "$HUTCH" == "unknown_hutch" ]]; then
