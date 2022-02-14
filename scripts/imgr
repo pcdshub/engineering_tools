@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # Setup environment
 if [ -x /etc/pathinit ]; then
@@ -11,8 +11,9 @@ else
     export IOC_DATA=/cds/data/iocData
     export IOC_COMMON=/cds/data/iocCommon
 fi
-export PSPKG_OS=`${PSPKG_ROOT}/etc/pspkg_os.sh`
-if [ $PSPKG_OS == rhel5 ]; then
+PSPKG_OS=$(${PSPKG_ROOT}/etc/pspkg_os.sh)
+export PSPKG_OS
+if [ "$PSPKG_OS" == rhel5 ]; then
     echo "IocManager 2.0.0 and higher does not run on RHEL5!" >&2
     exit 1
 fi
@@ -34,8 +35,9 @@ done
 # 2. HUTCH environment variable
 # 3. get_hutch_name
 HUTCH=${ARGHUTCH:-$HUTCH}
-HUTCH=${HUTCH:-`get_hutch_name`}
+HUTCH=${HUTCH:-$(get_hutch_name)}
 
+# Run if possible
 if [[ "$HUTCH" == "unknown_hutch" ]]; then
     echo "Unknown hutch, please use --hutch argument" >&2
     exit 1

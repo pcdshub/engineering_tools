@@ -14,6 +14,7 @@ if [[ ($1 == "--help") || ($1 == "-h") ]]; then
 	exit 0
 fi
 
+# Setup environment
 if [ -x /etc/pathinit ]; then
     source /etc/pathinit
 else
@@ -24,8 +25,9 @@ else
     export IOC_DATA=/reg/d/iocData
     export IOC_COMMON=/reg/d/iocCommon
 fi
-export PSPKG_OS=`${PSPKG_ROOT}/etc/pspkg_os.sh`
-if [ $PSPKG_OS == rhel5 ]; then
+PSPKG_OS=$(${PSPKG_ROOT}/etc/pspkg_os.sh)
+export PSPKG_OS
+if [ "$PSPKG_OS" == rhel5 ]; then
     echo "IocManager 2.0.0 and higher does not run on RHEL5!"
     exit 1
 fi
@@ -34,24 +36,26 @@ export PSPKG_RELEASE=controls-0.1.9
 source $PSPKG_ROOT/etc/set_env.sh
 ulimit -c unlimited
 
-DIR=$(readlink -f $(dirname "${BASH_SOURCE[0]}"))
+DIR=$(readlink -f "$(dirname "${BASH_SOURCE[0]}")")
 PATH=$PATH:$DIR
 
 if [ "$#" -eq 0 ]; then
-    HUTCH=`get_hutch_name`
+    HUTCH=$(get_hutch_name)
 else
     HUTCH=$1
 fi
 
+# Run if possible
 if [[ "$HUTCH" == "unknown_hutch" ]]; then
     echo "Unknown hutch, please specify e.g. 'iocmanager xrt'" >&2
     exit 1
 else
-    /reg/g/pcds/pyps/config/${HUTCH}/iocmanager/IocManager.py --hutch $HUTCH > /dev/null &
+    /reg/g/pcds/pyps/config/"${HUTCH}"/iocmanager/IocManager.py --hutch "$HUTCH" > /dev/null &
 fi
 
-if [ `whoami` == "xppopr" ]; then
-    window_id=`xdotool search --sync --onlyvisible --name 'IocManager'` 
+# Do some window cleanup for xpp
+if [ "$(whoami)" == "xppopr" ]; then
+    window_id=$(xdotool search --sync --onlyvisible --name 'IocManager')
     if [ "xpp-control"  == "$HOSTNAME" ]; then
 	wmctrl -v -i -r "$window_id" -e 0,3310,1100,530,1000
     elif [ "xpp-daq" == "$HOSTNAME" ]; then
