@@ -47,7 +47,7 @@ if [[ "$HUTCH" == "unknown_hutch" ]]; then
     echo "Unknown hutch, please specify e.g. 'iocmanager xrt'" >&2
     exit 1
 else
-    /reg/g/pcds/pyps/config/"${HUTCH}"/iocmanager/IocManager.py --hutch "$HUTCH" > /dev/null &
+    /reg/g/pcds/pyps/config/"${HUTCH,,}"/iocmanager/IocManager.py --hutch "${HUTCH,,}" > /dev/null &
 fi
 
 # Do some window cleanup for xpp

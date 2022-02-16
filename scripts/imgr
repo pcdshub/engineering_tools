@@ -74,5 +74,5 @@ if [[ "$HUTCH" == "unknown_hutch" ]]; then
     echo "Unknown hutch, please use --hutch argument" >&2
     exit 1
 else
-    /reg/g/pcds/pyps/config/${HUTCH}/iocmanager/imgr.py "$@" --hutch $HUTCH
+    /reg/g/pcds/pyps/config/"${HUTCH,,}"/iocmanager/imgr.py "$@" --hutch "${HUTCH,,}"
 fi
