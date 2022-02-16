@@ -1,46 +1,81 @@
 #!/bin/bash
 
+# Define usage here for faster return
 usage()
 {
 cat << EOF
-Usage: $0 IOCNAME [--hutch HUTCH] --COMMAND
+usage: imgr <IOCNAME> [--hutch HUTCH] <OPTION>
 
-Script to control an ioc. 
+Control status of all IOCs running in a particular hutch from the command line.
+Current hutch is used if not provided.
 
-List of commands:
-$0 IOCNAME [--hutch HUTCH] --reboot soft
-$0 IOCNAME [--hutch HUTCH] --reboot hard
-$0 IOCNAME [--hutch HUTCH] --enable
-$0 IOCNAME [--hutch HUTCH] --disable
-$0 IOCNAME [--hutch HUTCH] --upgrade RELEASE_DIR
-$0 IOCNAME [--hutch HUTCH] --move HOST
-$0 IOCNAME [--hutch HUTCH] --move HOST:PORT
-$0 [--hutch HUTCH] --list [--host HOST] [--enabled_only|--disabled_only]
+List of options:
+imgr IOCNAME [--hutch HUTCH] --reboot soft
+imgr IOCNAME [--hutch HUTCH] --reboot hard
+imgr IOCNAME [--hutch HUTCH] --enable
+imgr IOCNAME [--hutch HUTCH] --disable
+imgr IOCNAME [--hutch HUTCH] --upgrade RELEASE_DIR
+imgr IOCNAME [--hutch HUTCH] --move HOST
+imgr IOCNAME [--hutch HUTCH] --move HOST:PORT
+imgr [--hutch HUTCH] --list [--host HOST] [--enabled_only|--disabled_only]
  
 EOF
 }
-
 if [ $# -lt 1 ]; then
-   echo 'need arguments' >&2
-   usage
-   exit 0
+    echo 'Missing required arguments' >&2
+    usage
+    exit 1
+elif [[ ($1 == "--help") || ($1 == "-h") ]]; then
+    usage
+    exit 0
 fi
 
-ulimit -c unlimited 
-
-source /reg/g/pcds/setup/pathmunge.sh
-ldpathmunge /usr/local/lib
-
-DIR=$(readlink -f $(dirname "${BASH_SOURCE[0]}"))
+# Add engineering_tools to PATH for get_hutch_name
+DIR=$(readlink -f "$(dirname "${BASH_SOURCE[0]}")")
 PATH=$PATH:$DIR
 
-hutch=$(get_info --gethutch)
+# Search for hutch in args
+for (( i=1; i<=$#; i++)); do
+    if [[ "${!i}" == "--hutch" ]]; then
+        ARGHUTCH_INDEX=$((i+1))
+        ARGHUTCH=${!ARGHUTCH_INDEX}
+        break
+    fi
+done
 
-if [ "$hutch" == unknown_hutch ]; then
-    echo 'unknown hutch, cannot use camViewer script'
+# Hutch choice priority order:
+# 1. --hutch arg
+# 2. HUTCH environment variable
+# 3. get_hutch_name
+HUTCH=${ARGHUTCH:-$HUTCH}
+HUTCH=${HUTCH:-$(get_hutch_name)}
+
+# Exit if hutch is still unknown
+# TODO: Replace with check for actual hutch names
+if [[ "$HUTCH" == "unknown_hutch" ]]; then
+    echo "Unknown hutch, please use --hutch argument" >&2
     exit 1
 fi
 
+# Setup environment
+if [ -x /etc/pathinit ]; then
+    source /etc/pathinit
+else
+    export PSPKG_ROOT=/cds/group/pcds/pkg_mgr
+    export PYPS_ROOT=/cds/group/pcds/pyps
+    export IOC_ROOT=/cds/group/pcds/epics/ioc
+    export CAMRECORD_ROOT=/cds/group/pcds/controls/camrecord
+    export IOC_DATA=/cds/data/iocData
+    export IOC_COMMON=/cds/data/iocCommon
+fi
+PSPKG_OS=$(${PSPKG_ROOT}/etc/pspkg_os.sh)
+export PSPKG_OS
+if [ "$PSPKG_OS" == rhel5 ]; then
+    echo "IocManager 2.0.0 and higher does not run on RHEL5!" >&2
+    exit 1
+fi
+export QT_XKB_CONFIG_ROOT=/usr/share/X11/xkb
+export PSPKG_RELEASE=controls-0.1.9
+source $PSPKG_ROOT/etc/set_env.sh
 
-/reg/g/pcds/pyps/config/$hutch/iocmanager/imgr $@
-
+/reg/g/pcds/pyps/config/"${HUTCH,,}"/iocmanager/imgr.py "$@" --hutch "${HUTCH,,}"
