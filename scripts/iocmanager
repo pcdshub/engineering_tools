@@ -15,6 +15,18 @@ if [[ ($1 == "--help") || ($1 == "-h") ]]; then
 	exit 0
 fi
 
+# Check hutch
+DIR=$(readlink -f "$(dirname "${BASH_SOURCE[0]}")")
+PATH=$PATH:$DIR
+HUTCH=${1:-$(get_hutch_name)}
+
+# Exit if hutch is still unknown
+# TODO: Replace with check for actual hutch names
+if [[ "$HUTCH" == "unknown_hutch" ]]; then
+    echo "Unknown hutch, please specify e.g. 'iocmanager xrt'" >&2
+    exit 1
+fi
+
 # Setup environment
 if [ -x /etc/pathinit ]; then
     source /etc/pathinit
@@ -36,19 +48,8 @@ export QT_XKB_CONFIG_ROOT=/usr/share/X11/xkb
 export PSPKG_RELEASE=controls-0.1.9
 source $PSPKG_ROOT/etc/set_env.sh
 ulimit -c unlimited
-DIR=$(readlink -f "$(dirname "${BASH_SOURCE[0]}")")
-PATH=$PATH:$DIR
 
-# Check hutch
-HUTCH=${1:-$(get_hutch_name)}
-
-# Run if possible
-if [[ "$HUTCH" == "unknown_hutch" ]]; then
-    echo "Unknown hutch, please specify e.g. 'iocmanager xrt'" >&2
-    exit 1
-else
-    /reg/g/pcds/pyps/config/"${HUTCH,,}"/iocmanager/IocManager.py --hutch "${HUTCH,,}" > /dev/null &
-fi
+/reg/g/pcds/pyps/config/"${HUTCH,,}"/iocmanager/IocManager.py --hutch "${HUTCH,,}" > /dev/null &
 
 # Do some window cleanup for xpp
 if [ "$(whoami)" == "xppopr" ]; then
