@@ -17,7 +17,12 @@ fi
 if [ -z "${1}" ]; then
   usage
   exit
+elif [ ! -e "${1}" ]; then
+  echo "Path Does Not Exist" >&2
+  usage
+  exit 1
 fi
+
 PYDEV_DIR=~/pydev
 full_path="$(readlink -f $1)"
 if [ "${2}" == "module" ]; then
