@@ -18,9 +18,9 @@ if [ -z "${1}" ]; then
   usage
   exit
 elif [ ! -e "${1}" ]; then
-  echo "Path Does Not Exist"
+  echo "Path Does Not Exist" >&2
   usage
-  exit
+  exit 1
 fi
 
 PYDEV_DIR=~/pydev
