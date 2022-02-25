@@ -27,8 +27,8 @@ OPTIONS:
                 dark run for XTCAV
         -L|--xtcav_lasingoff
                lasing off run for XTCAV
-        -v|--valdity <str>
-               validity range (if not run#-end, e.g. 123-567 or 123-end)
+        -v|--validity_start <val_run>
+               validity range (set to <val_run>-end)
         -N|--nevents <#>  
                 use this number of events (default 1000). Needed when using -c as original events are counted
         -c|--eventcode <evtcode x> 
@@ -175,7 +175,7 @@ do
 			shift
 			shift
 			;;
-                -v|--validity)
+                -v|--validity_start)
 		        VALSTR=("$2")
 			shift
 			shift
@@ -280,9 +280,6 @@ fi
 
 #(hopefully) effectively turn off relative cuts for status bits. Defaults to 6. used in calibrun
 ARG=' -n '$NUMEVT' -Z 1000000 -U 1000000 -z 1000000 -u 1000000 '
-if [ $VALSTR != 'xxx' ]; then
-    ARG=$ARG' -v '$VALSTR
-fi
 
 ###########
 # setup work directory - always!
@@ -415,18 +412,18 @@ if [[ ( $HAVE_JUNGFRAU -ge 1 ) && ( $WANT_ZYLA -eq 0 ) && ( $WANT_OPAL -eq 0 )  
     fi
 
     DSNAME='exp='$EXP':run='$RUN':smd:stream=0-79'
-    if [[ ( $OLD_JUNGFRAU -ge 1 ) ]]; then
+    if [ -v OLD_JUNGFRAU ]; then
 	#get the dataset name
 	let RUN1=RUN+1
 	let RUN2=RUN+2
 	DSNAME='exp='$EXP':run='$RUN','$RUN1','$RUN2':smd:stream=0-79'
     fi
     if [[ $HOSTNAME =~ "drp-srcf" ]]; then
-	      DSNAME=$DSNAME':dir=/cds/data/drpsrcf/'$HUTCH'/'$EXP'/xtc/'
+	DSNAME=$DSNAME':dir=/cds/data/drpsrcf/'$HUTCH'/'$EXP'/xtc/'
     fi   
 
     #default arguments.
-    JFARG=' -d '$DSNAME' -n '$NUMEVT' -D 1000000 -U 1000000 -L 1000000 -H 1000000 '
+    JFARG=' -d '$DSNAME' -n '$NUMEVT
     if [[ $DEPLOY == 1 ]]; then
         JFARG=$JFARG' -u '
     fi
@@ -449,7 +446,7 @@ if [[ ( $HAVE_JUNGFRAU -ge 1 ) && ( $WANT_ZYLA -eq 0 ) && ( $WANT_OPAL -eq 0 )  
     if [[ $MYADUMAX -ne -1 ]]; then
 	      ADUMAX=$MYADUMAX
     fi
-    JFARG=$JFARG' --intlow='$ADUMIN' --inthig='$ADUMAX' --rmslow='$NOISESIGMIN' --rmshig='$NOISESIGMAX
+    JFARG=$JFARG' --int_lo='$ADUMIN' --int_hi='$ADUMAX' --rms_lo='$NOISESIGMIN' --rms_hi='$NOISESIGMAX
 
     echo -------------------- START JUNGFRAU PEDESTALS at $(date +"%T") ----------------------------
 
@@ -459,38 +456,84 @@ if [[ ( $HAVE_JUNGFRAU -ge 1 ) && ( $WANT_ZYLA -eq 0 ) && ( $WANT_OPAL -eq 0 )  
     fi
  
     for JUNGFRAU in $DETNAMES; do
-        CMD=`echo jungfrau_ndarr_dark_proc $JFARG -s $JUNGFRAU`
+	echo jungfrau loop $JUNGFRAU  -- $RUNLOCAL
+        CMD=`echo jungfrau_dark_proc $JFARG -s $JUNGFRAU`
         #now finally call the command
-        if [[ $RUNLOCAL != 1 ]]; then
-            tmpScript=$(mktemp -p $WORKDIR jungfrau_multi_tmpXXXXX.sh)
-            #trap "rm -f $tmpScript" EXIT
-            chmod u+x $tmpScript
-            printf '#!/bin/bash\nsource /cds/sw/ds/ana/conda1/manage/bin/psconda.sh\n' > $tmpScript
-            printf '%s\n' "${CMD}" >> $tmpScript
-            #jfCmd=`echo bsub -q $QUEUE -o $WORKDIR/jungfrau_${EXP}_RUN${RUN}_%J.out $tmpScript`
-            jfCmd=`echo sbatch -p $QUEUE -o $WORKDIR/jungfrau_${EXP}_RUN${RUN}_%J.out $tmpScript`
-            echo 'run in queue: ' $jfCmd
-            SUBMISSION=`$jfCmd`
-            echo $SUBMISSION
-            THISJOBID=`echo $SUBMISSION | awk {'print $4'}`
-            JOBIDS+=( $THISJOBID )
-            NJOBS=$(($NJOBS+1))
-        else            
-            echo $CMD
-            $CMD
-        fi
+   	for calibcycle in {0..2}; do
+            if [ -v OLD_JUNGFRAU ]; then
+                CMDC=$CMD
+            else
+                CMDC=$CMD' --stepnum '$calibcycle
+	    fi
+            if [[ $RUNLOCAL != 1 ]]; then
+                tmpScript=$(mktemp -p $WORKDIR jungfrau_multi_tmpXXXXX.sh)
+                #trap "rm -f $tmpScript" EXIT
+                chmod u+x $tmpScript
+                printf '#!/bin/bash\nsource /cds/sw/ds/ana/conda1/manage/bin/psconda.sh\n' > $tmpScript
+                printf '%s\n' "${CMDC}" >> $tmpScript
+                jfCmd=`echo sbatch --exclusive -p $QUEUE -o $WORKDIR/jungfrau_${EXP}_RUN${RUN}_%J.out $tmpScript`
+                echo 'run in queue: ' $jfCmd
+                SUBMISSION=`$jfCmd`
+                echo $SUBMISSION
+                THISJOBID=`echo $SUBMISSION | awk {'print $4'}`
+                JOBIDS+=( $THISJOBID )
+                NJOBS=$(($NJOBS+1))
+	    else
+                echo $CMDC
+                $CMDC
+            fi
+            if [ -v OLD_JUNGFRAU ]; then
+       	        break
+	    fi
+        done
+	ALLJOBIDS=${JOBIDS[@]}
     done
 
     if [[ $RUNLOCAL != 1 ]]; then
-        sleep 20
+	echo 'Wait for 1/2 minutes before checking jobs:'
+        sleep 30
         echo Running $NJOBS jobs are PIDS: ${JOBIDS[@]}
         until check_running_jobs; do
                 echo 'Checking again in 10s'
                 sleep 10
             done
         echo 'All jobs finished'
-	ls -l /reg/d/psdm/${EXP:0:3}/$EXP/calib/J*/*/pedestals/*$RUN*data
+	# and now check that none of the jobs have existed with an error code:
+	NFAILEDJOBS=0
+	for JOBID in ${ALLJOBIDS[@]}; do
+	    echo 'Checking job '$JOBID
+	    if grep -q 'exit code' $WORKDIR/*$JOBID.out; then
+		NFAILEDJOBS=$(($NFAILEDJOBS+1))
+	    fi
+	done
     fi
+
+    #Now deploy.
+    if [ $DEPLOY == 1 ]; then
+	if [ $NFAILEDJOBS -gt 0 ]; then
+	    read -p "$NFAILEDJOBS of the calibration tasks failed, do you want to quit here (y/n)"
+	    if [ "$REPLY" != "y" ];then
+		exit 1
+	    fi
+	fi
+        for JUNGFRAU in $DETNAMES; do
+	    #this is also where -t should be used, just as for the validity range
+            CMD=`echo jungfrau_deploy_constants -D -d $JUNGFRAU -e $EXP -r $RUN`
+            if [ $VALSTR != 'xxx' ]; then
+	       # this does not work before ana-.....	
+               #CMD=$CMD' -t '$VALSTR'-end'
+               CMD=$CMD' -t '$VALSTR
+            fi
+            if [[ $HOSTNAME =~ "drp-srcf" ]]; then
+	        CMD=$CMD' -x /cds/data/drpsrcf/'$HUTCH'/'$EXP'/xtc/'
+            fi   
+
+            echo $CMD
+            $CMD
+        done
+    fi
+
+    ls -l /reg/d/psdm/${EXP:0:3}/$EXP/calib/J*/*/pedestals/*$RUN*data
     echo -------------------- END JUNGFRAU PEDESTALS at $(date +"%T") ----------------------------
 fi
 
@@ -576,19 +619,23 @@ if [[ ( $HAVE_EPIX10K -ge 1 ) && ( $WANT_ZYLA -eq 0 ) && ( $WANT_OPAL -eq 0 )  &
 	ALLJOBIDS=${JOBIDS[@]}
     done
     if [[ $RUNLOCAL != 1 ]]; then
-	echo 'Wait for 1 1/2 minutes before checking jobs:'
-        sleep 90
+	echo 'Wait for 1 minute before checking jobs:'
+        sleep 60
         echo Running $NJOBS jobs are PIDS: ${JOBIDS[@]}
         until check_running_jobs; do
                 echo 'Checking again in 10s'
                 sleep 10
             done
         echo 'All jobs finished'
-	# and now check that none of the jobs have existed with an error code:
+        # and now check that none of the jobs have existed with an error code:
+        # currently, the epix10k jobs print DONE at the end. 
+# Second check necessary as jobs can fail without printing an exit code to the logfile
 	NFAILEDJOBS=0
 	for JOBID in ${ALLJOBIDS[@]}; do
 	    echo 'Checking job '$JOBID
 	    if grep -q 'exit code' $WORKDIR/*$JOBID.out; then
+		NFAILEDJOBS=$(($NFAILEDJOBS+1))
+	    elif ! grep -q 'DONE' $WORKDIR/*$JOBID.out; then
 		NFAILEDJOBS=$(($NFAILEDJOBS+1))
 	    fi
 	done
@@ -598,19 +645,27 @@ if [[ ( $HAVE_EPIX10K -ge 1 ) && ( $WANT_ZYLA -eq 0 ) && ( $WANT_OPAL -eq 0 )  &
     echo ---------------EPIX10K PEDESTALS CALCULATED NOW DEPLOY     --------------------
     if [ $DEPLOY == 1 ]; then
 	if [ $NFAILEDJOBS -gt 0 ]; then
-	    read -p "$NFAILEDJOBS of the calibration tasks failed, do you want to quit here (y/n)"
+	    read -p "$NFAILEDJOBS of the calibration tasks failed, do you want to continue anyways (y/n)?"
 	    if [ "$REPLY" != "y" ];then
 		exit 1
 	    fi
 	fi
 
+
         for EPIX10K in $DETNAMES; do
             CMD=`echo epix10ka_deploy_constants -D -d $EPIX10K -e $EXP -r $RUN`
+	    echo 'setting validity....' $VALSTR
+            if [ $VALSTR != 'xxx' ]; then
+                CMD=$CMD' -t '$VALSTR
+            fi
+            if [[ $HOSTNAME =~ "drp-srcf" ]]; then
+                CMD=$CMD' -x /cds/data/drpsrcf/'$HUTCH'/'$EXP'/xtc/:stream=0-79'
+	    fi
             echo $CMD
             $CMD
         done
         if [[ $RUNLOCAL != 1 ]]; then
-    	    echo 'Print Information abot batch jobs'
+    	    echo 'Print Information about batch jobs'
 	    JOBIDSTR=''
     	    for JOBID in ${ALLJOBIDS[@]}; do
 		if [[ $JOBIDSTR != '' ]]; then 
@@ -757,9 +812,12 @@ for MYDET in $DETS; do
 	LOCARG=$LOCARG' -m 100'
     fi
 
+    if [ $VALSTR != 'xxx' ]; then
+        LOCARG=$LOCARG' -v '$VALSTR'-end'
+    fi
+
     echo -------------------- START CALIBRUN at $(date +"%T") for detector $MYDET----------------------------
     source /reg/g/psdm/etc/psconda.sh
-    #conda activate ana-4.0.26 #needed due to permissions problems in calibrun for 4.0.23 - fixed in 4.0.24
     if [[ $HOSTNAME =~ "drp-srcf" ]]; then
     	cmd=`echo calibrun -r $RUN  -d $MYDET -P -e $EXP -x /cds/data/drpsrcf/$HUTCH/$EXP/xtc/ $LOCARG`
     	echo $cmd
