@@ -22,7 +22,7 @@ parser.add_argument("--nfiles_for_run", help="get xtc files for run")
 parser.add_argument("--setExp", help="set experiment name")
 args = parser.parse_args()
 
-hutches=['tmo','txi','rix','xpp','xcs','mfx','cxi','mec', 'det', 'lfe','kfe','tst', 'las', 'hpl']
+hutches=['tmo','txi','rix','xpp','xcs','mfx','cxi','mec', 'ued', 'det', 'lfe','kfe','tst', 'las', 'hpl']
 foundHutch=False
 hutch=''
 
@@ -35,6 +35,7 @@ hutch_subnets={'tmo': ['28','132','133','134','135'],
                'cxi': ['26','68','69','70','71'],
                'mfx': ['24','72','73','74','75'],
                'mec': ['27','76','77','78','79'],
+               'ued': ['36'],
                'det': ['58', '59'],
                'lfe': ['88','89','90','91'],
                'kfe': ['92','93','94','95'],
