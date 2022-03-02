@@ -18,12 +18,14 @@ OPTIONS:
                runnumber for pedestal
         -e|--experiment <expname> 
                in case you do not want pedestals for the ongoing experiment
-        -O|--ppal         
+        -O|--Opal         
                make pedestals for Opals (default only cspad/EPIX detectors)
         -Z|--zyla         
                make pedestals for Zyla (default only cspad/EPIX detectors)
         -R|--Rayonix
                make pedestals for Rayonix (please note that this is not the correct procedure for this detector)
+        -U|--uxi
+               make pedestals for Uxi/Icarus detector
         -j|--jungfrau3     
                make pedestals for Jungfrau - 3 run version(default only cspad/EPIX detectors)
         -p|--post <text>  
@@ -91,6 +93,11 @@ do
            	-i|--interactive)
                         POSITIONAL+=("$1")
 	                elogMessage="start calibman GUI"
+			shift
+			;;
+           	-U|--uxi)
+                        POSITIONAL+=("$1")
+	                elogMessage="DARK for Uxi"
 			shift
 			;;
            	-Z|--zyla)

@@ -17,6 +17,8 @@ OPTIONS:
                make pedestals for Zyla (default only cspad/EPIX detectors)
         -R|--Rayonix
                make pedestals for Rayonix (please note that this is not the correct procedure for this detector)
+        -U|--uxi
+               make pedestals for Uxi detectors
         -j|--jungfrau3     
                make pedestals for Jungfrau - 3 run version(default only cspad/EPIX detectors)
         -q|--queue <queue>
@@ -134,6 +136,10 @@ do
 			;;
            	-R|--rayonix)
 		        WANT_RAYONIX=1
+			shift
+			;;
+           	-U|--uxi)
+		        WANT_UXI=1
 			shift
 			;;
            	-j|--jungfrau3)
@@ -386,7 +392,7 @@ echo -----------------------
 #check if jungfrau detectors are present
 HAVE_JUNGFRAU=`grep Jungfrau /tmp/detnames_$EXP\_$CREATE_TIME | wc -l`
 #HAVE_JUNGFRAU=`detnames exp=${EXP}:run=${RUN} | grep Jungfrau | wc -l`
-if [[ ( $HAVE_JUNGFRAU -ge 1 ) && ( $WANT_ZYLA -eq 0 ) && ( $WANT_OPAL -eq 0 )  && ( $WANT_RAYONIX -eq 0 ) ]]; then
+if [[ ( $HAVE_JUNGFRAU -ge 1 ) && ( $WANT_ZYLA -eq 0 ) && ( $WANT_OPAL -eq 0 ) && ( $WANT_RAYONIX -eq 0 )  && ( $WANT_UXI -eq 0 ) ]]; then
     
     DETNAMES=`grep Jungfrau /tmp/detnames_$EXP\_$CREATE_TIME | awk  'BEGIN { FS = "|"}; {print $1}' | paste -d " " -s`
     if [ -v GEOMETRY ]; then
@@ -542,7 +548,7 @@ fi
 ###
 #check if epix10k detectors are present
 HAVE_EPIX10K=`grep Epix10ka /tmp/detnames_$EXP\_$CREATE_TIME | wc -l`
-if [[ ( $HAVE_EPIX10K -ge 1 ) && ( $WANT_ZYLA -eq 0 ) && ( $WANT_OPAL -eq 0 )  && ( $WANT_RAYONIX -eq 0 ) ]]; then
+if [[ ( $HAVE_EPIX10K -ge 1 ) && ( $WANT_ZYLA -eq 0 ) && ( $WANT_OPAL -eq 0 )  && ( $WANT_RAYONIX -eq 0 )  && ( $WANT_UXI -eq 0 ) ]]; then
     echo -------------------- START EPIX10K PEDESTALS at $(date +"%T") ----------------------------
     DETNAMES=`grep Epix10ka /tmp/detnames_$EXP\_$CREATE_TIME | awk  'BEGIN { FS = "|"}; {print $2}' | paste -d " " -s`
     if [[ $RUNLOCAL -ne 1 ]]; then
@@ -687,6 +693,7 @@ fi
 HAVE_EPIX=`grep Epix100 /tmp/detnames_$EXP\_$CREATE_TIME | wc -l`
 HAVE_CSPAD=`grep Cspad /tmp/detnames_$EXP\_$CREATE_TIME | wc -l`
 HAVE_ZYLA=`grep Zyla /tmp/detnames_$EXP\_$CREATE_TIME | wc -l`
+HAVE_UXI=`grep -i uxi /tmp/detnames_$EXP\_$CREATE_TIME | wc -l`
 HAVE_ISTAR=`grep iStar /tmp/detnames_$EXP\_$CREATE_TIME | wc -l`
 HAVE_OPAL=`grep Opal /tmp/detnames_$EXP\_$CREATE_TIME | wc -l`
 HAVE_RAYONIX=`grep Rayonix /tmp/detnames_$EXP\_$CREATE_TIME | wc -l`
@@ -727,6 +734,15 @@ if [[ ( $HAVE_OPAL -ge 1 ) && ( $WANT_OPAL -ge 1 ) ]]; then
 	DETS=`echo $DETS' Opal1000,Opal2000,Opal4000,Opal8000'`
     else
 	DETS='Opal1000,Opal2000,Opal4000,Opal8000'
+    fi
+fi
+
+#add uxi only on request
+if [[ ( $HAVE_UXI -ge 1 ) && ( $WANT_UXI -ge 1 ) ]]; then
+    if [ $SPECIFIED_CUTS -eq -4 ]; then
+	DETS=`echo $DETS' uxi'`
+    else
+	DETS='uxi'
     fi
 fi
 
@@ -776,6 +792,11 @@ for MYDET in $DETS; do
 	ADUMIN=1        
 	NOISESIGMAX=100  
 	NOISESIGMIN=1
+    elif [[ ( $MYDET == 'uxi') ]]; then
+	ADUMAX=30000
+	ADUMIN=0
+	NOISESIGMAX=1000
+	NOISESIGMIN=0
     elif [[ ( $MYDET == 'Rayonix') ]]; then
 	ADUMAX=16000
 	ADUMIN=1        
