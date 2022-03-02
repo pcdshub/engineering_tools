@@ -18,7 +18,7 @@ OPTIONS:
                runnumber for pedestal
         -e|--experiment <expname> 
                in case you do not want pedestals for the ongoing experiment
-        -O|--Opal         
+        -O|--opal         
                make pedestals for Opals (default only cspad/EPIX detectors)
         -Z|--zyla         
                make pedestals for Zyla (default only cspad/EPIX detectors)
