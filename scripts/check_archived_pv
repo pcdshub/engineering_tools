@@ -9,8 +9,8 @@ EOF
 }
 
 if [[ ($1 == "--help") || ($1 == "-h") ]]; then
-	usage
-	exit 0
+    usage
+    exit 0
 fi
 
 result=$(curl -s "http://pscaa01.slac.stanford.edu:17665/mgmt/bpl/getPVStatus?pv=$1")
