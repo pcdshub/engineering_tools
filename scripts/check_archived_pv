@@ -8,6 +8,11 @@ Check on the status of a PV in the archiver, e.g. $0 GDET:FEE1:241:ENRC
 EOF
 }
 
+if [[ -z $1 ]]; then
+    usage
+    exit 1
+fi
+    
 if [[ ($1 == "--help") || ($1 == "-h") ]]; then
     usage
     exit 0
