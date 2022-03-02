@@ -2,7 +2,7 @@
 usage()
 {
 cat << EOF
-usage: $0
+usage: $0 <PV>
 
 Check on the status of a PV in the archiver, e.g. $0 GDET:FEE1:241:ENRC
 EOF
