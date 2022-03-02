@@ -37,8 +37,8 @@ tmp=/tmp/cv.$$
 cat "$VIEWERCFG" | grep -i "$NAME" | grep -v '#' | awk -F, '{ if (split($2,a,";")==1) n=$2; else n=a[2]; gsub(" ","",n); gsub(" ","",$4); printf "%s %s\n", n, $4; }' >$tmp
 c=$(wc -l <$tmp)
 if [ "$c" -eq 0 ]; then
-    VIEWERCFG='/reg/g/pcds/pyps/config/*/camviewer.cfg'
-    cat "$VIEWERCFG" | grep -i "$NAME" | grep -v '#' | awk -F, '{ if (split($2,a,";")==1) n=$2; else n=a[2]; gsub(" ","",n); gsub(" ","",$4); printf "%s %s\n", n, $4; }' >$tmp
+    VIEWERCFG=/reg/g/pcds/pyps/config/*/camviewer.cfg
+    cat $VIEWERCFG | grep -i "$NAME" | grep -v '#' | awk -F, '{ if (split($2,a,";")==1) n=$2; else n=a[2]; gsub(" ","",n); gsub(" ","",$4); printf "%s %s\n", n, $4; }' >$tmp
     c=$(wc -l <$tmp)
     if [ "$c" -eq 0 ]; then
 	echo "No match for $1"
@@ -104,14 +104,14 @@ HUTCH=$(echo "$1" | tr a-z A-Z)
 hutch=$(echo "$1" | tr A-Z a-z)
 
 ALLVIEWERCFG=/reg/g/pcds/pyps/config/*/camviewer.cfg
-echo cat "$ALLVIEWERCFG" | grep -v '#' | awk -F, '{ if (split($2,a,";")==1) n=$2; else n=a[2]; gsub(" ","",n); gsub(" ","",$4); printf "%s %s\n", n, $4; }' 
+echo cat $ALLVIEWERCFG | grep -v '#' | awk -F, '{ if (split($2,a,";")==1) n=$2; else n=a[2]; gsub(" ","",n); gsub(" ","",$4); printf "%s %s\n", n, $4; }' 
 
 VIEWERCFGLFE=/reg/g/pcds/pyps/config/lfe/camviewer.cfg
 VIEWERCFG=/reg/g/pcds/pyps/config/$hutch/camviewer.cfg
 VIEWERCFGXRT=/reg/g/pcds/pyps/config/xrt/camviewer.cfg
 
 if  [ "$hutch" != 'tmo' ] && [ "$hutch" != 'rix' ]; then
-    for gige_cam in $(grep -v '#' $VIEWERCFGLFE | awk -F, '{print $4 "\n" '); do
+    for gige_cam in $(grep -v '#' $VIEWERCFGLFE | awk -F, '{print $4 "\n"} '); do
         echo "$gige_cam"
     done
 
@@ -167,7 +167,7 @@ fi
 
 LIST=0
 CAMNUM=0
-CAMNAME=0
+CAM=0
 WAIT=0
 RATE=-1
 REBOOT=0
