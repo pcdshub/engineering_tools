@@ -548,7 +548,7 @@ fi
 ###
 #check if epix10k detectors are present
 HAVE_EPIX10K=`grep Epix10ka /tmp/detnames_$EXP\_$CREATE_TIME | wc -l`
-if [[ ( $HAVE_EPIX10K -ge 1 ) && ( $WANT_ZYLA -eq 0 ) && ( $WANT_OPAL -eq 0 )  && ( $WANT_RAYONIX -eq 0 )  && ( $WANT_UXI -eq 0 ) ]]; then
+if [[ ( $HAVE_EPIX10K -ge 1 ) && ( $WANT_ZYLA -eq 0 ) && ( $WANT_OPAL -eq 0 ) && ( $WANT_RAYONIX -eq 0 ) && ( $WANT_UXI -eq 0 ) ]]; then
     echo -------------------- START EPIX10K PEDESTALS at $(date +"%T") ----------------------------
     DETNAMES=`grep Epix10ka /tmp/detnames_$EXP\_$CREATE_TIME | awk  'BEGIN { FS = "|"}; {print $2}' | paste -d " " -s`
     if [[ $RUNLOCAL -ne 1 ]]; then
