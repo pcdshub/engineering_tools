@@ -693,7 +693,7 @@ fi
 HAVE_EPIX=`grep Epix100 /tmp/detnames_$EXP\_$CREATE_TIME | wc -l`
 HAVE_CSPAD=`grep Cspad /tmp/detnames_$EXP\_$CREATE_TIME | wc -l`
 HAVE_ZYLA=`grep Zyla /tmp/detnames_$EXP\_$CREATE_TIME | wc -l`
-HAVE_UXI=`grep -i uxi /tmp/detnames_$EXP\_$CREATE_TIME | wc -l`
+HAVE_UXI=`grep -i Uxi /tmp/detnames_$EXP\_$CREATE_TIME | wc -l`
 HAVE_ISTAR=`grep iStar /tmp/detnames_$EXP\_$CREATE_TIME | wc -l`
 HAVE_OPAL=`grep Opal /tmp/detnames_$EXP\_$CREATE_TIME | wc -l`
 HAVE_RAYONIX=`grep Rayonix /tmp/detnames_$EXP\_$CREATE_TIME | wc -l`
