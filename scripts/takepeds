@@ -3,7 +3,8 @@
 DAQ_RELEASE=/cds/group/pcds/dist/pds/current
 
 # -R: for norecord , -r forces recording
-$DAQ_RELEASE/tools/scanning/take_pedestals -p 0 -r
+station=$(get_info --getstation)
+$DAQ_RELEASE/tools/scanning/take_pedestals -p $station -r
 
 elogMessage="DARK"
 source pcds_conda
