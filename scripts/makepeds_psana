@@ -601,7 +601,7 @@ if [[ ( $HAVE_JUNGFRAU -ge 1 ) && ( $WANT_ZYLA -eq 0 ) && ( $WANT_OPAL -eq 0 ) &
 	      NOISESIGMIN=$MYNOISESIGMIN
     fi
     if [[ $MYNOISESIGMAX -ne -1 ]]; then
-	      NOISESIGMA=$MYNOISESIGMAX
+	      NOISESIGMAX=$MYNOISESIGMAX
     fi
     if [[ $MYADUMIN -ne -1 ]]; then
 	      ADUMIN=$MYADUMIN
