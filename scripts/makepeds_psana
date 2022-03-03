@@ -196,7 +196,7 @@ do
 			shift
 			shift
 			;;
-           	-t|--deploy)
+           	-t|--test)
 		        DEPLOY=0
 			shift
 			;;
@@ -276,8 +276,15 @@ fi
 
 # set the umask so all the files create are group writeable
 #umask 002
-source /reg/g/psdm/etc/psconda.sh
-#conda activate ana-4.0.17 #ana-4.0.19 is broken for the 2M
+LCLS2_HUTCHES="rix, tmo, ued"
+if echo $LCLS2_HUTCHES | grep -iw $HUTCH > /dev/null; then
+    echo "This is a LCLS-II experiment"
+    source /cds/sw/ds/ana/conda2/manage/bin/psconda.sh
+    LCLS2=1
+else
+    #echo "This is a LCLS-I experiment"
+    source /reg/g/psdm/etc/psconda.sh 
+fi
 
 #if you don't pass the queue, it'll run interactively 
 if [[ $QUEUE == 'xxx' ]]; then
@@ -298,6 +305,9 @@ else
     CALIBDIR=/reg/d/psdm/${HUTCH}/$EXP/calib/
     if [[ $HOSTNAME =~ "drp-srcf" ]]; then
         CALIBDIR=/cds/data/drpsrcf/${HUTCH}/$EXP/calib/
+    fi
+    if [[ $LCLS2 -gt 0 ]]; then
+	CALIBDIR=${CALIBDIR/calib/scratch}
     fi
 fi
 WORKDIR=$CALIBDIR/pedestal_workdir
@@ -374,17 +384,164 @@ printf -v RUNSTR "%04g" $RUN
 if [[ $HOSTNAME =~ "drp-srcf" ]]; then
     echo check FFB files: 
     ls -ltr /cds/data/drpsrcf/$HUTCH/$EXP/xtc/*r$RUNSTR*s*xtc*
-    detnames exp=${EXP}:run=${RUN}:dir=/cds/data/drpsrcf/$HUTCH/$EXP/xtc:stream=0-79 > /tmp/detnames_$EXP\_$CREATE_TIME
+    if [[ $LCLS2 -gt 0 ]]; then
+        detnames -r exp=${EXP},run=${RUN},dir=/cds/data/drpsrcf/$HUTCH/$EXP/xtc > /tmp/detnames_$EXP\_$CREATE_TIME
+    else
+        detnames exp=${EXP}:run=${RUN}:dir=/cds/data/drpsrcf/$HUTCH/$EXP/xtc:stream=0-79 > /tmp/detnames_$EXP\_$CREATE_TIME
+    fi
 else
-    echo Process files: 
+    echo Process offline files: 
     ls -ltr /reg/d/psdm/$HUTCH/$EXP/xtc/*r*$RUNSTR*s*xtc*
-    detnames exp=${EXP}:run=${RUN}:stream=0-79 > /tmp/detnames_$EXP\_$CREATE_TIME
+    if [[ $LCLS2 -gt 0 ]]; then
+        detnames -r exp=${EXP},run=${RUN} > /tmp/detnames_$EXP\_$CREATE_TIME
+    else
+        detnames exp=${EXP}:run=${RUN}:stream=0-79 > /tmp/detnames_$EXP\_$CREATE_TIME
+    fi
 fi
 #running local
 echo -----------------------
 echo 'XTC files contain:'
 cat /tmp/detnames_$EXP\_$CREATE_TIME
 echo -----------------------
+
+#### 
+# Section for LCLS2 detectors.
+####
+if [[ $LCLS2 -gt 0 ]]; then
+    ####
+    # epix100 in LCLS2 related stuff. 
+    ####
+    #check if epix100 detectors are present
+    HAVE_EPIX100=`grep epix100 /tmp/detnames_$EXP\_$CREATE_TIME | wc -l`
+    if [[ $HAVE_EPIX100 -ge 1 ]]; then
+        DETNAMES=`grep epix100 /tmp/detnames_$EXP\_$CREATE_TIME | grep raw | awk  'BEGIN { FS = "|"}; {print $1}' | paste -d " " -s`
+        DETTYPES=`grep epix100 /tmp/detnames_$EXP\_$CREATE_TIME | grep raw | awk  'BEGIN { FS = "|"}; {print $2}' | paste -d " " -s`
+        for i in "${!DETNAMES[@]}"; do
+	    LOCARG='' #optional cuts, I suspect this will not be developed for LV17.
+	    MYDET=${DETNAMES[i]}
+	    MYDETTYPE=${DETTYPES[i]}
+	    echo $MYDETTYPE $MYDET
+	    if [ $MYDETTYPE = 'epix100' ]; then
+                echo 'now calibrate...'
+                cmd=`echo det_dark_proc -r $RUN  -d $MYDET -D -e $EXP $LOCARG`
+        	echo $cmd
+    	        #$cmd
+            fi
+        done
+    fi
+    ####
+    # epixquad for UED
+    ####
+    HAVE_EPIX10K=`grep epix10ka /tmp/detnames_$EXP\_$CREATE_TIME | wc -l`
+    if [[ $HAVE_EPIX10K -ge 1 ]]; then
+        DETNAMES=`grep epix10ka /tmp/detnames_$EXP\_$CREATE_TIME | grep raw | awk  'BEGIN { FS = "|"}; {print $1}' | paste -d " " -s`
+        DETTYPES=`grep epix10ka /tmp/detnames_$EXP\_$CREATE_TIME | grep raw | awk  'BEGIN { FS = "|"}; {print $2}' | paste -d " " -s`
+        for i in "${!DETNAMES[@]}"; do
+	    LOCARG='' #optional cuts, I suspect this will not be developed for LV17.
+	    EPIX10K=$(sed "s/ //g" <<< ${DETNAMES[i]})
+	    MYDETTYPE=${DETTYPES[i]}
+	    if [ $MYDETTYPE = 'epix10ka' ]; then
+                echo Epix10ka name for $EXP is: $EPIX10K
+                ##run all at once - do not use
+      	        #Do not use workdir as you'd need to run the full charge injection run there for this to work
+	        #revisit when we run into permission problems.
+    	        for calibcycle in {0..4}; do
+                    nextcycle=$(( $calibcycle + 1 ))
+		    CMD=`echo epix10ka_pedestals_calibration -d $EPIX10K -e $EXP -r $RUN --stepnum $calibcycle --stepmax $nextcycle -L INFO`
+		    if [[ $HOSTNAME =~ "drp-srcf" ]]; then
+   		        CMD=$CMD' -x /cds/data/drpsrcf/'$HUTCH'/'$EXP'/xtc'
+                    fi
+    	            echo ---------------EPIX10K PEDESTALS FOR CYCLE $calibcycle --------------------
+                    if [[ $RUNLOCAL != 1 ]]; then
+                        tmpScript=$(mktemp -p $WORKDIR epix10ka_pedestals_tmpXXXXX.sh)
+                        #trap "rm -f $tmpScript" EXIT
+                        chmod u+x $tmpScript
+                        printf '#!/bin/bash\nsource /cds/sw/ds/ana/conda2/manage/bin/psconda.sh\n' > $tmpScript
+                        printf '%s\n' "${CMD}" >> $tmpScript
+                        ep10kaCmd=`echo sbatch --exclusive -p $QUEUE -o $WORKDIR/${EPIX10K}_${EXP}_Run${RUN}_cycle${calibcycle}_%J.out $tmpScript`
+                        echo 'run in queue: ' $ep10kaCmd
+                        SUBMISSION=`$ep10kaCmd`
+                        echo $SUBMISSION
+                        THISJOBID=`echo $SUBMISSION | awk {'print $4'}`
+                        JOBIDS+=( $THISJOBID )
+                        NJOBS=$(($NJOBS+1))
+                    else            
+                        echo $CMD
+                        $CMD
+                    fi
+                done
+	        ALLJOBIDS=${JOBIDS[@]}
+            fi
+            if [[ $RUNLOCAL != 1 ]]; then
+	        echo 'Wait for 1 minute before checking jobs:'
+                sleep 60
+                echo Running $NJOBS jobs are PIDS: ${JOBIDS[@]}
+                until check_running_jobs; do
+                    echo 'Checking again in 10s'
+                    sleep 10
+                done
+                echo 'All jobs finished'
+                # and now check that none of the jobs have existed with an error code:
+                # currently, the epix10k jobs print DONE at the end. 
+                # Second check necessary as jobs can fail without printing an exit code to the logfile
+   	        NFAILEDJOBS=0
+	        for JOBID in ${ALLJOBIDS[@]}; do
+	            echo 'Checking job '$JOBID
+	            if grep -q 'exit code' $WORKDIR/*$JOBID.out; then
+		        NFAILEDJOBS=$(($NFAILEDJOBS+1))
+	            elif ! grep -q 'DONE' $WORKDIR/*$JOBID.out; then
+		        NFAILEDJOBS=$(($NFAILEDJOBS+1))
+	            fi
+	        done
+	
+            fi
+
+            echo ---------------EPIX10K PEDESTALS CALCULATED NOW DEPLOY     --------------------
+            if [ $DEPLOY == 1 ]; then
+	        if [ $NFAILEDJOBS -gt 0 ]; then
+	            read -p "$NFAILEDJOBS of the calibration tasks failed, do you want to continue anyways (y/n)?"
+	            if [ "$REPLY" != "y" ];then
+		        exit 1
+	            fi
+	        fi
+
+                for EPIX10K in $DETNAMES; do
+                    CMD=`echo epix10ka_deploy_constants -D -d $EPIX10K -e $EXP -r $RUN -L INFO`
+		    if [[ $HOSTNAME =~ "drp-srcf" ]]; then
+   		        CMD=$CMD' -x /cds/data/drpsrcf/'$HUTCH'/'$EXP'/xtc'
+                    fi
+	            echo 'setting validity....' $VALSTR
+                    if [ $VALSTR != 'xxx' ]; then
+                        CMD=$CMD' -t '$VALSTR
+                    fi
+                    echo $CMD
+                    $CMD
+                done
+                if [[ $RUNLOCAL != 1 ]]; then
+    	            echo 'Print Information about batch jobs'
+	            JOBIDSTR=''
+    	            for JOBID in ${ALLJOBIDS[@]}; do
+		        if [[ $JOBIDSTR != '' ]]; then 
+ 		            JOBIDSTR=$JOBIDSTR','
+		        fi
+		        JOBIDSTR=$JOBIDSTR$JOBID
+	            done
+	            sacct -j $JOBIDSTR --format=JobID,AveCPU,AveVMSize,CPUTime,Start,End,Elapsed
+                fi
+            fi
+        done
+        echo -------------------- STOP EPIX10K PEDESTALS at $(date +"%T") ----------------------------
+    fi
+
+    rm /tmp/detnames_$EXP\_$CREATE_TIME
+    T2="$(($(date +%s%N)-T))"
+    S="$((T2/1000000000))"
+    M="$((T2/1000000))"
+    echo xxxxxxxxxxxxxxxxx END LCLS2 MAKEPEDS at $(date +"%T") after  '$S'.'$M' XXXXXXXXXXXXXXXXXXXXXXX
+    exit
+fi
+
+
 
 ####
 # Jungfrau related stuff. Different executable w/ different options. Ack.
@@ -444,7 +601,7 @@ if [[ ( $HAVE_JUNGFRAU -ge 1 ) && ( $WANT_ZYLA -eq 0 ) && ( $WANT_OPAL -eq 0 ) &
 	      NOISESIGMIN=$MYNOISESIGMIN
     fi
     if [[ $MYNOISESIGMAX -ne -1 ]]; then
-	      NOISESIGMAx=$MYNOISESIGMAX
+	      NOISESIGMAX=$MYNOISESIGMAX
     fi
     if [[ $MYADUMIN -ne -1 ]]; then
 	      ADUMIN=$MYADUMIN
@@ -599,9 +756,9 @@ if [[ ( $HAVE_EPIX10K -ge 1 ) && ( $WANT_ZYLA -eq 0 ) && ( $WANT_OPAL -eq 0 ) &&
 
 	for calibcycle in {0..4}; do
             if [[ $HOSTNAME =~ "drp-srcf" ]]; then
-		CMD=`echo epix10ka_pedestals_calibration -d $EPIX10K -e $EXP -r $RUN -c $calibcycle -x /cds/data/drpsrcf/$HUTCH/$EXP/xtc/:live:stream=0-79`
+		CMD=`echo epix10ka_pedestals_calibration -d $EPIX10K -e $EXP -r $RUN -c $calibcycle -x /cds/data/drpsrcf/$HUTCH/$EXP/xtc/:live:stream=0-79 -L INFO`
 	    else 
-		CMD=`echo epix10ka_pedestals_calibration -d $EPIX10K -e $EXP -r $RUN -c $calibcycle`
+		CMD=`echo epix10ka_pedestals_calibration -d $EPIX10K -e $EXP -r $RUN -c $calibcycle -L INFO`
 	    fi
     	    echo ---------------EPIX10K PEDESTALS FOR CYCLE $calibcycle --------------------
             if [[ $RUNLOCAL != 1 ]]; then
@@ -659,7 +816,7 @@ if [[ ( $HAVE_EPIX10K -ge 1 ) && ( $WANT_ZYLA -eq 0 ) && ( $WANT_OPAL -eq 0 ) &&
 
 
         for EPIX10K in $DETNAMES; do
-            CMD=`echo epix10ka_deploy_constants -D -d $EPIX10K -e $EXP -r $RUN`
+            CMD=`echo epix10ka_deploy_constants -D -d $EPIX10K -e $EXP -r $RUN -L INFO`
 	    echo 'setting validity....' $VALSTR
             if [ $VALSTR != 'xxx' ]; then
                 CMD=$CMD' -t '$VALSTR
