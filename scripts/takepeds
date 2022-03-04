@@ -7,6 +7,8 @@ cat << EOF
 
 Generates the background (dark) image and the noise values for each pixel, and posts to the elog.
 
+
+
 EOF
 }
 
