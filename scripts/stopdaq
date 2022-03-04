@@ -30,7 +30,8 @@ unset LD_LIBRARY_PATH
 #(puts pid file in consistent location - necessary for stopping for LCLS-II DAQ)
 cd /reg/g/pcds/dist/pds/$HUTCH/scripts/
 
-if  [[ ($HUTCH == 'tmo') || ($HUTCH == 'rix') ]]; then
+LCLS2_HUTCHES="rix, tmo, ued"
+if echo $LCLS2_HUTCHES | grep -iw $HUTCH > /dev/null; then
     source /reg/g/pcds/dist/pds/$HUTCH/scripts/setup_env.sh
     PROCMGR='procmgr'
 else
