@@ -50,9 +50,9 @@ usage: ami_offline_psana options<br/>
 </tr>
 
 <tr>
-    <td>archiveStatus</td>
+    <td>archive-status</td>
     <td>
-usage: archiveStatus [-h] PV <br/>
+usage: archive-status [-h] PV <br/>
         <br/>
     Return the status of the specified PV in the archiver.<br/>
     <br/>
