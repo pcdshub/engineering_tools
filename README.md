@@ -558,6 +558,14 @@ Stop the daq in the current hutch.
 </tr>
 
 <tr>
+    <td>takepeds</td> 
+    <td>
+usage: takepeds <br/>
+Takes a run with dark images for use in pedestals, and posts to the elog.
+    </td>
+</tr> 
+
+<tr>
     <td>wheredaq</td>
     <td>
 Discover what host is running the daq in the current hutch, if any.
