@@ -3,21 +3,17 @@
 usage()
 {
 cat << EOF
-
+usage: $0
 
 Generates the background (dark) image and the noise values for each pixel, and posts to the elog.
 
-
-
 EOF
 }
-
 
 if [[($1 == "--help") || ($1 == "-h")]]; then
         usage
         exit 0
 fi
-
 
 DAQ_RELEASE=/cds/group/pcds/dist/pds/current
 
