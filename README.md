@@ -50,6 +50,18 @@ usage: ami_offline_psana options<br/>
 </tr>
 
 <tr>
+    <td>archive-status</td>
+    <td>
+usage: archive-status [-h] PV <br/>
+        <br/>
+    Return the status of the specified PV in the archiver.<br/>
+    <br/>
+    OPTIONS:<br/>
+    -h, --help: Show the help message and exit.
+    </td>
+</tr>
+
+<tr>
     <td>camViewer</td>
     <td>
 usage: /reg/g/pcds/engineering_tools/latest/scripts/camViewer options<br/>
