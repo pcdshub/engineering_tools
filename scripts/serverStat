@@ -91,9 +91,8 @@ expert  : display info and run checks on server
 EOF
 }
 
-DIRTMP=$(dirname  "${BASH_SOURCE[0]}")
-DIR=$( cd "$DIRTMP" && pwd -P )
-PATH=$PATH:$DIR
+DIR=$(readlink -f "$(dirname "${BASH_SOURCE[0]}")")
+PATH=$DIR:$PATH
 
 HUTCH=$(get_hutch_name)
 for name in "tmo" "rix" "txi" "xpp" "xcs" "mfx" "cxi" "mec" "det"; do

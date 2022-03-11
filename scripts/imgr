@@ -32,7 +32,7 @@ fi
 
 # Add engineering_tools to PATH for get_hutch_name
 DIR=$(readlink -f "$(dirname "${BASH_SOURCE[0]}")")
-PATH=$PATH:$DIR
+PATH=$DIR:$PATH
 
 # Search for hutch in args
 for (( i=1; i<=$#; i++)); do

@@ -17,7 +17,7 @@ fi
 
 # Check hutch
 DIR=$(readlink -f "$(dirname "${BASH_SOURCE[0]}")")
-PATH=$PATH:$DIR
+PATH=$DIR:$PATH
 HUTCH=${1:-$(get_hutch_name)}
 
 # Exit if hutch is still unknown
