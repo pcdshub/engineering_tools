@@ -146,7 +146,13 @@ if [[ $NAME == *':'* ]]; then #we are assuming that PVs have a colon in them
    iocfpv "$NAME"
    NAME="$ioc"
 
-elif [[ $NAME == *'-'* || $NAME == *'_'* || ^[[:alnum:]]+$ ]]; then
+
+#This elif block applies to the variety of camera names(e.g. TMO-07, xcs_gige_5, or IM2K4)
+#1) Check to see if the name has an underscore, dash, or only numbers and letters. If it doesn't return "unmatched format"
+#2) If so, then search for ioc using grep_ioc
+#3) If that returns nothing, try converting the camera name to a PV and search for that
+#4) If neither of those produce results return "Did not find name anywhere"
+elif [[ $NAME == *'-'* || $NAME == *'_'* || ^[[:alnum:]]+$ ]]; then 
    INFO=$(grep_ioc "$NAME" all | grep "id:'$NAME'")
       if [ -z "$INFO" ]; then
          camname_to_pv "$NAME"
