@@ -53,21 +53,24 @@ isCam(){
 host_from_PV(){
     if [[ $NAME == *':'* ]]  && [[ $HUTCH == 'unknown_hutch' ]]; then
 	echo 'Getting info for a host of a PV currently only works on the hutch networks'
-	exit
+	exit 1
     fi
     if [[ ${NAME:0:3} == "${HUTCH^^}" ]]; then
         HOST=$(cainfo "$NAME" | grep Host | awk '{print $2}' | awk 'BEGIN { FS = ":"}; {print $1}' | sed s/'.pcdsn'/''/g)
 	if [[ $HOST == *'disconnected'* ]]; then
-	    echo PV "$NAME" is disconnected
-	    exit
+	    echo "PV $NAME is disconnected"
+	    exit 1
 	fi
-	echo PV "$NAME" is hosted on server "$HOST"
-	NAME=$HOST
-	DEV=$HOST
     else
-	echo 'Getting info for a host of a PV currently only works on the hutch network (e.g. for MFX:xxx from the mfx network)'
-	exit
+        HOST=$(ioctool $NAME host)
+        if [[ -z "$HOST" ]]; then
+            echo "Host can't be found for PV $NAME"
+            exit 1
+        fi
     fi
+    echo PV "$NAME" is hosted on server "$HOST"
+    NAME=$HOST
+    DEV=$HOST
 }
 
 usage(){
