@@ -132,4 +132,13 @@ elif [ "$CMD" == "telnet" ]; then
     #  echo "Host no in subnet that connect"
    echo "$HOST":"$PORT"
    telnet "$HOST" "$PORT"
+
+
+elif [ "$CMD" == "host" ]; then
+   INFO=$(grep_ioc "$NAME" all | grep "id:'$NAME'")
+   if [ -z "$INFO" ]; then
+      echo "$NAME could not be found. Exiting..." >&2
+      exit 1
+   fi
+   echo "$INFO" | sed -n "s/^.*host: '\(\S*\)'.*$/\1/p"
 fi
