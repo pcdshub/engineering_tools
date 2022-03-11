@@ -42,10 +42,9 @@ function ioccfg {
    iocdir "$1"
    iocfile=$(find "${iocpath}" -name "$1.cfg")
    if [ -z  "$iocfile" ]; then
-      iocfile=$(find "${iocpath}" -name "st.cmd")
+      iocfile=$(find "${iocpath}" -path "*$1/st.cmd")
       if [ -z "$iocfile" ]; then
          echo -e "No files found for that ioc" >&2
-
          exit 1
       fi
    fi
