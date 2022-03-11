@@ -102,27 +102,26 @@ function camname_to_pv {
    echo '"'"$1"'" is ambiguous:'
    rm -f $tmp
    exit
-
 }
 
 usage(){
 cat << EOF
 usage: $0 <ioc>|<pv>|<camera name> [option]
 
-Script that returns information about an ioc given its name, PV or camera name (if applicable)
+Script that returns information about an ioc given its name, PV, or camera name
 
 default option is 'name', list of options:
-name   : returns the name of the ioc
-dir    : returns the directory the ioc is running from
-cddir  : open the directory the ioc is running from (start with "source" before calling script with this option)
-cfg    : returns the file name of the ioc .cfg (or st.cmd)i
-less   : opens the ioc .cfg (or st.cmd) in less
-cat    : opens the ioc .cfg (or st.cmd) in cat
-data   : returns the path of the appropriate iocData directory if it exists
-autosave : opens the ioc most recent autosave file in less
-archive  : opens the ioc most recent archive file in less
-log    : opens the most recent log file in less
-telnet : starts a telnet session with the ioc 
+name     : returns the name of the ioc
+dir      : returns the directory the ioc is running from
+cddir    : open the directory the ioc is running from (start with "source" before calling script with this option)
+cfg      : returns the file name of the ioc .cfg (or st.cmd)
+less     : opens the ioc .cfg (or st.cmd) in less
+cat      : opens the ioc .cfg (or st.cmd) in cat
+data     : returns the path of the appropriate iocData directory if it exists
+autosave : opens the most recent autosave file in less
+archive  : opens the most recent archive file in less
+log      : opens the most recent log file in less
+telnet   : starts a telnet session with the ioc 
 
 EOF
 }
