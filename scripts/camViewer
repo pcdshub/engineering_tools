@@ -164,6 +164,7 @@ if [[ ($1 == "--help") || ($1 == "-h") ]]; then
 	usage
 	exit 0
 fi
+  
 
 LIST=0
 CAMNUM=0
@@ -176,38 +177,52 @@ DISABLE=0
 MAINSCREEN=0
 
 
-while getopts " -o c:w:u:H:lmre:(enable)d:(disable)" OPTION
+OPTIONS=$(getopt -o lmredc:w:u:H: --long list,main,reboot,enable,disable,cam:,wait:rate:hutch: -- "$@")
 
+if [ $? != 0 ] ; then echo "Terminating..." >&2 ; exit 1 ; fi
+
+eval set -- "$OPTIONS"
+
+while [ : ]
 do
-    case $OPTION in
-	l)
-	    LIST=1	  
-	    ;;
-	c)
-	    CAM=$OPTARG
-	    ;;
-	w)
-	    WAIT=$OPTARG
-	    ;;	    
-	u)
-	    RATE=$OPTARG
-	    ;;	    
-	H)
-	    hutch=$OPTARG
-	    ;;
-	m)
-	    MAINSCREEN=1
-	    ;;
-	r)
-	    REBOOT=1
-	    ;;
-        e|enable)
+    case "$1" in
+        -l|--list)  
+            LIST=1
+            shift
+            ;;
+        -c|--cam)
+            CAM=$2
+            shift 2 ;;
+        -w|--wait)
+            WAIT=$2
+            shift 2 ;;
+        -u|--rate)
+            RATE=$2
+            shift 2 ;;
+        -H|--hutch)
+            hutch=$2
+            shift 2 ;;
+        -m|--main)
+            MAINSCREEN=1
+            shift
+            ;;
+        -r|--rate)
+            REBOOT=1
+            shift
+            ;;
+        -e|--enable)
             ENABLE=1
+            shift
             ;;
-        d|disable)
+        -d|--disable)
             DISABLE=1
+            shift
             ;;
-	esac
+        --) shift 
+            break 
+            ;;
+       
+    esac
 done
 
 
