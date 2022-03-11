@@ -186,7 +186,12 @@ elif [ "$CMD" ==  "dir" ]; then
 
 elif [ "$CMD" == "cddir" ]; then
    iocdir "$NAME"
-   [[ "${BASH_SOURCE[0]}" == "$0" ]] && echo "Script is not being sourced. Start with 'source $0' before calling script with this option." || cd "${iocpath}" || return
+   if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
+      echo "Script is not being sourced. Start with 'source $0' before calling script with this option."
+      exit 1
+   fi
+   cd "${iocpath}" 
+
  
 #################################################################
 
