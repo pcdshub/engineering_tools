@@ -2,29 +2,23 @@
 
 function iocfpv {
    ioc=""
-   ioc=$(grep_pv "$1" | cut -d'/' -f5 | sed -r '/^('"$1"').*/d' | sed -r '/^IOC.*/d')
+   ioc=$(grep_pv "$1" | cut -d'/' -f5 -s)
    if [ -z "$ioc" ]; then
       echo "Did not find an ioc associated with this PV." >&2 
       exit 1
-   elif [[ $ioc = *[[:space:]]* ]]; then #assuming multiple iocs are separeated by a space
-      declare -a ioc_array     
-      for entry in $ioc; do
-         ioc_array+=("$entry")
-      done 
-      echo "$1 is found in ${#ioc_array[@]} places"
-      if [[ ${#ioc_array[@]} -gt 1 ]]; then
+   elif [[ $ioc = *[[:space:]]* ]]; then # multiple iocs found if space present
+      ioccount=$(echo $ioc | wc -w)
+      echo "$1 is found in $ioccount places"
+      if [[ $ioccount -gt 1 ]]; then
          echo "Which ioc do care about here?"
-         printf '%s\n' "${ioc_array[@]}" 
+         printf '%s\n' "$ioc"
          read -r chosenioc
          if [[ -z "$chosenioc" ]]; then
-             ioc="nothing"
-             echo "Please pick an ioc."
-             exit 0
-         fi   
-         ioc=$chosenioc      
-      echo "You have chosen" "$ioc"
-       
-      fi
+            echo "No ioc chosen. Exiting..."
+            exit 0
+         fi
+         ioc=$chosenioc
+      fi   
    fi
    
 }
