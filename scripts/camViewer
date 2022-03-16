@@ -148,15 +148,15 @@ usage: $0 options
 start the viewer for controls cameras
 
 OPTIONS:
--c|--cam <cam name>     : camera name as in camera list or gige #
--m|--main               : bring up the edm screen
--r|--reboot             : reboot the IOC
--l|--list               : print list of cameras
--w|--wait <#>           : wait for # hours to ask to renew, default 2 (12 for GIGEs)
--u|--rate <#>           : update rate limit in Hz (default 5)
--H|--hutch <hutch>      : use a specific hutches camviewer config file
--e|--enable             : enable camera ioc
--d|--disable            : disable camera ioc
+-c|--cam <cam name> : camera name as in camera list or gige #
+-m|--main           : bring up the edm screen
+-r|--reboot         : reboot the IOC
+-l|--list           : print list of cameras
+-w|--wait <#>       : wait for # hours to ask to renew, default 2 (12 for GIGEs)
+-u|--rate <#>       : update rate limit in Hz (default 5)
+-H|--hutch <hutch>  : use a specific hutches camviewer config file
+-e|--enable         : enable camera ioc
+-d|--disable        : disable camera ioc
 EOF
 }
 
