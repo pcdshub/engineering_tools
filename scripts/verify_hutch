@@ -1,0 +1,46 @@
+#!/bin/bash
+
+# function that takes in a string and verifies its a known hutch
+
+usage(){
+cat << EOF
+usage: ${BASH_SOURCE[0]} <ioc>|<pv> [option]
+
+Script that returns confirmation if the passed hutch is a known/existing hutch
+
+EOF
+}
+
+#hutches=['tmo','txi','rix','xpp','xcs','mfx','cxi','mec', 'ued', 'det', 'lfe','kfe','tst', 'las', 'hpl']
+
+foundHutch=False
+HUTCH=${1,,}
+echo "$HUTCH"
+if [ $# -lt 1 ]; then
+   echo 'need arguments: input ioc or pv name' >&2
+   usage
+   exit 1
+fi 
+
+if [[ ($1 == "--help") || ($1 == "-h") ]]; then
+   usage
+   exit 0
+fi
+for i in "tmo" "txi" "rix" "xpp" "xcs" "mfx" "cxi" "mec" "ued" "ued" "det" "lfe" "kfe" "tst" "las" "hpl"; do
+    if [[ $HUTCH != $i ]]; then
+        foundHutch=False
+        echo "hutch unknown, if"
+    elif [[ $HUTCH == $i ]]; then
+        foundHutch=True
+        echo "hutch found"
+	exit 0
+    else 
+        echo "hutch unknown, else"
+        foundHutch=False
+        #exit 1
+    fi
+done
+if [[ $foundHutch == False ]]; then
+    exit 1
+fi
+
