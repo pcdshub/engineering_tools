@@ -241,7 +241,7 @@ do
     esac
 
 done
-=======
+
 if [ $# -ge 1 ]; then
     echo "Positional arguments unsupported: $@" >&2
     usage
