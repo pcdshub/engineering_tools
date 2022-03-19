@@ -50,6 +50,18 @@ usage: ami_offline_psana options<br/>
 </tr>
 
 <tr>
+    <td>archive-status</td>
+    <td>
+usage: archive-status [-h] PV <br/>
+        <br/>
+    Return the status of the specified PV in the archiver.<br/>
+    <br/>
+    OPTIONS:<br/>
+    -h, --help: Show the help message and exit.
+    </td>
+</tr>
+
+<tr>
     <td>camViewer</td>
     <td>
 usage: /reg/g/pcds/engineering_tools/latest/scripts/camViewer options<br/>
@@ -544,6 +556,14 @@ Kill an AMI process running in the current hutch.
 Stop the daq in the current hutch.
     </td>
 </tr>
+
+<tr>
+    <td>takepeds</td> 
+    <td>
+usage: takepeds <br/>
+Takes a run with dark images for use in pedestals, and posts to the elog.
+    </td>
+</tr> 
 
 <tr>
     <td>wheredaq</td>
