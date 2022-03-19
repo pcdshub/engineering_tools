@@ -1,5 +1,8 @@
 #!/bin/bash
 
+DIR=$(readlink -f "$(dirname "${BASH_SOURCE[0]}")")
+PATH=$DIR:$PATH
+
 #
 # find_pv: use find_pv to get to the sysreset PV of the IOC for rebooting.
 # --> does not work. Need to know more. Maybe just use in case of gige, assuming naming convention.
@@ -15,10 +18,10 @@ if [ $# -lt 2 ]; then
     exit
 fi
 CAMPVFULL=""
-hutch=`echo $2 | tr A-Z a-z`
+hutch=$(echo "$2" | tr A-Z a-z)
 VIEWERCFG=/reg/g/pcds/pyps/config/$hutch/camviewer.cfg
 # Match "-" or "_" or " ".
-NAME=`echo $1 | sed -e 's/-/ /g' -e 's/_/ /g' -e 's/ /[-_ ]/g'`
+NAME=$(echo "$1" | sed -e 's/-/ /g' -e 's/_/ /g' -e 's/ /[-_ ]/g')
 #
 # The story here: 
 # See how many matches we have in the hutch.
@@ -31,37 +34,37 @@ NAME=`echo $1 | sed -e 's/-/ /g' -e 's/_/ /g' -e 's/ /[-_ ]/g'`
 #
 # Make a temp file with just the PVs and camera names that match.
 tmp=/tmp/cv.$$
-cat $VIEWERCFG | grep -i "$NAME" | grep -v '#' | awk -F, '{ if (split($2,a,";")==1) n=$2; else n=a[2]; gsub(" ","",n); gsub(" ","",$4); printf "%s %s\n", n, $4; }' >$tmp
-c=`wc -l <$tmp`
-if [ $c -eq 0 ]; then
+cat "$VIEWERCFG" | grep -i "$NAME" | grep -v '#' | awk -F, '{ if (split($2,a,";")==1) n=$2; else n=a[2]; gsub(" ","",n); gsub(" ","",$4); printf "%s %s\n", n, $4; }' >$tmp
+c=$(wc -l <$tmp)
+if [ "$c" -eq 0 ]; then
     VIEWERCFG=/reg/g/pcds/pyps/config/*/camviewer.cfg
     cat $VIEWERCFG | grep -i "$NAME" | grep -v '#' | awk -F, '{ if (split($2,a,";")==1) n=$2; else n=a[2]; gsub(" ","",n); gsub(" ","",$4); printf "%s %s\n", n, $4; }' >$tmp
-    c=`wc -l <$tmp`
-    if [ $c -eq 0 ]; then
+    c=$(wc -l <$tmp)
+    if [ "$c" -eq 0 ]; then
 	echo "No match for $1"
 	rm -f $tmp
 	exit
     fi
 fi
-if [ $c -eq 1 ]; then
-    CAMPVFULL=`awk '{print $1;}' <$tmp`
+if [ "$c" -eq 1 ]; then
+    CAMPVFULL=$(awk '{print $1;}' <$tmp)
     rm -f $tmp
     return
 fi
 # OK, ambiguous.  Look for a complete match on the second word.
-if [ `egrep -i " $NAME\$" < $tmp | wc -l` -eq 1 ]; then
-    CAMPVFULL=`egrep -i " $NAME\$" < $tmp | awk '{print $1;}'`
+if [ "$(grep -E -i " $NAME\$" < $tmp | wc -l)" -eq 1 ]; then
+    CAMPVFULL=$(grep -E -i " $NAME\$" < $tmp | awk '{print $1;}')
     rm -f $tmp
     return
 fi
 # What about just a match at the end? (That is, if we are searching
 # for "yag1", prefer "mec_yag1" to "mec_yag11".)
-if [ `egrep -i "$NAME\$" < $tmp | wc -l` -eq 1 ]; then
-    CAMPVFULL=`egrep -i "$NAME\$" < $tmp | awk '{print $1;}'`
+if [ "$(grep -E -i "$NAME\$" < $tmp | wc -l)" -eq 1 ]; then
+    CAMPVFULL=$(grep -E -i "$NAME\$" < $tmp | awk '{print $1;}')
     rm -f $tmp
     return
 fi
-echo '"'$1'" is ambiguous:'
+echo '"'"$1"'" is ambiguous:'
 awk '{print $2;}' <$tmp
 rm -f $tmp
 exit
@@ -75,10 +78,10 @@ fi
 HUTCH=${1^^}
 hutch=${1,,}
 VIEWERCFG=/reg/g/pcds/pyps/config/$hutch/camviewer.cfg
-printf -v GIGENUM "%02d" $2
+printf -v GIGENUM "%02d" "$2"
 GIGEBASE=$HUTCH:GIGE:$GIGENUM
 
-echo `grep $GIGEBASE $VIEWERCFG | grep -v '#' | awk -F, '{print $4}'`
+echo "$(grep "$GIGEBASE" "$VIEWERCFG" | grep -v '#' | awk -F, '{print $4}')"
 }
 
 isNum(){
@@ -97,8 +100,8 @@ list_cams()
 if [ $# -lt 1 ]; then
     echo 'need one arguments: hutch '
 fi
-HUTCH=`echo $1 | tr a-z A-Z`
-hutch=`echo $1 | tr A-Z a-z`
+HUTCH=$(echo "$1" | tr a-z A-Z)
+hutch=$(echo "$1" | tr A-Z a-z)
 
 ALLVIEWERCFG=/reg/g/pcds/pyps/config/*/camviewer.cfg
 echo cat $ALLVIEWERCFG | grep -v '#' | awk -F, '{ if (split($2,a,";")==1) n=$2; else n=a[2]; gsub(" ","",n); gsub(" ","",$4); printf "%s %s\n", n, $4; }' 
@@ -107,25 +110,35 @@ VIEWERCFGLFE=/reg/g/pcds/pyps/config/lfe/camviewer.cfg
 VIEWERCFG=/reg/g/pcds/pyps/config/$hutch/camviewer.cfg
 VIEWERCFGXRT=/reg/g/pcds/pyps/config/xrt/camviewer.cfg
 
-if  [ $hutch != 'tmo' ] && [ $hutch != 'rix' ]; then
-    for gige_cam in `grep -v '#' $VIEWERCFGLFE | awk -F, '{print $4 "\n" }'`; do
-        echo $gige_cam
+if  [ "$hutch" != 'tmo' ] && [ "$hutch" != 'rix' ]; then
+    for gige_cam in $(grep -v '#' $VIEWERCFGLFE | awk -F, '{print $4 "\n"} '); do
+        echo "$gige_cam"
     done
 
-    for gige_cam in `grep -v '#' $VIEWERCFGXRT | awk -F, '{print $4 "\n" }'`; do
-	echo $gige_cam
+    for gige_cam in $(grep -v '#' $VIEWERCFGXRT | awk -F, '{print $4 "\n" }'); do
+	echo "$gige_cam"
     done
 fi
 
-for gige_cam in `grep -v '#' $VIEWERCFG | awk -F, '{print $4 "\n" }'`; do
-    echo $gige_cam
+for gige_cam in $(grep -v '#' "$VIEWERCFG" | awk -F, '{print $4 "\n" }'); do
+    echo "$gige_cam"
 done
 
 }
 
 iocfpv() {
-     grep_pv $1 | sed -n 's/\/reg\/d\/iocData\/\(\S*\)\/iocInfo/\1/p'
+     grep_pv "$1" | sed -n 's/\/reg\/d\/iocData\/\(\S*\)\/iocInfo/\1/p'
 }
+
+iocinfo() {
+    for ioc in $(iocfpv "$CAMPVFULL:IMAGE1"); do
+
+        INFO=$(grep_ioc "$ioc" all | grep "id:'$ioc'")
+        if [ -n "$INFO" ]; then
+            iochutch=$(echo "$INFO" | cut -d'/' -f7)
+        fi
+    done
+}    
 
 usage()
 {
@@ -135,15 +148,17 @@ usage: $0 options
 start the viewer for controls cameras
 
 OPTIONS:
--c camera name as in camera list or gige #
--m bring up the edm screen
--r reboot the IOC
--l print list of cameras
--w # (wait for # hours to ask to renew, default 2 and 12 for GIGEs)
--u # update rate limit (default 5)
--H hutch: use a specific hutches camviewer config file
--e enable camera ioc
--d disable camera ioc
+
+-c|--cam <cam name> : camera name as in camera list or gige #
+-m|--main           : bring up the edm screen
+-r|--reboot         : reboot the IOC
+-l|--list           : print list of cameras
+-w|--wait <#>       : wait for # hours to ask to renew, default 2 (12 for GIGEs)
+-u|--rate <#>       : update rate limit in Hz (default 5)
+-H|--hutch <hutch>  : use a specific hutches camviewer config file
+-e|--enable         : enable camera ioc
+-d|--disable        : disable camera ioc
+
 EOF
 }
 
@@ -152,148 +167,199 @@ if [[ ($1 == "--help") || ($1 == "-h") ]]; then
 	exit 0
 fi
 
-hutch=`get_info --gethutch`
-if [ $hutch = unknown_hutch ]; then
-    echo 'unknown hutch, cannot use camViewer script'
-    exit 1
-fi
 
-CAMNUM=0
-WAIT=0
-RATE=-1
-MAINSCREEN=0
 
-EXE=/reg/g/pcds/pyps/config/$hutch/camviewer/run_viewer.csh
-PVLIST=/reg/g/pcds/pyps/config/$hutch/camviewer.cfg
-imgr=/reg/g/pcds/pyps/apps/iocmanager/latest/imgr
+
+LIST=0
 CAMNUM=0
+CAM=0
 WAIT=0
 RATE=-1
 REBOOT=0
 ENABLE=0
 DISABLE=0
+MAINSCREEN=0
 
 
-while getopts "c:w:u:H:lmred" OPTION
+OPTIONS=$(getopt -o lmredc:w:u:H: --long list,main,reboot,enable,disable,cam:,wait:,rate:,hutch: -n \'$0\' -- "$@")
+
+if [ $? != 0 ] ; then echo "Terminating..." >&2 ; exit 1 ; fi
+
+
+
+eval set -- "$OPTIONS"
+
+
+
+while [ : ]
 do
-    case $OPTION in
-	l)
-	    list_cams $hutch
-	    exit 1
-	    ;;
-	c)
-	    CAM=$OPTARG
-	    if isNum $CAM; then
-		CAMNUM=$CAM
-		CAMNAME=`gige_num_to_name $hutch $CAM`
-	    else
-		CAMNAME=$CAM
-		CAMNUM=-1
-	    fi
-	    ;;
-	w)
-	    WAIT=$OPTARG
-	    ;;	    
-	u)
-	    RATE=$OPTARG
-	    ;;	    
-	H)
-	    hutch=$OPTARG
-	    ;;
-	m)
-	    MAINSCREEN=1
-	    ;;
-	r)
-	    REBOOT=1
-	    ;;
-        e)
+    case "$1" in
+        -l|--list)  
+            LIST=1
+            shift
+            ;;
+        -c|--cam)
+            CAM=$2
+            shift 2 ;;
+        -w|--wait)
+            WAIT=$2
+            shift 2 ;;
+        -u|--rate)
+            RATE=$2
+            shift 2 ;;
+        -H|--hutch)
+            hutch=$2
+            shift 2 ;;
+        -m|--main)
+            MAINSCREEN=1
+            shift
+            ;;
+        -r|--rate)
+            REBOOT=1
+            shift
+            ;;
+        -e|--enable)
             ENABLE=1
+            shift
             ;;
-        d)
+        -d|--disable)
             DISABLE=1
+            shift
             ;;
-	esac
+        ?)
+            usage
+            break
+            ;;
+        --) 
+            shift 
+            break 
+            ;;
+        *)
+            echo "Internal Error"
+            exit 1
+            ;;
+    esac
+
 done
 
-if [ $CAMNUM -eq 0 ]; then
-    if [ $hutch = "tmo" ]; then
+if [ $# -ge 1 ]; then
+    echo "Positional arguments unsupported: $@" >&2
+    usage
+    exit 1
+fi
+
+
+if [ "$hutch" == ""  ]; then
+    hutch=$(get_info --gethutch)
+    if [ "$hutch" == unknown_hutch ]; then
+        echo 'unknown hutch, specify using -H option'
+        usage
+        exit 1
+    fi
+fi
+
+
+
+EXE="/reg/g/pcds/pyps/config/$hutch/camviewer/run_viewer.csh"
+PVLIST="/reg/g/pcds/pyps/config/$hutch/camviewer.cfg"
+
+if [ $LIST -gt 0 ]; then
+    list_cams "$hutch"
+    exit 1
+fi
+
+if isNum "$CAM"; then
+    CAMNUM=$CAM
+    CAMNAME=$(gige_num_to_name "$hutch" "$CAM")
+else
+    CAMNAME=$CAM
+    CAMNUM=-1
+fi
+
+
+
+if [ $CAMNUM -eq 0 ]; then 
+    if [ "$hutch" = "tmo" ]; then
         CAMNAME=IM2K0
-    elif [ $hutch = "rix" ]; then
+    elif [ "$hutch" = "rix" ]; then
 	CAMNAME=IM1K1
-    elif [ $hutch = "xpp" ]; then
+    elif [ "$hutch" = "xpp" ]; then
 	CAMNAME=hx2_sb1_yag
-    elif [ $hutch = "mfx" ]; then
+    elif [ "$hutch" = "mfx" ]; then
         CAMNAME=mfx_dg1_yag
-    elif [ $hutch = "cxi" ]; then
+    elif [ "$hutch" = "cxi" ]; then
         CAMNAME=cxi_dg1_yag
-    elif [ $hutch = "mec" ]; then
+    elif [ "$hutch" = "mec" ]; then
         CAMNAME=GigE_Questar1
     else
 	CAMNAME=xcs_yag2
     fi
+
+
 fi
     
 export EPICS_CA_MAX_ARRAY_BYTES=24000000
 echo working with camera of name: $CAMNAME
 
-name_to_pv "$CAMNAME" $hutch
+
+name_to_pv "$CAMNAME" "$hutch"
 
 if [ $MAINSCREEN -gt 0 ]; then
     echo 'try to get the main screen for: ' $CAMNAME
-    echo 'start the main screen for camera base PV: ' $CAMPVFULL
-    cmdName=`caget -St $CAMPVFULL:LAUNCH_EDM`
-    echo calling edm main screen from: $cmdName
+    echo 'start the main screen for camera base PV: ' "$CAMPVFULL"
+    cmdName=$(caget -St "$CAMPVFULL":LAUNCH_EDM)
+    echo calling edm main screen from: "$cmdName"
     $cmdName
     exit
 fi
 
 if [ $REBOOT -gt 0 ]; then
     echo 'reboot IOC for camera: ' $CAMNAME
-    edmcmdName=`caget -St $CAMPVFULL:LAUNCH_EDM`
-    IOCPV=`grep 'export IOC_PV' $edmcmdName | awk '{print $2 "\n" }' | sed s/IOC_PV=/''/g`
-    echo 'restart IOC last started on: ' `caget -t $IOCPV:STARTTOD`
-    caput $IOCPV:SYSRESET 1
+    edmcmdName=$(caget -St "$CAMPVFULL":LAUNCH_EDM)
+    IOCPV=$(grep 'export IOC_PV' "$edmcmdName" | awk '{print $2 "\n" }' | sed s/IOC_PV=/''/g)
+    echo 'restart IOC last started on: ' "$(caget -t "$IOCPV":STARTTOD)"
+    caput "$IOCPV":SYSRESET 1
     exit
 fi
 
 if [ $ENABLE -gt 0 ]; then 
     echo "Enabling ${CAMNAME}"
-    IOC=$(iocfpv "${CAMPVFULL}")
-    $imgr "$IOC" --hutch "$hutch" --enable   
+    iocinfo
+    imgr "$ioc" --hutch "$iochutch" --enable   
     exit
 fi
 
 if [ $DISABLE -gt 0 ]; then
     echo "Disabling ${CAMNAME}"
-    IOC=$(iocfpv "${CAMPVFULL}")
-    $imgr "$IOC" --hutch "$hutch" --disable    
+    iocinfo
+    imgr "$ioc" --hutch "$iochutch" --disable    
     exit
 fi
 
-IS_ACQUIRING=`caget -t -n $CAMPVFULL:Acquire_RBV`
-if isNum $IS_ACQUIRING; then
-    if [ $IS_ACQUIRING -eq 0 ]; then
+IS_ACQUIRING=$(caget -t -n "$CAMPVFULL":Acquire_RBV)
+if isNum "$IS_ACQUIRING"; then
+    if [ "$IS_ACQUIRING" -eq 0 ]; then
 	echo 'start acquiring for camera ' $CAMNAME
-	caput -n $CAMPVFULL:Acquire 1
+	caput -n "$CAMPVFULL":Acquire 1
     fi
 else
     echo 'cannot check Acquiring PV, try to open camera viewer anyways....'
 fi
 
-if [ $WAIT -gt 0 ]; then
-    if [ $RATE -gt 0 ]; then
-	echo $EXE --camerapv $CAMPVFULL --instrument $hutch --pvlist $PVLIST --idle $WAIT --rate $RATE&
-	$EXE --camerapv $CAMPVFULL --instrument $hutch --pvlist $PVLIST --idle $WAIT --rate $RATE&
+if [ "$WAIT" -gt 0 ]; then
+    if [ "$RATE" -gt 0 ]; then
+	echo "$EXE" --camerapv "$CAMPVFULL" --instrument "$hutch" --pvlist "$PVLIST" --idle "$WAIT" --rate "$RATE"&
+	"$EXE" --camerapv "$CAMPVFULL" --instrument "$hutch" --pvlist "$PVLIST" --idle "$WAIT" --rate "$RATE"&
     else
-	echo $EXE --camerapv $CAMPVFULL --instrument $hutch --pvlist $PVLIST --idle $WAIT&
-	$EXE --camerapv $CAMPVFULL --instrument  $hutch --pvlist $PVLIST --idle $WAIT&
+	echo "$EXE" --camerapv "$CAMPVFULL" --instrument "$hutch" --pvlist "$PVLIST" --idle "$WAIT"&
+	"$EXE" --camerapv "$CAMPVFULL" --instrument  "$hutch" --pvlist "$PVLIST" --idle "$WAIT"&
     fi
 else
-    if [ $RATE -gt 0 ]; then
-	echo $EXE --camerapv $CAMPVFULL --instrument $hutch --pvlist $PVLIST --rate $RATE&
-	$EXE --camerapv $CAMPVFULL --instrument  $hutch --pvlist $PVLIST --rate $RATE&
+    if [ "$RATE" -gt 0 ]; then
+	echo "$EXE" --camerapv "$CAMPVFULL" --instrument "$hutch" --pvlist "$PVLIST" --rate "$RATE"&
+	"$EXE" --camerapv "$CAMPVFULL" --instrument  "$hutch" --pvlist "$PVLIST" --rate "$RATE"&
     else
-	echo $EXE --camerapv $CAMPVFULL --instrument $hutch --pvlist $PVLIST &
-	$EXE --camerapv $CAMPVFULL --instrument  $hutch --pvlist $PVLIST &
+	echo "$EXE" --camerapv "$CAMPVFULL" --instrument "$hutch" --pvlist "$PVLIST" &
+	"$EXE" --camerapv "$CAMPVFULL" --instrument  "$hutch" --pvlist "$PVLIST" &
     fi
 fi
