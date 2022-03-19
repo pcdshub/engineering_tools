@@ -148,6 +148,7 @@ usage: $0 options
 start the viewer for controls cameras
 
 OPTIONS:
+
 -c|--cam <cam name> : camera name as in camera list or gige #
 -m|--main           : bring up the edm screen
 -r|--reboot         : reboot the IOC
@@ -157,6 +158,7 @@ OPTIONS:
 -H|--hutch <hutch>  : use a specific hutches camviewer config file
 -e|--enable         : enable camera ioc
 -d|--disable        : disable camera ioc
+
 EOF
 }
 
@@ -164,7 +166,9 @@ if [[ ($1 == "--help") || ($1 == "-h") ]]; then
 	usage
 	exit 0
 fi
-  
+
+
+
 
 LIST=0
 CAMNUM=0
@@ -177,11 +181,15 @@ DISABLE=0
 MAINSCREEN=0
 
 
-OPTIONS=$(getopt -o lmredc:w:u:H: --long list,main,reboot,enable,disable,cam:,wait:,rate:,hutch: -- "$@")
+OPTIONS=$(getopt -o lmredc:w:u:H: --long list,main,reboot,enable,disable,cam:,wait:,rate:,hutch: -n \'$0\' -- "$@")
 
 if [ $? != 0 ] ; then echo "Terminating..." >&2 ; exit 1 ; fi
 
+
+
 eval set -- "$OPTIONS"
+
+
 
 while [ : ]
 do
@@ -218,19 +226,27 @@ do
             DISABLE=1
             shift
             ;;
-        --) shift 
+        ?)
+            usage
+            break
+            ;;
+        --) 
+            shift 
             break 
             ;;
-        
-       
+        *)
+            echo "Internal Error"
+            exit 1
+            ;;
     esac
-done
 
+done
 
 if [ "$hutch" == ""  ]; then
     hutch=$(get_info --gethutch)
     if [ "$hutch" == unknown_hutch ]; then
         echo 'unknown hutch, specify using -H option'
+        usage
         exit 1
     fi
 fi
@@ -254,7 +270,8 @@ else
 fi
 
 
-if [ $CAMNUM -eq 0 ]; then
+
+if [ $CAMNUM -eq 0 ]; then 
     if [ "$hutch" = "tmo" ]; then
         CAMNAME=IM2K0
     elif [ "$hutch" = "rix" ]; then
@@ -270,6 +287,8 @@ if [ $CAMNUM -eq 0 ]; then
     else
 	CAMNAME=xcs_yag2
     fi
+
+
 fi
     
 export EPICS_CA_MAX_ARRAY_BYTES=24000000
