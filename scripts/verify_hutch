@@ -23,10 +23,7 @@ foundHutch=0
 hutch=${1,,}
 for i in "tmo" "txi" "rix" "xpp" "xcs" "mfx" "cxi" "mec" "ued" "ued" "det" "lfe" "kfe" "tst" "las" "hpl"; do
     if [[ $hutch == $i ]]; then
-        foundHutch=1
         exit 0
-    else
-        foundHutch=0
     fi
 done
 if [[ $foundHutch == 0 ]]; then
