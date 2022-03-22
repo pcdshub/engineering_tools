@@ -19,14 +19,11 @@ if [[ ($1 == "--help") || ($1 == "-h") ]]; then
    exit 0
 fi
 
-foundHutch=0
 hutch=${1,,}
 for i in "tmo" "txi" "rix" "xpp" "xcs" "mfx" "cxi" "mec" "ued" "ued" "det" "lfe" "kfe" "tst" "las" "hpl"; do
     if [[ $hutch == $i ]]; then
         exit 0
     fi
 done
-if [[ $foundHutch == 0 ]]; then
-    exit 1
-fi
+exit 1
 
