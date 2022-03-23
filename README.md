@@ -569,7 +569,7 @@ Takes a run with dark images for use in pedestals, and posts to the elog.
     <td>verify-hutch</td>
     <td>
 usage: verify-hutch <hutch>
-Verifies that the passed argument is a known hutch, exit 0 for true or exit for false.
+Script that returns confirmation if the passed hutch is a known/existing hutch, success indicated by exit 0, failure by exit 1
     </td>
 </tr>
 
