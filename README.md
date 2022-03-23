@@ -566,6 +566,13 @@ Takes a run with dark images for use in pedestals, and posts to the elog.
 </tr> 
 
 <tr>
+    <td>verify_hutch</td>
+    <td>
+usage: Verifies that the passed argument is a known hutch, exit 0 for true or exit for false.
+    </td>
+</tr>
+
+<tr>
     <td>wheredaq</td>
     <td>
 Discover what host is running the daq in the current hutch, if any.
