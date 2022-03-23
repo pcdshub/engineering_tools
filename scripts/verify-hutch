@@ -1,0 +1,28 @@
+#!/bin/bash
+
+usage(){
+cat << EOF
+usage: ${BASH_SOURCE[0]} <hutch>
+
+Script that returns confirmation if the passed hutch is a known/existing hutch, success indicated by exit 0, failure by exit 1. 
+
+EOF
+}
+
+if [ $# -lt 1 ]; then
+   echo 'need arguments: input hutch name' >&2
+   usage
+   exit 1
+fi
+if [[ ($1 == "--help") || ($1 == "-h") ]]; then
+   usage
+   exit 0
+fi
+
+hutch=${1,,}
+for i in "tmo" "txi" "rix" "xpp" "xcs" "mfx" "cxi" "mec" "ued" "ued" "det" "lfe" "kfe" "tst" "las" "hpl"; do
+    if [[ $hutch == $i ]]; then
+        exit 0
+    fi
+done
+exit 1

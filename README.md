@@ -566,9 +566,10 @@ Takes a run with dark images for use in pedestals, and posts to the elog.
 </tr> 
 
 <tr>
-    <td>verify_hutch</td>
+    <td>verify-hutch</td>
     <td>
-usage: Verifies that the passed argument is a known hutch, exit 0 for true or exit for false.
+usage: verify-hutch <hutch>
+Verifies that the passed argument is a known hutch, exit 0 for true or exit for false.
     </td>
 </tr>
 
