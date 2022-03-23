@@ -24,7 +24,6 @@ function iocdir {
    if [[ ! $iocpath =~ ^/.* ]]; then
       iocpath=/reg/g/pcds/epics/"${iocpath}"
    fi
-
 }
 
 function ioccfg {
@@ -37,7 +36,6 @@ function ioccfg {
          exit 1
       fi
    fi
-
 }
 
 usage(){
@@ -132,8 +130,15 @@ elif [ "$CMD" == "telnet" ]; then
    echo "$HOST":"$PORT"
    telnet "$HOST" "$PORT"
 
+#################################################################
 
 elif [ "$CMD" == "host" ]; then
    iocinfo "$NAME"
    echo "$INFO" | sed -n "s/^.*host: '\(\S*\)'.*$/\1/p"
+
+#################################################################
+
+else
+   echo "Command not supported: $CMD" >&2
+   exit 1
 fi
