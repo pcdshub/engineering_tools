@@ -4,7 +4,7 @@ usage(){
 cat << EOF
 usage: ${BASH_SOURCE[0]} <hutch>
 
-Script that returns confirmation if the passed hutch is a known/existing hutch, success indicated by exit 0, failure by exit 1. 
+Verifies that the passed argument is a known hutch, exit 0 for success and exit 1 for failure. 
 
 EOF
 }
