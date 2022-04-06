@@ -10,8 +10,8 @@ function iocfpv {
       ioccount=$(echo $ioc | wc -w)
       echo "$1 is found in $ioccount places"
       if [[ $ioccount -gt 1 ]]; then
-         echo "Which ioc do care about here?"
-         printf '%s\n' "$ioc"
+         echo "Which ioc do care about here? (press enter to exit)" >&2
+         printf '%s\n' "$ioc" >&2
          read -r chosenioc
          if [[ -z "$chosenioc" ]]; then
             echo "No ioc chosen. Exiting..."
@@ -44,7 +44,7 @@ function ioccfg {
    if [ -z  "$iocfile" ]; then
       iocfile=$(find "${iocpath}" -path "*$1/st.cmd")
       if [ -z "$iocfile" ]; then
-         echo -e "No files found for that ioc" >&2
+         echo "No files found for that $1" >&2
          exit 1
       fi
    fi
@@ -165,7 +165,7 @@ elif [[ $NAME == *'-'* || $NAME == *'_'* || ^[[:alnum:]]+$ ]]; then
       fi 
 
 elif [[ ! $NAME == *'-'* ]]; then #We are assuming that ioc names contain a dash in them
-   echo "${NAME} does not match the format for PVs or IOC names. Exiting..."
+   echo "${NAME} does not match the format for PVs or IOC names. Exiting..." >&2
    exit 1
    
 fi
@@ -187,7 +187,7 @@ elif [ "$CMD" ==  "dir" ]; then
 elif [ "$CMD" == "cddir" ]; then
    iocdir "$NAME"
    if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
-      echo "Script is not being sourced. Start with 'source $0' before calling script with this option."
+      echo "Script is not being sourced. Start with 'source $0' before calling script with this option." >&2
       exit 1
    fi
    cd "${iocpath}" 
@@ -218,7 +218,7 @@ elif [ "$CMD" == "data" ]; then
    if [ -d "$iocdatapath" ]; then
       echo "${iocdatapath}"
    else
-      echo "$iocdatapath could not be found. Exiting..."
+      echo "$iocdatapath could not be found. Exiting..." >&2
    fi
 
 #################################################################
@@ -228,7 +228,7 @@ elif [ "$CMD" == "autosave" ]; then
    if [ -f "$autosavefile" ]; then
       less "$autosavefile"
    else
-      echo "Recent autosave file could not be found."
+      echo "Recent autosave file could not be found." >&2
    fi
 
 #################################################################
@@ -238,7 +238,7 @@ elif [ "$CMD" == "archive" ]; then
    if [ -f "$archivefile" ]; then
       less "$archivefile"
    else
-      echo "Archive file could not be found."
+      echo "Archive file could not be found." >&2
    fi
 
 #################################################################
@@ -248,7 +248,7 @@ elif [ "$CMD" == "log" ]; then
    if [ -f "$logfile" ]; then
       less "$logfile"
    else
-      echo "Recent log file could not be found."
+      echo "Recent log file could not be found." >&2
    fi
 
 #################################################################
