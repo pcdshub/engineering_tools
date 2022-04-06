@@ -158,7 +158,7 @@ OPTIONS:
 -H|--hutch <hutch>  : use a specific hutches camviewer config file
 -e|--enable         : enable camera ioc
 -d|--disable        : disable camera ioc
--a|--aquire         : start acquiring images
+-a|--acquire         : start acquiring images
 -s|--stop           : stop acquiring images
 EOF
 }
