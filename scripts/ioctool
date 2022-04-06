@@ -88,7 +88,7 @@ function camname_to_pv {
    fi
    # OK, ambiguous.  Look for a complete match on the second word.
    if [ "$(grep -E -i "$CAMNAME\$" < $tmp | wc -l)" -eq 1 ]; then
-      campv=$(grep -E -i " $CAMNAME\$" < $tmp | awk '{print $1;}')
+      campv=$(grep -E -i "$CAMNAME\$" < $tmp | awk '{print $1;}')
       rm -f $tmp
       return
    fi
