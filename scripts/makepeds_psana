@@ -74,37 +74,65 @@ check_running_jobs()
 
 xtcav_dark()
 {
-    if [[ $RUNLOCAL == 1 ]]; then
-	python /reg/g/xpp/scripts/xtcav_calibration.py --run $RUN --exp $EXP --dark $ARG
-    else
-	echo bsub -q $QUEUE -o $WORKDIR/xtcav_dark_RUN${RUN}_%J.out python /reg/g/xpp/scripts/xtcav_calibration.py --run $RUN --exp $EXP --dark $ARG
-	SUBMISSION=`bsub -q $QUEUE -o $WORKDIR/xtcav_dark_RUN${RUN}_%J.out python /reg/g/xpp/scripts/xtcav_calibration.py --run $RUN --exp $EXP --dark $ARG`
-	echo $SUBMISSION
-	JOBNR=`echo $SUBMISSION | awk {'print $2'} | sed s/'<'//g | sed s/'>'//g`
-	echo "sleep 20 sec, then start to peek on XTcav dark job "$JOBNR
-	sleep 15
-	bpeek -f $JOBNR
+   if [[ $RUNLOCAL == 1 ]]; then
+       xtcavDark $EXP $RUN 
+   else
+       tmpScript=$(mktemp -p $WORKDIR xtcav_dark_tmpXXXXX.sh)
+       chmod u+x $tmpScript
+       printf '#!/bin/bash\nsource /cds/sw/ds/ana/conda2/manage/bin/psconda.sh\n' > $tmpScript
+       CMD=`echo xtcavDark $EXP $RUN` 
+       printf '%s\n' "${CMD}" >> $tmpScript
+       xtcavCmd=`echo sbatch --exclusive -p $QUEUE -o $WORKDIR/xtcav_${EXP}_Run${RUN}_%J.out $tmpScript`
+       echo 'run in queue: ' $xtcavCmd
+       SUBMISSION=`$xtcavCmd`
+        echo $SUBMISSION
+       THISJOBID=`echo $SUBMISSION | awk {'print $4'}`
+       JOBIDS+=( $THISJOBID )
+       NJOBS=$(($NJOBS+1))
+
+       sleep 10
+       echo Running $NJOBS jobs are PIDS: ${JOBIDS[@]}
+       until check_running_jobs; do
+           echo 'Checking again in 10s'
+           sleep 10
+       done
+       echo 'All jobs finished'	
    fi
    exit
 }
 
 xtcav_lasOff()
 {
-    if [[ $NUMBUNCH != 1 ]] ; then
-	ARG=$ARG' -b '$NUMBUNCH
-    fi
-    if [[ $RUNLOCAL == 1 ]]; then
-	mpirun --mca btl ^openib python /reg/g/xpp/scripts/xtcav_calibration.py --run $RUN --exp $EXP --lasoff $ARG
-	#python /reg/g/xpp/scripts/xtcav_calibration.py --run $RUN --exp $EXP --lasoff $ARG
-	exit
-    fi
-    SUBMISSION=`bsub -n 8 -q $QUEUE -o $WORKDIR/xtcav_laseroff_RUN${RUN}_%J.out mpirun --mca btl ^openib python /reg/g/xpp/scripts/xtcav_calibration.py --run $RUN --exp $EXP --lasoff $ARG`
-    echo $SUBMISSION
-    JOBNR=`echo $SUBMISSION | awk {'print $2'} | sed s/'<'//g | sed s/'>'//g`
-    echo "start to peek on lasoff job"$JOBNR
-    sleep 10
-    bpeek -f $JOBNR
-    exit
+    #the new XTCAV code does not seem to care about bumber of bunches in the lasing off data.
+    #if [[ $NUMBUNCH != 1 ]] ; then
+    #	ARG=$ARG' -b '$NUMBUNCH
+    #fi
+
+   if [[ $RUNLOCAL == 1 ]]; then
+       xtcavLasingOff $EXP $RUN 
+   else
+       tmpScript=$(mktemp -p $WORKDIR xtcav_dark_tmpXXXXX.sh)
+       chmod u+x $tmpScript
+       printf '#!/bin/bash\nsource /cds/sw/ds/ana/conda2/manage/bin/psconda.sh\n' > $tmpScript
+       CMD=`echo xtcavLasingOff $EXP $RUN` 
+       printf '%s\n' "${CMD}" >> $tmpScript
+       xtcavCmd=`echo sbatch --exclusive -p $QUEUE -o $WORKDIR/xtcav_${EXP}_Run${RUN}_%J.out $tmpScript`
+       echo 'run in queue: ' $xtcavCmd
+       SUBMISSION=`$xtcavCmd`
+        echo $SUBMISSION
+       THISJOBID=`echo $SUBMISSION | awk {'print $4'}`
+       JOBIDS+=( $THISJOBID )
+       NJOBS=$(($NJOBS+1))
+
+       sleep 20
+       echo Running $NJOBS jobs are PIDS: ${JOBIDS[@]}
+       until check_running_jobs; do
+           echo 'Checking again in 10s'
+           sleep 10
+       done
+       echo 'All jobs finished'	
+   fi
+   exit
 }
 
 
