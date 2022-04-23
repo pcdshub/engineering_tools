@@ -264,14 +264,18 @@ if [ $# -ge 1 ]; then
     exit 1
 fi
 
-
-if [ "$hutch" == ""  ]; then
-    hutch=$(get_info --gethutch)
+hutch_check() {
+hutch=$(get_info --gethutch)
     if [ "$hutch" == unknown_hutch ]; then
         echo 'unknown hutch, specify using -H option'
+        echo 'To start/stop acquisition, you must be on the hutch specific machine'
         usage
         exit 1
     fi
+}    
+
+if [ "$hutch" == ""  ]; then
+    hutch_check
 fi
 
 
@@ -353,18 +357,22 @@ if [ $DISABLE -gt 0 ]; then
 fi
 
 if [ $ACQUIRE -gt 0 ]; then
-    echo "Acquiring images for ${CAMNAME}"
+    hutch_check
+    echo "Starting acquisition for ${CAMNAME}"
     caput -n "$CAMPVFULL":Acquire 1
     exit
 fi
 
 if [ $STOP -gt 0 ]; then
+    hutch_check
+    echo "Stopping acquisition for ${CAMNAME}" 
     caput -n "$CAMPVFULL":Acquire 0
-    echo "Done acquiring images for ${CAMNAME}"
     exit
 fi
 
 if [ $CYCLE -gt 0 ]; then
+    hutch_check
+    echo "Stopping and starting acquisition for ${CAMNAME}"
     caput -n "$CAMPVFULL":Acquire 0
     sleep 2
     caput -n "$CAMPVFULL":Acquire 1
