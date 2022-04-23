@@ -80,7 +80,7 @@ usage: /reg/g/pcds/engineering_tools/latest/scripts/camViewer options<br/>
     -d|--disable disable camera ioc<br/>
     -a|--acquire start acquiring images<br/>
     -s|--stop stop acquiring images<br/>
-    --cycle cycles acquisition (first stops then starts) <br/>
+    -n|--cycle cycles acquisition (first stops then starts) <br/>
     </td>
 </tr>
 
