@@ -160,7 +160,7 @@ OPTIONS:
 -d|--disable        : disable camera ioc
 -a|--acquire        : start acquiring images
 -s|--stop           : stop acquiring images
---cycle             : cycles acquistion (first stops then starts)
+-n|--cycle          : cycles acquistion (first stops then starts)
 EOF
 }
 
@@ -185,7 +185,7 @@ ACQUIRE=0
 STOP=0
 CYCLE=0
 
-OPTIONS=$(getopt -o lmredasc:w:u:H: --long list,main,reboot,enable,disable,acquire,stop,cycle,cam:,wait:,rate:,hutch: -n \'$0\' -- "$@")
+OPTIONS=$(getopt -o lmredasnc:w:u:H: --long list,main,reboot,enable,disable,acquire,stop,cycle,cam:,wait:,rate:,hutch: -n \'$0\' -- "$@")
 
 if [ $? != 0 ] ; then echo "Terminating..." >&2 ; exit 1 ; fi
 
@@ -238,7 +238,7 @@ do
             STOP=1
             shift
             ;;
-        --cycle)
+        -n|--cycle)
             CYCLE=1
             shift
             ;;
