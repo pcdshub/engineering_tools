@@ -14,6 +14,12 @@ Make a pedestal file for offline use
 OPTIONS:
         -u|--user        
                user (needs to be able to log into the psananeh/feh)
+        -p|--post <text>  
+               add <text> to elog post
+        -F|--ffb
+                run job on FFB system
+        -t|--test
+                do not deploy pedestals (epix10k only)
         -r|--run         
                runnumber for pedestal
         -e|--experiment <expname> 
@@ -28,14 +34,8 @@ OPTIONS:
                make pedestals for Uxi/Icarus detector
         -j|--jungfrau3     
                make pedestals for Jungfrau - 3 run version(default only cspad/EPIX detectors)
-        -p|--post <text>  
-               add <text> to elog post
         -q|--queue <queue>
                queue for batch submisson
-        -g|--geometry <expname>
-                deploy geometry <needs experiment to take geometry from>
-        -F|--ffb
-                run job on FFB system
         -D|--xtcav_dark
                 dark run for XTCAV
         -L|--xtcav_lasingoff
@@ -58,8 +58,6 @@ OPTIONS:
                 start calibman. -r 0: show all darks, -r n: show runs (n-25) - 25
         -d|--calibdir
                 give path for alternative calibdir
-        -t|--test
-                do not deploy pedestals (epix10k only)
         -b|--nbunch
                 number of bunches for the laseroff XTCAV calculations
 EOF

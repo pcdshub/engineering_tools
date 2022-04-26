@@ -23,8 +23,6 @@ OPTIONS:
                make pedestals for Jungfrau - 3 run version(default only cspad/EPIX detectors)
         -q|--queue <queue>
                queue for batch submisson
-        -g|--geometry <expname>
-                deploy geometry <needs experiment to take geometry from>
         -D|--xtcav_dark
                 dark run for XTCAV
         -L|--xtcav_lasingoff
@@ -135,6 +133,45 @@ xtcav_lasOff()
    exit
 }
 
+# Arg: DETECTOR class.  This could be a comma-separated list, but we're 
+# matching it in the config file as a string.
+get_config()
+{
+    awk 'BEGIN{n=0;}/'$1' \{/{n=1;next;}/\}/{n=0;next;}{if(n)print;}' <$CFGFILE >/tmp/script.$$
+    source /tmp/script.$$
+    rm /tmp/script.$$
+    #overwrite if argument is passed
+    if [ $MYNOISESIGMIN -ne -1 ]; then
+	NOISESIGMIN=$MYNOISESIGMIN
+    fi
+    if [ $MYNOISESIGMAX -ne -1 ]; then
+	NOISESIGMAX=$MYNOISESIGMAX
+    fi
+    if [ $MYADUMIN -ne -1 ]; then
+	ADUMIN=$MYADUMIN
+    fi
+    if [ $MYADUMAX -ne -1 ]; then
+	ADUMAX=$MYADUMAX
+    fi
+}
+
+# Args: Detector ID, Additional command to run.
+deploy_geometry()
+{
+    GEOPATH=`calibfile path -e $EXP -s $1 -t geometry | awk '{print $2;}' -`
+    GEODIR=`dirname $GEOPATH`
+    if [ ! -d $GEODIR ]; then
+	echo No geometry file found, deploying.
+	geometry_deploy_constants -e $EXP -r $RUN -d $1 -D -c ./calib
+	echo Geometry deployed.
+	if [ "$2" != "" ]; then
+	    echo Running additional command:
+	    echo $2
+	    $2
+	    echo Command complete.
+	fi
+    fi
+}
 
 POSITIONAL=()
 while [[ $# -gt 0 ]]
@@ -211,11 +248,6 @@ do
 			;;
                 -v|--validity_start)
 		        VALSTR=("$2")
-			shift
-			shift
-			;;
-                -g|--geometry)
-		        GEOMETRY=("$2")
 			shift
 			shift
 			;;
@@ -297,6 +329,8 @@ if [ $EXP == 'xxx' ]; then
 else
     HUTCH=${EXP:0:3}
 fi
+
+CFGFILE=/reg/g/pcds/pyps/config/$HUTCH/makepeds.cfg
 
 if [[ $EXP == 'xxx' ]]; then
     printf "Please enter an experiment name HERE: \n"; read EXP
@@ -580,26 +614,8 @@ HAVE_JUNGFRAU=`grep Jungfrau /tmp/detnames_$EXP\_$CREATE_TIME | wc -l`
 if [[ ( $HAVE_JUNGFRAU -ge 1 ) && ( $WANT_ZYLA -eq 0 ) && ( $WANT_OPAL -eq 0 ) && ( $WANT_RAYONIX -eq 0 )  && ( $WANT_UXI -eq 0 ) ]]; then
     
     DETNAMES=`grep Jungfrau /tmp/detnames_$EXP\_$CREATE_TIME | awk  'BEGIN { FS = "|"}; {print $1}' | paste -d " " -s`
-    if [ -v GEOMETRY ]; then
-	GEODIR=`echo /reg/d/psdm/${GEOMETRY:0:3}/$GEOMETRY/calib/`
-	SUBDIR=`ls $GEODIR | grep Jungfrau | grep -v workdir`
-	DORGNAME=`ls $GEODIR/$SUBDIR | grep Jungfrau `
-	for JUNGFRAU in $DETNAMES; do
-	    DNAME=`grep $JUNGFRAU /tmp/detnames_$EXP\_$CREATE_TIME | awk  'BEGIN { FS = "|"}; {print $1}' | xargs`
-	    #get the latest geometry file deployed
-            ORGFILE='0-end.data'
-            if test -f $GEODIR/$SUBDIR/$DORGNAME/geometry/HISTORY; then
-    	        ORGFILE=`tail -n 1 $GEODIR/$SUBDIR/$DORGNAME/geometry/HISTORY | awk {'print$1'} | sed s/'file:'//`
-	    fi
-	    CMD=`echo calibfile deploy -t geometry -e $EXP -r 0-end -s $DNAME -f $GEODIR/$SUBDIR/$DORGNAME/geometry/$ORGFILE`
-            echo $CMD
-	    $CMD
-	    
-            echo 'Deploy the other jungfrau gain constants'
-	    jungfrau_gain_constants -d exp=${EXP}:run=${RUN} -D
-	    echo 'Deployed the other jungfrau gain constants'
- 	done
-	exit
+    for JUNGFRAU in $DETNAMES; do
+	deploy_geometry $JUNGFRAU "jungfrau_gain_constants -d exp=${EXP}:run=${RUN} -D"
     fi
 
     DSNAME='exp='$EXP':run='$RUN':smd:stream=0-79'
@@ -620,23 +636,8 @@ if [[ ( $HAVE_JUNGFRAU -ge 1 ) && ( $WANT_ZYLA -eq 0 ) && ( $WANT_OPAL -eq 0 ) &
     fi
 
     #specify parameters for status bits in pixel mask
-    ADUMAX=16000
-    ADUMIN=1
-    NOISESIGMAX=16000
-    NOISESIGMIN=0.001
-    #NOISESIGMIN=1 #my script cannot deal with floats
-    if [[ $MYNOISESIGMIN -ne -1 ]]; then
-	      NOISESIGMIN=$MYNOISESIGMIN
-    fi
-    if [[ $MYNOISESIGMAX -ne -1 ]]; then
-	      NOISESIGMAX=$MYNOISESIGMAX
-    fi
-    if [[ $MYADUMIN -ne -1 ]]; then
-	      ADUMIN=$MYADUMIN
-    fi
-    if [[ $MYADUMAX -ne -1 ]]; then
-	      ADUMAX=$MYADUMAX
-    fi
+    get_config "Jungfrau"
+
     JFARG=$JFARG' --int_lo='$ADUMIN' --int_hi='$ADUMAX' --rms_lo='$NOISESIGMIN' --rms_hi='$NOISESIGMAX
 
     echo -------------------- START JUNGFRAU PEDESTALS at $(date +"%T") ----------------------------
@@ -740,41 +741,8 @@ if [[ ( $HAVE_EPIX10K -ge 1 ) && ( $WANT_ZYLA -eq 0 ) && ( $WANT_OPAL -eq 0 ) &&
         JOBIDS=()
         NJOBS=0
     fi
-    if [ -v GEOMETRY ]; then
-	echo 'doing geometry.....DEBUG'
-	GEODIR=`echo /reg/d/psdm/${GEOMETRY:0:3}/$GEOMETRY/calib/`
-	for EPIX10K in $DETNAMES; do
-	    if ! [[ $EPIX10K =~ "2M" ]]; then
-		continue
-	    fi
-   	    SUBDIR=`ls $GEODIR | grep Epix10ka2M`
-	    DNAME=`grep $EPIX10K /tmp/detnames_$EXP\_$CREATE_TIME | awk  'BEGIN { FS = "|"}; {print $1}' | xargs`
-	    #get the latest geometry file deployed
-            ORGFILE='0-end.data'
-            if test -f $GEODIR$SUBDIR/$DNAME/geometry/HISTORY; then
-    	        ORGFILE=`tail -n 1 $GEODIR/$SUBDIR/$DNAME/geometry/HISTORY | awk {'print$1'} | sed s/'file:'//`
-	    fi
-	    CMD=`echo calibfile deploy -t geometry -e $EXP -r 0-end -s $DNAME -f $GEODIR$SUBDIR/$DNAME/geometry/$ORGFILE`
-            echo $CMD
-	    $CMD
-	done
-	#this is so ugly - a second loop for the quad.
-	for EPIX10K in $DETNAMES; do
-	    if ! [[ $EPIX10K =~ "Quad" ]]; then
-		continue
-	    fi
-   	    SUBDIR=`ls $GEODIR | grep Epix10kaQuad`
-	    DNAME=`grep $EPIX10K /tmp/detnames_$EXP\_$CREATE_TIME | awk  'BEGIN { FS = "|"}; {print $1}' | xargs`
-	    #get the latest geometry file deployed
-            ORGFILE='0-end.data'
-            if test -f $GEODIR$SUBDIR/$DNAME/geometry/HISTORY; then
-    	        ORGFILE=`tail -n 1 $GEODIR/$SUBDIR/$DNAME/geometry/HISTORY | awk {'print$1'} | sed s/'file:'//`
-	    fi
-	    CMD=`echo calibfile deploy -t geometry -e $EXP -r 0-end -s $DNAME -f $GEODIR$SUBDIR/$DNAME/geometry/$ORGFILE`
-            echo $CMD
-	    $CMD
-	done
-	exit
+    for EPIX10K in $DETNAMES; do
+	deploy_geometry $EPIX10K
     fi
     for EPIX10K in $DETNAMES; do
         echo Epix10ka name for $EXP is: $EPIX10K
@@ -890,7 +858,11 @@ DETS=''
 #always make pedestals if detectors are present in data
 if [[ ( $HAVE_CSPAD -ge 1) ]]; then
     DETS=`echo $DETS ' CSPAD,CSPAD2x2'`
-	
+
+    DETNAMES=`grep Cspad /tmp/detnames_$EXP\_$CREATE_TIME | awk  'BEGIN { FS = "|"}; {print $1}' | paste -d " " -s`
+    for CSPAD in $DETNAMES; do
+	deploy_geometry $CSPAD
+    done
 fi
 if [[ ( $HAVE_EPIX -ge 1) ]]; then
     DETS=`echo $DETS ' Epix100a'`
@@ -939,11 +911,11 @@ if [[ ( $HAVE_RAYONIX -ge 1 ) && ( $WANT_RAYONIX -ge 1 ) ]]; then
 	DETS='Rayonix'	
     fi
     ARG=$ARG' --zeropeds'
-    #not sure if deplotgeo needs -P -D....
-    if [ -v GEOMETRY ]; then
-	calibrun -r $RUN -e $EXP -d $DETS --deploygeo -P -D
-	exit
-    fi
+    
+    DETNAMES=`grep Rayonix /tmp/detnames_$EXP\_$CREATE_TIME | awk  'BEGIN { FS = "|"}; {print $1}' | paste -d " " -s`
+    for RAYONIX in $DETNAMES; do
+	deploy_geometry $RAYONIX
+    done
 fi
 
 if [[ ( $DETS == '' ) ]]; then
@@ -962,55 +934,7 @@ echo 'for the following detectors: ' $DETS
 for MYDET in $DETS; do
     #set thresholds for the detector in question
     #ADU minimum, maximum
-    if [[ ( $MYDET == 'Zyla') ]]; then
-	ADUMAX=10000
-	ADUMIN=1        
-	NOISESIGMAX=100  
-	NOISESIGMIN=1
-    elif [[ ( $MYDET == 'iStar') ]]; then
-	ADUMAX=10000
-	ADUMIN=1        
-	NOISESIGMAX=100  
-	NOISESIGMIN=1
-    elif [[ ( $MYDET == 'Opal') ]]; then
-	ADUMAX=10000
-	ADUMIN=1        
-	NOISESIGMAX=100  
-	NOISESIGMIN=1
-    elif [[ ( $MYDET == 'uxi') ]]; then
-	ADUMAX=30000
-	ADUMIN=0
-	NOISESIGMAX=1000
-	NOISESIGMIN=0
-    elif [[ ( $MYDET == 'Rayonix') ]]; then
-	ADUMAX=16000
-	ADUMIN=1        
-	NOISESIGMAX=10000  
-	NOISESIGMIN=0
-    elif [[ ( $MYDET == 'Epix100a') ]]; then
-	ADUMAX=10000
-	ADUMIN=10
-	NOISESIGMAX=7. #too loose? But this has been used.
-	NOISESIGMIN=1.5
-    else #CsPad cuts.
-	ADUMAX=10000
-	ADUMIN=10
-	NOISESIGMAX=7.
-	NOISESIGMIN=2.
-    fi
-    #overwrite if argument is passed
-    if [ $MYNOISESIGMIN -ne -1 ]; then
-	NOISESIGMIN=$MYNOISESIGMIN
-    fi
-    if [ $MYNOISESIGMAX -ne -1 ]; then
-	NOISESIGMAX=$MYNOISESIGMAX
-    fi
-    if [ $MYADUMIN -ne -1 ]; then
-	ADUMIN=$MYADUMIN
-    fi
-    if [ $MYADUMAX -ne -1 ]; then
-	ADUMAX=$MYADUMAX
-    fi
+    get_config $MYDET
 
     LOCARG=$ARG' --thr_int_min '$ADUMIN' --thr_int_max '$ADUMAX' --thr_rms_min '$NOISESIGMIN' --thr_rms '$NOISESIGMAX
     #this was likely to work with runs where the zyla rate was < readout rate....
