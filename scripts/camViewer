@@ -264,20 +264,26 @@ if [ $# -ge 1 ]; then
     exit 1
 fi
 
+VH="/reg/g/pcds/epics-dev/spencera/engineering_tools/scripts/verify-hutch"
+
 hutch_check() {
-hutch=$(get_info --gethutch)
-    if [ "$hutch" == unknown_hutch ]; then
-        echo 'unknown hutch, specify using -H option'
-        echo 'To start/stop acquisition, you must be on the hutch specific machine'
-        usage
-        exit 1
+    hutch=$1
+    if [[ "$hutch" == "" ]]; then
+        hutch=$(get_info --gethutch)
+        if [[ "$hutch" == unknown_hutch ]]; then
+            if [[ $NUDGE -gt 0 ]]; then
+                echo 'To start/stop acquisition, you must be on the hutch specific machine'
+                exit 1 
+            else
+                echo 'unknown hutch, specify using -H option'
+                usage
+                exit 1
+            fi
+        fi
     fi
 }    
 
-if [ "$hutch" == ""  ]; then
-    hutch_check
-fi
-
+hutch_check $hutch
 
 
 EXE="/reg/g/pcds/pyps/config/$hutch/camviewer/run_viewer.csh"
@@ -357,21 +363,21 @@ if [ $DISABLE -gt 0 ]; then
 fi
 
 if [ $ACQUIRE -gt 0 ]; then
-    hutch_check
+    #hutch_check
     echo "Starting acquisition for ${CAMNAME}"
     caput -n "$CAMPVFULL":Acquire 1
     exit
 fi
 
 if [ $STOP -gt 0 ]; then
-    hutch_check
+    #hutch_check
     echo "Stopping acquisition for ${CAMNAME}" 
     caput -n "$CAMPVFULL":Acquire 0
     exit
 fi
 
-if [ $CYCLE -gt 0 ]; then
-    hutch_check
+if [ $NUDGE -gt 0 ]; then
+    #hutch_check
     echo "Stopping and starting acquisition for ${CAMNAME}"
     caput -n "$CAMPVFULL":Acquire 0
     sleep 2
