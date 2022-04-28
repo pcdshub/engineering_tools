@@ -143,7 +143,7 @@ iocinfo() {
 usage()
 {
 cat << EOF
-usage: $0 options
+usage: $0 [options]
 
 start the viewer for controls cameras
 
@@ -160,7 +160,7 @@ OPTIONS:
 -d|--disable        : disable camera ioc
 -a|--acquire        : start acquiring images
 -s|--stop           : stop acquiring images
--n|--cycle          : cycles acquistion (first stops then starts)
+-n|--nudge          : cycles acquistion (first stops then starts)
 EOF
 }
 
@@ -183,9 +183,9 @@ DISABLE=0
 MAINSCREEN=0
 ACQUIRE=0
 STOP=0
-CYCLE=0
+NUDGE=0
 
-OPTIONS=$(getopt -o lmredasnc:w:u:H: --long list,main,reboot,enable,disable,acquire,stop,cycle,cam:,wait:,rate:,hutch: -n \'$0\' -- "$@")
+OPTIONS=$(getopt -o lmredasnc:w:u:H: --long list,main,reboot,enable,disable,acquire,stop,nudge,cam:,wait:,rate:,hutch: -n \'$0\' -- "$@")
 
 if [ $? != 0 ] ; then echo "Terminating..." >&2 ; exit 1 ; fi
 
@@ -238,8 +238,8 @@ do
             STOP=1
             shift
             ;;
-        -n|--cycle)
-            CYCLE=1
+        -n|--nudge)
+            NUDGE=1
             shift
             ;;
         ?)
