@@ -162,7 +162,7 @@ deploy_geometry()
     GEODIR=`dirname $GEOPATH`
     if [ ! -d $GEODIR ]; then
 	echo No geometry file found, deploying.
-	geometry_deploy_constants -e $EXP -r $RUN -d $1 -D -c ./calib
+	geometry_deploy_constants -e $EXP -r $RUN -d $1 -D
 	echo Geometry deployed.
 	if [ "$2" != "" ]; then
 	    echo Running additional command:
