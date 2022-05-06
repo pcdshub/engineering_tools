@@ -616,7 +616,7 @@ if [[ ( $HAVE_JUNGFRAU -ge 1 ) && ( $WANT_ZYLA -eq 0 ) && ( $WANT_OPAL -eq 0 ) &
     DETNAMES=`grep Jungfrau /tmp/detnames_$EXP\_$CREATE_TIME | awk  'BEGIN { FS = "|"}; {print $1}' | paste -d " " -s`
     for JUNGFRAU in $DETNAMES; do
 	deploy_geometry $JUNGFRAU "jungfrau_gain_constants -d exp=${EXP}:run=${RUN} -D"
-    fi
+    done
 
     DSNAME='exp='$EXP':run='$RUN':smd:stream=0-79'
     if [ -v OLD_JUNGFRAU ]; then
@@ -743,7 +743,7 @@ if [[ ( $HAVE_EPIX10K -ge 1 ) && ( $WANT_ZYLA -eq 0 ) && ( $WANT_OPAL -eq 0 ) &&
     fi
     for EPIX10K in $DETNAMES; do
 	deploy_geometry $EPIX10K
-    fi
+    done
     for EPIX10K in $DETNAMES; do
         echo Epix10ka name for $EXP is: $EPIX10K
         ##run all at once - do not use
