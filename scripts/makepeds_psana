@@ -534,6 +534,7 @@ if [[ $LCLS2 -gt 0 ]]; then
                 done
 	        ALLJOBIDS=("${JOBIDS[@]}")
             fi
+   	    NFAILEDJOBS=0
             if [[ $RUNLOCAL != 1 ]]; then
 	        echo 'Wait for 1 minute before checking jobs:'
                 sleep 60
@@ -546,7 +547,6 @@ if [[ $LCLS2 -gt 0 ]]; then
                 # and now check that none of the jobs have existed with an error code:
                 # currently, the epix10k jobs print DONE at the end. 
                 # Second check necessary as jobs can fail without printing an exit code to the logfile
-   	        NFAILEDJOBS=0
 	        for JOBID in "${ALLJOBIDS[@]}"; do
 	            echo "Checking job $JOBID"
 	            if grep -q 'exit code' "$WORKDIR"/*"$JOBID".out; then
@@ -630,7 +630,14 @@ if [[ ( $HAVE_JUNGFRAU -ge 1 ) && ( $WANT_ZYLA -eq 0 ) && ( $WANT_OPAL -eq 0 ) &
     fi   
 
     #default arguments.
-    JFARG=' -d '$DSNAME' -n '$NUMEVT
+    JFARG=$JFARG' -d '$DSNAME
+    if [ $CALIBCODE -ne 0 ]; then
+        if [ $NUMEVT -le 1000 ]; then
+	    NUMEVT=100000
+        fi
+        JFARG=$JFARG' -c '$CALIBCODE
+    fi
+    JFARG=$JFARG' -n '$NUMEVT
     if [[ $DEPLOY == 1 ]]; then
         JFARG=$JFARG' -u '
     fi
@@ -654,8 +661,10 @@ if [[ ( $HAVE_JUNGFRAU -ge 1 ) && ( $WANT_ZYLA -eq 0 ) && ( $WANT_OPAL -eq 0 ) &
    	for calibcycle in {0..2}; do
             if [ -v OLD_JUNGFRAU ]; then
                 CMDC=$CMD
-            else
+            elif  [ $CALIBCODE -eq 0 ]; then
                 CMDC=$CMD' --stepnum '$calibcycle
+	    else
+                CMDC=$CMD
 	    fi
             if [[ $RUNLOCAL != 1 ]]; then
                 tmpScript=$(mktemp -p $WORKDIR jungfrau_multi_tmpXXXXX.sh)
@@ -677,10 +686,14 @@ if [[ ( $HAVE_JUNGFRAU -ge 1 ) && ( $WANT_ZYLA -eq 0 ) && ( $WANT_OPAL -eq 0 ) &
             if [ -v OLD_JUNGFRAU ]; then
        	        break
 	    fi
+            if [ $CALIBCODE -ne 0 ]; then
+		break
+	    fi
         done
 	ALLJOBIDS=("${JOBIDS[@]}")
     done
 
+    NFAILEDJOBS=0
     if [[ $RUNLOCAL != 1 ]]; then
 	echo 'Wait for 1/2 minutes before checking jobs:'
         sleep 30
@@ -691,7 +704,6 @@ if [[ ( $HAVE_JUNGFRAU -ge 1 ) && ( $WANT_ZYLA -eq 0 ) && ( $WANT_OPAL -eq 0 ) &
             done
         echo 'All jobs finished'
 	# and now check that none of the jobs have existed with an error code:
-	NFAILEDJOBS=0
 	for JOBID in "${ALLJOBIDS[@]}"; do
 	    echo "Checking job $JOBID"
 	    if grep -q 'exit code' "$WORKDIR"/*"$JOBID".out; then
@@ -725,7 +737,7 @@ if [[ ( $HAVE_JUNGFRAU -ge 1 ) && ( $WANT_ZYLA -eq 0 ) && ( $WANT_OPAL -eq 0 ) &
         done
     fi
 
-    ls -l /reg/d/psdm/"$EXP:0:3}"/"$EXP"/calib/J*/*/pedestals/*"$RUN"*data
+    ls -l /reg/d/psdm/"${EXP:0:3}"/"$EXP"/calib/J*/*/pedestals/*"$RUN"*data
     echo "-------------------- END JUNGFRAU PEDESTALS at $(date +'%T') ----------------------------"
 fi
 
