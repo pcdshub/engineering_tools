@@ -8,7 +8,7 @@ um6Ipm='um6_ipm um6_dio'
 dg2Ipm='hfxdg2_ipm'
 xcsIpm='decmono ipmmono diomono pim3 pim3m ipm3 pim4 ipm4 snddio ipm5 pim5 ipmgonLD ipmlamLD'
 xppIpm='diomono decmono ipm2 ipm3 pim3 diodeU'
-cxiIpm='pim3m dg2ipm dg3ipm sc1ipm'
+cxiIpm='pim3m dg2ipm dg3ipm usrdio'
 mfxIpm='dg1ipm dg2ipm usrdio'
 mecIpm='ipm1 ipm2 ipm3 hxm_pim pim2 pim3 tc1_imb1 usr_imb1 usr_imb2 las_imb1 las_imb2'
 lfeIpm='um6_ipm hfxdg2_ipm pim3m'
@@ -131,11 +131,11 @@ elif [ $hutch == 'cxi' ]; then
 	BASE='CXI:DG3:BMMON'
 	EVR='CXI:DG3:BMMON:EVR'
 	WAVE8='dg3ipm'
-    elif [ $1 == 'sc1ipm' ]; then
+    elif [ $1 == 'usrdio' ]; then
         IOC="IOC:CXI:SC1:BMMON"
         BASE='CXI:SC1:BMMON'
         EVR='CXI:SC1:BMMON:EVR'
-        WAVE8='sc1ipm'
+        WAVE8='usrdio'
     fi
 elif [ $hutch == 'mfx' ]; then
     if [ $1 == 'dg1ipm' ]; then
