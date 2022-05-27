@@ -18,8 +18,8 @@ if [[ ($1 == "--help") || ($1 == "-h") ]]; then
 	exit 0
 fi
 
-USER=`whoami`
-ARGSTR='-Z '
+USER=$(whoami)
+ARGSTR='-Z'
 
 while getopts "u:e:ntR" OPTION
 do
@@ -40,13 +40,13 @@ do
 	esac
 done
 
-if [ -z $EXP ]; then
-    echo getting the experiment $EXP
-    HUTCH=`get_hutch_name`
-    if [ $HUTCH == 'unknown_hutch' ]; then
-	printf 'please enter an experiment name '; read $EXP
+if [ -z "$EXP" ]; then
+    echo getting the experiment "$EXP"
+    HUTCH=$(get_hutch_name)
+    if [ "$HUTCH" == 'unknown_hutch' ]; then
+	read -p 'please enter an experiment name: ' EXP
     else
-	EXP=`get_curr_exp`
+	EXP=$(get_curr_exp)
     fi
 fi
 HUTCH=${EXP:0:3}
@@ -56,7 +56,7 @@ if [ -z $REBIN ]; then
 fi
 
 jet_hutches="xpp xcs mec"
-if [ `echo $jet_hutches | grep $HUTCH | wc -l` -gt 0 ]; then
+if echo "$jet_hutches" | grep -iw "$HUTCH" > /dev/null; then
     ARGSTR=$ARGSTR' -C mono,jet'
 fi
 
@@ -66,16 +66,16 @@ if [[ $HUTCH == 'cxi' ]]; then
 fi
 
 #get executable
-ami_base_path=`grep ami_base_path /reg/g/pcds/dist/pds/$HUTCH/scripts/$CNF | grep -v '#' | grep -v 'ami_base_path+' | tail -n 1 | awk 'BEGIN { FS = "=" }; { print $2}' | sed s/\'//g`
-ami_path=$ami_base_path`grep ami_path /reg/g/pcds/dist/pds/$HUTCH/scripts/$CNF | grep -v 'ami_path+' | grep -v '#' | awk 'BEGIN { FS = "= " }; { print $2}' | sed s/ami_base_path+//g | sed s/\'//g`
+ami_base_path=$(grep ami_base_path /reg/g/pcds/dist/pds/"$HUTCH"/scripts/"$CNF" | grep -v '#' | grep -v 'ami_base_path+' | tail -n 1 | awk 'BEGIN { FS = "=" }; { print $2}' | sed s/\'//g)
+ami_path=$ami_base_path$(grep ami_path /reg/g/pcds/dist/pds/"$HUTCH"/scripts/"$CNF" | grep -v 'ami_path+' | grep -v '#' | awk 'BEGIN { FS = "= " }; { print $2}' | sed s/ami_base_path+//g | sed s/\'//g)
 
 if [ ! -f  $ami_path/offline_ami ]; then
-    echo 'could not find offline_ami executable in $ami_path'
+    echo "could not find offline_ami executable in ""$ami_path"
     exit
 fi
 
 #plugin_path & plugin string.
-pp=`grep plugin_path /reg/g/pcds/dist/pds/$HUTCH/scripts/$CNF | grep ami_base | grep -v '#' | awk 'BEGIN { FS = "= " }; { print $2}' | sed s/ami_base_path+//g | sed s/\'//g`
+pp=$(grep plugin_path /reg/g/pcds/dist/pds/"$HUTCH"/scripts/"$CNF" | grep ami_base | grep -v '#' | awk 'BEGIN { FS = "= " }; { print $2}' | sed s/ami_base_path+//g | sed s/\'//g)
 plugin_path=$ami_base_path$pp
 plugin_str=$plugin_path'/libtimetooldbd.so'
 
@@ -85,55 +85,45 @@ fi
 #ARGSTR=$ARGSTR -X /reg/neh/operator/$HUTCH\opr/experiments
 
 #check hostname - different path for recorder node.
-if [ ${HOSTNAME:0:5} == 'psana' ]; then
-    XTCDIR=/reg/d/psdm/$HUTCH/$EXP/xtc
-    HAVE_RUNS=`find $XTCDIR/*r* | wc -l `
-    if [ $HAVE_RUNS == 0 ]; then
-	echo 'did not find any xtc files in /reg/d/psdm/'$HUTCH'/'$EXP', will exit'
+if [ "${HOSTNAME:0:5}" == 'psana' ]; then
+    XTCDIR=/reg/d/psdm/$HUTCH/$EXP/xtc/
+    HAVE_RUNS=$(find "$XTCDIR"/*r* | wc -l)
+    if [ "$HAVE_RUNS" == 0 ]; then
+	echo 'did not find any xtc files in /reg/d/psdm/'"$HUTCH"'/'"$EXP"', will exit'
 	exit
     fi 
-elif [ ${HOSTNAME:0:5} == 'drp' ]; then
-    XTCDIR=/cds/data/drpsrcf/$HUTCH/$EXP/xtc
-    HAVE_RUNS=`find $XTCDIR/*r* | wc -l `
-    if [ $HAVE_RUNS == 0 ]; then
-	echo 'did not find any xtc files in /cds/data/drpsrcf/'$HUTCH'/'$EXP', will exit'
+elif [ "${HOSTNAME:0:3}" == 'drp' ]; then
+    XTCDIR=/cds/data/drpsrcf/$HUTCH/$EXP/xtc/
+    HAVE_RUNS=$(find "$XTCDIR"/*r* | wc -l)
+    if [ "$HAVE_RUNS" == 0 ]; then
+	echo 'did not find any xtc files in /cds/data/drpsrcf/'"$HUTCH"'/'"$EXP"', will exit'
 	exit
     fi 
-elif  [ ${HOSTNAME:8:3} == 'rec' ]; then
-    #EXPID=`get_info --setExp $EXP --experimentNumber`
+elif  [ "${HOSTNAME:8:3}" == 'rec' ]; then
     XTCDIR=/u2/REC/daq/xtc/
-elif  [ ${HOSTNAME:8:3} == 'dss' ]; then
-    EXPID=`get_info --setExp $EXP --experimentNumber`
-    XTCDIR=/u2/pcds/pds/$HUTCH/e$EXPID    
+elif  [ "${HOSTNAME:8:3}" == 'dss' ]; then
+    EXPID=$(get_info --setExp "$EXP" --experimentNumber)
+    XTCDIR=/u2/pcds/pds/"$HUTCH"/e"$EXPID"/  
 else
     echo 'Please ssh to a psana, recorder or dss node to see data'
     exit
 fi
 
 #change to temporary directory where we'll need the favorites file (&maybe
-if [ ! -d /tmp/ami_offline_$USER ] ; then
-    mkdir /tmp/ami_offline_$USER
+if [ ! -d /tmp/ami_offline_"$USER" ] ; then
+    mkdir /tmp/ami_offline_"$USER"
 fi
 
-ln -sf /reg/neh/operator/$HUTCHopr/.ami_favorites ~/.
-##not sure this is necessry anymore....
-#if [ x$TTINFDIR != 'x' ]; then
-#    pwd
-#    echo 'will use the timetool plugin w/ '$TTINF' as input file'
-#    echo LD_LIBRAY_PATH: $LD_LIBRARY_PATH
-#    cp $TTINFDIR/timetool.input ~/.
-#    cp $TTINFDIR/timetool.ref.* ~/.
-#else
-#    rm timetool.input
-#fi
+ln -sf /reg/neh/operator/"$HUTCH"opr/.ami_favorites ~/.
 
 #not sure this is necessary either.
 source /reg/g/pcds/setup/pathmunge.sh
-ldpathmunge /reg/g/pcds/dist/pds/$HUTCH/ami-current/build/ami/lib/x86_64-linux-opt
+ldpathmunge /reg/g/pcds/dist/pds/"$HUTCH"/ami-current/build/ami/lib/x86_64-linux-opt
 
-LD_LIBRARY_PATH=/reg/g/pcds/dist/pds/$HUTCH/current/build/pds/lib/x86_64-linux/:/reg/g/pcds/dist/pds/xpp/current/build/pdsdata/lib/x86_64-linux/:/reg/g/pcds/dist/pds/xpp/current/build/pdsalg/lib/x86_64-linux/:/reg/g/pcds/dist/pds/xpp/current/build/pdsapp/lib/x86_64-linux/:$LD_LIBRARY_PATH
+LD_LIBRARY_PATH=/reg/g/pcds/dist/pds/"$HUTCH"/current/build/pds/lib/x86_64-linux/:/reg/g/pcds/dist/pds/xpp/current/build/pdsdata/lib/x86_64-linux/:/reg/g/pcds/dist/pds/xpp/current/build/pdsalg/lib/x86_64-linux/:/reg/g/pcds/dist/pds/xpp/current/build/pdsapp/lib/x86_64-linux/:$LD_LIBRARY_PATH
 
+#ARGSTR='-p '$XTCDIR $ARGSTR
 echo '----------------------------------------------'
-echo $ami_path/offline_ami -p $XTCDIR  $ARGSTR
+echo "$ami_path"/offline_ami $ARGSTR -p $XTCDIR 
 echo '----------------------------------------------'
-$ami_path/offline_ami -p $XTCDIR $ARGSTR
+$ami_path/offline_ami $ARGSTR -p $XTCDIR 
