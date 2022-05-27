@@ -23,7 +23,7 @@ $DAQ_RELEASE/tools/scanning/take_pedestals -p $station -r
 
 elogMessage="DARK"
 source pcds_conda
-export PYTHONPATH=/reg/g/pcds/pyps/apps/hutch-python/common/dev/elog:${PYTHONPATH}
+#export PYTHONPATH=/reg/g/pcds/pyps/apps/hutch-python/common/dev/elog:${PYTHONPATH}
 PYCMD=LogBookPost.py
 
 EXP=`get_curr_exp`
