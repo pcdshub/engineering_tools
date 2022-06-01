@@ -13,24 +13,31 @@ if [[ ($1 == "--help") || ($1 == "-h") ]]; then
 	exit 0
 fi
 
-HUTCH=`get_info --gethutch`
+HUTCH=$(get_info --gethutch)
 CNFEXT=.cnf
-PLATFORM=0
-if [ $HOSTNAME == 'cxi-monitor' ]; then
-    PLATFORM=1
-elif [ $HUTCH == 'rix' ]; then
-    PLATFORM=2
+if [ "$HOSTNAME" == 'cxi-daq' ]; then
+    CNFEXT=_0.cnf
+elif [ "$HOSTNAME" == 'cxi-monitor' ]; then
+    CNFEXT=_1.cnf
 fi
 
-if [[ ! -f /reg/g/pcds/dist/pds/$HUTCH/scripts/p$PLATFORM.cnf.running ]]; then
-    if [ $HOSTNAME == 'cxi-daq' ]; then
-	echo 'Main DAQ cxi_0 is not running on '$HOSTNAME
-    elif [ $HOSTNAME == 'cxi-monitor' ]; then
-	echo 'Secondary DAQ cxi_1 is not running on '$HOSTNAME
+if [[ ($1 == "--dss") || ($1 == "-d") ]]; then
+    CNFFILE=dss.cnf
+else
+    CNFFILE=$HUTCH$CNFEXT
+fi
+
+PLATFORM=$(grep 'if not platform' /reg/g/pcds/dist/pds/"$HUTCH"/scripts/"$CNFFILE" | awk '{print $NF}' | sed s/\'//g)
+
+if [[ ! -f /reg/g/pcds/dist/pds/"$HUTCH"/scripts/p"$PLATFORM".cnf.running ]]; then
+    if [ "$HOSTNAME" == 'cxi-daq' ]; then
+	echo 'Main DAQ cxi_0 is not running on '"$HOSTNAME"
+    elif [ "$HOSTNAME" == 'cxi-monitor' ]; then
+	echo 'Secondary DAQ cxi_1 is not running on '"$HOSTNAME"
     else
-	echo 'DAQ is not running in '$HUTCH
+	echo 'DAQ is not running in '"$HUTCH"
     fi
 else
-    DAQ_HOST=`grep "'HOST'" /reg/g/pcds/dist/pds/$HUTCH/scripts/p$PLATFORM.cnf.running | awk {'print $3'} | sed s/\'//g`
-    echo 'DAQ is running on '$DAQ_HOST
+    DAQ_HOST=$(grep "'HOST'" /reg/g/pcds/dist/pds/"$HUTCH"/scripts/p"$PLATFORM".cnf.running | awk {'print $3'} | sed s/\'//g)
+    echo 'DAQ is running on '"$DAQ_HOST"
 fi
