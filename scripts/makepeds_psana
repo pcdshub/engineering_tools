@@ -423,7 +423,7 @@ fi
 
 if [ $CALIBCODE -ne 0 ]; then
     if [ $NUMEVT -le 1000 ]; then
-	NUMEVT=10000
+	NUMEVT=1000000
     fi
     ARG=$ARG' -f '$CALIBCODE
 fi
@@ -632,14 +632,11 @@ if [[ ( $HAVE_JUNGFRAU -ge 1 ) && ( $WANT_ZYLA -eq 0 ) && ( $WANT_OPAL -eq 0 ) &
     #default arguments.
     JFARG=$JFARG' -d '$DSNAME
     if [ $CALIBCODE -ne 0 ]; then
-        if [ $NUMEVT -le 1000 ]; then
-	    NUMEVT=100000
-        fi
-        JFARG=$JFARG' -c '$CALIBCODE
+        JFARG=$JFARG' -c '$CALIBCODE' --evstep '$NUMEVT
     fi
-    JFARG=$JFARG' -n '$NUMEVT
+    JFARG=$JFARG' --events '$NUMEVT
     if [[ $DEPLOY == 1 ]]; then
-        JFARG=$JFARG' -u '
+        JFARG=$JFARG' --upload '
     fi
 
     #specify parameters for status bits in pixel mask
@@ -680,7 +677,7 @@ if [[ ( $HAVE_JUNGFRAU -ge 1 ) && ( $WANT_ZYLA -eq 0 ) && ( $WANT_OPAL -eq 0 ) &
                 JOBIDS+=( "$THISJOBID" )
                 NJOBS=$((NJOBS+1))
 	    else
-                echo "$cmd"C
+                echo "$CMDC"
                 $CMDC
             fi
             if [ -v OLD_JUNGFRAU ]; then
