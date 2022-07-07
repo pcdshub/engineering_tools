@@ -173,6 +173,20 @@ deploy_geometry()
     fi
 }
 
+# Args: Detector ID, Additional command to run.
+deploy_gain()
+{
+    GAINPATH=$(calibfile path -e "$EXP" -s "$1" -t pixel_gain | awk '{print $2;}' -)
+    GAINDIR=$(dirname "$GAINPATH")
+    if [ ! -d "$GAINDIR" ]; then
+	echo No gain file file found, deploying.
+	echo Calling: deploy_constants -e "$EXP" -r "$RUN" -d "$1" -C gain -D
+	deploy_constants -e "$EXP" -r "$RUN" -d "$1" -C gain -D
+	echo Gain file deployed.
+    fi
+}
+
+
 POSITIONAL=()
 while [[ $# -gt 0 ]]
 do
@@ -873,8 +887,17 @@ if [[ ( $HAVE_CSPAD -ge 1) ]]; then
 	deploy_geometry "$CSPAD"
     done
 fi
+
 if [[ ( $HAVE_EPIX -ge 1) ]]; then
     DETS="$DETS Epix100a"
+
+    DETNAMES=$(grep Epix100a /tmp/detnames_"$EXP"_"$CREATE_TIME" | awk  'BEGIN { FS = "|"}; {print $1}' | paste -d " " -s)
+    for EPIX100 in $DETNAMES; do
+        echo DEBUG call gain for "$EPIX100"
+	deploy_gain "$EPIX100"
+    done
+    #DEBUG.....
+    exit
 fi
 
 #add Zyla only on request
