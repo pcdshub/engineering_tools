@@ -161,7 +161,7 @@ FFB=${FFB:=0}
 QUEUE=${QUEUE:='xxx'}
 INTERACTIVE=${INTERACTIVE:=0}
 
-FFBQUEUES=('anaq' 'ffbh1q' 'ffbl1q' 'ffbh2q' 'ffbl2q' 'ffbh3q' 'ffbl3q')
+FFBQUEUES=('anaq' 'ffbh1q' 'ffbl1q' 'ffbh2q' 'ffbl2q' 'ffbh3q' 'ffbl3q' 'ffbh4q' 'ffbl4q')
 ANAQUEUES=('psanagpuq' 'psanaq' 'psfehq' 'psfehprioq' 'psfehhiprioq')
 for FFBQUEUE in ${FFBQUEUES[@]}; do
     if [[ $QUEUE == $FFBQUEUE ]]; then 

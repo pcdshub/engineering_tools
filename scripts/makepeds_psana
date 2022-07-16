@@ -628,9 +628,6 @@ HAVE_JUNGFRAU=$(grep -c Jungfrau /tmp/detnames_"$EXP"_"$CREATE_TIME")
 if [[ ( $HAVE_JUNGFRAU -ge 1 ) && ( $WANT_ZYLA -eq 0 ) && ( $WANT_OPAL -eq 0 ) && ( $WANT_RAYONIX -eq 0 )  && ( $WANT_UXI -eq 0 ) ]]; then
     
     DETNAMES=$(grep Jungfrau /tmp/detnames_"$EXP"_"$CREATE_TIME" | awk  'BEGIN { FS = "|"}; {print $1}' | paste -d " " -s)
-    for JUNGFRAU in $DETNAMES; do
-	deploy_geometry "$JUNGFRAU" "jungfrau_gain_constants -d exp=${EXP}:run=${RUN} -D"
-    done
 
     DSNAME='exp='$EXP':run='$RUN':smd:stream=0-79'
     if [ -v OLD_JUNGFRAU ]; then
@@ -748,6 +745,10 @@ if [[ ( $HAVE_JUNGFRAU -ge 1 ) && ( $WANT_ZYLA -eq 0 ) && ( $WANT_OPAL -eq 0 ) &
         done
     fi
 
+    for JUNGFRAU in $DETNAMES; do
+        deploy_geometry "$JUNGFRAU" "jungfrau_gain_constants -d exp=${EXP}:run=${RUN} -D"
+    done
+
     ls -l /reg/d/psdm/"${EXP:0:3}"/"$EXP"/calib/J*/*/pedestals/*"$RUN"*data
     echo "-------------------- END JUNGFRAU PEDESTALS at $(date +'%T') ----------------------------"
 fi
@@ -764,9 +765,7 @@ if [[ ( $HAVE_EPIX10K -ge 1 ) && ( $WANT_ZYLA -eq 0 ) && ( $WANT_OPAL -eq 0 ) &&
         JOBIDS=()
         NJOBS=0
     fi
-    for EPIX10K in $DETNAMES; do
-	deploy_geometry "$EPIX10K"
-    done
+    
     for EPIX10K in $DETNAMES; do
         echo "Epix10ka name for $EXP is: $EPIX10K"
         ##run all at once - do not use
@@ -833,7 +832,6 @@ if [[ ( $HAVE_EPIX10K -ge 1 ) && ( $WANT_ZYLA -eq 0 ) && ( $WANT_OPAL -eq 0 ) &&
 	    fi
 	fi
 
-
         for EPIX10K in $DETNAMES; do
             CMD="epix10ka_deploy_constants -D -d $EPIX10K -e $EXP -r $RUN -L INFO"
 	    echo 'setting validity....' $VALSTR
@@ -858,7 +856,11 @@ if [[ ( $HAVE_EPIX10K -ge 1 ) && ( $WANT_ZYLA -eq 0 ) && ( $WANT_OPAL -eq 0 ) &&
 	    sacct -j "$JOBIDSTR" --format=JobID,AveCPU,AveVMSize,CPUTime,Start,End,Elapsed
         fi
     fi
-    echo "-------------------- STOP EPIX10K PEDESTALS at $(date +'%T') ----------------------------"
+
+    for EPIX10K in $DETNAMES; do
+	    deploy_geometry "$EPIX10K"
+    done
+    echo "-------------------- END EPIX10K PEDESTALS at $(date +'%T') ----------------------------"
 fi
 
 ###########
