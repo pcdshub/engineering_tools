@@ -2,52 +2,52 @@
 
 names_from_name(){
     if [ $# -lt 1 ]; then
-	echo 'need arguments: input IP'
+        echo 'need arguments: input IP'
     fi
     INNAME=$1
     if [[ $INNAME == *'-ipmi'* ]]; then
-	INNAME=$(echo "$INNAME" | sed s/-ipmi//g)
+        INNAME=$(echo "$INNAME" | sed s/-ipmi//g)
     elif [[ $INNAME == *'-fez'* ]]; then
-	INNAME=$(echo "$INNAME" | sed s/-fez//g)
+        INNAME=$(echo "$INNAME" | sed s/-fez//g)
     elif [[ $INNAME == *'-ana'* ]]; then
-	INNAME=$(echo "$INNAME" | sed s/-ana//g)
+        INNAME=$(echo "$INNAME" | sed s/-ana//g)
     fi
     CDSNAME=$INNAME
     CDSIP=$(netconfig search "$CDSNAME" | grep IP: | awk '{print $2}')
     if [[ $(netconfig search "$NAME"-ipmi --brief | wc -w) -gt 0 ]]; then
-	NAMEIPMI=$INNAME-ipmi
+        NAMEIPMI=$INNAME-ipmi
     fi
     if [[ $(netconfig search "$NAME"-fez --brief | wc -w) -gt 0 ]]; then
-	FEZNAME=$INNAME-fez
-	FEZIP=$(netconfig search "$FEZNAME" | grep IP: | awk '{print $2}')
+        FEZNAME=$INNAME-fez
+        FEZIP=$(netconfig search "$FEZNAME" | grep IP: | awk '{print $2}')
     fi
 }
 
 host_from_PV(){
     if [[ $NAME == *':'* ]]  && [[ $HUTCH == 'unknown_hutch' ]]; then
-	echo 'Getting info for a host of a PV currently only works on the hutch networks'
-	exit
+        echo 'Getting info for a host of a PV currently only works on the hutch networks'
+        exit
     fi
     if [[ ${NAME:0:3} == "${HUTCH^^}" ]]; then
         HOST=$(cainfo "$NAME" | grep Host | awk '{print $2}' | awk 'BEGIN { FS = ":"}; {print $1}' | sed s/'.pcdsn'/''/g)
-	if [[ $HOST == *'disconnected'* ]]; then
-	    echo PV "$NAME" is disconnected
-	    exit
-	fi
-	echo PV "$NAME" is hosted on server "$HOST"
-	NAME=$HOST
-	DEV=$HOST
+        if [[ $HOST == *'disconnected'* ]]; then
+            echo PV "$NAME" is disconnected
+            exit
+        fi
+        echo PV "$NAME" is hosted on server "$HOST"
+        NAME=$HOST
+        DEV=$HOST
     else
-	echo 'Getting info for a host of a PV currently only works on the hutch network (e.g. for MFX:xxx from the mfx network)'
-	exit
+        echo 'Getting info for a host of a PV currently only works on the hutch network (e.g. for MFX:xxx from the mfx network)'
+        exit
     fi
 }
 
 usage(){
 cat << EOF
-usage: $0 <servername> [command] 
+usage: $0 <servername> [command]
 
-Script to check status of servers & reboot/power cycle them using 
+Script to check status of servers & reboot/power cycle them using
 the psipmi command
 
 Default command is 'status', list of commands:
@@ -68,8 +68,8 @@ PATH=$PATH:$DIR
 HUTCH=$(get_hutch_name)
 for name in "tmo" "rix" "txi" "xpp" "xcs" "mfx" "cxi" "mec" "det"; do
     if [[ $DEV == *$name* ]]; then
-	HUTCH=$name
-	break
+        HUTCH=$name
+        break
     fi
 done
 
@@ -79,29 +79,29 @@ let HOST_HAS_FEZ-=1
 
 if [[ $# -lt 2 ]]; then
     if [[ $# -lt 1 ]]; then
-	usage
-	exit 1
+        usage
+        exit 1
         echo 'why here?'
     elif [[ ($1 == "--help") || ($1 == "-h") ]]; then
-	usage
-	exit 0
+        usage
+        exit 0
         echo 'why here?'
     else
-	CMD='status'
-	DEV=$1
+        CMD='status'
+        DEV=$1
     fi
 else
     if [[ $2 =~ ^(cycle|off|on|status|console|reset|expert) ]]; then
-	DEV=$1
-	CMD=$2
-    else
-	echo "serverStat: invalid option -- '$2'"
-	echo "Try $0 --help for more information."
-	exit 1
+        DEV=$1
+        CMD=$2
+        else
+        echo "serverStat: invalid option -- '$2'"
+        echo "Try $0 --help for more information."
+        exit 1
     fi
 fi
 NAME=$DEV
-  
+
 if [[ $NAME == *':'* ]]; then
     host_from_PV
 fi
@@ -128,41 +128,41 @@ fi
 
 if  [[ $NAME == *rec* ]]; then
     if [[ $CMD == "off" ]] || [[ $CMD == "cycle" ]]; then
-	echo "This is a recorder, better not to power cycle unless necessary, try to reset first. Quit? " "$NAME" "$CMD"; read ANSWER		
-	if [[ $ANSWER == 'y' ]] || [[ $ANSWER == 'Y' ]] || [[ $ANSWER == 'yes' ]]; then  
-	    printf 'quit now\n'
-	    exit
-	fi
-    fi    
+        echo "This is a recorder, better not to power cycle unless necessary, try to reset first. Quit? " "$NAME" "$CMD"; read ANSWER
+        if [[ $ANSWER == 'y' ]] || [[ $ANSWER == 'Y' ]] || [[ $ANSWER == 'yes' ]]; then
+            printf 'quit now\n'
+            exit
+        fi
+    fi
 fi
 
 #check if this is a DAQ device
 if [[ $ISSRV -lt 1 ]] && [[ $HUTCH != 'unknown_hutch' ]]; then
     if [[  $DEV == *'event'* ]]; then
-	DSSNODES=$(grep dss_nodes /reg/g/pcds/dist/pds/${HUTCH}/scripts/${HUTCH}.cnf | grep -v '#' | head -n1)
-	i=$((${#DEV}-1));NEV=$(echo "${DEV:$i:1}");AWKNUM=$(($NEV+4))
-	NAME=$(echo "$DSSNODES" | awk -v temp=$AWKNUM '{print $temp}'  |  sed s/,// | sed s/_/-/g | sed s/\'//g | sed s/-fez//g)	
+        DSSNODES=$(grep dss_nodes /reg/g/pcds/dist/pds/${HUTCH}/scripts/${HUTCH}.cnf | grep -v '#' | head -n1)
+        i=$((${#DEV}-1));NEV=$(echo "${DEV:$i:1}");AWKNUM=$(($NEV+4))
+        NAME=$(echo "$DSSNODES" | awk -v temp=$AWKNUM '{print $temp}'  |  sed s/,// | sed s/_/-/g | sed s/\'//g | sed s/-fez//g)
     else
-	NDEV=$(grep "$DEV" /reg/g/pcds/dist/pds/${HUTCH}/scripts/${HUTCH}.cnf | grep -v '#' | grep host | wc -l)
-	if [ "$NDEV" -eq 1 ]; then
-	    NAME=$(grep "$DEV" /reg/g/pcds/dist/pds/${HUTCH}/scripts/${HUTCH}.cnf | grep -v '#' | grep host | awk '{print $1}' | sed s/{host://g | sed s/,// | sed s/_/-/g | sed s/\'//g | sed s/-fez//g)
-	elif  [ "$NDEV" -eq 0 ]; then
-	    echo 'no device of this name found, exit'
-	    exit
-	else
-	    NAME=$(grep "$DEV'" /reg/g/pcds/dist/pds/${HUTCH}/scripts/${HUTCH}.cnf | grep -v '#' | grep host | awk '{print $1}' | sed s/{host://g | sed s/,// | sed s/_/-/g)
-	fi
+        NDEV=$(grep "$DEV" /reg/g/pcds/dist/pds/${HUTCH}/scripts/${HUTCH}.cnf | grep -v '#' | grep host | wc -l)
+        if [ "$NDEV" -eq 1 ]; then
+            NAME=$(grep "$DEV" /reg/g/pcds/dist/pds/${HUTCH}/scripts/${HUTCH}.cnf | grep -v '#' | grep host | awk '{print $1}' | sed s/{host://g | sed s/,// | sed s/_/-/g | sed s/\'//g | sed s/-fez//g)
+        elif  [ "$NDEV" -eq 0 ]; then
+            echo 'no device of this name found, exit'
+            exit
+        else
+            NAME=$(grep "$DEV'" /reg/g/pcds/dist/pds/${HUTCH}/scripts/${HUTCH}.cnf | grep -v '#' | grep host | awk '{print $1}' | sed s/{host://g | sed s/,// | sed s/_/-/g)
+        fi
     fi
     ISSRV=$(netconfig search "$NAME" | grep 'Found' | awk '{print $2}')
     if [[ $ISSRV -lt 1 ]]; then
-	#after this is done, move head of first way ot getting NAME
-	echo 'does not have ipmi, is not DAQ device.'
-	exit
+        #after this is done, move head of first way ot getting NAME
+        echo 'does not have ipmi, is not DAQ device.'
+        exit
     fi
 
     SRVIP=$(netconfig search "$NAME" | grep IP: | awk '{print $2}')
     #ips_from_ip $SRVIP
-    echo 'server for ' "$DEV" ' is: ' "$NAME" 
+    echo 'server for ' "$DEV" ' is: ' "$NAME"
 else
     SRVIP=$(netconfig search "$DEV" | grep IP: | awk '{print $2}')
     #ips_from_ip $SRVIP
@@ -197,99 +197,99 @@ elif [[ $CMD == "expert" ]]; then
     if [[ $? == 0 ]]; then
        echo "$NAME pings."
        CDS_ONLINE=1
-    else 
+    else
        echo "$NAME does not ping."
        CDS_ONLINE=0
     fi
     ping -w 2 "$NAME"-ipmi >/dev/null 2>&1
     if [[ $? == 0 ]]; then
        echo "$NAME-ipmi pings."
-    else 
+    else
        echo "$NAME-ipmi does not ping."
     fi
     ping -w 2 "$NAME"-fez >/dev/null 2>&1
     if [[ $? == 0 ]]; then
        echo "$NAME-fez pings."
-    else 
+    else
        echo "$NAME-fez does not ping."
     fi
     echo -e " "
     if [[ $CDS_ONLINE == 1 ]]; then
-	ssh -qT "$NAME" <<EOF
-	    source /reg/g/pcds/setup/pcds_shortcuts.sh
-	    export PATH=\$PATH:/sbin/:/usr/sbin
-	    echo -e "Red Hat Version:"
-	    echo -e "-------------------------------------------------"
-	    uname -r | cut -d '.' -f 6
-	    echo -e ""
-	    echo -e "SLAC PCI Hardware:"
-	    echo -e "-------------------------------------------------"
-	    lspci | grep SLAC
-	    echo -e ""
-	    echo -e "Network PCI Hardware:"
-	    echo -e "-------------------------------------------------"
-	    lspci | grep Ethernet
-	    echo -e ""
-	    echo -e "Leutron PCI Hardware:"
-	    echo -e "-------------------------------------------------"
-	    echo -e ""
-	    if [[ -e /opt/EDTpdv/pciload ]]; then
-	       echo -e "EDT Cards:"
-	       echo -e "-------------------------------------------------"
-	       /opt/EDTpdv/pciload
-	    fi
-	    echo -e ""
-	    echo -e "IOC Processes:"
-	    echo -e "-------------------------------------------------"
-	    show_epics_sioc
+        ssh -qT "$NAME" <<EOF
+            source /reg/g/pcds/setup/pcds_shortcuts.sh
+            export PATH=\$PATH:/sbin/:/usr/sbin
+            echo -e "Red Hat Version:"
+            echo -e "-------------------------------------------------"
+            uname -r | cut -d '.' -f 6
+            echo -e ""
+            echo -e "SLAC PCI Hardware:"
+            echo -e "-------------------------------------------------"
+            lspci | grep SLAC
+            echo -e ""
+            echo -e "Network PCI Hardware:"
+            echo -e "-------------------------------------------------"
+            lspci | grep Ethernet
+            echo -e ""
+            echo -e "Leutron PCI Hardware:"
+            echo -e "-------------------------------------------------"
+            echo -e ""
+            if [[ -e /opt/EDTpdv/pciload ]]; then
+               echo -e "EDT Cards:"
+               echo -e "-------------------------------------------------"
+               /opt/EDTpdv/pciload
+            fi
+            echo -e ""
+            echo -e "IOC Processes:"
+            echo -e "-------------------------------------------------"
+            show_epics_sioc
 EOF
     else
-	echo "$NAME is offline.  Skipping internal checks."
-	echo -e "-------------------------------------------------"
+        echo "$NAME is offline.  Skipping internal checks."
+        echo -e "-------------------------------------------------"
     fi
     echo -e ""
     echo -e "PCDS Drivers:"
     IOCSTARTUP=/reg/g/pcds/dist/pds/boot/$NAME
     if [[ -e $IOCSTARTUP ]]; then
-	echo "$IOCSTARTUP"
-	echo -e "-------------------------------------------------"
-	cat "$IOCSTARTUP"
+        echo "$IOCSTARTUP"
+        echo -e "-------------------------------------------------"
+        cat "$IOCSTARTUP"
     fi
     DAQSTARTUP=/reg/d/iocCommon/hosts/$NAME/startup.cmd
     if [[ -e $DAQSTARTUP ]]; then
-	echo -e "-------------------------------------------------"
-	cat "$DAQSTARTUP"
+        echo -e "-------------------------------------------------"
+        cat "$DAQSTARTUP"
     fi
 elif [[ $CMD == "status" ]]; then
     ISON=$(psipmi "$NAMEIPMI" power status)
     if [[ $ISON == *off* ]]; then
-	echo "$DEV" is powered off
-	exit
+        echo "$DEV" is powered off
+        exit
     elif [[ $ISON == *on* ]]; then
-	echo "$DEV" is powered on
+        echo "$DEV" is powered on
     else
-	echo Cannot connect to "$NAMEIPMI"
+        echo Cannot connect to "$NAMEIPMI"
     fi
 
     PNG=$(ping -c 1 "$SRVIP" | grep transmitted | awk '{print $4}')
     if [ "$FEZNAME" ]; then
-	if [[ $HOST_HAS_FEZ -ge 1 ]]; then
-	    PNGFEZ=$(ping -c 1 "$FEZNAME" | grep transmitted | awk '{print $4}')
-	    echo "$NAME" ' is a server with IP: ' "$CDSIP" ' (ping: ' "$PNG" '), ' "$FEZIP" ' (ping' "$PNGFEZ" ')'
-	    if [[ $(($PNG+$PNGFEZ)) -gt 1 ]]; then
-		echo 'cds&fez interfaces are up'
-	    fi
-	else
-	    echo "$NAME" ' is a server with IP: ' "$CDSIP" ' (ping: ' "$PNG" '), ' "$FEZIP" ' (cannot ping from machine without fez )'
-	    if [ "$PNG" -gt 0 ]; then
-		echo 'cds interface is up'
-	    fi	    
-	fi
+        if [[ $HOST_HAS_FEZ -ge 1 ]]; then
+            PNGFEZ=$(ping -c 1 "$FEZNAME" | grep transmitted | awk '{print $4}')
+            echo "$NAME" ' is a server with IP: ' "$CDSIP" ' (ping: ' "$PNG" '), ' "$FEZIP" ' (ping' "$PNGFEZ" ')'
+            if [[ $(($PNG+$PNGFEZ)) -gt 1 ]]; then
+                echo 'cds&fez interfaces are up'
+            fi
+        else
+            echo "$NAME" ' is a server with IP: ' "$CDSIP" ' (ping: ' "$PNG" '), ' "$FEZIP" ' (cannot ping from machine without fez )'
+            if [ "$PNG" -gt 0 ]; then
+                echo 'cds interface is up'
+            fi
+        fi
     else
-	echo "$DEV" ' is a server with IP: ' "$CDSIP" ' (ping: ' "$PNG" ')'
-	if [ "$PNG" -gt 0 ]; then
-	    echo 'cds interface is up'
-	fi
+        echo "$DEV" ' is a server with IP: ' "$CDSIP" ' (ping: ' "$PNG" ')'
+        if [ "$PNG" -gt 0 ]; then
+            echo 'cds interface is up'
+        fi
     fi
 else
     echo 'this should not happen'
