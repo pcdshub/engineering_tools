@@ -23,33 +23,6 @@ names_from_name(){
     fi
 }
 
-isCam(){
-    ISCAM=$(grep "$DEV" /reg/g/pcds/pyps/config/*/camviewer.cfg | grep -v '#' | wc -l)
-    if [ "$ISCAM" -gt 0 ]; then
-	ISGIGE=$(grep "$DEV" /reg/g/pcds/pyps/config/*/camviewer.cfg | grep -v '#' | grep GIGE | wc -l)
-	if [ "$ISGIGE" -gt 0 ]; then
-	    read -p 'This is a gige camera, start the maim edm screen? (y/n)'
-	    if [ "$REPLY" == "y" ]; then
-		gige -c "$DEV" -m 
-	    else
-		read -p 'Do you want to restart acqisition (y/n)'
-		if [ "$REPLY" == "y" ]; then
-		    gige -c "$DEV" -n
-		else
-		    read -p 'Do you want to reboot the IOC (y/n)'
-		    if [ "$REPLY" == "y" ]; then
-			gige -c "$DEV" -r
-		    fi
-		fi
-	    fi
-	    exit
-	else
-	    echo 'this is a non-gige camera, go to the IOC manager to reboot/check status'
-	    exit
-	fi
-    fi
-}
-
 host_from_PV(){
     if [[ $NAME == *':'* ]]  && [[ $HUTCH == 'unknown_hutch' ]]; then
 	echo 'Getting info for a host of a PV currently only works on the hutch networks'
@@ -174,9 +147,6 @@ if [[ $ISSRV -lt 1 ]] && [[ $HUTCH != 'unknown_hutch' ]]; then
 	if [ "$NDEV" -eq 1 ]; then
 	    NAME=$(grep "$DEV" /reg/g/pcds/dist/pds/${HUTCH}/scripts/${HUTCH}.cnf | grep -v '#' | grep host | awk '{print $1}' | sed s/{host://g | sed s/,// | sed s/_/-/g | sed s/\'//g | sed s/-fez//g)
 	elif  [ "$NDEV" -eq 0 ]; then
-	    #check if we have a camera, will exit if yes.
-	    isCam
-	    #was not a camera, will quit
 	    echo 'no device of this name found, exit'
 	    exit
 	else
