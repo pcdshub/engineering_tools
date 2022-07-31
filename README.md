@@ -99,7 +99,7 @@ usage: configdb_readxtc options<br/>
     <br/>
     OPTIONS:<br/>
     -u user (needs to be able to log into the psananeh/feh)<br/>
-    -e expnumber 
+    -e expnumber
     </td>
 </tr>
 
@@ -220,13 +220,6 @@ usage: get_lastRun options<br/>
     OPTIONS:<br/>
     -l add live status<br/>
     -i/H information for hutch (override autodetection)
-    </td>
-</tr>
-
-<tr>
-    <td>gige</td>
-    <td>
-        Deprecated; do not use.
     </td>
 </tr>
 
@@ -558,12 +551,12 @@ Stop the daq in the current hutch.
 </tr>
 
 <tr>
-    <td>takepeds</td> 
+    <td>takepeds</td>
     <td>
 usage: takepeds <br/>
 Takes a run with dark images for use in pedestals, and posts to the elog.
     </td>
-</tr> 
+</tr>
 
 <tr>
     <td>verify-hutch</td>
