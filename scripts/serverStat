@@ -269,18 +269,18 @@ elif [[ $CMD == "status" ]]; then
     if [ "$FEZNAME" ]; then
         if [[ $HOST_HAS_FEZ -ge 1 ]]; then
             PNGFEZ=$(ping -c 1 "$FEZNAME" | grep transmitted | awk '{print $4}')
-            echo "$NAME is a server with IP: $CDSIP (ping: $PNG), $FEZIP (ping: $PNGFEZ)"
+            echo "$NAME is a server with IP: $CDSIP (ping success: $PNG), $FEZIP (ping success: $PNGFEZ)"
             if [[ $(($PNG+$PNGFEZ)) -gt 1 ]]; then
                 echo 'cds&fez interfaces are up'
             fi
         else
-            echo "$NAME is a server with IP: $CDSIP (ping: $PNG), $FEZIP (cannot ping from machine without fez)"
+            echo "$NAME is a server with IP: $CDSIP (ping success: $PNG), $FEZIP (cannot ping from machine without fez)"
             if [ "$PNG" -gt 0 ]; then
                 echo 'cds interface is up'
             fi
         fi
     else
-        echo "$DEV is a server with IP: $CDSIP (ping: $PNG)"
+        echo "$DEV is a server with IP: $CDSIP (ping success: $PNG)"
         if [ "$PNG" -gt 0 ]; then
             echo 'cds interface is up'
         fi
