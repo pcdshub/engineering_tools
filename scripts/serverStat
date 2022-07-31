@@ -31,10 +31,10 @@ host_from_PV(){
     if [[ ${NAME:0:3} == "${HUTCH^^}" ]]; then
         HOST=$(cainfo "$NAME" | grep Host | awk '{print $2}' | awk 'BEGIN { FS = ":"}; {print $1}' | sed s/'.pcdsn'/''/g)
         if [[ $HOST == *'disconnected'* ]]; then
-            echo PV "$NAME" is disconnected
+            echo "PV $NAME is disconnected"
             exit 1
         fi
-        echo PV "$NAME" is hosted on server "$HOST"
+        echo "PV $NAME is hosted on server $HOST"
         NAME=$HOST
         DEV=$HOST
     else
@@ -92,7 +92,7 @@ else
     if [[ $2 =~ ^(cycle|off|on|status|console|reset|expert) ]]; then
         DEV=$1
         CMD=$2
-        else
+    else
         echo "serverStat: invalid option -- '$2'"
         echo "Try $0 --help for more information."
         exit 1
@@ -107,7 +107,7 @@ fi
 if [[ $NAME == *'172.21'* ]]; then
     ISSRV=1
     NAME=$(netconfig search "$NAME" --brief | awk '{print $1}')
-    echo "$DEV" is an IP for "$NAME"
+    echo "$DEV is an IP for $NAME"
 else
     ISSRV=$(netconfig search "$NAME" | grep 'Found' | awk '{print $2}')
 fi
@@ -145,7 +145,7 @@ if [[ $ISSRV -lt 1 ]] && [[ $HUTCH != 'unknown_hutch' ]]; then
             NAME=$(grep "$DEV" /reg/g/pcds/dist/pds/${HUTCH}/scripts/${HUTCH}.cnf | grep -v '#' | grep host | awk '{print $1}' | sed s/{host://g | sed s/,// | sed s/_/-/g | sed s/\'//g | sed s/-fez//g)
         elif  [ "$NDEV" -eq 0 ]; then
             echo 'no device of this name found, exit'
-            exit
+            exit 1
         else
             NAME=$(grep "$DEV'" /reg/g/pcds/dist/pds/${HUTCH}/scripts/${HUTCH}.cnf | grep -v '#' | grep host | awk '{print $1}' | sed s/{host://g | sed s/,// | sed s/_/-/g)
         fi
@@ -157,7 +157,7 @@ if [[ $ISSRV -lt 1 ]] && [[ $HUTCH != 'unknown_hutch' ]]; then
     fi
 
     SRVIP=$(netconfig search "$NAME" | grep IP: | awk '{print $2}')
-    echo 'server for ' "$DEV" ' is: ' "$NAME"
+    echo "server for $DEV is: $NAME"
 else
     SRVIP=$(netconfig search "$DEV" | grep IP: | awk '{print $2}')
 fi
@@ -243,13 +243,13 @@ EOF
     fi
     echo -e ""
     echo -e "PCDS Drivers:"
-    IOCSTARTUP=/reg/g/pcds/dist/pds/boot/$NAME
+    IOCSTARTUP="/reg/g/pcds/dist/pds/boot/$NAME"
     if [[ -e $IOCSTARTUP ]]; then
         echo "$IOCSTARTUP"
         echo -e "-------------------------------------------------"
         cat "$IOCSTARTUP"
     fi
-    DAQSTARTUP=/reg/d/iocCommon/hosts/$NAME/startup.cmd
+    DAQSTARTUP="/reg/d/iocCommon/hosts/$NAME/startup.cmd"
     if [[ -e $DAQSTARTUP ]]; then
         echo -e "-------------------------------------------------"
         cat "$DAQSTARTUP"
@@ -257,34 +257,34 @@ EOF
 elif [[ $CMD == "status" ]]; then
     ISON=$(psipmi "$NAMEIPMI" power status)
     if [[ $ISON == *off* ]]; then
-        echo "$DEV" is powered off
+        echo "$DEV is powered off"
         exit 0
     elif [[ $ISON == *on* ]]; then
-        echo "$DEV" is powered on
+        echo "$DEV is powered on"
     else
-        echo Cannot connect to "$NAMEIPMI"
+        echo "Cannot connect to $NAMEIPMI"
     fi
 
     PNG=$(ping -c 1 "$SRVIP" | grep transmitted | awk '{print $4}')
     if [ "$FEZNAME" ]; then
         if [[ $HOST_HAS_FEZ -ge 1 ]]; then
             PNGFEZ=$(ping -c 1 "$FEZNAME" | grep transmitted | awk '{print $4}')
-            echo "$NAME" ' is a server with IP: ' "$CDSIP" ' (ping: ' "$PNG" '), ' "$FEZIP" ' (ping' "$PNGFEZ" ')'
+            echo "$NAME is a server with IP: $CDSIP (ping: $PNG), $FEZIP (ping: $PNGFEZ)"
             if [[ $(($PNG+$PNGFEZ)) -gt 1 ]]; then
                 echo 'cds&fez interfaces are up'
             fi
         else
-            echo "$NAME" ' is a server with IP: ' "$CDSIP" ' (ping: ' "$PNG" '), ' "$FEZIP" ' (cannot ping from machine without fez )'
+            echo "$NAME is a server with IP: $CDSIP (ping: $PNG), $FEZIP (cannot ping from machine without fez)"
             if [ "$PNG" -gt 0 ]; then
                 echo 'cds interface is up'
             fi
         fi
     else
-        echo "$DEV" ' is a server with IP: ' "$CDSIP" ' (ping: ' "$PNG" ')'
+        echo "$DEV is a server with IP: $CDSIP (ping: $PNG)"
         if [ "$PNG" -gt 0 ]; then
             echo 'cds interface is up'
         fi
     fi
 else
-    echo 'this should not happen'
+    echo "this should not happen: unrecognized command $CMD not caught"
 fi
