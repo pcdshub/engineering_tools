@@ -135,19 +135,25 @@ fi
 
 #check if this is a DAQ device
 if [[ $ISSRV -lt 1 ]] && [[ $HUTCH != 'unknown_hutch' ]]; then
+    if [[ $HUTCH == 'cxi' ]]; then # only supporting primary daq for now
+        CNF="/reg/g/pcds/dist/pds/${HUTCH}/scripts/${HUTCH}_0.cnf"
+    else
+        CNF="/reg/g/pcds/dist/pds/${HUTCH}/scripts/${HUTCH}.cnf"
+    fi
+
     if [[  $DEV == *'event'* ]]; then
-        DSSNODES=$(grep dss_nodes /reg/g/pcds/dist/pds/${HUTCH}/scripts/${HUTCH}.cnf | grep -v '#' | head -n1)
+        DSSNODES=$(grep dss_nodes "$CNF" | grep -v '#' | head -n1)
         i=$((${#DEV}-1));NEV=$(echo "${DEV:$i:1}");AWKNUM=$(($NEV+4))
         NAME=$(echo "$DSSNODES" | awk -v temp=$AWKNUM '{print $temp}'  |  sed s/,// | sed s/_/-/g | sed s/\'//g | sed s/-fez//g)
     else
-        NDEV=$(grep "$DEV" /reg/g/pcds/dist/pds/${HUTCH}/scripts/${HUTCH}.cnf | grep -v '#' | grep host | wc -l)
+        NDEV=$(grep "$DEV" "$CNF" | grep -v '#' | grep host | wc -l)
         if [ "$NDEV" -eq 1 ]; then
-            NAME=$(grep "$DEV" /reg/g/pcds/dist/pds/${HUTCH}/scripts/${HUTCH}.cnf | grep -v '#' | grep host | awk '{print $1}' | sed s/{host://g | sed s/,// | sed s/_/-/g | sed s/\'//g | sed s/-fez//g)
+            NAME=$(grep "$DEV" "$CNF" | grep -v '#' | grep host | awk '{print $1}' | sed s/{host://g | sed s/,// | sed s/_/-/g | sed s/\'//g | sed s/-fez//g)
         elif  [ "$NDEV" -eq 0 ]; then
             echo 'no device of this name found, exit'
             exit 1
         else
-            NAME=$(grep "$DEV'" /reg/g/pcds/dist/pds/${HUTCH}/scripts/${HUTCH}.cnf | grep -v '#' | grep host | awk '{print $1}' | sed s/{host://g | sed s/,// | sed s/_/-/g)
+            NAME=$(grep "$DEV'" "$CNF" | grep -v '#' | grep host | awk '{print $1}' | sed s/{host://g | sed s/,// | sed s/_/-/g)
         fi
     fi
     ISSRV=$(netconfig search "$NAME" | grep 'Found' | awk '{print $2}')
