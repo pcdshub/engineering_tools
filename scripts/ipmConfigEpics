@@ -132,9 +132,9 @@ elif [ $hutch == 'cxi' ]; then
 	EVR='CXI:DG3:BMMON:EVR'
 	WAVE8='dg3ipm'
     elif [ $1 == 'usrdio' ]; then
-        IOC="IOC:CXI:SC1:BMMON"
-        BASE='CXI:SC1:BMMON'
-        EVR='CXI:SC1:BMMON:EVR'
+        IOC="IOC:CXI:USR:DIO"
+        BASE='CXI:USR:DIO'
+        EVR='CXI:USR:DIO:EVR'
         WAVE8='usrdio'
     fi
 elif [ $hutch == 'mfx' ]; then
