@@ -9,17 +9,15 @@ function iocfpv {
    elif [[ $ioc = *[[:space:]]* ]]; then # multiple iocs found if space present
       ioccount=$(echo $ioc | wc -w)
       echo "$1 is found in $ioccount places"
-      if [[ $ioccount -gt 1 ]]; then
-         echo "Which ioc do care about here? (press enter to exit)" >&2
-         printf '%s\n' "$ioc" >&2
-         read -r chosenioc
-         if [[ -z "$chosenioc" ]]; then
-            echo "No ioc chosen. Exiting..."
-            exit 0
-         fi
-         ioc=$chosenioc
-      fi   
-   fi
+      echo "Which ioc do you care about here? (press enter to exit)" >&2
+      printf '%s\n' "$ioc" >&2
+      read -r chosenioc
+      if [[ -z "$chosenioc" ]]; then
+         echo "No ioc chosen. Exiting..."
+         exit 0
+      fi
+      ioc=$chosenioc
+   fi   
    
 }
 
