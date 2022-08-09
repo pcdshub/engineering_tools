@@ -9,11 +9,11 @@ function iocfpv {
    elif [[ $ioc = *[[:space:]]* ]]; then # multiple iocs found if space present
       ioccount=$(echo $ioc | wc -w)
       echo "$1 is found in $ioccount places"
-      echo "Which ioc do you care about here? (press enter to exit)" >&2
+      echo "Which ioc do you care about here? (press enter to exit)"
       printf '%s\n' "$ioc" >&2
       read -r chosenioc
       if [[ -z "$chosenioc" ]]; then
-         echo "No ioc chosen. Exiting..."
+         echo "No ioc chosen. Exiting..." >&2
          exit 0
       fi
       ioc=$chosenioc
@@ -216,8 +216,7 @@ elif [[ $NAME == *'-'* || $NAME == *'_'* || ^[[:alnum:]]+$ ]]; then
 
 elif [[ ! $NAME == *'-'* ]]; then #We are assuming that ioc names contain a dash in them
    echo "${NAME} does not match the format for PVs or IOC names. Exiting..." >&2
-   exit 1
-   
+   exit 1 
 fi
 
 
