@@ -64,6 +64,7 @@ EOF
 }
 
 
+elogMessage="DARK"
 POSITIONAL=()
 while [[ $# -gt 0 ]]
 do
@@ -153,7 +154,6 @@ do
 done
 set -- "${POSITIONAL[@]}"
 	
-elogMessage="DARK"
 ELOGTEXT=${ELOGTEXT:=""}
 RUN=${RUN:=0}
 EXP=${EXP:='xxx'}
@@ -192,12 +192,7 @@ else
     HUTCH=${EXP:0:3}
 fi
 
-if [[ $HOSTNAME =~ "psana" ]]; then
-    #echo $DIR/makepeds_psana $@
-    $DIR/makepeds_psana $@
-    #just for testing
-    #./makepeds_psana $@
-elif [[ $HOSTNAME =~ "drp-srcf" ]]; then
+if [[ $HOSTNAME =~ "psana" ]] || [[ $HOSTNAME =~ "drp-srcf" ]]; then
     #echo $DIR/makepeds_psana $@
     $DIR/makepeds_psana $@
 else
@@ -207,30 +202,29 @@ else
 
     if [[ $FFB == 1 ]]; then
         echo calling on FFB system: makepeds_psana $@
-	echo ssh -Y $USER@psdev ssh -Y psffb "$DIR/makepeds_psana $@"
-	ssh -Y $USER@psdev ssh -Y psffb "$DIR/makepeds_psana $@"
+	echo ssh -Y $USER@psffb "$DIR/makepeds_psana $@"
+	ssh -Y $USER@psffb "$DIR/makepeds_psana $@"
     else
         echo calling on offline system: makepeds_psana $@
-	echo ssh -Y $USER@psdev ssh -Y psana "$DIR/makepeds_psana $@"
-	ssh -Y $USER@psdev ssh -Y psana "$DIR/makepeds_psana $@"
+	echo ssh -Y $USER@psana "$DIR/makepeds_psana $@"
+	ssh -Y $USER@psana "$DIR/makepeds_psana $@"
     fi
 fi
 
 source pcds_conda
 elog_par_post --file pedestal -e "$EXP" -r $RUN
 
-elogMessage+=$ELOGTEXT
 #if this is a default pedestal run, then do not post as this is handled in the pedestal scripts
-if [[ $elogMessage == 'DARK' ]]; then
+if [[ $elogMessage == 'DARK' ]] && [[ $ELOGTXT == '' ]] ; then
     echo ---- Done processing pedestals for Run $RUN -----
     exit 0
 fi
 
+PYCMD=LogBookPost.py
+echo -- Now posting special message to elog --
+echo -- $elogMessage --
 
-## Need the following line until the controls conda is updated to pick up the latest elog package.
-#export PYTHONPATH=/reg/g/pcds/pyps/apps/hutch-python/common/dev/elog:${PYTHONPATH}
-BINPATH=/reg/g/pcds/pyps/conda/py36/envs/pcds-3.5.0/bin/python
-PYCMD=/reg/g/pcds/pyps/apps/hutch-python/common/dev/elog/scripts/LogBookPost.py
+elogMessage+=$ELOGTEXT
 if [[ `whoami` =~ "opr" ]]; then
     echo $BINPATH $PYCMD -i "${HUTCH^^}" -u `whoami` -e "$EXP"  -t DARK  -r $RUN -m "$elogMessage"
     if [[ $HOSTNAME == 'cxi-monitor' ]]; then
