@@ -895,11 +895,8 @@ if [[ ( $HAVE_EPIX -ge 1) ]]; then
 
     DETNAMES=$(grep Epix100a /tmp/detnames_"$EXP"_"$CREATE_TIME" | awk  'BEGIN { FS = "|"}; {print $1}' | paste -d " " -s)
     for EPIX100 in $DETNAMES; do
-        echo DEBUG call gain for "$EPIX100"
 	deploy_gain "$EPIX100"
     done
-    #DEBUG.....
-    exit
 fi
 
 #add Zyla only on request
