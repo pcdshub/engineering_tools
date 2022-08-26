@@ -14,6 +14,10 @@ names_from_name(){
     fi
     CDSNAME=$INNAME
     CDSIP=$(netconfig search "$CDSNAME" | grep IP: | awk '{print $2}')
+    if [[ -z $CDSIP ]]; then
+        echo "Host ($CDSNAME) not found in netconfig, exiting..." >&2
+        exit 1
+    fi
     if [[ $(netconfig search "$NAME"-ipmi --brief | wc -w) -gt 0 ]]; then
         NAMEIPMI=$INNAME-ipmi
     fi
