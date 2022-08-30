@@ -13,9 +13,8 @@ if [[ ($1 == "--help") || ($1 == "-h") ]]; then
 	exit 0
 fi
 
-DIRTMP=`dirname  "${BASH_SOURCE[0]}"`
-DIR="$( cd $DIRTMP && pwd -P )"
-PATH=$PATH:$DIR
+DIR=$(readlink -f "$(dirname "${BASH_SOURCE[0]}")")
+PATH=$DIR:$PATH
 
 hutch=`get_info --gethutch`
 echo $hutch

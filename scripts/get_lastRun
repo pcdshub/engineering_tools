@@ -19,9 +19,8 @@ AskLive=0
 Ended=0
 INSTRUMENT='xxx'
 
-DIRTMP=`dirname  "${BASH_SOURCE[0]}"`
-DIR="$( cd $DIRTMP && pwd -P )"
-PATH=$PATH:$DIR
+DIR=$(readlink -f "$(dirname "${BASH_SOURCE[0]}")")
+PATH=$DIR:$PATH
 
 while getopts "H:i:le" OPTION
 do

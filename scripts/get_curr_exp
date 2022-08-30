@@ -32,9 +32,8 @@ do
 	esac
 done
 
-DIRTMP=`dirname  "${BASH_SOURCE[0]}"`
-DIR="$( cd $DIRTMP && pwd -P )"
-PATH=$PATH:$DIR
+DIR=$(readlink -f "$(dirname "${BASH_SOURCE[0]}")")
+PATH=$DIR:$PATH
 
 if [ $INSTRUMENT != 'xxx' ]; then
     CURR_EXP=`get_info --hutch ${INSTRUMENT^^} --exp`
