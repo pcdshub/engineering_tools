@@ -4,18 +4,21 @@ Script for the detector group to pull totals out of the elog.
 We get DAQ run parameters for all experiments and count them up.
 """
 import os
+import sys
 import json
 import logging
 import argparse
-import requests
 from datetime import datetime
 from collections import OrderedDict
+import requests
+import pytz
+import dateutil.parser as dateparser
 from krtc import KerberosTicket
 
 
 logger = logging.getLogger(__name__)
-
 krbheaders = KerberosTicket("HTTP@pswww.slac.stanford.edu").getAuthHeaders()
+tz = pytz.timezone('America/Los_Angeles')
 
 def getDAQDetectorTotals(experiment):
     """Returns a total number of events per detector for this experiment"""
@@ -37,25 +40,66 @@ def getDAQDetectorTotals(experiment):
                 ret[detector] = ret[detector] + int(eventcount)
     return ret
 
-
-def getExperiments(run_period):
-    """ Return all the experiments that end with the run period; for example, all experiments that end with 18 for run period 18"""
+def getExperiments(run_period, after, before):
+    """ Return all the experiments in the specified run period.
+    Also, if start and end are specified, include other experiments as follows
+    after - If not None, also include other experiments except those whose last run is before the specified time
+    before - If not None, also include other experiments except those whose first run is after the specified time
+    """
     resp = requests.get("https://pswww.slac.stanford.edu/ws-kerb/lgbk/lgbk/ws/experiments", params={"categorize": "instrument_runperiod", "sortby" : "name"}, headers=krbheaders).json()
     exps = []
     for k,v in resp["value"].items():
         insexps = map(lambda x: x["_id"], v.get("Run " + str(run_period), []))
         exps.extend(insexps)
+
+    def last_run_exists(exp):
+        return exp.get("last_run", {}).get("begin_time", None)
+    def first_run_exists(exp):
+        return exp.get("first_run", {}).get("begin_time", None)
+    def last_run_before_specified_after(exp):
+        return exp.get("last_run", {}).get("begin_time", None) and dateparser.parse(exp["last_run"]["begin_time"]).astimezone(tz) < after
+    def first_run_after_specified_before(exp):
+        return exp.get("first_run", {}).get("begin_time", None) and dateparser.parse(exp["first_run"]["begin_time"]).astimezone(tz) > before
+
+    sef = None
+    if after and before:
+        sef = lambda x: last_run_exists(x) and not last_run_before_specified_after(x) and first_run_exists(x) and not first_run_after_specified_before(x)
+    elif after:
+        sef = lambda x: last_run_exists(x) and not last_run_before_specified_after(x)
+    elif before:
+        sef = lambda x: first_run_exists(x) and not first_run_after_specified_before(x)
+
+    if sef:
+        expsset = set(exps)
+        for ins,rps in resp["value"].items():
+            for rp, el in rps.items():
+                for e in el:
+                    if sef(e):
+                        expsset.add(e["_id"])
+        exps = list(expsset)
+
     return exps
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("-v", "--verbose",    action='store_true', help="Turn on verbose logging")
-    parser.add_argument("--run_period", action='store', help="The last two digits of the run period, for example 18", default="18")
+    parser.add_argument("--run_period", action='store', help="The last two digits of the run period, for example 18", required=True, type=int)
+    parser.add_argument("--show_matched_experiments_only", action='store_true', help="Only show the matching experiment names; do not actually run the report. Used for debugging.")
+    parser.add_argument("--after", help="Include other experiments except those whose last run is before the specified time")
+    parser.add_argument("--before", help="Include other experiments except those whose first run is after the specified time")
+
     args = parser.parse_args()
     logging.basicConfig(level=logging.DEBUG if args.verbose else logging.INFO)
+    after = dateparser.parse(args.after).astimezone(tz) if args.after else None
+    before = dateparser.parse(args.before).astimezone(tz) if args.before else None
 
-    experiments = getExperiments(args.run_period)
+    experiments = getExperiments(args.run_period, after, before)
     logger.debug(experiments)
+
+    if args.show_matched_experiments_only:
+        print("\n".join(sorted(experiments)))
+        sys.exit(0)
+
     daq_counts = OrderedDict()
     for experiment in experiments:
         logger.debug("Getting DAQ detector counts for %s", experiment)
