@@ -128,4 +128,9 @@ source "${TOKEN_DIR}/typhos.sh"
 # The same was done with PyDM and this fixes Designer and friends.
 if [ -n "${SSH_CONNECTION}" ]; then
 	export QT_QUICK_BACKEND="software"
+  # On operator consoles over ssh for most users, opengl crashes unless this is set.
+  # This tells the GLX extension to use software rendering by way of the mesa library.
+  if [ -z "${__GLX_VENDOR_LIBRARY_NAME}" ]; then
+    export __GLX_VENDOR_LIBRARY_NAME="mesa"
+  fi
 fi
