@@ -127,35 +127,14 @@ source "${TOKEN_DIR}/typhos.sh"
 # Revert to Software Raster when SSH to avoid issues with QtQuick.
 # The same was done with PyDM and this fixes Designer and friends.
 if [ -n "${SSH_CONNECTION}" ]; then
-  echo "SSH Session"
-	export QT_QUICK_BACKEND="software"
-  # Check for errors in the renderer
-  # Manually fall back to mesa library if renderer doesn't work
+  export QT_QUICK_BACKEND="software"
+  # Check for errors in the opengl rendering
+  # Manually fall back to mesa library if we know there is a problem
   if [ -x "$(command -v glxinfo)" ] && [ -z "${__GLX_VENDOR_LIBRARY_NAME}" ]; then
-    echo "Check for graphics errors"
-    GLX_OUTPUT="$(glxinfo -B 2>&1)"
-    if [ "${?}" -ne "0" ]; then
-      echo "Graphics error found"
-      export ERROR="1"
-    else
-      GLX_ERRORS="$(echo "${GLX_OUTPUT}" | grep -i "^error")"
-      if [ -n "${GLX_ERRORS}" ]; then
-        echo "Graphics warning found"
-        export ERROR="1"
-      else
-        echo "No errors"
-        export ERROR="0"
-      fi
-    fi
-    if [ "${ERROR}" -eq "1" ]; then
-      echo "Manual ovveride of GLX renderer"
+    # Expecting either a segfault or exit code 1 if there is a problem
+    if ! { glxinfo -B; } > /dev/null 2>&1; then
       export __GLX_VENDOR_LIBRARY_NAME="mesa"
-    else
-      echo "Use automatic renderer"
     fi
-  else
-    echo "Cannot check for graphics errors"
   fi
-else
-  echo "Not an SSH session"
 fi
+
