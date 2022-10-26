@@ -158,12 +158,12 @@ get_config()
 # Args: Detector ID, Additional command to run.
 deploy_geometry()
 {
-    GEOPATH=$(calibfile path -e "$EXP" -s "$1" -t geometry | awk '{print $2;}' -)
+    GEOPATH=$(calibfile path -e "$EXP" -s "$1" -t geometry | awk 'END{print $NF}' -)
     GEODIR=$(dirname "$GEOPATH")
     if [ ! -d "$GEODIR" ]; then
 	echo No geometry file found, deploying.
 
-	CMD=geometry_deploy_constants -e "$EXP" -r "$RUN" -d "$1" -D
+	CMD='geometry_deploy_constants -e '$EXP' -r '$RUN' -d '$1' -D'
         if [[ $HOSTNAME =~ "drp-srcf" ]]; then
             CMD=$CMD' -x /cds/data/drpsrcf/'$HUTCH'/'$EXP'/xtc/:stream=0-79'
 	fi
