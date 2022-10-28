@@ -247,6 +247,7 @@ usage: grep_ioc KEYWORD [hutch]<br/>
     <td>
      GREP SEARCHES THROUGH ALL IOCs IN /reg/d/iocData/<br/>
      FOR PVs THAT MATCH GIVEN KEYWORD/HANDLE.<br/>
+     Ideally, find_pv should be used as it gives a lot more information (but can be slow sometimes)<br/>
     </td>
 </tr>
 
