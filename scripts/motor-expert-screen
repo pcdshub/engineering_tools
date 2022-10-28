@@ -81,7 +81,7 @@ elif [ "${rtyp}" == 'motor' ]; then
     caget "$PREFIX:PN" > /dev/null 2>&1
     if [ $? -eq 0 ]; then
         /reg/g/pcds/package/epics/3.14//modules/pcds_motion/${OLD_VERSION}/launch-motor.sh "$PREFIX" > /dev/null 2>&1 &
-    elif [[ $PREFIX == *"MCS2"* ]]; then # smaracts have motor prefix, so we catch them with the PREFIX
+    elif [[ $PREFIX == *"MCS2"* ]]; then # smaracts have "motor" rtyp, so we catch them with the PREFIX
         edm -x -eolc -m "MOTOR=$PREFIX" mcs2_main.edl > /dev/null 2>&1 &
     else
         cd /reg/neh/home/klg/epics/ioc/common/aerotech/current/motorScreens
