@@ -183,11 +183,11 @@ deploy_geometry()
 # Args: Detector ID, Additional command to run.
 deploy_gain()
 {
-    GAINPATH=$(calibfile path -e "$EXP" -s "$1" -t pixel_gain | awk '{print $2;}' -)
+    GAINPATH=$(calibfile path -e "$EXP" -s "$1" -t pixel_gain | awk 'END{print $NF}' -)
     GAINDIR=$(dirname "$GAINPATH")
     if [ ! -d "$GAINDIR" ]; then
 	echo No gain file file found, deploying.
-	CMD=deploy_constants -e "$EXP" -r "$RUN" -d "$1" -C gain -D
+	CMD='deploy_constants -e '$EXP' -r '$RUN' -d '$1' -C gain -D'
         if [[ $HOSTNAME =~ "drp-srcf" ]]; then
             CMD=$CMD' -x /cds/data/drpsrcf/'$HUTCH'/'$EXP'/xtc/:stream=0-79'
 	fi
