@@ -25,7 +25,7 @@ PREFIX=`echo $1 | cut -d . -f 1`
 source /reg/g/pcds/setup/epicsenv-3.14.12.sh
 export PCDS_EDMS=/reg/g/pcds/package/epics/3.14/screens/edm
 #export EDMDATAFILES=.:${PCDS_EDMS}/xps8:${PCDS_EDMS}/ims  # normal EDMDATAFILES line
-export EDMDATAFILES=.:${PCDS_EDMS}/xps8:/reg/g/pcds/package/epics/3.14/ioc/common/ims/R2.2.3/imsScreens:/reg/g/pcds/epics/ioc/common/smaract/R1.0.11/motorScreens
+export EDMDATAFILES=.:${PCDS_EDMS}/xps8:/reg/g/pcds/package/epics/3.14/ioc/common/ims/R2.2.3/imsScreens:/cds/group/pcds/epics/ioc/common/smaract/R1.0.11/motorScreens:/cds/group/pcds/epics/ioc/common/mmc/R1.0.6/mmcScreens
 
 # this ldpathmunge gives access to xdotool for xpp-control, xpp-daq
 source /reg/g/pcds/setup/pathmunge.sh
@@ -77,6 +77,8 @@ if [ "${rtyp}" == 'xps8p' ]; then
         ext=0000
     fi
     edm -x -eolc -m "CNAME=${base}_${ext},POS=$PREFIX" XPS8_Positioner.edl > /dev/null 2>&1 &
+elif [ "${rtyp}" == 'mmca' ]; then # MMC-100 axis
+    edm -x -eolc -m "MOTOR=$PREFIX" mmc_main.edl > /dev/null 2>&1 &
 elif [ "${rtyp}" == 'motor' ]; then
     caget "$PREFIX:PN" > /dev/null 2>&1
     if [ $? -eq 0 ]; then
