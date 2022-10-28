@@ -122,6 +122,15 @@ Waits for the LCLS-I daq windows to load, then exits.
 </tr>
 
 <tr>
+    <td>detector_totals.py</td>
+    <td>
+Generates a report for the detector group. Reports contains the number of events per detector type gathered from all experiments in a run period.
+For example,
+<code>detector_totals.py --run_period 20</code> generates the detector total report for run 20
+    </td>
+</tr>
+
+<tr>
     <td>dev_conda</td>
     <td>
  Source this to activate a pcds conda environment.<br/>
