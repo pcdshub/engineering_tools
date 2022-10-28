@@ -25,7 +25,7 @@ PREFIX=`echo $1 | cut -d . -f 1`
 source /reg/g/pcds/setup/epicsenv-3.14.12.sh
 export PCDS_EDMS=/reg/g/pcds/package/epics/3.14/screens/edm
 #export EDMDATAFILES=.:${PCDS_EDMS}/xps8:${PCDS_EDMS}/ims  # normal EDMDATAFILES line
-export EDMDATAFILES=.:${PCDS_EDMS}/xps8:/reg/g/pcds/package/epics/3.14/ioc/common/ims/R2.2.3/imsScreens
+export EDMDATAFILES=.:${PCDS_EDMS}/xps8:/reg/g/pcds/package/epics/3.14/ioc/common/ims/R2.2.3/imsScreens:/reg/g/pcds/epics/ioc/common/smaract/R1.0.10/motorScreens
 
 # this ldpathmunge gives access to xdotool for xpp-control, xpp-daq
 source /reg/g/pcds/setup/pathmunge.sh
@@ -48,6 +48,7 @@ else
         title='IMS Motor Control'
     fi
 fi
+
 
 # xdotool is used to move the new window to the mouse location
 # if xdotool is not installed, the move window commands will skip
@@ -80,6 +81,8 @@ elif [ "${rtyp}" == 'motor' ]; then
     caget "$PREFIX:PN" > /dev/null 2>&1
     if [ $? -eq 0 ]; then
         /reg/g/pcds/package/epics/3.14//modules/pcds_motion/${OLD_VERSION}/launch-motor.sh "$PREFIX" > /dev/null 2>&1 &
+    elif [[ $PREFIX == *"MCS2"* ]]; then # smaracts have motor prefix, so we catch them with the PREFIX
+        edm -x -eolc -m "MOTOR=$PREFIX" mcs2_main.edl > /dev/null 2>&1 &
     else
         cd /reg/neh/home/klg/epics/ioc/common/aerotech/current/motorScreens
         #cd /reg/neh/home4/mcbrowne/trunk2/ioc/common/aerotech/current/motorScreens
