@@ -28,8 +28,8 @@ source "${BASE_ENV}/etc/profile.d/conda.sh"
 
 # Activate base env first so things like conda build are available
 conda activate
-# Default to dev pcds release
-conda activate dev
+# Default to latest pcds release as the base
+conda activate "$(cat "${BASE_ENV}/latest_env")"
 
 PCDSDEVICES_DEV_UI="${APPS_ROOT}/dev/pcdsdevices/pcdsdevices/ui"
 
