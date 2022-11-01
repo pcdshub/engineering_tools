@@ -162,10 +162,9 @@ deploy_geometry()
     GEODIR=$(dirname "$GEOPATH")
     if [ ! -d "$GEODIR" ]; then
 	echo No geometry file found, deploying.
-
 	CMD='geometry_deploy_constants -e '$EXP' -r '$RUN' -d '$1' -D'
         if [[ $HOSTNAME =~ "drp-srcf" ]]; then
-            CMD=$CMD' -x /cds/data/drpsrcf/'$HUTCH'/'$EXP'/xtc/:stream=0-79'
+            CMD=$CMD' -s :dir=/cds/data/drpsrcf/'$HUTCH'/'$EXP'/xtc/:stream=0-79'
 	fi
 
 	echo calling $CMD
@@ -189,7 +188,7 @@ deploy_gain()
 	echo No gain file file found, deploying.
 	CMD='deploy_constants -e '$EXP' -r '$RUN' -d '$1' -C gain -D'
         if [[ $HOSTNAME =~ "drp-srcf" ]]; then
-            CMD=$CMD' -x /cds/data/drpsrcf/'$HUTCH'/'$EXP'/xtc/:stream=0-79'
+            CMD=$CMD' -s :dir=/cds/data/drpsrcf/'$HUTCH'/'$EXP'/xtc/:stream=0-79'
 	fi
 
 	echo calling $CMD
