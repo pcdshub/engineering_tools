@@ -18,3 +18,5 @@ source pcds_conda
 PYDEV="${HOME}/pydev"
 export PATH="${PYDEV}/bin:${PATH}"
 export PYTHONPATH="${PYDEV}:${PYTHONPATH}"
+# The following is set by pcds_conda and needs to be undone for dev typhos to pick your templates
+unset PYDM_DISPLAYS_PATH
