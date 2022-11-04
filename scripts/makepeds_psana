@@ -198,7 +198,6 @@ deploy_gain()
     fi
 }
 
-
 POSITIONAL=()
 while [[ $# -gt 0 ]]
 do
@@ -319,9 +318,9 @@ do
 done
 set -- "${POSITIONAL[@]}"
 
-
 T="$(date +%s%N)"
-echo "XXXXXXXXXXXXXXXXX START MAKEPEDS DEV at $(date +'%T') on $HOSTNAME XXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+echo "XXXXXXXXXXXXXXXXX START MAKEPEDS at $(date +'%T') on $HOSTNAME XXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+
 
 RUN=${RUN:=0}
 EXP=${EXP:='xxx'}
@@ -665,7 +664,7 @@ if [[ ( $HAVE_JUNGFRAU -ge 1 ) && ( $WANT_ZYLA -eq 0 ) && ( $WANT_OPAL -eq 0 ) &
     #specify parameters for status bits in pixel mask
     get_config "Jungfrau"
 
-    JFARG=$JFARG' --int_lo='$ADUMIN' --int_hi='$ADUMAX' --rms_lo='$NOISESIGMIN' --rms_hi='$NOISESIGMAX
+    JFARG=$JFARG' --int_lo='$ADUMIN' --int_hi='$ADUMAX' --rms_lo='$NOISESIGMIN' --rms_hi='$NOISESIGMAX' --fraclm='$FRACLM
 
     echo "-------------------- START JUNGFRAU PEDESTALS at $(date +'%T') ----------------------------"
 
