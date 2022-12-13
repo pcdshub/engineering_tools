@@ -170,7 +170,11 @@ deploy_geometry()
 
 	echo calling $CMD
 	$CMD
-	echo Geometry now deployed.
+	if [ "$?" != "0" ]; then
+	    echo Error: Geometry not deployed!
+	else
+	    echo Geometry now deployed.
+        fi
 	if [ "$2" != "" ]; then
 	    echo Running additional command:
 	    echo "$2"
@@ -194,7 +198,11 @@ deploy_gain()
 
 	echo calling $CMD
 	$CMD
-	echo Gain file deployed.
+	if [ "$?" != "0" ]; then
+	    echo Error: Gain file not deployed!
+	else
+	    echo Gain file deployed.
+        fi
     fi
 }
 
