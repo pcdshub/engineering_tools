@@ -165,7 +165,7 @@ deploy_geometry()
 
 	CMD='geometry_deploy_constants -e '$EXP' -r '$RUN' -d '$1' -D'
         if [[ $HOSTNAME =~ "drp-srcf" ]]; then
-            CMD=$CMD' -x /cds/data/drpsrcf/'$HUTCH'/'$EXP'/xtc/:stream=0-79'
+            CMD=$CMD' -x :dir=/cds/data/drpsrcf/'$HUTCH'/'$EXP'/xtc/:stream=0-79'
 	fi
 
 	echo calling $CMD
@@ -193,7 +193,7 @@ deploy_gain()
 	echo No gain file file found, deploying.
 	CMD='deploy_constants -e '$EXP' -r '$RUN' -d '$1' -C gain -D'
         if [[ $HOSTNAME =~ "drp-srcf" ]]; then
-            CMD=$CMD' -x /cds/data/drpsrcf/'$HUTCH'/'$EXP'/xtc/:stream=0-79'
+            CMD=$CMD' -x :dir=/cds/data/drpsrcf/'$HUTCH'/'$EXP'/xtc/:stream=0-79'
 	fi
 
 	echo calling $CMD
@@ -544,7 +544,7 @@ if [[ $LCLS2 -gt 0 ]]; then
                     nextcycle=$(( calibcycle + 1 ))
 		    CMD="epix10ka_pedestals_calibration -d $EPIX10K -e $EXP -r $RUN --stepnum $calibcycle --stepmax $nextcycle -L INFO"
 		    if [[ $HOSTNAME =~ "drp-srcf" ]]; then
-   		        CMD=$CMD' -x /cds/data/drpsrcf/'$HUTCH'/'$EXP'/xtc'
+   		        CMD=$CMD' -x :dir=/cds/data/drpsrcf/'$HUTCH'/'$EXP'/xtc'
                     fi
     	            echo "---------------EPIX10K PEDESTALS FOR CYCLE $calibcycle --------------------"
                     if [[ $RUNLOCAL != 1 ]]; then
@@ -603,7 +603,7 @@ if [[ $LCLS2 -gt 0 ]]; then
                 for EPIX10K in $DETNAMES; do
                     CMD="epix10ka_deploy_constants -D -d $EPIX10K -e $EXP -r $RUN -L INFO"
 		    if [[ $HOSTNAME =~ "drp-srcf" ]]; then
-   		        CMD=$CMD' -x /cds/data/drpsrcf/'$HUTCH'/'$EXP'/xtc'
+   		        CMD=$CMD' -x :dir=/cds/data/drpsrcf/'$HUTCH'/'$EXP'/xtc'
                     fi
 	            echo 'setting validity....' $VALSTR
                     if [ $VALSTR != 'xxx' ]; then
@@ -756,7 +756,7 @@ if [[ ( $HAVE_JUNGFRAU -ge 1 ) && ( $WANT_ZYLA -eq 0 ) && ( $WANT_OPAL -eq 0 ) &
                CMD=$CMD' -t '$VALSTR
             fi
             if [[ $HOSTNAME =~ "drp-srcf" ]]; then
-	        CMD=$CMD' -x /cds/data/drpsrcf/'$HUTCH'/'$EXP'/xtc/'
+	        CMD=$CMD' -x :dir=/cds/data/drpsrcf/'$HUTCH'/'$EXP'/xtc/'
             fi   
 
             echo "$cmd"
@@ -793,7 +793,7 @@ if [[ ( $HAVE_EPIX10K -ge 1 ) && ( $WANT_ZYLA -eq 0 ) && ( $WANT_OPAL -eq 0 ) &&
 
 	for calibcycle in {0..4}; do
             if [[ $HOSTNAME =~ "drp-srcf" ]]; then
-		CMD="epix10ka_pedestals_calibration -d $EPIX10K -e $EXP -r $RUN -c $calibcycle -x /cds/data/drpsrcf/$HUTCH/$EXP/xtc/:live:stream=0-79 -L INFO"
+		CMD="epix10ka_pedestals_calibration -d $EPIX10K -e $EXP -r $RUN -c $calibcycle -x :dir=/cds/data/drpsrcf/$HUTCH/$EXP/xtc/:live:stream=0-79 -L INFO"
 	    else 
 		CMD="epix10ka_pedestals_calibration -d $EPIX10K -e $EXP -r $RUN -c $calibcycle -L INFO"
 	    fi
@@ -858,7 +858,7 @@ if [[ ( $HAVE_EPIX10K -ge 1 ) && ( $WANT_ZYLA -eq 0 ) && ( $WANT_OPAL -eq 0 ) &&
                 CMD=$CMD' -t '$VALSTR
             fi
             if [[ $HOSTNAME =~ "drp-srcf" ]]; then
-                CMD=$CMD' -x /cds/data/drpsrcf/'$HUTCH'/'$EXP'/xtc/:stream=0-79'
+                CMD=$CMD' -x :dir=/cds/data/drpsrcf/'$HUTCH'/'$EXP'/xtc/:stream=0-79'
 	    fi
             echo "$CMD"
             $CMD
@@ -986,7 +986,7 @@ for MYDET in $DETS; do
     #ADU minimum, maximum
     get_config $MYDET
 
-    LOCARG=$ARG' --thr_int_min '$ADUMIN' --thr_int_max '$ADUMAX' --thr_rms_min '$NOISESIGMIN' --thr_rms '$NOISESIGMAX
+    LOCARG=$ARG' --thr_int_min '$ADUMIN' --thr_int_max '$ADUMAX' --thr_rms_min '$NOISESIGMIN' --thr_rms_max '$NOISESIGMAX
     #this was likely to work with runs where the zyla rate was < readout rate....
     if [[ ( $MYDET == 'Zyla') ]]; then
 	LOCARG=$LOCARG' -m 100'
@@ -999,7 +999,7 @@ for MYDET in $DETS; do
     echo "-------------------- START CALIBRUN at $(date +'%T') for detector $MYDET----------------------------"
     source /reg/g/psdm/etc/psconda.sh
     if [[ $HOSTNAME =~ "drp-srcf" ]]; then
-    	cmd="calibrun -r $RUN  -d $MYDET -P -e $EXP -x /cds/data/drpsrcf/$HUTCH/$EXP/xtc/ $LOCARG"
+    	cmd="calibrun -r $RUN  -d $MYDET -P -e $EXP -x :dir=/cds/data/drpsrcf/$HUTCH/$EXP/xtc/ $LOCARG"
     	echo "$cmd"
     	$cmd
     else
