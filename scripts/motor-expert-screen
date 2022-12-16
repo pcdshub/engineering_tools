@@ -1,5 +1,3 @@
-isbeckhoff=false
-
 #!/bin/bash
 
 OLD_VERSION='R2.5.0'
