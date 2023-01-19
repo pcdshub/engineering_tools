@@ -70,9 +70,9 @@ if [[ -z $CONFIG ]]; then
 fi
 
 #create a tempoprary file with the procStatus so we only call that once;
-/reg/g/pcds/dist/pds/$HUTCH/current/tools/procmgr/procmgr status /reg/g/pcds/dist/pds/$HUTCH/scripts/$CONFIG > /tmp/procServStatus
+/reg/g/pcds/dist/pds/$HUTCH/current/tools/procmgr/procmgr status /reg/g/pcds/dist/pds/$HUTCH/scripts/$CONFIG > tmp/procServStatus.$$
 
-PSANA_NODES=(`grep monreqsrvpsana /tmp/procServStatus | awk {'print $1'}`)
+PSANA_NODES=(`grep monreqsrvpsana tmp/procServStatus.$$ | awk {'print $1'}`)
 
 if [[ -z $DETAIL ]]; then
     NODESTR=''
@@ -81,32 +81,26 @@ if [[ -z $DETAIL ]]; then
     done
     echo ${NODESTR::-1}
 else
-    EVENT=(`grep event /tmp/procServStatus | awk {'print $1'}`)
-    PSANA_MASKS=(`grep monreqsrvpsana /tmp/procServStatus | awk -F "-i " {'print $2'} | awk {'print $1'}`)
+    EVENT=(`grep event tmp/procServStatus.$$ | awk {'print $1'}`)
+    PSANA_MASKS=(`grep monreqsrvpsana tmp/procServStatus.$$ | awk -F "-i " {'print $2'} | awk {'print $1'}`)
+    EVENT_MASKS=(`grep event tmp/procServStatus.$$ | awk -F "-s " '{print $2;}' | awk '{print lshift(1,$1);}'`)
     echo 'psana runs on the following nodes looking at event nodes '${#EVENT[@]}
     NODESTR=''
     for ((idx=0; idx<${#PSANA_NODES[@]}; ++idx)); do 
-	if [ ${PSANA_MASKS[idx]} == '1' ]; then
-            echo  ${PSANA_NODES[idx]}': '${EVENT[0]} 
-	elif [ ${PSANA_MASKS[idx]} == '2' ]; then
-            echo  ${PSANA_NODES[idx]}': '${EVENT[1]} 
-	elif [ ${PSANA_MASKS[idx]} == '4' ]; then
-            echo  ${PSANA_NODES[idx]}': '${EVENT[2]} 
-	elif [ ${PSANA_MASKS[idx]} == '8' ]; then
-            echo  ${PSANA_NODES[idx]}': '${EVENT[3]} 
-	elif [ ${PSANA_MASKS[idx]} == '16' ]; then
-            echo  ${PSANA_NODES[idx]}': '${EVENT[2]} 
-	elif [ ${PSANA_MASKS[idx]} == '3' ]; then
-            echo  ${PSANA_NODES[idx]}': '${EVENT[0]}  ${EVENT[1]} 
-	elif [ ${PSANA_MASKS[idx]} == '12' ]; then
-            echo  ${PSANA_NODES[idx]}': '${EVENT[2]}  ${EVENT[3]} 
-	elif [ ${PSANA_MASKS[idx]} == '7' ]; then
-            echo  ${PSANA_NODES[idx]}': '${EVENT[0]} ${EVENT[1]}  ${EVENT[2]} 
-	else
-            echo  ${PSANA_NODES[idx]} ' -- need better event definition'
+        echo -n ${PSANA_NODES[idx]}':'
+	MASKS=${PSANA_MASKS[idx]}
+	for ((m=0; m<${#EVENT[@]}; ++m)); do 
+	    if [ $((${MASKS}&${EVENT_MASKS[m]})) != 0 ]; then
+	        echo -n ' '${EVENT[m]} 
+		MASKS=$((${MASKS}&~${EVENT_MASKS[m]}))
+	    fi
+        done
+	if [ ${MASKS} != '0' ]; then
+	    echo " MISSING MON MASK: "$MASKS
 	fi
+	echo ""
     done
 
 fi
 
-rm  /tmp/procServStatus
+rm  tmp/procServStatus.$$
