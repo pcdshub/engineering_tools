@@ -19,8 +19,10 @@ def main():
     )
 
     group = parser.add_mutually_exclusive_group()
-    group.add_argument("--mono", action="store_true")
-    group.add_argument("--pink", action="store_true")
+    group.add_argument("--mono", action="store_true",
+                       help='Enforce change to mono line')
+    group.add_argument("--pink", action="store_true",
+                       help='Enforce change to pink line')
 
     parser.add_argument('--min', dest='min_z', action='store', type=float,
                         default=784, required=False, help='min z range')
