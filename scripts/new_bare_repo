@@ -37,6 +37,8 @@ then
     git-bare-repo /afs/slac.stanford.edu/g/cd/swe/git/repos/package/epics/ioc/${HUTCH}/${REPO}.git
     git remote add origin /afs/slac.stanford.edu/g/cd/swe/git/repos/package/epics/ioc/${HUTCH}/${REPO}.git
     git push -u origin master
-else
-    echo "/afs/slac.stanford.edu/g/cd/swe/git/repos/package/epics/ioc/${HUTCH}/ does not exist"
+elif [ ! -d "/afs/slac.stanford.edu/g/cd/swe/git/repos/package/epics/ioc/${HUTCH}/" ]
+    echo "The directory /afs/slac.stanford.edu/g/cd/swe/git/repos/package/epics/ioc/${HUTCH}/ does not exist!"
+elif [ -d "/afs/slac.stanford.edu/g/cd/swe/git/repos/package/epics/ioc/${HUTCH}/${REPO}.git" ]
+    echo "There already exists a bare repo for this device!"
 fi
