@@ -15,20 +15,25 @@ You also might need to run kinit and aklog before hand!
 EOF
 }
 
-if [ $# -lt 1 ]; then
+if [[ ($1 == "--help") || ($1 == "-h") ]]; then
+   usage
+   exit 0
+
+elif [ $# -lt 2 ]; then
    echo 'Need to specify the hutch and name of the proposed bare repo' >&2
    usage
    exit 1
 
-elif [[ ($1 == "--help") || ($1 == "-h") ]]; then
-   usage
-   exit 0
 fi
 
 HUTCH=$1
 REPO=$2
+CWD=$(PWD)
 
-if [ -d "/afs/slac.stanford.edu/g/cd/swe/git/repos/package/epics/ioc/${HUTCH}/" ] && [ ! -d "/afs/slac.stanford.edu/g/cd/swe/git/repos/package/epics/ioc/${HUTCH}/${REPO}.git" ]
+Check if current working directory is 
+
+
+if [ -d "/afs/slac.stanford.edu/g/cd/swe/git/repos/package/epics/ioc/${HUTCH}/" ] && [ ! -d "/afs/slac.stanford.edu/g/cd/swe/git/repos/package/epics/ioc/${HUTCH}/${REPO}.git" ] && [${CWD} == *${REPO}* ]
 then
     git init
     cp /cds/sw/tools/bin/eco_tools/gitignore.template .gitignore
@@ -39,6 +44,8 @@ then
     git push -u origin master
 elif [ ! -d "/afs/slac.stanford.edu/g/cd/swe/git/repos/package/epics/ioc/${HUTCH}/" ]
     echo "The directory /afs/slac.stanford.edu/g/cd/swe/git/repos/package/epics/ioc/${HUTCH}/ does not exist!"
+    exit 1
 elif [ -d "/afs/slac.stanford.edu/g/cd/swe/git/repos/package/epics/ioc/${HUTCH}/${REPO}.git" ]
     echo "There already exists a bare repo for this device!"
+    exit 1
 fi
