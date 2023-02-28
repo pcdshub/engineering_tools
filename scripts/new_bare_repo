@@ -28,22 +28,23 @@ fi
 
 HUTCH=$1
 REPO=$2
-CWD=$(PWD)
+CWD=$PWD
 
-
-if [ -d "/afs/slac.stanford.edu/g/cd/swe/git/repos/package/epics/ioc/${HUTCH}/" ] && [ ! -d "/afs/slac.stanford.edu/g/cd/swe/git/repos/package/epics/ioc/${HUTCH}/${REPO}.git" ] && [${CWD} == *${REPO}* ]
-then
-    git init
-    cp /cds/sw/tools/bin/eco_tools/gitignore.template .gitignore
-    git add *.cfg Makefile .gitignore
-    git commit -m "Initial commit"
-    git-bare-repo /afs/slac.stanford.edu/g/cd/swe/git/repos/package/epics/ioc/${HUTCH}/${REPO}.git
-    git remote add origin /afs/slac.stanford.edu/g/cd/swe/git/repos/package/epics/ioc/${HUTCH}/${REPO}.git
-    git push -u origin master
-elif [ ! -d "/afs/slac.stanford.edu/g/cd/swe/git/repos/package/epics/ioc/${HUTCH}/" ]
+set -e
+if [ ! -d "/afs/slac.stanford.edu/g/cd/swe/git/repos/package/epics/ioc/${HUTCH}/" ]
     echo "The directory /afs/slac.stanford.edu/g/cd/swe/git/repos/package/epics/ioc/${HUTCH}/ does not exist!"
     exit 1
 elif [ -d "/afs/slac.stanford.edu/g/cd/swe/git/repos/package/epics/ioc/${HUTCH}/${REPO}.git" ]
     echo "There already exists a bare repo for this device!"
     exit 1
+elif [ ${CWD} != *${REPO}* ]
+    echo "Current working directory does not contain the name of the planned repo, check that you are running this script in the right place"
+    exit 1
+else
+    git init
+    cp -u /cds/sw/tools/bin/eco_tools/gitignore.template .gitignore
+    git add *.cfg Makefile .gitignore
+    git commit -m "Initial commit"
+    git-bare-repo /afs/slac.stanford.edu/g/cd/swe/git/repos/package/epics/ioc/${HUTCH}/${REPO}.git
+    git remote add origin /afs/slac.stanford.edu/g/cd/swe/git/repos/package/epics/ioc/${HUTCH}/${REPO}.git
 fi
