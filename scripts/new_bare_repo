@@ -30,8 +30,6 @@ HUTCH=$1
 REPO=$2
 CWD=$(PWD)
 
-Check if current working directory is 
-
 
 if [ -d "/afs/slac.stanford.edu/g/cd/swe/git/repos/package/epics/ioc/${HUTCH}/" ] && [ ! -d "/afs/slac.stanford.edu/g/cd/swe/git/repos/package/epics/ioc/${HUTCH}/${REPO}.git" ] && [${CWD} == *${REPO}* ]
 then
