@@ -31,13 +31,13 @@ REPO=$2
 CWD=$PWD
 
 set -e
-if [ ! -d "/afs/slac.stanford.edu/g/cd/swe/git/repos/package/epics/ioc/${HUTCH}/" ]
+if [ ! -d "/afs/slac.stanford.edu/g/cd/swe/git/repos/package/epics/ioc/${HUTCH}/" ]; then
     echo "The directory /afs/slac.stanford.edu/g/cd/swe/git/repos/package/epics/ioc/${HUTCH}/ does not exist!"
     exit 1
-elif [ -d "/afs/slac.stanford.edu/g/cd/swe/git/repos/package/epics/ioc/${HUTCH}/${REPO}.git" ]
+elif [ -d "/afs/slac.stanford.edu/g/cd/swe/git/repos/package/epics/ioc/${HUTCH}/${REPO}.git" ]; then
     echo "There already exists a bare repo for this device!"
     exit 1
-elif [ ${CWD} != *${REPO}* ]
+elif [[ ${CWD} != *${REPO}* ]]; then
     echo "Current working directory does not contain the name of the planned repo, check that you are running this script in the right place"
     exit 1
 else
