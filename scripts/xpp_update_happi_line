@@ -1,0 +1,4 @@
+#!/bin/bash
+source pcds_conda
+cd $ENG_TOOL_SCRIPTS
+python xpp_update_happi_line.py "$@"

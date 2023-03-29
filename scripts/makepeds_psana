@@ -796,7 +796,6 @@ if [[ ( $HAVE_JUNGFRAU -ge 1 ) && ( $WANT_ZYLA -eq 0 ) && ( $WANT_OPAL -eq 0 ) &
                 #CMD=$CMD' -t '$VALSTR'-end'
                 CMD=$CMD' -t '$VALSTR
             fi
-
             echo "$cmd"
             $CMD
         done

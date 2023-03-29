@@ -31,6 +31,9 @@ export EDMDATAFILES=.:${PCDS_EDMS}/xps8:/reg/g/pcds/package/epics/3.14/ioc/commo
 source /reg/g/pcds/setup/pathmunge.sh
 ldpathmunge /usr/local/lib
 
+# bool used to to deterime if a motor with .rtyp == 'motor' is a Beckhoff axis.
+isbeckhoff=false
+
 # Choose title so we can move the right window.
 # If this script hangs later, titles probably changed.
 rtyp=`caget -t $PREFIX.RTYP` > /dev/null 2>&1
@@ -39,7 +42,16 @@ if [ "${rtyp}" == 'xps8p' ]; then
 elif [ "${rtyp}" == 'ims' ]; then
     title='IMS Motor Control -- Main'
 elif [ "${rtyp}" == 'motor' ]; then
-    title='Aerotech motor'
+    # Check to see if this is a Beckhoff axis
+    #   caget will return exit code 0 if :PLC:nErrorId_RBV exists,
+    #   we set isbeckhoff based on this.
+    caget "${PREFIX}:PLC:nErrorId_RBV" > /dev/null 2>&1
+    if [ $? -eq 0 ]; then
+        title="Typhos Suite - ${PREFIX}"
+        isbeckhoff=true;
+    else
+        title='Aerotech motor'
+    fi
 else
     caget "$PREFIX.PN" > /dev/null 2>&1
     if [ $? -eq 0 ]; then
@@ -49,7 +61,6 @@ else
     fi
 fi
 
-
 # xdotool is used to move the new window to the mouse location
 # if xdotool is not installed, the move window commands will skip
 
@@ -57,7 +68,9 @@ fi
 oldwins=`xdotool search --onlyvisible --maxdepth 2 --all --name "$title" 2> /dev/null`
 
 # Open new window
-if [ "${rtyp}" == 'xps8p' ]; then
+if [ ${isbeckhoff} == true ]; then
+    motor-typhos ${PREFIX} > /dev/null 2>&1 &
+elif [ "${rtyp}" == 'xps8p' ]; then
     # If we have a Newport motor, we need to parse the PV to get the macro
     # substitutions for the edm screen
     base=`echo $PREFIX | cut -d':' -f 1,2,3`
