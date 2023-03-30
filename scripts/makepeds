@@ -161,8 +161,9 @@ FFB=${FFB:=0}
 QUEUE=${QUEUE:='xxx'}
 INTERACTIVE=${INTERACTIVE:=0}
 
-FFBQUEUES=('anaq' 'ffbh1q' 'ffbl1q' 'ffbh2q' 'ffbl2q' 'ffbh3q' 'ffbl3q' 'ffbh4q' 'ffbl4q')
-ANAQUEUES=('psanagpuq' 'psanaq' 'psfehq' 'psfehprioq' 'psfehhiprioq')
+FFBQUEUES=('anaq' 'ffbh1q' 'ffbl1q' 'ffbh2q' 'ffbl2q' 'ffbh3q' 'ffbl3q' 'ffbgpuq')
+ANAQUEUES=('psanagpuq' 'psanaq')
+SDFQUEUES=('milano' 'roma')
 for FFBQUEUE in ${FFBQUEUES[@]}; do
     if [[ $QUEUE == $FFBQUEUE ]]; then 
 	FFB=1
@@ -176,6 +177,14 @@ for ANAQUEUE in ${ANAQUEUES[@]}; do
 	break
     fi
 done
+
+for SDFQUEUE in ${SDFQUEUES[@]}; do
+    if [[ $QUEUE == $SDFQUEUE ]]; then 
+	FFB=2
+	break
+    fi
+done
+
 
 if [[ $RUN == 0 ]]; then
     if [[ $INTERACTIVE == 0 ]]; then
@@ -192,7 +201,7 @@ else
     HUTCH=${EXP:0:3}
 fi
 
-if [[ $HOSTNAME =~ "psana" ]] || [[ $HOSTNAME =~ "drp-srcf" ]]; then
+if [[ $HOSTNAME =~ "psana" ]] || [[ $HOSTNAME =~ "drp-srcf" ]] || [[ $HOSTNAME =~ "sdf" ]]; then
     #echo $DIR/makepeds_psana $@
     $DIR/makepeds_psana $@
 else
@@ -204,6 +213,12 @@ else
         echo calling on FFB system: makepeds_psana $@
 	echo ssh -Y $USER@psffb "$DIR/makepeds_psana $@"
 	ssh -Y $USER@psffb "$DIR/makepeds_psana $@"
+    elif [[ $FFB == 2 ]]; then
+        echo calling on SDF system: makepeds_psana $@
+	#we need to change paths here as directories are completely independent
+	DIR=`echo $DIR | sed s/cds/sdf/g | sed 's/\/reg\/g\/pcds/\/sed\/group\/lcls\/ds\/tools/g'`
+	echo ssh -Y $USER@s3dflogin ssh -Y psana "$DIR/makepeds_psana $@"
+	ssh -Y $USER@s3dflogin ssh -Y psana "$DIR/makepeds_psana $@"
     else
         echo calling on offline system: makepeds_psana $@
 	echo ssh -Y $USER@psana "$DIR/makepeds_psana $@"
@@ -211,12 +226,21 @@ else
     fi
 fi
 
-source pcds_conda
+if [[ $HOSTNAME =~ "sdf" ]]; then
+    source /sdf/group/lcls/ds/ana/sw/conda1/manage/bin/psconda.sh
+else
+    source pcds_conda
+fi
 elog_par_post --file pedestal -e "$EXP" -r $RUN
 
-#if this is a default pedestal run, then do not post as this is handled in the pedestal scripts
+#if this is a default pedestal run, then do not post as this is handled in takepeds
 if [[ $elogMessage == 'DARK' ]] && [[ $ELOGTXT == '' ]] ; then
     echo ---- Done processing pedestals for Run $RUN -----
+    exit 0
+fi
+
+if [[ $HOSTNAME =~ "sdf" ]]; then
+    echo Posting messages to the elog is currently not implemented from S3DF yet
     exit 0
 fi
 
@@ -232,7 +256,6 @@ if [[ `whoami` =~ "opr" ]]; then
     else
         $BINPATH $PYCMD -i "${HUTCH^^}" -u `whoami` -p pcds -e "$EXP"  -t DARK  -r $RUN -m "$elogMessage"&
     fi
-    elog_par_post --file pedestal -e "$EXP" -r $RUN
 else
     echo $BINPATH $PYCMD -i "${HUTCH^^}" -e "$EXP"  -t DARK -r $RUN -m "$elogMessage"
     if [[ $HOSTNAME == 'cxi-monitor' ]]; then
