@@ -2,6 +2,7 @@
 import requests
 from requests.auth import HTTPBasicAuth
 import argparse
+import socket
 
 def readRunTable(fname):
     runTableData={}
@@ -20,7 +21,11 @@ def postRunTableDict(runtable_data, experiment, run):
     ws_url = args_url + "/run_control/{0}/ws/add_run_params".format(experiment)
     print('URL:',ws_url)
     user=experiment[:3]+'opr'
-    with open('/cds/home/opr/%s/forElogPost.txt'%user,'r') as reader:
+    elogPostFile='/cds/home/opr/%s/forElogPost.txt'%user
+    hostname=socket.gethostname()
+    if hostname.find('sdf')>=0:
+        elogPostFile='/sdf/group/lcls/ds/tools/forElogPost.txt'
+    with open(elogPostFile,'r') as reader:
         answer = reader.readline()
     r = requests.post(ws_url, params={"run_num": run}, json=runtable_data, \
                       auth=HTTPBasicAuth(experiment[:3]+'opr', answer[:-1]))
