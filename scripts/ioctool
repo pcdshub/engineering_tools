@@ -49,14 +49,6 @@ function ioccfg {
 
 }
 
-function hutch_check {
-   hutch=$1
-   if [[ "$hutch" == unknown_hutch ]]; then
-      echo 'unknown hutch, specify using the -H/--hutch option'
-      usage
-      exit 1
-   fi
-}
 
 function camname_to_pv {
    #A function that will loop through camviewer.cfg files throughout all hutches to find the name then use that to search for its PV 
