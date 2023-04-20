@@ -275,7 +275,11 @@ usage: ioctool &lt;ioc&gt;|&lt;pv&gt; [option]<br/>
     cddir  :opens the directory the ioc is running from (start with "source" before calling script with this option)<br/>
     cfg  : returns the the file name of the ioc .cfg (or st.cmd)<br/>
     less: opens the ioc .cfg (or st.cmd) in less<br/>
+    cat  : opens the ioc .cfg (or st.cmd) in cat <br/>
     data : returns the path of the appropriate iocData directory if it exists<br/>
+    autosave : opens the most recent autosave file in less <br/>
+    archive  : opens the most recent archive file in less <br/>
+    log      : opens the most recent log file in less<br/>
     telnet : starts a telnet session with the ioc<br/>
     </td>
 </tr>          
