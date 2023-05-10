@@ -264,26 +264,7 @@ if [ $# -ge 1 ]; then
     exit 1
 fi
 
-VH="/reg/g/pcds/epics-dev/spencera/engineering_tools/scripts/verify-hutch"
-
-hutch_check() {
-    hutch=$1
-    if [[ "$hutch" == "" ]]; then
-        hutch=$(get_info --gethutch)
-        if [[ "$hutch" == unknown_hutch ]]; then
-            if [[ $NUDGE -gt 0 ]]; then
-                echo 'To start/stop acquisition, you must be on the hutch specific machine'
-                exit 1 
-            else
-                echo 'unknown hutch, specify using -H option'
-                usage
-                exit 1
-            fi
-        fi
-    fi
-}    
-
-hutch_check $hutch
+verify-hutch "$hutch"
 
 
 EXE="/reg/g/pcds/pyps/config/$hutch/camviewer/run_viewer.csh"
