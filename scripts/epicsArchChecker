@@ -98,7 +98,8 @@ def read_file(filename):
     except FileNotFoundError as errorDetail:
         print(filename, ' File not found!')
         print(errorDetail)
-
+    """Print filename to see of there are duplicates."""
+    print(filename)
     return (entries, extraKeys, noKeyPVs)
 
 
