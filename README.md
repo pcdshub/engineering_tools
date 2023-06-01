@@ -69,15 +69,18 @@ usage: /reg/g/pcds/engineering_tools/latest/scripts/camViewer options<br/>
     start the viewer for controls cameras<br/>
     <br/>
     OPTIONS:<br/>
-    -c camera name as in camera list or gige #<br/>
-    -m bring up the edm screen<br/>
-    -r reboot the IOC<br/>
-    -l print list of cameras<br/>
-    -w # (wait for # hours to ask to renew, default 2 and 12 for GIGEs)<br/>
-    -u # update rate limit (default 5)<br/>
-    -H hutch: use a specific hutches camviewer config file<br/>
-    -e enable camera ioc<br/>
-    -d disable camera ioc<br/>
+    -c|--cam camera name as in camera list or gige #<br/>
+    -m|--main bring up the edm screen<br/>
+    -r|--reboot reboot the IOC<br/>
+    -l|--list print list of cameras<br/>
+    -w|--wait # (wait for # hours to ask to renew, default 2 and 12 for GIGEs)<br/>
+    -u|--update # update rate limit (default 5)<br/>
+    -H|--hutch: use a specific hutches camviewer config file<br/>
+    -e|--enable disable camera ioc<br/>
+    -d|--disable disable camera ioc<br/>
+    -a|--acquire start acquiring images<br/>
+    -s|--stop stop acquiring images<br/>
+    -n|--cycle cycles acquisition (first stops then starts) <br/>
     </td>
 </tr>
 

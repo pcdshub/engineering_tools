@@ -143,7 +143,7 @@ iocinfo() {
 usage()
 {
 cat << EOF
-usage: $0 options
+usage: $0 [options]
 
 start the viewer for controls cameras
 
@@ -158,7 +158,9 @@ OPTIONS:
 -H|--hutch <hutch>  : use a specific hutches camviewer config file
 -e|--enable         : enable camera ioc
 -d|--disable        : disable camera ioc
-
+-a|--acquire        : start acquiring images
+-s|--stop           : stop acquiring images
+-n|--nudge          : cycles acquistion (first stops then starts)
 EOF
 }
 
@@ -179,9 +181,11 @@ REBOOT=0
 ENABLE=0
 DISABLE=0
 MAINSCREEN=0
+ACQUIRE=0
+STOP=0
+NUDGE=0
 
-
-OPTIONS=$(getopt -o lmredc:w:u:H: --long list,main,reboot,enable,disable,cam:,wait:,rate:,hutch: -n \'$0\' -- "$@")
+OPTIONS=$(getopt -o lmredasnc:w:u:H: --long list,main,reboot,enable,disable,acquire,stop,nudge,cam:,wait:,rate:,hutch: -n \'$0\' -- "$@")
 
 if [ $? != 0 ] ; then echo "Terminating..." >&2 ; exit 1 ; fi
 
@@ -214,7 +218,7 @@ do
             MAINSCREEN=1
             shift
             ;;
-        -r|--rate)
+        -r|--reboot)
             REBOOT=1
             shift
             ;;
@@ -224,6 +228,18 @@ do
             ;;
         -d|--disable)
             DISABLE=1
+            shift
+            ;;
+        -a|--acquire)
+            ACQUIRE=1
+            shift
+            ;;
+        -s|--stop)
+            STOP=1
+            shift
+            ;;
+        -n|--nudge)
+            NUDGE=1
             shift
             ;;
         ?)
@@ -248,16 +264,7 @@ if [ $# -ge 1 ]; then
     exit 1
 fi
 
-
-if [ "$hutch" == ""  ]; then
-    hutch=$(get_info --gethutch)
-    if [ "$hutch" == unknown_hutch ]; then
-        echo 'unknown hutch, specify using -H option'
-        usage
-        exit 1
-    fi
-fi
-
+verify-hutch "$hutch"
 
 
 EXE="/reg/g/pcds/pyps/config/$hutch/camviewer/run_viewer.csh"
@@ -278,7 +285,7 @@ fi
 
 
 
-if [ $CAMNUM -eq 0 ]; then 
+if [ "$CAMNUM" -eq 0 ]; then
     if [ "$hutch" = "tmo" ]; then
         CAMNAME=IM2K0
     elif [ "$hutch" = "rix" ]; then
@@ -295,17 +302,27 @@ if [ $CAMNUM -eq 0 ]; then
 	CAMNAME=xcs_yag2
     fi
 
-
 fi
-    
 export EPICS_CA_MAX_ARRAY_BYTES=24000000
-echo working with camera of name: $CAMNAME
-
+echo working with camera of name: "$CAMNAME"
 
 name_to_pv "$CAMNAME" "$hutch"
 
 if [ $MAINSCREEN -gt 0 ]; then
-    echo 'try to get the main screen for: ' $CAMNAME
+    tmp=/tmp/cv.$$
+    list_cams "$hutch" >$tmp
+    c=$(wc <$tmp | grep "$CAMNAME" $tmp | awk '{print $1}')
+    if [ "$c" == '' ]; then
+        echo "Camera name not found in hutch. To see which cameras you can access from your current machine use the '-l/--list' option."
+        sleep 3
+    elif [ "$c" == "$CAMNAME" ] && [ "$hutch" != "$(get_info --gethutch)" ] ; then
+        echo "To use camera controls, you must be on the same hutch machine as your camera." 
+        echo "Opening read-only main screen..."
+        sleep 3
+    
+    rm -f $tmp
+    fi    
+    echo 'try to get the main screen for: ' "$CAMNAME"
     echo 'start the main screen for camera base PV: ' "$CAMPVFULL"
     cmdName=$(caget -St "$CAMPVFULL":LAUNCH_EDM)
     echo calling edm main screen from: "$cmdName"
@@ -314,7 +331,7 @@ if [ $MAINSCREEN -gt 0 ]; then
 fi
 
 if [ $REBOOT -gt 0 ]; then
-    echo 'reboot IOC for camera: ' $CAMNAME
+    echo 'reboot IOC for camera: ' "$CAMNAME"
     edmcmdName=$(caget -St "$CAMPVFULL":LAUNCH_EDM)
     IOCPV=$(grep 'export IOC_PV' "$edmcmdName" | awk '{print $2 "\n" }' | sed s/IOC_PV=/''/g)
     echo 'restart IOC last started on: ' "$(caget -t "$IOCPV":STARTTOD)"
@@ -322,24 +339,44 @@ if [ $REBOOT -gt 0 ]; then
     exit
 fi
 
-if [ $ENABLE -gt 0 ]; then 
+if [ $ENABLE -gt 0 ]; then
     echo "Enabling ${CAMNAME}"
     iocinfo
-    imgr "$ioc" --hutch "$iochutch" --enable   
+    imgr "$ioc" --hutch "$iochutch" --enable
     exit
 fi
 
 if [ $DISABLE -gt 0 ]; then
     echo "Disabling ${CAMNAME}"
     iocinfo
-    imgr "$ioc" --hutch "$iochutch" --disable    
+    imgr "$ioc" --hutch "$iochutch" --disable
+    exit
+fi
+
+if [ $ACQUIRE -gt 0 ]; then
+    echo "Starting acquisition for ${CAMNAME}"
+    caput -n "$CAMPVFULL":Acquire 1
+    exit
+fi
+
+if [ $STOP -gt 0 ]; then
+    echo "Stopping acquisition for ${CAMNAME}"
+    caput -n "$CAMPVFULL":Acquire 0
+    exit
+fi
+
+if [ $NUDGE -gt 0 ]; then
+    echo "Stopping and starting acquisition for ${CAMNAME}"
+    caput -n "$CAMPVFULL":Acquire 0
+    sleep 2
+    caput -n "$CAMPVFULL":Acquire 1
     exit
 fi
 
 IS_ACQUIRING=$(caget -t -n "$CAMPVFULL":Acquire_RBV)
 if isNum "$IS_ACQUIRING"; then
     if [ "$IS_ACQUIRING" -eq 0 ]; then
-	echo 'start acquiring for camera ' $CAMNAME
+	echo 'start acquiring for camera ' "$CAMNAME"
 	caput -n "$CAMPVFULL":Acquire 1
     fi
 else
