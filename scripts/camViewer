@@ -265,7 +265,15 @@ if [ $# -ge 1 ]; then
 fi
 
 verify-hutch "$hutch"
-
+if [ $? == 1 ]; then
+    echo 'No hutch or invalid hutch name passed. Trying to guess hutch.'
+    hutch=$(get_info --gethutch)
+    if [ "$hutch" == unknown_hutch ]; then
+        echo 'unknown hutch, specify using -H option with a valid hutch name.'
+        usage
+        exit 1
+    fi
+fi
 
 EXE="/reg/g/pcds/pyps/config/$hutch/camviewer/run_viewer.csh"
 PVLIST="/reg/g/pcds/pyps/config/$hutch/camviewer.cfg"
