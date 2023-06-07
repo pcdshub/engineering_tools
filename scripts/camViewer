@@ -264,8 +264,16 @@ if [ $# -ge 1 ]; then
     exit 1
 fi
 
-verify-hutch "$hutch"
+if ! verify-hutch "$hutch"; then
+    hutch=$(get_info --gethutch)
+    if [ "$hutch" == unknown_hutch ]; then
+        echo 'Unknown hutch, specify using -H option with a valid hutch name.'
+        usage
+        exit 1
+    fi
+fi
 
+echo "Launching camViewer for $hutch."
 
 EXE="/reg/g/pcds/pyps/config/$hutch/camviewer/run_viewer.csh"
 PVLIST="/reg/g/pcds/pyps/config/$hutch/camviewer.cfg"
