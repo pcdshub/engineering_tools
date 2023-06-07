@@ -265,7 +265,7 @@ if [ $# -ge 1 ]; then
 fi
 
 verify-hutch "$hutch"
-if [ $? == 1 ]; then
+if ! verify-hutch "$hutch"; then
     echo 'No hutch or invalid hutch name passed. Trying to guess hutch.'
     hutch=$(get_info --gethutch)
     if [ "$hutch" == unknown_hutch ]; then
