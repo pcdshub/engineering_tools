@@ -201,6 +201,11 @@ else
     HUTCH=${EXP:0:3}
 fi
 
+if [[ $HOSTNAME =~ "sdf" ]] && [[ $DIR =~ "/reg/g/pcds" ]]; then
+    echo DEBUG change engineering_tools directory if standard hutch one
+    #DIR=`echo $DIR | sed s/\reg\g\pcds/\cds\group\lcls\ds/tools/g`
+fi
+    
 if [[ $HOSTNAME =~ "psana" ]] || [[ $HOSTNAME =~ "drp-srcf" ]] || [[ $HOSTNAME =~ "sdf" ]]; then
     #echo $DIR/makepeds_psana $@
     $DIR/makepeds_psana $@
