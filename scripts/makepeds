@@ -222,7 +222,7 @@ else
     elif [[ $FFB == 2 ]]; then
         echo calling on SDF system: makepeds_psana $@
 	#we need to change paths here as directories are completely independent
-	DIR=`echo $DIR | sed 's/\/cds\/group\/pcds/sdf\/group\/lcls\/tools/g' | sed 's/\/reg\/g\/pcds/\/sdf\/group\/lcls\/ds\/tools/g'`
+	DIR=`echo $DIR | sed 's/\/cds\/group\/pcds/\/sdf\/group\/lcls\/tools/g' | sed 's/\/reg\/g\/pcds/\/sdf\/group\/lcls\/ds\/tools/g'`
 	echo ssh -Y $USER@s3dflogin ssh -Y psana "$DIR/makepeds_psana $@"
 	ssh -Y $USER@s3dflogin ssh -Y psana "$DIR/makepeds_psana $@"
     else
