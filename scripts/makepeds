@@ -1,7 +1,6 @@
 #! /bin/bash
 
-DIRTMP=$(dirname  "$(readlink -f "${BASH_SOURCE[0]}")")
-DIR="$( cd $DIRTMP && pwd -P )"
+DIR=`dirname $(readlink -f $0)`
 PATH=$PATH:$DIR
 
 usage()
@@ -211,18 +210,18 @@ else
 
     if [[ $FFB == 1 ]]; then
         echo calling on FFB system: makepeds_psana $@
-	echo ssh -Y $USER@psffb "$DIR/makepeds_psana $@"
-	ssh -Y $USER@psffb "$DIR/makepeds_psana $@"
+        echo ssh -Y $USER@psffb "$DIR/makepeds_psana $@"
+        ssh -Y $USER@psffb "$DIR/makepeds_psana $@"
     elif [[ $FFB == 2 ]]; then
         echo calling on SDF system: makepeds_psana $@
-	#we need to change paths here as directories are completely independent
-	DIR=`echo $DIR | sed s/cds/sdf/g | sed 's/\/reg\/g\/pcds/\/sed\/group\/lcls\/ds\/tools/g'`
-	echo ssh -Y $USER@s3dflogin ssh -Y psana "$DIR/makepeds_psana $@"
-	ssh -Y $USER@s3dflogin ssh -Y psana "$DIR/makepeds_psana $@"
+        #we need to change paths here as directories are completely independent
+        DIR=`echo $DIR | sed 's/\/cds\/group\/pcds/\/sdf\/group\/lcls\/ds\/tools/g' | sed 's/\/reg\/g\/pcds/\/sdf\/group\/lcls\/ds\/tools/g'`
+        echo ssh -Y $USER@s3dflogin ssh -Y psana "$DIR/makepeds_psana $@"
+        ssh -Y $USER@s3dflogin ssh -Y psana "$DIR/makepeds_psana $@"
     else
         echo calling on offline system: makepeds_psana $@
-	echo ssh -Y $USER@psana "$DIR/makepeds_psana $@"
-	ssh -Y $USER@psana "$DIR/makepeds_psana $@"
+        echo ssh -Y $USER@psana "$DIR/makepeds_psana $@"
+        ssh -Y $USER@psana "$DIR/makepeds_psana $@"
     fi
 fi
 
