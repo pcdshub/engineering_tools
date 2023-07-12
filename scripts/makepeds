@@ -15,8 +15,6 @@ OPTIONS:
                user (needs to be able to log into the psananeh/feh)
         -p|--post <text>  
                add <text> to elog post
-        -F|--ffb
-                run job on FFB system
         -t|--test
                 do not deploy pedestals (epix10k only)
         -r|--run         
@@ -68,126 +66,104 @@ POSITIONAL=()
 while [[ $# -gt 0 ]]
 do
         key="$1"
-	case $key in
-		-h|--help)x
-			usage
-			exit
-			;;
-		-p|--post)
-		        ELOGTEXT="$2"
-			shift
-			shift
-			;;
-           	-D|--xtcav_dark)
+        case $key in
+                -h|--help)x
+                        usage
+                        exit
+                        ;;
+                -p|--post)
+                        ELOGTEXT="$2"
+                        shift
+                        shift
+                        ;;
+                -D|--xtcav_dark)
                         POSITIONAL+=("$1")
-	                elogMessage="DARK for XTCAV"
-			shift
-			;;
-           	-L|--xtcav_lasingoff)
+                        elogMessage="DARK for XTCAV"
+                        shift
+                        ;;
+                -L|--xtcav_lasingoff)
                         POSITIONAL+=" $1"
-	                elogMessage="Lasing off for XTCAV"
-			shift
-			;;
-           	-i|--interactive)
+                        elogMessage="Lasing off for XTCAV"
+                        shift
+                        ;;
+                -i|--interactive)
                         POSITIONAL+=("$1")
-	                elogMessage="start calibman GUI"
-			shift
-			;;
-           	-U|--uxi)
+                        elogMessage="start calibman GUI"
+                        shift
+                        ;;
+                -U|--uxi)
                         POSITIONAL+=("$1")
-	                elogMessage="DARK for Uxi"
-			shift
-			;;
-           	-Z|--zyla)
+                        elogMessage="DARK for Uxi"
+                        shift
+                        ;;
+                -Z|--zyla)
                         POSITIONAL+=("$1")
-	                elogMessage="DARK for Zyla"
-			shift
-			;;
-           	-O|--opal)
+                        elogMessage="DARK for Zyla"
+                        shift
+                        ;;
+                -O|--opal)
                         POSITIONAL+=("$1")
-	                elogMessage="DARK for opal"
-			shift
-			;;
-           	-R|--rayonix)
+                        elogMessage="DARK for opal"
+                        shift
+                        ;;
+                -R|--rayonix)
                         POSITIONAL+=("$1")
-	                elogMessage="DARK for Rayonix"
-			shift
-			;;
-           	-j|--jungfrau3)
+                        elogMessage="DARK for Rayonix"
+                        shift
+                        ;;
+                -j|--jungfrau3)
                         POSITIONAL+=("$1")
-	                elogMessage="DARK for jungfrau, also next two runs."
-			shift
-			;;
-           	-u|--user)
-		        USER="$2"
-			shift
-			shift
-			;;
-           	-r|--run)
-		        RUN="$2"
+                        elogMessage="DARK for jungfrau, also next two runs."
+                        shift
+                        ;;
+                -u|--user)
+                        USER="$2"
+                        shift
+                        shift
+                        ;;
+                -r|--run)
+                        RUN="$2"
                         POSITIONAL+=("--run $2")
-			shift
-			shift
-			;;
-           	-e|--experiment)
-		        EXP="$2"
+                        shift
+                        shift
+                        ;;
+                -e|--experiment)
+                        EXP="$2"
                         POSITIONAL+=("--experiment $2")
-			shift
-			shift
-			;;
-           	-F|--ffb)
-		        FFB=1
-			shift
-			;;
-           	-q|--queue)
-		        QUEUE="$2"
+                        shift
+                        shift
+                        ;;
+                -q|--queue)
+                        QUEUE="$2"
                         POSITIONAL+=("--queue $2")
-			shift
-			shift
-			;;
-                 *)
+                        shift
+                        shift
+                        ;;
+                        *)
                         POSITIONAL+=("$1")
-			shift
-			;;
-	esac
+                        shift
+                        ;;
+        esac
 done
 set -- "${POSITIONAL[@]}"
-	
+
 ELOGTEXT=${ELOGTEXT:=""}
 RUN=${RUN:=0}
 EXP=${EXP:='xxx'}
-FFB=${FFB:=0}
 QUEUE=${QUEUE:='xxx'}
 INTERACTIVE=${INTERACTIVE:=0}
 
-FFBQUEUES=('anaq' 'ffbh1q' 'ffbl1q' 'ffbh2q' 'ffbl2q' 'ffbh3q' 'ffbl3q' 'ffbgpuq')
-ANAQUEUES=('psanagpuq' 'psanaq')
 SDFQUEUES=('milano' 'roma')
-for FFBQUEUE in ${FFBQUEUES[@]}; do
-    if [[ $QUEUE == $FFBQUEUE ]]; then 
-	FFB=1
-	break
-    fi
-done
-
-for ANAQUEUE in ${ANAQUEUES[@]}; do
-    if [[ $QUEUE == $ANAQUEUE ]]; then 
-	FFB=0
-	break
-    fi
-done
-
 for SDFQUEUE in ${SDFQUEUES[@]}; do
     if [[ $QUEUE == $SDFQUEUE ]]; then 
-	FFB=2
-	break
+	S3DF=1
     fi
 done
 
 
 if [[ $RUN == 0 ]]; then
     if [[ $INTERACTIVE == 0 ]]; then
-	printf "Please enter a run number: \n"; read RUN
+        printf "Please enter a run number: \n"; read RUN
         set -- "$@" '--run ' $RUN
     fi
 fi
@@ -200,28 +176,20 @@ else
     HUTCH=${EXP:0:3}
 fi
 
-if [[ $HOSTNAME =~ "psana" ]] || [[ $HOSTNAME =~ "drp-srcf" ]] || [[ $HOSTNAME =~ "sdf" ]]; then
+if [[ $HOSTNAME =~ "sdf" ]]; then
     #echo $DIR/makepeds_psana $@
     $DIR/makepeds_psana $@
 else
     if [[ $USER =~ "opr" ]]; then
         printf "Please enter user name (cannot run as from operator account): \n"; read USER
     fi
-
-    if [[ $FFB == 1 ]]; then
-        echo calling on FFB system: makepeds_psana $@
-        echo ssh -Y $USER@psffb "$DIR/makepeds_psana $@"
-        ssh -Y $USER@psffb "$DIR/makepeds_psana $@"
-    elif [[ $FFB == 2 ]]; then
+    
+    if [[ SDF == 1 ]]; then
         echo calling on SDF system: makepeds_psana $@
         #we need to change paths here as directories are completely independent
         DIR=`echo $DIR | sed 's/\/cds\/group\/pcds/\/sdf\/group\/lcls\/ds\/tools/g' | sed 's/\/reg\/g\/pcds/\/sdf\/group\/lcls\/ds\/tools/g'`
         echo ssh -Y $USER@s3dflogin ssh -Y psana "$DIR/makepeds_psana $@"
         ssh -Y $USER@s3dflogin ssh -Y psana "$DIR/makepeds_psana $@"
-    else
-        echo calling on offline system: makepeds_psana $@
-        echo ssh -Y $USER@psana "$DIR/makepeds_psana $@"
-        ssh -Y $USER@psana "$DIR/makepeds_psana $@"
     fi
 fi
 

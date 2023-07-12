@@ -32,7 +32,7 @@ echo $PYCMD -i "${HUTCH^^}" -u `whoami` -e "$EXP"  -t DARK  -r $RUN -m "$elogMes
 $PYCMD -i "${HUTCH^^}" -u `whoami` -p pcds -e "$EXP"  -t DARK  -r $RUN -m "$elogMessage"&
 
 echo 'please call: makepeds -r '`get_lastRun`' -u <userID>'
-echo 'for gainswitching detectors we recommend: makepeds -u <userID> -q <ffb-queue-assigned-in-elog> -r '`get_lastRun`
+echo 'for gain-switching detectors we recommend: makepeds -u <userID> -q milano -r '`get_lastRun`
 #echo 'we need to use the offline data to process pedestals right now, make sure files have moved, otherwise a very silent failure might happen'
 #echo 'please call: makepeds -u <userID> -e '`get_curr_exp`' -r '`get_lastRun`' -q psfehhiprioq'
 
