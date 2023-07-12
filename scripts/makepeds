@@ -12,7 +12,7 @@ Make a pedestal file for offline use
 
 OPTIONS:
         -u|--user        
-               user (needs to be able to log into the psananeh/feh)
+               user (needs to be able to log into the s3df)
         -p|--post <text>  
                add <text> to elog post
         -t|--test
@@ -57,6 +57,8 @@ OPTIONS:
                 give path for alternative calibdir
         -b|--nbunch
                 number of bunches for the laseroff XTCAV calculations
+        --sdfdir
+                Directory where engineering tool in on S3DF. For development work only.
 EOF
 }
 
@@ -65,84 +67,89 @@ elogMessage="DARK"
 POSITIONAL=()
 while [[ $# -gt 0 ]]
 do
-        key="$1"
-        case $key in
-                -h|--help)x
-                        usage
-                        exit
-                        ;;
-                -p|--post)
-                        ELOGTEXT="$2"
-                        shift
-                        shift
-                        ;;
-                -D|--xtcav_dark)
-                        POSITIONAL+=("$1")
-                        elogMessage="DARK for XTCAV"
-                        shift
-                        ;;
-                -L|--xtcav_lasingoff)
-                        POSITIONAL+=" $1"
-                        elogMessage="Lasing off for XTCAV"
-                        shift
-                        ;;
-                -i|--interactive)
-                        POSITIONAL+=("$1")
-                        elogMessage="start calibman GUI"
-                        shift
-                        ;;
-                -U|--uxi)
-                        POSITIONAL+=("$1")
-                        elogMessage="DARK for Uxi"
-                        shift
-                        ;;
-                -Z|--zyla)
-                        POSITIONAL+=("$1")
-                        elogMessage="DARK for Zyla"
-                        shift
-                        ;;
-                -O|--opal)
-                        POSITIONAL+=("$1")
-                        elogMessage="DARK for opal"
-                        shift
-                        ;;
-                -R|--rayonix)
-                        POSITIONAL+=("$1")
-                        elogMessage="DARK for Rayonix"
-                        shift
-                        ;;
-                -j|--jungfrau3)
-                        POSITIONAL+=("$1")
-                        elogMessage="DARK for jungfrau, also next two runs."
-                        shift
-                        ;;
-                -u|--user)
-                        USER="$2"
-                        shift
-                        shift
-                        ;;
-                -r|--run)
-                        RUN="$2"
-                        POSITIONAL+=("--run $2")
-                        shift
-                        shift
-                        ;;
-                -e|--experiment)
-                        EXP="$2"
-                        POSITIONAL+=("--experiment $2")
-                        shift
-                        shift
-                        ;;
-                -q|--queue)
-                        QUEUE="$2"
-                        POSITIONAL+=("--queue $2")
-                        shift
-                        shift
-                        ;;
-                        *)
-                        POSITIONAL+=("$1")
-                        shift
-                        ;;
+    key="$1"
+    case $key in
+        -h|--help)x
+            usage
+            exit
+            ;;
+        -p|--post)
+            ELOGTEXT="$2"
+            shift
+            shift
+            ;;
+        -D|--xtcav_dark)
+            POSITIONAL+=("$1")
+            elogMessage="DARK for XTCAV"
+            shift
+            ;;
+        -L|--xtcav_lasingoff)
+            POSITIONAL+=" $1"
+            elogMessage="Lasing off for XTCAV"
+            shift
+            ;;
+        -i|--interactive)
+            POSITIONAL+=("$1")
+            elogMessage="start calibman GUI"
+            shift
+            ;;
+        -U|--uxi)
+            POSITIONAL+=("$1")
+            elogMessage="DARK for Uxi"
+            shift
+            ;;
+        -Z|--zyla)
+            POSITIONAL+=("$1")
+            elogMessage="DARK for Zyla"
+            shift
+            ;;
+        -O|--opal)
+            POSITIONAL+=("$1")
+            elogMessage="DARK for opal"
+            shift
+            ;;
+        -R|--rayonix)
+            POSITIONAL+=("$1")
+            elogMessage="DARK for Rayonix"
+            shift
+            ;;
+        -j|--jungfrau3)
+            POSITIONAL+=("$1")
+            elogMessage="DARK for jungfrau, also next two runs."
+            shift
+            ;;
+        -u|--user)
+            USER="$2"
+            shift
+            shift
+            ;;
+        -r|--run)
+            RUN="$2"
+            POSITIONAL+=("--run $2")
+            shift
+            shift
+            ;;
+        -e|--experiment)
+            EXP="$2"
+            POSITIONAL+=("--experiment $2")
+            shift
+            shift
+            ;;
+        -q|--queue)
+            QUEUE="$2"
+            POSITIONAL+=("--queue $2")
+            shift
+            shift
+            ;;
+        --sdfdir)
+            SDFDIR="$2"
+            shift
+            shift
+            ;;
+        *)
+            POSITIONAL+=("$1")
+            shift
+            ;;
         esac
 done
 set -- "${POSITIONAL[@]}"
@@ -159,7 +166,7 @@ for SDFQUEUE in ${SDFQUEUES[@]}; do
 	S3DF=1
     fi
 done
-
+echo "S3DF: $S3DF"
 
 if [[ $RUN == 0 ]]; then
     if [[ $INTERACTIVE == 0 ]]; then
@@ -183,11 +190,14 @@ else
     if [[ $USER =~ "opr" ]]; then
         printf "Please enter user name (cannot run as from operator account): \n"; read USER
     fi
-    
-    if [[ SDF == 1 ]]; then
+    if [[ $S3DF == 1 ]]; then
         echo calling on SDF system: makepeds_psana $@
         #we need to change paths here as directories are completely independent
-        DIR=`echo $DIR | sed 's/\/cds\/group\/pcds/\/sdf\/group\/lcls\/ds\/tools/g' | sed 's/\/reg\/g\/pcds/\/sdf\/group\/lcls\/ds\/tools/g'`
+        if [ -v $SDFDIR  ]; then
+            DIR=$SDFDIR
+        else
+            DIR=`echo $DIR | sed 's/\/cds\/group\/pcds/\/sdf\/group\/lcls\/ds\/tools/g' | sed 's/\/reg\/g\/pcds/\/sdf\/group\/lcls\/ds\/tools/g'`
+        fi
         echo ssh -Y $USER@s3dflogin ssh -Y psana "$DIR/makepeds_psana $@"
         ssh -Y $USER@s3dflogin ssh -Y psana "$DIR/makepeds_psana $@"
     fi
