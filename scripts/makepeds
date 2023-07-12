@@ -166,7 +166,6 @@ for SDFQUEUE in ${SDFQUEUES[@]}; do
 	S3DF=1
     fi
 done
-echo "S3DF: $S3DF"
 
 if [[ $RUN == 0 ]]; then
     if [[ $INTERACTIVE == 0 ]]; then
