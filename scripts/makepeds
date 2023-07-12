@@ -193,7 +193,8 @@ else
     if [[ $S3DF == 1 ]]; then
         echo calling on SDF system: makepeds_psana $@
         #we need to change paths here as directories are completely independent
-        if [ -v $SDFDIR  ]; then
+        if [ -v SDFDIR  ]; then
+            echo "SDFDIR: $SDFDIR"
             DIR=$SDFDIR
         else
             DIR=`echo $DIR | sed 's/\/cds\/group\/pcds/\/sdf\/group\/lcls\/ds\/tools/g' | sed 's/\/reg\/g\/pcds/\/sdf\/group\/lcls\/ds\/tools/g'`
