@@ -255,6 +255,27 @@ usage: grep_ioc KEYWORD [hutch]<br/>
 </tr>
 
 <tr>
+    <td>hdf5_to_gif.py</td>
+    <td>
+     Converts images in hdf5 files created with h5_img_collect to gifs.<br/>
+     Specify the path with -p and and how long each frame should last (ms) with -d.<br/>
+     Will save to cwd with as {original_filename}.gif<br/>
+    </td>
+</tr>
+
+<tr>
+    <td>image-saver.py</td>
+    <td>
+     Uses h5_img_collect to save images from a camera in an hdf5 format.<br/>
+     Command line arguments -c, -n, -p, and -f to specify camera name, number<br/>
+     of images, path to save hdf5 file to, and name to save hdf5 file as.<br/>
+     Also can use -g switch to open a GUI with a button that when pressed takes<br/>
+     images with specified parameters - can be pressed multiple times. The number<br/>
+     of images and the label on each button can be changed within the gui.<br/>
+    </td>
+</tr>
+
+<tr>
     <td>iocmanager</td>
     <td>
 iocmanager [hutch]<br/>
@@ -432,8 +453,8 @@ usage: motorInfo MOTOR_PV (motor_pv_2/autosave/archive/pmgr_diff/pmgr_save) OPT<
     <td>pmgr</td>
     <td>
  pmgr [hutch] [--debug] [--applyenable]<br/>
-     --debug	: Displays the debug button, which prints out any edits made<br/>
-     --applyenable	: Displays the apply all button, which applies settings to all motors
+     --debug  : Displays the debug button, which prints out any edits made<br/>
+     --applyenable	 : Displays the apply all button, which applies settings to all motors
     </td>
 </tr>
 
