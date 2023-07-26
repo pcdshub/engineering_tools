@@ -270,7 +270,8 @@ usage: grep_ioc KEYWORD [hutch]<br/>
      Command line arguments -c, -n, -p, and -f to specify camera name, number<br/>
      of images, path to save hdf5 file to, and name to save hdf5 file as.<br/>
      Also can use -g switch to open a GUI with a button that when pressed takes<br/>
-     images with specified parameters - can be pressed multiple times.<br/>
+     images with specified parameters - can be pressed multiple times. The number<br/>
+     of images and the label on each button can be changed within the gui.<br/>
     </td>
 </tr>
 
