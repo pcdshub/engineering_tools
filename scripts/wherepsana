@@ -70,9 +70,9 @@ if [[ -z $CONFIG ]]; then
 fi
 
 #create a tempoprary file with the procStatus so we only call that once;
-/reg/g/pcds/dist/pds/$HUTCH/current/tools/procmgr/procmgr status /reg/g/pcds/dist/pds/$HUTCH/scripts/$CONFIG > tmp/procServStatus.$$
+/reg/g/pcds/dist/pds/$HUTCH/current/tools/procmgr/procmgr status /reg/g/pcds/dist/pds/$HUTCH/scripts/$CONFIG > /tmp/procServStatus.$$
 
-PSANA_NODES=(`grep monreqsrvpsana tmp/procServStatus.$$ | awk {'print $1'}`)
+PSANA_NODES=(`grep monreqsrvpsana /tmp/procServStatus.$$ | awk {'print $1'}`)
 
 if [[ -z $DETAIL ]]; then
     NODESTR=''
@@ -81,9 +81,9 @@ if [[ -z $DETAIL ]]; then
     done
     echo ${NODESTR::-1}
 else
-    EVENT=(`grep event tmp/procServStatus.$$ | awk {'print $1'}`)
-    PSANA_MASKS=(`grep monreqsrvpsana tmp/procServStatus.$$ | awk -F "-i " {'print $2'} | awk {'print $1'}`)
-    EVENT_MASKS=(`grep event tmp/procServStatus.$$ | awk -F "-s " '{print $2;}' | awk '{print lshift(1,$1);}'`)
+    EVENT=(`grep event /tmp/procServStatus.$$ | awk {'print $1'}`)
+    PSANA_MASKS=(`grep monreqsrvpsana /tmp/procServStatus.$$ | awk -F "-i " {'print $2'} | awk {'print $1'}`)
+    EVENT_MASKS=(`grep event /tmp/procServStatus.$$ | awk -F "-s " '{print $2;}' | awk '{print lshift(1,$1);}'`)
     echo 'psana runs on the following nodes looking at event nodes '${#EVENT[@]}
     NODESTR=''
     for ((idx=0; idx<${#PSANA_NODES[@]}; ++idx)); do 
@@ -103,4 +103,4 @@ else
 
 fi
 
-rm  tmp/procServStatus.$$
+rm  /tmp/procServStatus.$$
