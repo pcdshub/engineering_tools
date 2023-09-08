@@ -1,0 +1,57 @@
+#!/bin/bash
+
+NC_STRING="NC"
+SC_STRING="SC"
+# TODO:(josh) reflect on hardcoded releases
+IOC_PATH_NC="ioc/fee/GasDetDAQ/R4.0.22"
+IOC_PATH_SC="ioc/fee/GasDetDAQ/R4.0.22-NOTS"
+IOC_PATH=0
+
+# User input validation
+if [[ -n $1 ]]; then # if the user passed at least one arg
+  if [[ $1 != $NC_STRING ]] && [[ $1 != $SC_STRING ]]; then #validate argument is either SC or NC
+    echo "Error. Argument must be either: [NC or SC]"
+    exit 1
+  else
+    echo "User passed argument of: $1"
+  fi
+else
+  echo "Error. Must pass at least one argument"
+  exit 1
+fi
+
+if [[ -n $2 ]]; then
+  echo "Warning. Must pass strictly one argument, additional arg: $2 is ignored"
+  exit 1
+fi
+
+# check current operational state
+OP_MODE=$(caget KFE:CAM:TPR:02:MODE | awk '{print $2}')
+SET_MODE_CMD="caput KFE:CAM:TPR:02:MODE $1"
+
+echo "Current OP_MODE is: $OP_MODE"
+if [[ $OP_MODE = $1 ]]; then
+  echo "Already in requested mode: $OP_MODE exitting with NOP"
+  exit 1
+else
+  echo "Actuating requested timing change, caputing $1 to KFE:CAM:TPR:02:MODE"
+  $SET_MODE_CMD
+fi
+
+# only now discern which mode we want to put it in, TODO(josh): theres some more bashy way of string unwrapping todo this....
+if [[ $1 = $NC_STRING ]]; then
+  IOC_PATH=$IOC_PATH_NC
+else
+  IOC_PATH=$IOC_PATH_SC
+fi
+
+SET_IOC_PATH_CMD="imgr ioc-lfe-gasdet-daq --upgrade $IOC_PATH"
+CURR_IOC_PATH=$(imgr ioc-lfe-gasdet-daq --info | awk 'FNR == 4 {print $3}') #Warning: make sure your release of imgr supports --info 
+if [[ CURR_IOC_PATH = IOC_PATH ]]; then
+  echo "Current IOC path is: $CURR_IOC_PATH which is equiavlent to requested IOC path for the requested switch to $1, not invoking imgr"
+else
+  echo "Actuating ioc-lfe-gasdet-daq IOC software change from $CURR_IOC_PATH to: $IOC_PATH"
+  $SET_IOC_PATH_CMD
+fi
+
+exit 0
