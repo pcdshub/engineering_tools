@@ -623,5 +623,11 @@ Optional arguments:<br/>
     </td>
 </tr>
 
+<tr>
+    <td> set_gem_timing</td>
+    <td> 
+    Usage: set_gem_timing [SC or NC]
+    </td>
+</tr>
 
 </table>
