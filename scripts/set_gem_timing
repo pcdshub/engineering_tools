@@ -25,6 +25,11 @@ if [[ -n $2 ]]; then
   exit 1
 fi
 
+#get caget and caput
+source /cds/group/pcds/setup/epicsenv-cur.sh #Note: (josh) we should only source the actual executables we are using, this is heavy handed. Should be considered suboptimal, but should keep us consitent with the rest of the stack
+#get imgr
+IMGR_CMD_PATH="/reg/g/pcds/engineering_tools/latest-released/scripts/imgr"
+
 # check current operational state
 OP_MODE=$(caget KFE:CAM:TPR:02:MODE | awk '{print $2}')
 SET_MODE_CMD="caput KFE:CAM:TPR:02:MODE $1"
@@ -45,8 +50,8 @@ else
   IOC_PATH=$IOC_PATH_SC
 fi
 
-SET_IOC_PATH_CMD="imgr ioc-lfe-gasdet-daq --upgrade $IOC_PATH"
-CURR_IOC_PATH=$(imgr ioc-lfe-gasdet-daq --info | awk 'FNR == 4 {print $3}') #Warning: make sure your release of imgr supports --info 
+SET_IOC_PATH_CMD="${IMGR_CMD_PATH} ioc-lfe-gasdet-daq --upgrade $IOC_PATH"
+CURR_IOC_PATH=$(${IMGR_CMD_PATH} ioc-lfe-gasdet-daq --info | awk 'FNR == 4 {print $3}') #Warning: make sure your release of imgr supports --info 
 if [[ CURR_IOC_PATH = IOC_PATH ]]; then
   echo "Current IOC path is: $CURR_IOC_PATH which is equiavlent to requested IOC path for the requested switch to $1, not invoking imgr"
 else
