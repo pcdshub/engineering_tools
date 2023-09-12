@@ -21,7 +21,7 @@ else
 fi
 
 if [[ -n $2 ]]; then
-  echo "Warning. Must pass strictly one argument, additional arg: $2 is ignored"
+  echo "Error. Must pass strictly one argument, at least one additional arg: $2, please run again with exclusively [NC or SC] as argument"
   exit 1
 fi
 
@@ -36,8 +36,7 @@ SET_MODE_CMD="caput KFE:CAM:TPR:02:MODE $1"
 
 echo "Current OP_MODE is: $OP_MODE"
 if [[ $OP_MODE = "$1" ]]; then
-  echo "Already in requested mode: $OP_MODE exitting with NOP"
-  exit 1
+  echo "Warning. Already in requested mode: $OP_MODE" #Note: (josh) we are opting to consider this not error worthy
 else
   echo "Actuating requested timing change, caputing $1 to KFE:CAM:TPR:02:MODE"
   $SET_MODE_CMD
