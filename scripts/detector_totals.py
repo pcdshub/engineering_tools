@@ -154,7 +154,10 @@ if __name__ == '__main__':
         try:
             daq_counts[experiment] = getDAQDetectorTotals(experiment)
         except:
-            logger.exception("Exception getting  DAQ detector counts for %s. Note; this may be expected ( for example, restricted experiments ) ", experiment)
+            logger.exception("Exception getting  DAQ detector counts"
+                             " for %s. Note; this may be expected "
+                             "( for example, restricted experiments ) ", 
+                            experiment)
 
     det_counts = OrderedDict()
     for experiment, detectors in daq_counts.items():
