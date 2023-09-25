@@ -62,6 +62,20 @@ check_running_jobs()
     REMJOBIDS=()
     for JOBID in "${JOBIDS[@]}"; do
         if  squeue | grep -q "$JOBID"; then
+            JOBSTATUS=`squeue | grep "${JOBID}" | awk '{print $5}'`
+            if [[ $JOBSTATUS == "R" ]]; then
+                echo "${JOBID} is RUNNING"
+            elif [[ "${JOBSTATUS}" == "PD" ]]; then
+                echo "${JOBID} is PENDING"
+            elif [[ "${JOBSTATUS}" == "CG" ]]; then
+                echo "${JOBID} is COMPLETING"
+            elif [[ "${JOBSTATUS}" == "PR" ]]; then
+                echo "${JOBID} has been PREEMPTED!"
+            elif [[ "${JOBSTATUS}" == "F" ]]; then
+                echo "${JOBID} has FAILED!"
+            else
+                echo "${JOBID} is STOPPED or SUSPENDED"
+            fi
             REMJOBIDS+=( "$JOBID" )
             NJOBS=$((NJOBS+1))
         fi
@@ -1037,7 +1051,7 @@ for MYDET in $DETS; do
 
     echo "-------------------- START CALIBRUN at $(date +'%T') for detector $MYDET----------------------------"
     source $SIT_ENV_DIR/manage/bin/psconda.sh
-    cmd="calibrun -r $RUN  -d $MYDET -P -e $EXP -x :dir=$XTCDIR $LOCARG"
+    cmd="calibrun -r $RUN  -d $MYDET -P -e $EXP -x :dir=$XTCDIR:stream=0-79 $LOCARG"
     echo "$cmd"
     $cmd
     echo "-------------------- END CALIBRUN at $(date +'%T') for detector $MYDET----------------------------"
