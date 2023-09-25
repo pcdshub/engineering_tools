@@ -58,23 +58,23 @@ EOF
 
 check_running_jobs()
 {
+    declare -A SLURM_STAT_MSG = ( ["R"]="is RUNNING."
+                                  ["PD"]="is PENDING."
+                                  ["CG"]="is COMPLETING."
+                                  ["CD"]="has COMPLETED."
+                                  ["PR"]="was PREEMPTED!"
+                                  ["F"]="has FAILED!"
+                                  ["S"]="was SUSPENDED!"
+                                  ["ST"]="was STOPPED!" )
     NJOBS=0
     REMJOBIDS=()
     for JOBID in "${JOBIDS[@]}"; do
         if  squeue | grep -q "$JOBID"; then
-            JOBSTATUS=`squeue | grep "${JOBID}" | awk '{print $5}'`
-            if [[ $JOBSTATUS == "R" ]]; then
-                echo "${JOBID} is RUNNING"
-            elif [[ "${JOBSTATUS}" == "PD" ]]; then
-                echo "${JOBID} is PENDING"
-            elif [[ "${JOBSTATUS}" == "CG" ]]; then
-                echo "${JOBID} is COMPLETING"
-            elif [[ "${JOBSTATUS}" == "PR" ]]; then
-                echo "${JOBID} has been PREEMPTED!"
-            elif [[ "${JOBSTATUS}" == "F" ]]; then
-                echo "${JOBID} has FAILED!"
+            JOBSTATUS=$(squeue | grep "${JOBID}" | awk '{print $5}')
+            if [ "${SLURM_STAT_MSG[$JOBSTATUS]}" ]; then
+                echo "${JOBID} ${SLURM_STAT_MSG[$JOBSTATUS]}"
             else
-                echo "${JOBID} is STOPPED or SUSPENDED"
+                echo "${JOBID} has unknown status ${JOBSTATUS}!"
             fi
             REMJOBIDS+=( "$JOBID" )
             NJOBS=$((NJOBS+1))
