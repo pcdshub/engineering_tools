@@ -58,14 +58,14 @@ EOF
 
 check_running_jobs()
 {
-    declare -A SLURM_STAT_MSG = ( ["R"]="is RUNNING."
-                                  ["PD"]="is PENDING."
-                                  ["CG"]="is COMPLETING."
-                                  ["CD"]="has COMPLETED."
-                                  ["PR"]="was PREEMPTED!"
-                                  ["F"]="has FAILED!"
-                                  ["S"]="was SUSPENDED!"
-                                  ["ST"]="was STOPPED!" )
+    declare -A SLURM_STAT_MSG=( ["R"]="is RUNNING."
+                                ["PD"]="is PENDING."
+                                ["CG"]="is COMPLETING."
+                                ["CD"]="has COMPLETED."
+                                ["PR"]="was PREEMPTED!"
+                                ["F"]="has FAILED!"
+                                ["S"]="was SUSPENDED!"
+                                ["ST"]="was STOPPED!" )
     NJOBS=0
     REMJOBIDS=()
     for JOBID in "${JOBIDS[@]}"; do
