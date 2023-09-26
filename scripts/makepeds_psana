@@ -56,6 +56,20 @@ OPTIONS:
 EOF
 }
 
+cancel_jobs_ctrl_c()
+{
+    echo "Canceling all SLURM Jobs"
+    echo "------------------------"
+    for JOBID in "${JOBIDS[@]}"; do
+        echo "Canceling ${JOBID}"
+        scancel "${JOBID}"
+    done
+    echo "Exiting makepeds"
+    exit 130
+}
+
+trap cancel_jobs_ctrl_c SIGINT
+
 check_for_submit_error()
 {
     if [[ $? != 0 ]]; then
