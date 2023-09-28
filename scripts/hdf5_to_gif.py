@@ -23,6 +23,11 @@ def convert(filepath, duration=100, save_dir=""):
         The amount of time in milliseconds each frame of the gif should last.
     save_dir: string
         The directory to save the gifs in. Defaults to cwd.
+
+    Returns
+    -------
+    filepath: string
+        The path to the newly-generated gif file.
     """
 
     # Getting images from HDF5 file
@@ -33,10 +38,10 @@ def convert(filepath, duration=100, save_dir=""):
     # Saving as GIF
     if save_dir[-1] != '/':
         save_dir += '/'
-    images[0].save(save_dir + filepath.split('/')[-1] + '.gif',
-                   save_all=True, append_images=images[1:],
+    filepath = save_dir + filepath.split('/')[-1] + '.gif'
+    images[0].save(filepath, save_all=True, append_images=images[1:],
                    duration=duration, loop=0)
-    return
+    return filepath
 
 
 if __name__ == "__main__":

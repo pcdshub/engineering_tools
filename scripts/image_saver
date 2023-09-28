@@ -8,7 +8,7 @@ from functools import partial
 from hdf5_to_gif import convert
 
 
-def take_images(camera, num_images, path, filename):
+def take_images(camera, num_images, path, filename, output_gif=""):
     """
     Takes and saves images in hdf5 format.
 
@@ -30,6 +30,9 @@ def take_images(camera, num_images, path, filename):
     filename: string
         Name of hdf5 file images are saved in. Timestamp will be appended
         to ensure all captures have unique filenames.
+    output_gif: string
+        Path to which hdf5 images taken will be converted to gifs and stored
+        in. If empty, no gifs will be made.
     """
     # Creating callbacks to know when collecting/saving images is complete
     collecting = False
@@ -81,7 +84,9 @@ def take_images(camera, num_images, path, filename):
     filepath = path + filename + ".h5"
     print(f"Took {num_images} pictures with {camera.name}, "
           f"saved to {filepath}")
-    return filepath
+    if output_gif:
+        gif_path = convert(filepath, save_dir=output_gif)
+        print(f"Gif saved to {gif_path}.")
 
 
 def load_camera(hutch, cam_name):
@@ -122,7 +127,8 @@ def load_camera(hutch, cam_name):
     return camera
 
 
-def button_gui(cameras, num_images, path, filenames, hutch, filename_prefix):
+def button_gui(cameras, num_images, path, filenames, hutch, filename_prefix,
+               output_gif=""):
     """
     Takes pictures by clicking a button.
 
@@ -151,6 +157,9 @@ def button_gui(cameras, num_images, path, filenames, hutch, filename_prefix):
         Name of hutch that cameras are in; used to edit/add cameras.
     filename_prefix: string
         Prefix to append to filenames; used to edit/add cameras.
+    output_gif: string
+        Path to which hdf5 images taken will be converted to gifs and stored
+        in. If empty, no gifs will be made.
     """
     from qtpy.QtWidgets import (QApplication, QWidget, QGridLayout,
                                 QPushButton, QLineEdit, QLabel, QHBoxLayout,
@@ -194,19 +203,14 @@ def button_gui(cameras, num_images, path, filenames, hutch, filename_prefix):
             print("Num. Images must be positive.")
     num_setter.textEdited.connect(set_num)
     num_layout.addWidget(num_setter, Qt.AlignLeft)
-    # Ensure there is a gifs folder in home
-    save_dir = os.path.expanduser("~") + "/gifs/"
-    if not os.path.exists(save_dir):
-        os.mkdir(save_dir)
 
     def pressed(button, camera, filename):
         """Call take_images and reset button background color when finished"""
-        filepath = take_images(camera, num_images, path, filename)
-        convert(filepath, save_dir=save_dir)
-        print(f"Gif saved to {filepath}.")
+        take_images(camera, num_images, path, filename, output_gif)
         button.clearFocus()
 
     def change_cam(button):
+        """Change which camera a button maps to"""
         text, ok = QInputDialog.getText(None, 'Change Camera', 'New Camera',
                                         text=button.text())
         if ok:
@@ -218,6 +222,7 @@ def button_gui(cameras, num_images, path, filenames, hutch, filename_prefix):
                                            new_camera, filename))
 
     def add_row(camera, filename, row):
+        """Add buttons for a camera"""
         name = camera.name
         button = QPushButton(name)
         button.setFixedSize(125, 50)
@@ -240,6 +245,7 @@ def button_gui(cameras, num_images, path, filenames, hutch, filename_prefix):
     add_cam_button.setFixedSize(40, 40)
 
     def add_camera():
+        """Add a new camera"""
         text, ok = QInputDialog.getText(None, 'Add Camera', 'New Camera')
         if ok:
             new_camera = load_camera(hutch, text)
@@ -277,7 +283,10 @@ if __name__ == '__main__':
                         help="opens qt window where you take "
                         "images via button press, will append "
                         "timestamp to filename if given")
-    parser.add_argument
+    parser.add_argument("-o", "--output-gif", required=False, default="",
+                        help="Path to which hdf5 images taken will be"
+                        "converted to gifs and stored in. If not set, no gifs"
+                        " will be made.")
     args = parser.parse_args()
     # Checking args
     if not os.path.isdir(args.path):
@@ -300,8 +309,9 @@ if __name__ == '__main__':
     if args.gui:
         button_gui(cameras=cameras, num_images=args.num_images,
                    path=args.path, filenames=filenames, hutch=args.hutch,
-                   filename_prefix=args.filename)
+                   filename_prefix=args.filename, output_gif=args.output_gif)
     else:
         for (camera, filename) in zip(cameras, filenames):
             take_images(camera=camera, num_images=args.num_images,
-                        path=args.path, filename=filename)
+                        path=args.path, filename=filename,
+                        output_gif=args.output_gif)
