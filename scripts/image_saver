@@ -1,12 +1,14 @@
+#!/usr/bin/env python
 from argparse import ArgumentParser
 from subprocess import getoutput
 from time import time, sleep
-import os.path
+import os
 from hutch_python.cam_load import interpret_lines, build_cam
-from sys import exit
+from functools import partial
+from hdf5_to_gif import convert
 
 
-def take_images(camera, num_images, path, filename):
+def take_images(camera, num_images, path, filename, output_gif=""):
     """
     Takes and saves images in hdf5 format.
 
@@ -28,6 +30,9 @@ def take_images(camera, num_images, path, filename):
     filename: string
         Name of hdf5 file images are saved in. Timestamp will be appended
         to ensure all captures have unique filenames.
+    output_gif: string
+        Path to which hdf5 images taken will be converted to gifs and stored
+        in. If empty, no gifs will be made.
     """
     # Creating callbacks to know when collecting/saving images is complete
     collecting = False
@@ -76,8 +81,12 @@ def take_images(camera, num_images, path, filename):
     camera.hdf51.file_name.put('')
     camera.hdf51.file_template.put('')
     camera.hdf51.num_capture.put(0)
+    filepath = path + filename + ".h5"
     print(f"Took {num_images} pictures with {camera.name}, "
-          f"saved to {path}{filename}")
+          f"saved to {filepath}")
+    if output_gif:
+        gif_path = convert(filepath, save_dir=output_gif)
+        print(f"Gif saved to {gif_path}.")
 
 
 def load_camera(hutch, cam_name):
@@ -86,8 +95,8 @@ def load_camera(hutch, cam_name):
 
     Gets camera details based on name and hutch-specific
     camviewer config file and uses build_cam to create an
-    individual camera object. Will exit if the config file
-    or the camera cannot be found.
+    individual camera object. Will raise an exception if
+    the config file or the camera cannot be found.
 
     Parameters
     ----------
@@ -104,23 +113,22 @@ def load_camera(hutch, cam_name):
         member to take and save images.
     """
     # Get config for cam_name
-    try:
-        with open(f'/reg/g/pcds/pyps/config/{hutch}/camviewer.cfg', 'r') as f:
-            lines = f.readlines()
-    except Exception as e:
-        exit('Could not open camera config file, '
-             f'/reg/g/pcds/pyps/config/{hutch}/camviewer.cfg', e)
+    with open(f'/reg/g/pcds/pyps/config/{hutch}/camviewer.cfg', 'r') as f:
+        lines = f.readlines()
+    # Get camera name
     cam_line = [line for line in lines if cam_name.upper() in line]
     if not cam_line:
-        exit('Did not find camera in camera config file, '
-             f'/reg/g/pcds/pyps/config/{hutch}/camviewer.cfg, '
-             'check spelling of camera argument.')
+        raise ValueError('Did not find camera in camera config file, '
+                         f'/reg/g/pcds/pyps/config/{hutch}/camviewer.cfg, '
+                         'check spelling of camera argument.')
+    # Make camera
     cam_info = interpret_lines(cam_line)
     camera = build_cam(*cam_info[0])
     return camera
 
 
-def button_gui(cameras, num_images, path, filenames):
+def button_gui(cameras, num_images, path, filenames, hutch, filename_prefix,
+               output_gif=""):
     """
     Takes pictures by clicking a button.
 
@@ -145,6 +153,13 @@ def button_gui(cameras, num_images, path, filenames):
     filename: string
         Name of hdf5 file images are saved in. A timestamp will be appended
         to ensure all captures have unique filenames.
+    hutch: string
+        Name of hutch that cameras are in; used to edit/add cameras.
+    filename_prefix: string
+        Prefix to append to filenames; used to edit/add cameras.
+    output_gif: string
+        Path to which hdf5 images taken will be converted to gifs and stored
+        in. If empty, no gifs will be made.
     """
     from qtpy.QtWidgets import (QApplication, QWidget, QGridLayout,
                                 QPushButton, QLineEdit, QLabel, QHBoxLayout,
@@ -154,12 +169,16 @@ def button_gui(cameras, num_images, path, filenames):
     app = QApplication([])
     window = QWidget()
     window.setWindowTitle("Imager")
-    window.setMinimumSize(210, len(cameras)*60 + 75)
     main_layout = QGridLayout()
     window.setLayout(main_layout)
-    num_layout = QHBoxLayout()
-    main_layout.addLayout(num_layout, 0, 0, 1, -1, Qt.AlignCenter)
+    # Show save dir
+    dir_label = QLabel()
+    dir_label.setFixedHeight(25)
+    dir_label.setText(f'Save dir: {path}')
+    main_layout.addWidget(dir_label, 0, 0, 1, -1, Qt.AlignCenter)
     # Text box to change num_images
+    num_layout = QHBoxLayout()
+    main_layout.addLayout(num_layout, 1, 0, 1, -1, Qt.AlignCenter)
     num_label = QLabel()
     num_label.setFixedSize(80, 25)
     num_label.setText("Num. Images")
@@ -169,11 +188,6 @@ def button_gui(cameras, num_images, path, filenames):
     num_setter.setValidator(QIntValidator())
     num_setter.setMaxLength(3)
     num_setter.setFixedSize(30, 25)
-
-    def pressed(index):
-        """Call take_images and reset button background color when finished"""
-        take_images(cameras[index], num_images, path, filenames[index])
-        buttons[index].clearFocus()
 
     def set_num(text):
         """Change number of images to take"""
@@ -190,33 +204,55 @@ def button_gui(cameras, num_images, path, filenames):
     num_setter.textEdited.connect(set_num)
     num_layout.addWidget(num_setter, Qt.AlignLeft)
 
-    def rename(index):
-        text, ok = QInputDialog.getText(None, 'Rename Camera', 'New Name',
-                                        text=buttons[index].text())
+    def pressed(button, camera, filename):
+        """Call take_images and reset button background color when finished"""
+        take_images(camera, num_images, path, filename, output_gif)
+        button.clearFocus()
+
+    def change_cam(button):
+        """Change which camera a button maps to"""
+        text, ok = QInputDialog.getText(None, 'Change Camera', 'New Camera',
+                                        text=button.text())
         if ok:
-            buttons[index].setText(text)
-    buttons = []
-    # Add buttons to take images and change button text
-    for index, (camera, filename) in enumerate(zip(cameras, filenames), 1):
-        button = QPushButton(camera.name)
+            button.setText(text)
+            new_camera = load_camera(hutch, text)
+            filename = filename_prefix + text
+            button.clicked.disconnect()
+            button.clicked.connect(partial(pressed, button,
+                                           new_camera, filename))
+
+    def add_row(camera, filename, row):
+        """Add buttons for a camera"""
+        name = camera.name
+        button = QPushButton(name)
         button.setFixedSize(125, 50)
-        button.clicked.connect(pressed, index)
+        button.clicked.connect(partial(pressed, button, camera, filename))
         # Make button green when pressed
         button.setStyleSheet("QPushButton::focus"
                              "{"
                              "background-color : lightgreen;"
                              "}")
-        buttons.append(button)
-        main_layout.addWidget(button, index, 0, 1, -1, Qt.AlignCenter)
-        renamer = QPushButton('...')
-        renamer.setFixedSize(30, 30)
-        renamer.clicked.connect(rename, index)
-        main_layout.addWidget(renamer, index, 1)
-    # Show save directory at bottom
-    dir_label = QLabel()
-    dir_label.setFixedHeight(25)
-    dir_label.setText(f'Save dir: {path}')
-    main_layout.addWidget(dir_label, index + 1, 0, 1, -1, Qt.AlignCenter)
+        main_layout.addWidget(button, row, 0, 1, -1, Qt.AlignCenter)
+        cam_changer = QPushButton('...')
+        cam_changer.setFixedSize(30, 30)
+        cam_changer.clicked.connect(partial(change_cam, button))
+        main_layout.addWidget(cam_changer, row, 1)
+    # Add buttons to take images and change cameras
+    for row, (camera, filename) in enumerate(zip(cameras, filenames), 2):
+        add_row(camera, filename, row)
+    # Button to add more cameras
+    add_cam_button = QPushButton('+')
+    add_cam_button.setFixedSize(40, 40)
+
+    def add_camera():
+        """Add a new camera"""
+        text, ok = QInputDialog.getText(None, 'Add Camera', 'New Camera')
+        if ok:
+            new_camera = load_camera(hutch, text)
+            filename = filename_prefix + text
+            add_row(new_camera, filename, main_layout.rowCount() + 1)
+    add_cam_button.clicked.connect(add_camera)
+    main_layout.addWidget(add_cam_button, 1, 2)
     # Open gui
     window.show()
     app.exec_()
@@ -247,29 +283,35 @@ if __name__ == '__main__':
                         help="opens qt window where you take "
                         "images via button press, will append "
                         "timestamp to filename if given")
+    parser.add_argument("-o", "--output-gif", required=False, default="",
+                        help="Path to which hdf5 images taken will be"
+                        "converted to gifs and stored in. If not set, no gifs"
+                        " will be made.")
     args = parser.parse_args()
     # Checking args
     if not os.path.isdir(args.path):
-        exit("path is not directory; must provide a valid path in"
-             " /reg/d/iocData/ or /cds/data/iocData/.")
+        raise ValueError("path is not directory; must provide a valid path in"
+                         " /reg/d/iocData/ or /cds/data/iocData/.")
     if args.path[-1] != '/':
         args.path += '/'
     if args.num_images < 1:
-        exit("num_images must be positive.")
+        raise ValueError("num_images must be positive.")
     # Need hutch name to load cameras
     if args.hutch == 'unknown_hutch':
-        exit("Host hutch unknown: must specify "
-             "hutch with --hutch or be on a host"
-             " with a known hutch")
+        raise ValueError("Host hutch unknown: must specify "
+                         "hutch with --hutch or be on a host"
+                         " with a known hutch")
     # Building cameras and appending camera name(s) to filename
     cameras = [load_camera(args.hutch, camera) for camera in args.cam]
     if args.filename:
         args.filename += "-"
     filenames = [args.filename + camera for camera in args.cam]
     if args.gui:
-        button_gui(cameras=cameras, num_images=args.num_images, path=args.path,
-                   filenames=filenames)
+        button_gui(cameras=cameras, num_images=args.num_images,
+                   path=args.path, filenames=filenames, hutch=args.hutch,
+                   filename_prefix=args.filename, output_gif=args.output_gif)
     else:
         for (camera, filename) in zip(cameras, filenames):
             take_images(camera=camera, num_images=args.num_images,
-                        path=args.path, filename=args.filename)
+                        path=args.path, filename=filename,
+                        output_gif=args.output_gif)
