@@ -140,12 +140,12 @@ req_evrs_func() {
     export req_evrs
 }
 
-# Transforms array of requested PVs into an array of strings which is readable by the Extensible Display Manager
+# Displays requested and argument pvs
 to_display () {
     source /cds/group/pcds/pyps/conda/pcds_conda
     echo "Displaying EVR status screen for " "$hutch" "..."    
     printf "\n"           
-    pydm /reg/g/pcds/epics-dev/screens/pydm/scripts/evr.py -p "${req_evrs[@]}" "${pv_args[@]}"
+    pydm /reg/g/pcds/epics-dev/screens/pydm/scripts/evr.py -p "${req_evrs[@]}" "${pv_args[@]}" &
 }
 
 # Begin Command line argument handling:
