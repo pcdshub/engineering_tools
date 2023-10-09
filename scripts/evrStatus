@@ -18,57 +18,55 @@ EOF
 
 
 # evrList
-# all new PV entries need to be follwed by a comma,
 evrs=(
-CXI:R48:EVR:41,
-CXI:R24:EVR:18,
-CXI:R57:EVR:21,
-CXI:IPM:EVR,
-CXI:REC:EVR:04,
-CXI:DG2:BMMON:EVR,
-EVR:FEE:KMONO:DAQ,
-EVR:FEE:GASDET:DAQ,
-EVR:LAS:LHN:01,
-EVR:LAS:LHN:04,
-EVR:LAS:02,
-EVR:LAS:01,
-LAS:MEC:EVR:01,
-LAS:MEC:EVR:02,
-LAS:MEC:EVR:03,
-EVR:MEC:USR01,
-MEC:TC1:EVR:01,
-EVR:MEC:REC01,
-MEC:XT2-1:BMMON:EVR,
-MFX:EVR:DIA:P6740,
-MFX:EVR:DG2:P6740,
-MFX:REC:EVR:02,
-MFX:DG1:BMMON:EVR,
-IM3K4:PPM:CAM:EVR,
-TMO:MISC:EVR:01,
-TST:EVR:REC02,
-XCS:LAS:EVR:01,
-XCS:R42:EVR:01,
-XCS:R44:EVR:44,
-XCS:SND:DIO:EVR,
-EVR:XCS:USDUSB4:01,
-XCS:SB2:BMMON:EVR,
-XPP:R32:EVR:32,
-XPP:IPM:EVR,
-XPP:R30:EVR:28,
-XPP:R30:EVR:26,
-XPP:USR:EVR,
-XPP:SB2:BMMON:EVR,
-CXI:R48:EVR:41,
-XRT:EVR:MISC02,
-XRT:R32:EVR:41,
-XRT:R38:EVR:44,
-XRT:R04:EVR:33,
-XRT:R44:EVR:38,
-HFX:DG2:BMMON:EVR,
-RIX:CAM:EVR:01,
-IM1L1:PPM:CAM:EVR,
-EVR:FEE1:441,
-IM1K1:PPM:CAM:EVR
+EVR:FEE1:441
+EVR:FEE:GASDET:DAQ
+IM1L1:PPM:CAM:EVR
+EVR:LAS:FTL:01
+EVR:LAS:LHN:01
+EVR:LAS:LHN:04
+EVR:LAS:LLN:01
+XPP:IPM:EVR
+XPP:R30:EVR:26
+XPP:R30:EVR:28
+XPP:R32:EVR:32
+XPP:SB2:BMMON:EVR
+XPP:USR:EVR
+HFX:DG2:BMMON:EVR
+HFX:EVR:DG2:CVV:01
+HFX:EVR:MON:CVV:01
+XRT:EVR:MISC02
+XRT:EVR:R48
+XRT:R04:EVR:33
+XRT:R05:EVR:41
+EVR:DET:01
+XCS:R42:EVR:01
+XCS:R44:EVR:01
+XCS:SB2:BMMON:EVR
+XCS:SND:DIO:EVR
+XCS:USR:EVR
+EVR:XCS:USDUSB4:01
+EVR:LAS:XCS:01
+MFX:DG1:BMMON:EVR
+MFX:EVR:DG2:P6740
+MFX:EVR:DIA:P6740
+MFX:LAS:EVR:01
+MFX:REC:EVR:02
+EVR:LAS:MFX:01
+CXI:DG2:BMMON:EVR
+CXI:IPM:EVR
+CXI:R48:EVR:41
+CXI:REC:EVR:01
+CXI:REC:EVR:04
+EVR:LAS:CXI:01
+MEC:BEAM:EVR:01
+MEC:LAS:EVR:01
+MEC:TC1:EVR:01
+MEC:XT2-1:BMMON:EVR
+EVR:MEC:REC01
+EVR:MEC:USR01
+LAS:MEC:EVR:01
+LAS:MEC:EVR:03
 )
 
 # Areas to search
@@ -84,7 +82,6 @@ areas=(
 "LAS"
 "DET"
 "RIX"
-"TST"
 "TXI"
 "ALL"
 )
@@ -132,47 +129,23 @@ req_evrs_func() {
 	    fi
         done
     fi
-    if [[ "$hutch" == "TMO" ]]; then
-        req_evrs+=("IM3K4:PPM:CAM:EVR,")       # This PV needs to be added manually b/c the name does not have "$hutch" identifier in it
-
-    elif [[ "$hutch" == "XRT" ]]; then
-	req_evrs+=("HFX:DG2:BMMON:EVR,")       # This PV needs to be added manually b/c the name does not have "$hutch" identifier in it
-   
+    # These PVs need to be added manually b/c their names do not have a "$hutch" identifier in them
+    if [[ "$hutch" == "XRT" ]]; then
+	req_evrs+=("HFX:DG2:BMMON:EVR")
+	req_evrs+=("HFX:EVR:DG2:CVV:01")
+	req_evrs+=("HFX:EVR:MON:CVV:01")
     elif [[ "$hutch" == "FEE" ]]; then
-	req_evrs+=("IM1L1:PPM:CAM:EVR," 
-		   "IM1K1:PPM:CAM:EVR,"
-		  )       # This PV needs to be added manually b/c the name does not have "$hutch" identifier in it
-
-    elif [[ "$hutch" == "KFE" ]]; then
-	req_evrs+=("")       # This PV needs to be added manually b/c the name does not have "$hutch" identifier in it
+	req_evrs+=("IM1L1:PPM:CAM:EVR")
     fi
     export req_evrs
 }
 
 # Transforms array of requested PVs into an array of strings which is readable by the Extensible Display Manager
 to_display () {
-    local evr_num=${#req_evrs[@]} # counter for discerning which screen file to display
-
-    if [[ evr_num -lt 10 ]]; then
-        for ((i=0; i< evr_num; i++)); do  # assign EVR00=<HUTCH:EVR:PV0>, EVR01=<HUTCH:EVR:PV1>...
-            local macro_array+="EVR0$i=${req_evrs[$i]}"  # array containing macro assignments 
-        done
-
-    elif [[ evr_num -ge 10 ]]; then
-        for ((i=0; i< 10; i++)); do  # assign EVR00=<HUTCH:EVR:PV0>, EVR01=<HUTCH:EVR:PV1>...
-             local macro_array+="EVR0$i=${req_evrs[$i]}"  # array containing macro assignments 
-        done
-        for ((j=10; j < ${#req_evrs[@]}; j++ )); do
-            macro_array+="EVR$j=${req_evrs[$j]}"
-        done
-    fi
-    local macros_exported=${macro_array[*]} # macros are exported to edm as a string
-    export macros_exported evr_num
-#   echo $macros_exported
+    source /cds/group/pcds/pyps/conda/pcds_conda
     echo "Displaying EVR status screen for " "$hutch" "..."    
     printf "\n"           
-    
-    /reg/g/pcds/epics-dev/screens/edm/common/current/evrStatus/edm-evrs.cmd
+    pydm /reg/g/pcds/epics-dev/screens/pydm/scripts/evr.py -p "${req_evrs[@]}" "${pv_args[@]}"
 }
 
 # Begin Command line argument handling:
@@ -216,46 +189,26 @@ done
 
 # Argument Handling Functions:
 
-# pv_args Handling Function: allow the user to manually enter EVR PVs to see the status of either on the command line
-args_pv_handling() { 
-    evr_num=0
-    for i in "${pv_args[@]}"; do
-        local macro_array+="EVR0$evr_num=$i,"
-        evr_num=$((evr_num + 1))
-    done
-
-    local macros_exported=${macro_array[*]}
-    export macros_exported evr_num
-    
-    /reg/g/pcds/epics-dev/screens/edm/common/current/evrStatus/edm-evrs.cmd
-}
-
 # allow the user to manually enter EVR PVs to see the status when propmpted
 
 manual_pv_entry() { 
-    local evr_num=0
     echo "Enter the EVR PV(s) you would like to see the display status of. Please only enter one per line:" 
     echo "(Press Return to exit this dialog)"
     read -r input
     if [[ "$input" == "" ]]; then
         exit
     else
-        local macro_array+="EVR0$evr_num=$input,"
-        evr_num=$((evr_num + 1))
+        pv_args+=("$input")
     fi
     while read -r line; do
         if [[ "$line" == "" ]]; then
             break
         else
-            local macro_array+="EVR0$evr_num=$line,"
-            evr_num=$((evr_num + 1))
+            pv_args+=("$line")
         fi
     done 
                                                                                 
-    local macros_exported=${macro_array[*]}
-    export macros_exported evr_num
-
-    /reg/g/pcds/epics-dev/screens/edm/common/current/evrStatus/edm-evrs.cmd
+    to_display
 }
 
 except_handling() {
@@ -343,13 +296,6 @@ fi
 if [[ "${opt_args[*]}" == *"--SHOW"* ]]; then
     
     keyword_search
-    if [[ ${#req_evrs[@]} -gt 48 ]]; then
-	echo "ERROR: More than maximum amount of evrs requested than can be displayed"
-        printf "\n"
-        echo "HINT: Use fewer keyword search terms"
-	exit 
-    fi      
-    
     if [[ $count -gt 0 ]]; then
         to_display
         echo "Terms containing: " "${matches[@]}" 
@@ -399,7 +345,7 @@ if [[ ${#area_args[@]} -ne 0 ]]; then
    done
 fi
 if [[ ${#pv_args[@]} -ne 0 ]]; then
-   args_pv_handling
+   to_display
 
 elif [[ "${opt_args[*]}" == *"-EVR"* && ${#pv_args[@]} -eq 0 ]]; then
    manual_pv_entry
@@ -407,6 +353,3 @@ fi
 if [[ ${#except_args[@]} -ne 0 && "${opt_args[*]}" != "--SHOW" ]]; then
     except_handling
 fi
-
-
-
