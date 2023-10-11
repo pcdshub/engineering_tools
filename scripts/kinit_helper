@@ -9,6 +9,7 @@ function kauth {
             :
 	done
     fi
+    return 0
 }
 
 function afsauth {
@@ -18,14 +19,14 @@ function afsauth {
     if [[ $(hostname) != psbuild-rhel* ]]
     then
         echo "You must be on psbuild to create afs tokens"
-	exit
+	return 1
     fi
 
     # need to be in g-pcds afs grup
     if ! pts membership g-pcds 2>&1 | grep -q "$(whoami)"
     then
         echo "You do not have permission to use afs. See https://confluence.slac.stanford.edu/display/PCDS/Onboarding+Staff+Members"
-        exit
+        return 1
     fi
 
     # If token doesn't exist, create it
@@ -33,6 +34,7 @@ function afsauth {
     then	
         aklog
     fi
+    return 0
 }
 
 # if name == '__main__':
