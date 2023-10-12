@@ -4,10 +4,12 @@ function kauth {
     # If token doesn't exist, create it (will query for password)
     if ! klist -s
     then
-	while ! kinit
+	while ! kinit -l 365d -r 365d
 	do
             :
 	done
+    else
+	kinit -R &> /dev/null
     fi
     return 0
 }
@@ -15,7 +17,8 @@ function kauth {
 function afsauth {
     # afs needs kerberos token
     kauth
-    # only available on psbuild servers
+
+    # afs should be used from psbuild servers
     if [[ $(hostname) != psbuild-rhel* ]]
     then
         echo "You must be on psbuild to create afs tokens"
