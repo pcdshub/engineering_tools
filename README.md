@@ -322,6 +322,19 @@ usage: ipmConfigEpics [-b boxname] [-H hutch] [-d] [-h] [-l]<br/>
 </tr>
 
 <tr>
+    <td>kinit_helper</td>
+    <td>
+usage: kinit_helper<br/>
+    Defines two functions - kauth and afsauth.<br/>
+    kauth will create a new kerberos token, renew an existing one, or do nothing if a
+    valid token exists.<br/>
+    afsauth will check that the	user and host are able to access afs; if so, and an afs
+    token doesn't already exist, kauth will be called and a new afs token will be made.<br/>
+    By default, calls afsauth.
+    </td>
+</tr>
+
+<tr>
     <td>makepeds</td>
     <td>
 usage: makepeds options<br/>
