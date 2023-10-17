@@ -15,8 +15,12 @@ function kauth {
 }
 
 function afsauth {
-    # afs needs kerberos token
-    kauth
+    # need to be in g-pcds afs grup                                                                                                                  
+    if ! pts membership g-pcds 2>&1 | grep -q "$(whoami)"
+    then
+        echo "You do not have permission to use afs. See https://confluence.slac.stanford.edu/display/PCDS/Onboarding+Staff+Members"
+        return 1
+    fi
 
     # afs should be used from psbuild servers
     if [[ $(hostname) != psbuild-rhel* ]]
@@ -25,17 +29,12 @@ function afsauth {
 	return 1
     fi
 
-    # need to be in g-pcds afs grup
-    if ! pts membership g-pcds 2>&1 | grep -q "$(whoami)"
-    then
-        echo "You do not have permission to use afs. See https://confluence.slac.stanford.edu/display/PCDS/Onboarding+Staff+Members"
-        return 1
-    fi
-
     # If token doesn't exist, create it
     if ! tokens | grep -q $UID
-    then	
-        aklog
+    then
+        # afs needs kerberos token
+	kauth
+	aklog
     fi
     return 0
 }
