@@ -25,7 +25,7 @@ class Expert(Display):
         pvlabels = [":LINK", ":STATUS", ":CTRL.TAXI", ":Fiducial",
                     ":FIDUCIALRATE", ":PATTERNSTATE"]
         ioc = subprocess.getoutput(
-            ". /reg/g/pcds/setup/pcds_shortcuts.sh; "
+            ". /cds/group/pcds/setup/pcds_shortcuts.sh; "
             f"find_pv {pv} | awk \'FNR == 2 {{print $2}}\'"
         )
         ioc_label = QLabel(f"IOC {ioc}")
