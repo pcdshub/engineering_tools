@@ -1,18 +1,26 @@
 #!/reg/g/pcds/pyps/conda/py39/envs/pcds-5.7.2/bin/python
+import subprocess
 from argparse import ArgumentParser as AP
 from sys import stdin
-import subprocess
-from qtpy import QtCore
-from qtpy.QtWidgets import (QLabel, QApplication, QTableWidget,
-                            QGridLayout, QHeaderView, QHBoxLayout)
-from pydm import Display
+
 from pydm.widgets import PyDMPushButton
 from pydm.widgets.label import PyDMLabel
+from qtpy import QtCore
+from qtpy.QtWidgets import (
+    QApplication,
+    QGridLayout,
+    QHBoxLayout,
+    QHeaderView,
+    QLabel,
+    QTableWidget,
+    QWidget,
+)
 
 
-class Expert(Display):
-    def __init__(self, pv):
+class Expert(QWidget):
+    def __init__(self, pv, parent=None):
         super().__init__()
+        self.parent = parent
         self.setWindowTitle(f"EVR Status Expert Mode ({pv})")
         self.app = QApplication.instance()
         self.setup_ui(pv)
@@ -20,13 +28,25 @@ class Expert(Display):
     def setup_ui(self, pv):
         self.gl = QGridLayout()
         self.setLayout(self.gl)
-        plainlabels = ["Link", "Status", "Rx Error", "Fiducial",
-                       "Fid.Rate", "Pattern State"]
-        pvlabels = [":LINK", ":STATUS", ":CTRL.TAXI", ":Fiducial",
-                    ":FIDUCIALRATE", ":PATTERNSTATE"]
+        plainlabels = [
+            "Link",
+            "Status",
+            "Rx Error",
+            "Fiducial",
+            "Fid.Rate",
+            "Pattern State",
+        ]
+        pvlabels = [
+            ":LINK",
+            ":STATUS",
+            ":CTRL.TAXI",
+            ":Fiducial",
+            ":FIDUCIALRATE",
+            ":PATTERNSTATE",
+        ]
         ioc = subprocess.getoutput(
             ". /cds/group/pcds/setup/pcds_shortcuts.sh; "
-            f"find_pv {pv} | awk \'FNR == 2 {{print $2}}\'"
+            f"find_pv {pv} | awk 'FNR == 2 {{print $2}}'"
         )
         ioc_label = QLabel(f"IOC {ioc}")
         ioc_label.setAlignment(QtCore.Qt.AlignCenter)
@@ -35,7 +55,7 @@ class Expert(Display):
         hl.setContentsMargins(0, 0, 0, 0)
         ql = QLabel("Ref. Time")
         hl.addWidget(ql)
-        pl = PyDMLabel(parent=self, init_channel="ca://" + pv + ":TREF")
+        pl = PyDMLabel(init_channel="ca://" + pv + ":TREF")
         hl.addWidget(pl)
         hl.setAlignment(ql, QtCore.Qt.AlignRight)
         self.gl.addLayout(hl, 1, 0)
@@ -43,97 +63,92 @@ class Expert(Display):
             for j in range(3):
                 hl = QHBoxLayout()
                 hl.setContentsMargins(0, 0, 0, 0)
-                ql = QLabel(plainlabels[i*3 + j] + ":")
+                ql = QLabel(plainlabels[i * 3 + j] + ":")
                 hl.addWidget(ql)
-                pl = PyDMLabel(parent=self,
-                               init_channel="ca://" + pv + pvlabels[i*3 + j])
+                pl = PyDMLabel(init_channel="ca://" + pv + pvlabels[i * 3 + j])
                 hl.addWidget(pl)
                 hl.setAlignment(ql, QtCore.Qt.AlignRight)
-                self.gl.addLayout(hl, i, j+1)
+                self.gl.addLayout(hl, i, j + 1)
         self.table = QTableWidget()
         self.table.setColumnCount(11)
-        self.table.setRowCount(12*2)
-        col_names = ["", "Trigger #", "Event Code", "Description", "State",
-                     "Polarity", "Width(ns)", "Delay(ns)*", "Delay(ticks)*",
-                     "Count", "Rate(Hz)"]
+        self.table.setRowCount(12 * 2)
+        col_names = [
+            "",
+            "Trigger #",
+            "Event Code",
+            "Description",
+            "State",
+            "Polarity",
+            "Width(ns)",
+            "Delay(ns)*",
+            "Delay(ticks)*",
+            "Count",
+            "Rate(Hz)",
+        ]
         self.table.setHorizontalHeaderLabels(col_names)
         self.table.verticalHeader().setVisible(False)
-        for row in range(int(self.table.rowCount()/2)):
+        for row in range(int(self.table.rowCount() / 2)):
             trow = 2 * row
-            ca = 'ca://'
-            pv_idx = f'{row:x}'.upper()
-            button = PyDMPushButton(parent=self, label="Acquire", pressValue=1,
-                                    init_channel=f'{ca}{pv}:CTRL.IP{pv_idx}E')
+            ca = "ca://"
+            pv_idx = f"{row:x}".upper()
+            button = PyDMPushButton(
+                label="Acquire",
+                pressValue=1,
+                init_channel=f"{ca}{pv}:CTRL.IP{pv_idx}E",
+            )
             self.table.setCellWidget(trow, 0, button)
-            button = PyDMPushButton(parent=self, label="Release", pressValue=0,
-                                    init_channel=f'{ca}{pv}:CTRL.IP{pv_idx}E')
-            self.table.setCellWidget(trow+1, 0, button)
+            button = PyDMPushButton(
+                label="Release",
+                pressValue=0,
+                init_channel=f"{ca}{pv}:CTRL.IP{pv_idx}E",
+            )
+            self.table.setCellWidget(trow + 1, 0, button)
             pfx = f"{ca}{pv}:TRIG{row}:"
-            self.table.setCellWidget(trow, 1, QLabel(f"Front Panel {row}",
-                                                     parent=self))
-            self.table.setCellWidget(trow+1, 1, QLabel("Event Code Rdbk",
-                                                       parent=self))
-            self.table.setCellWidget(trow, 2,
-                                     PyDMLabel(parent=self,
-                                               init_channel=f'{pfx}TEC')
-                                     )
-            self.table.setCellWidget(trow+1, 2,
-                                     PyDMLabel(parent=self,
-                                               init_channel=f'{pfx}EC_RBV')
-                                     )
-            self.table.setCellWidget(trow, 3,
-                                     PyDMLabel(parent=self,
-                                               init_channel=f'{pfx}TCTL.DESC')
-                                     )
-            self.table.setCellWidget(trow+1, 3,
-                                     PyDMLabel(parent=self,
-                                               init_channel=f'{pfx}EC_NAME')
-                                     )
-            self.table.setCellWidget(trow, 4,
-                                     PyDMLabel(
-                                         parent=self,
-                                         init_channel=f'{pfx}EVENTCTRL.SEVR')
-                                     )
-            self.table.setCellWidget(trow, 5,
-                                     PyDMLabel(parent=self,
-                                               init_channel=f'{pfx}TPOL')
-                                     )
-            self.table.setCellWidget(trow+1, 5, QLabel("Computed",
-                                                       parent=self))
-            self.table.setCellWidget(trow, 6,
-                                     PyDMLabel(parent=self,
-                                               init_channel=f'{pfx}TWID')
-                                     )
-            self.table.setCellWidget(trow+1, 6,
-                                     PyDMLabel(
-                                         parent=self,
-                                         init_channel=f'{pfx}BW_TWIDCALC')
-                                     )
-            self.table.setCellWidget(trow, 7,
-                                     PyDMLabel(parent=self,
-                                               init_channel=f'{pfx}TDES')
-                                     )
-            self.table.setCellWidget(trow+1, 7,
-                                     PyDMLabel(parent=self,
-                                               init_channel=f'{pfx}BW_TDES')
-                                     )
-            self.table.setCellWidget(trow, 8,
-                                     PyDMLabel(
-                                         parent=self,
-                                         init_channel=f'{ca}{pv}:DG{row}D')
-                                     )
-            self.table.setCellWidget(trow+1, 8,
-                                     PyDMLabel(parent=self,
-                                               init_channel=f'{pfx}BW_TDLY')
-                                     )
-            self.table.setCellWidget(trow, 9,
-                                     PyDMLabel(parent=self,
-                                               init_channel=f'{pfx}CNT')
-                                     )
-            self.table.setCellWidget(trow, 10,
-                                     PyDMLabel(parent=self,
-                                               init_channel=f'{pfx}RATE')
-                                     )
+            self.table.setCellWidget(trow, 1, QLabel(f"Front Panel {row}"))
+            self.table.setCellWidget(trow + 1, 1, QLabel("Event Code Rdbk"))
+            self.table.setCellWidget(
+                trow, 2, PyDMLabel(init_channel=f"{pfx}TEC")
+            )
+            self.table.setCellWidget(
+                trow + 1, 2, PyDMLabel(init_channel=f"{pfx}EC_RBV")
+            )
+            self.table.setCellWidget(
+                trow, 3, PyDMLabel(init_channel=f"{pfx}TCTL.DESC")
+            )
+            self.table.setCellWidget(
+                trow + 1, 3, PyDMLabel(init_channel=f"{pfx}EC_NAME")
+            )
+            self.table.setCellWidget(
+                trow, 4, PyDMLabel(init_channel=f"{pfx}EVENTCTRL.SEVR")
+            )
+            self.table.setCellWidget(
+                trow, 5, PyDMLabel(init_channel=f"{pfx}TPOL")
+            )
+            self.table.setCellWidget(trow + 1, 5, QLabel("Computed"))
+            self.table.setCellWidget(
+                trow, 6, PyDMLabel(init_channel=f"{pfx}TWID")
+            )
+            self.table.setCellWidget(
+                trow + 1, 6, PyDMLabel(init_channel=f"{pfx}BW_TWIDCALC")
+            )
+            self.table.setCellWidget(
+                trow, 7, PyDMLabel(init_channel=f"{pfx}TDES")
+            )
+            self.table.setCellWidget(
+                trow + 1, 7, PyDMLabel(init_channel=f"{pfx}BW_TDES")
+            )
+            self.table.setCellWidget(
+                trow, 8, PyDMLabel(init_channel=f"{ca}{pv}:DG{row}D")
+            )
+            self.table.setCellWidget(
+                trow + 1, 8, PyDMLabel(init_channel=f"{pfx}BW_TDLY")
+            )
+            self.table.setCellWidget(
+                trow, 9, PyDMLabel(init_channel=f"{pfx}CNT")
+            )
+            self.table.setCellWidget(
+                trow, 10, PyDMLabel(init_channel=f"{pfx}RATE")
+            )
         self.gl.addWidget(self.table, 2, 0, 1, -1)
         self.gl.setColumnStretch(0, 0)
         self.gl.setColumnStretch(1, 1)
@@ -144,40 +159,44 @@ class Expert(Display):
         )
 
 
-class EVR(Display):
+class EVR(QWidget):
     def __init__(self, pvs: list[str] = []):
         super().__init__()
         self.app = QApplication.instance()
         self.setWindowTitle("EVR Status")
-        self.channel_sfxs = ["LINK", "STATUS", "CTRL.TAXI",
-                             "Fiducial", "FIDUCIALRATE", "PATTERNSTATE"]
-        self.col_names = ["Link", "Status", "Rx Error",
-                          "Fiducial", "Fid. Rate", "Pattern State"]
+        self.channel_sfxs = [
+            "LINK",
+            "STATUS",
+            "CTRL.TAXI",
+            "Fiducial",
+            "FIDUCIALRATE",
+            "PATTERNSTATE",
+        ]
+        self.col_names = [
+            "Link",
+            "Status",
+            "Rx Error",
+            "Fiducial",
+            "Fid. Rate",
+            "Pattern State",
+        ]
         self.pvs = pvs
         self.expert_screens = []
         self.setup_ui()
 
     def sizeHint(self):
-        return QtCore.QSize(900, len(self.pvs)*50 + 100)
+        return QtCore.QSize(900, len(self.pvs) * 50 + 100)
 
     def setup_ui(self):
         self.main_layout = QGridLayout()
         self.setLayout(self.main_layout)
+        self.main_layout.addWidget(QLabel("Master Trigger Generator"), 1, 0)
         self.main_layout.addWidget(
-            QLabel("Master Trigger Generator"),
-            1, 0
+            PyDMLabel(init_channel="ca://IOC:IN20:EV01:IISFRQ"), 1, 1
         )
+        self.main_layout.addWidget(QLabel("Fiducial Rate at EVG"), 2, 0)
         self.main_layout.addWidget(
-            PyDMLabel(init_channel='ca://IOC:IN20:EV01:IISFRQ'),
-            1, 1
-        )
-        self.main_layout.addWidget(
-            QLabel("Fiducial Rate at EVG"),
-            2, 0
-        )
-        self.main_layout.addWidget(
-            PyDMLabel(init_channel='ca://EVNT:SYS0:1:FIDUCIALRATE'),
-            2, 1
+            PyDMLabel(init_channel="ca://EVNT:SYS0:1:FIDUCIALRATE"), 2, 1
         )
         self.table = QTableWidget()
         self.table.setColumnCount(6)
@@ -187,21 +206,27 @@ class EVR(Display):
         self.table.setCornerButtonEnabled(False)
         for row, pv in enumerate(self.pvs):
             for column in range(6):
-                url = 'ca://'+pv+':'+self.channel_sfxs[column]
-                pydm_label = PyDMLabel(parent=self, init_channel=url)
+                url = "ca://" + pv + ":" + self.channel_sfxs[column]
+                pydm_label = PyDMLabel(init_channel=url)
                 self.table.setCellWidget(row, column, pydm_label)
                 cell = self.table.cellWidget(row, column)
                 cell.setAlignment(QtCore.Qt.AlignCenter)
                 if row % 2 == 0:
-                    cell.setStyleSheet(cell.styleSheet() + "\
+                    cell.setStyleSheet(
+                        cell.styleSheet()
+                        + "\
                     PyDMLabel {\
                     background-color: lightblue;\
-                    }")
+                    }"
+                    )
                 else:
-                    cell.setStyleSheet(cell.styleSheet() + "\
+                    cell.setStyleSheet(
+                        cell.styleSheet()
+                        + "\
                     PyDMLabel {\
                     background-color: white;\
-                    }")
+                    }"
+                    )
                 cell.alarmSensitiveContent = True
         self.main_layout.addWidget(self.table, 0, 0, 1, -1)
         self.main_layout.setColumnStretch(0, 0)
@@ -215,7 +240,7 @@ class EVR(Display):
         )
 
     def expert_mode(self, pv):
-        e = Expert(pv)
+        e = Expert(pv, parent=self)
         e.show()
         self.expert_screens.append(e)
 
@@ -226,53 +251,120 @@ class EVR(Display):
         self.expert_mode(self.pvs[logicalIndex])
 
 
-if __name__ == '__main__':
-    hutches = ['ALL', 'FEE', 'LAS', 'RIX', 'TMO', 'XPP', 'XRT', 'XCS', 'MFX',
-               'CXI', 'MEC']
-    default_pvs = {'FEE': ["EVR:FEE1:441", "EVR:FEE:GASDET:DAQ",
-                           "IM1L1:PPM:CAM:EVR"],
-                   'LAS': ["EVR:LAS:FTL:01", "EVR:LAS:LHN:01",
-                           "EVR:LAS:LHN:04", "EVR:LAS:LLN:01"],
-                   'RIX': [],
-                   'TMO': [],
-                   'XPP': ["XPP:IPM:EVR", "XPP:R30:EVR:26", "XPP:R30:EVR:28",
-                           "XPP:R32:EVR:32", "XPP:SB2:BMMON:EVR",
-                           "XPP:USR:EVR"],
-                   'XRT': ["HFX:DG2:BMMON:EVR", "HFX:EVR:DG2:CVV:01",
-                           "HFX:EVR:MON:CVV:01", "XRT:EVR:MISC02",
-                           "XRT:EVR:R48", "XRT:R04:EVR:33", "XRT:R05:EVR:41",
-                           "EVR:DET:01"],
-                   'XCS': ["XCS:R42:EVR:01", "XCS:R44:EVR:01",
-                           "XCS:SB2:BMMON:EVR", "XCS:SND:DIO:EVR",
-                           "XCS:USR:EVR", "EVR:XCS:USDUSB4:01",
-                           "EVR:LAS:XCS:01"],
-                   'MFX': ["MFX:DG1:BMMON:EVR", "MFX:EVR:DG2:P6740",
-                           "MFX:EVR:DIA:P6740", "MFX:LAS:EVR:01",
-                           "MFX:REC:EVR:02", "EVR:LAS:MFX:01"],
-                   'CXI': ["CXI:DG2:BMMON:EVR", "CXI:IPM:EVR",
-                           "CXI:R48:EVR:41", "CXI:REC:EVR:01",
-                           "CXI:REC:EVR:04", "EVR:LAS:CXI:01"],
-                   'MEC': ["MEC:BEAM:EVR:01", "MEC:LAS:EVR:01",
-                           "MEC:TC1:EVR:01", "MEC:XT2-1:BMMON:EVR",
-                           "EVR:MEC:REC01", "EVR:MEC:USR01", "LAS:MEC:EVR:01",
-                           "LAS:MEC:EVR:03"]
-                   }
-    parser = AP(description="Displays a status GUI for the EVRs of the"
-                "selected hutch or EVR PVs. GUI includes links to event code"
-                " expert screens. The List of EVRs is not exhaustive,"
-                " but rather displays one EVR per host.")
-    parser.add_argument("-e", "--evr", required=False, action='store_true',
-                        help="Prompt user to enter in EVR PVs manually"
-                        " line by line.")
-    parser.add_argument("-l", "--list", required=False, action='store_true',
-                        help="List available hutches to display EVR status.")
-    parser.add_argument("-p", "--pvs", required=False, nargs='*',
-                        help="Display the EVR PVs for a requested hutch that"
-                        " are built into this script.")
-    parser.add_argument("-s", "--show", required=False, nargs='*',
-                        help="Display EVRs matching user specified keyword"
-                        " search term(s).")
-    parser.add_argument("inputs", nargs='*', help="hutches/PVs to display")
+if __name__ == "__main__":
+    hutches = [
+        "ALL",
+        "FEE",
+        "LAS",
+        "RIX",
+        "TMO",
+        "XPP",
+        "XRT",
+        "XCS",
+        "MFX",
+        "CXI",
+        "MEC",
+    ]
+    default_pvs = {
+        "FEE": ["EVR:FEE1:441", "EVR:FEE:GASDET:DAQ", "IM1L1:PPM:CAM:EVR"],
+        "LAS": [
+            "EVR:LAS:FTL:01",
+            "EVR:LAS:LHN:01",
+            "EVR:LAS:LHN:04",
+            "EVR:LAS:LLN:01",
+        ],
+        "RIX": [],
+        "TMO": [],
+        "XPP": [
+            "XPP:IPM:EVR",
+            "XPP:R30:EVR:26",
+            "XPP:R30:EVR:28",
+            "XPP:R32:EVR:32",
+            "XPP:SB2:BMMON:EVR",
+            "XPP:USR:EVR",
+        ],
+        "XRT": [
+            "HFX:DG2:BMMON:EVR",
+            "HFX:EVR:DG2:CVV:01",
+            "HFX:EVR:MON:CVV:01",
+            "XRT:EVR:MISC02",
+            "XRT:EVR:R48",
+            "XRT:R04:EVR:33",
+            "XRT:R05:EVR:41",
+            "EVR:DET:01",
+        ],
+        "XCS": [
+            "XCS:R42:EVR:01",
+            "XCS:R44:EVR:01",
+            "XCS:SB2:BMMON:EVR",
+            "XCS:SND:DIO:EVR",
+            "XCS:USR:EVR",
+            "EVR:XCS:USDUSB4:01",
+            "EVR:LAS:XCS:01",
+        ],
+        "MFX": [
+            "MFX:DG1:BMMON:EVR",
+            "MFX:EVR:DG2:P6740",
+            "MFX:EVR:DIA:P6740",
+            "MFX:LAS:EVR:01",
+            "MFX:REC:EVR:02",
+            "EVR:LAS:MFX:01",
+        ],
+        "CXI": [
+            "CXI:DG2:BMMON:EVR",
+            "CXI:IPM:EVR",
+            "CXI:R48:EVR:41",
+            "CXI:REC:EVR:01",
+            "CXI:REC:EVR:04",
+            "EVR:LAS:CXI:01",
+        ],
+        "MEC": [
+            "MEC:BEAM:EVR:01",
+            "MEC:LAS:EVR:01",
+            "MEC:TC1:EVR:01",
+            "MEC:XT2-1:BMMON:EVR",
+            "EVR:MEC:REC01",
+            "EVR:MEC:USR01",
+            "LAS:MEC:EVR:01",
+            "LAS:MEC:EVR:03",
+        ],
+    }
+    parser = AP(
+        description="Displays a status GUI for the EVRs of the"
+        "selected hutch or EVR PVs. GUI includes links to event code"
+        " expert screens. The List of EVRs is not exhaustive,"
+        " but rather displays one EVR per host."
+    )
+    parser.add_argument(
+        "-e",
+        "--evr",
+        required=False,
+        action="store_true",
+        help="Prompt user to enter in EVR PVs manually" " line by line.",
+    )
+    parser.add_argument(
+        "-l",
+        "--list",
+        required=False,
+        action="store_true",
+        help="List available hutches to display EVR status.",
+    )
+    parser.add_argument(
+        "-p",
+        "--pvs",
+        required=False,
+        nargs="*",
+        help="Display the EVR PVs for a requested hutch that"
+        " are built into this script.",
+    )
+    parser.add_argument(
+        "-s",
+        "--show",
+        required=False,
+        nargs="*",
+        help="Display EVRs matching user specified keyword" " search term(s).",
+    )
+    parser.add_argument("inputs", nargs="*", help="hutches/PVs to display")
     args = parser.parse_args()
     if args.list:
         print("The areas available to see the EVR status of are:")
@@ -281,8 +373,10 @@ if __name__ == '__main__':
     if args.pvs:
         for hutch in args.pvs:
             if hutch.upper() in hutches:
-                print("Here are the PVs currently loaded into the script for:",
-                      hutch)
+                print(
+                    "Here are the PVs currently loaded into the script for:",
+                    hutch,
+                )
                 for pv in default_pvs[hutch.upper()]:
                     print(pv)
             else:
