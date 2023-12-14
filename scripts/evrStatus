@@ -1,412 +1,403 @@
-#!/bin/bash
+#!/reg/g/pcds/pyps/conda/py39/envs/pcds-5.7.2/bin/python
+import subprocess
+from argparse import ArgumentParser as AP
+from sys import stdin
 
-# New usage string
-usage() {
-cat << EOF
-usage: $0 <hutch>|<PV>...[-evr] [-h] [-l] [--pvs [<hutch>...]] [ --show [ <keyword>...]]
-
-Displays a status GUI for the EVRs of the selected hutch or EVR PVs. GUI includes links to event code expert screens. The List of EVRs is not exhaustive, but rather displays one EVR per host.
-
-OPTION: 
-    -evr                     Prompt user to enter in EVR PVs manually line by line.
-    -h                       Display this help text.
-    -l                       List available hutches to display EVR status.
-    --pvs [<hutch>...]       Display the EVR PVs for a requested hutch that are built into this script.
-    --show [<keyword>...]    Display EVRs matching user specified keyword search term(s).
-EOF
-}
-
-
-# evrList
-# all new PV entries need to be follwed by a comma,
-evrs=(
-CXI:R48:EVR:41,
-CXI:R24:EVR:18,
-CXI:R57:EVR:21,
-CXI:IPM:EVR,
-CXI:REC:EVR:04,
-CXI:DG2:BMMON:EVR,
-EVR:FEE:KMONO:DAQ,
-EVR:FEE:GASDET:DAQ,
-EVR:LAS:LHN:01,
-EVR:LAS:LHN:04,
-EVR:LAS:02,
-EVR:LAS:01,
-LAS:MEC:EVR:01,
-LAS:MEC:EVR:02,
-LAS:MEC:EVR:03,
-EVR:MEC:USR01,
-MEC:TC1:EVR:01,
-EVR:MEC:REC01,
-MEC:XT2-1:BMMON:EVR,
-MFX:EVR:DIA:P6740,
-MFX:EVR:DG2:P6740,
-MFX:REC:EVR:02,
-MFX:DG1:BMMON:EVR,
-IM3K4:PPM:CAM:EVR,
-TMO:MISC:EVR:01,
-TST:EVR:REC02,
-XCS:LAS:EVR:01,
-XCS:R42:EVR:01,
-XCS:R44:EVR:44,
-XCS:SND:DIO:EVR,
-EVR:XCS:USDUSB4:01,
-XCS:SB2:BMMON:EVR,
-XPP:R32:EVR:32,
-XPP:IPM:EVR,
-XPP:R30:EVR:28,
-XPP:R30:EVR:26,
-XPP:USR:EVR,
-XPP:SB2:BMMON:EVR,
-CXI:R48:EVR:41,
-XRT:EVR:MISC02,
-XRT:R32:EVR:41,
-XRT:R38:EVR:44,
-XRT:R04:EVR:33,
-XRT:R44:EVR:38,
-HFX:DG2:BMMON:EVR,
-RIX:CAM:EVR:01,
-IM1L1:PPM:CAM:EVR,
-EVR:FEE1:441,
-IM1K1:PPM:CAM:EVR
+from pydm.widgets import PyDMPushButton
+from pydm.widgets.label import PyDMLabel
+from qtpy import QtCore
+from qtpy.QtWidgets import (
+    QApplication,
+    QGridLayout,
+    QHBoxLayout,
+    QHeaderView,
+    QLabel,
+    QTableWidget,
+    QWidget,
 )
 
-# Areas to search
-areas=(
-"MEC"
-"MFX"
-"CXI"
-"XCS"
-"XRT"
-"XPP"
-"TMO"
-"FEE"
-"LAS"
-"DET"
-"RIX"
-"TST"
-"TXI"
-"ALL"
-)
 
-# Reads user input when there are no command line arguments
-read_hutch () {   
-    echo "Enter area you'd like to see ie (XPP, TMO, FEE, ALL..etc):" 
-    echo "(Press enter to exit this session)"
-    read -r  hutch
-    hutch=${hutch^^}  # make user input uppercase for user friendliness  
+class Expert(QWidget):
+    def __init__(self, pv, parent=None):
+        super().__init__()
+        self.parent = parent
+        self.setWindowTitle(f"EVR Status Expert Mode ({pv})")
+        self.app = QApplication.instance()
+        self.setup_ui(pv)
 
-    if [[ "${hutch}" == "" ]]; then 
-        exit
-    fi
-}
-
-# Checks if user inputted area is valid 
-
-in_areas() {
-    hutch_in_areas=$(echo "${areas[@]}" | grep -o "$hutch" | wc -w) # 1 or 0 depending if user input returns a match or not
-
-    if ! [ "$hutch_in_areas" -eq 1 ];then 
-        echo "The area you searched:" "$hutch" " does not correspond to any currently in the NEH or FEH where EVRs are located... the list of available areas is:"
-        printf "\n"
-        printf '%s\n' "${areas[@]}"
-        printf "\n"
-        echo "Try again: evrStatus <area1> <area2> <area3> ..."
-        echo "To see the full list of command line inputs: evrStatus -h"
-       exit
-    fi
-}
-
-# Creates array of requested evr PVs to see the status of
-
-req_evrs_func() {
-    req_evrs=()
-    if [[ "$hutch" == "ALL" ]]; then  # all callable pvs are requested evr pvs 
-        for i in "${evrs[@]}"; do
-            req_evrs+=("$i")
-        done
-    else
-        for i in "${evrs[@]}"; do # call only pvs that are associated with specified hutch
-            if [[ $i == *"$hutch"* ]]; then
-	        req_evrs+=("$i")
-	    fi
-        done
-    fi
-    if [[ "$hutch" == "TMO" ]]; then
-        req_evrs+=("IM3K4:PPM:CAM:EVR,")       # This PV needs to be added manually b/c the name does not have "$hutch" identifier in it
-
-    elif [[ "$hutch" == "XRT" ]]; then
-	req_evrs+=("HFX:DG2:BMMON:EVR,")       # This PV needs to be added manually b/c the name does not have "$hutch" identifier in it
-   
-    elif [[ "$hutch" == "FEE" ]]; then
-	req_evrs+=("IM1L1:PPM:CAM:EVR," 
-		   "IM1K1:PPM:CAM:EVR,"
-		  )       # This PV needs to be added manually b/c the name does not have "$hutch" identifier in it
-
-    elif [[ "$hutch" == "KFE" ]]; then
-	req_evrs+=("")       # This PV needs to be added manually b/c the name does not have "$hutch" identifier in it
-    fi
-    export req_evrs
-}
-
-# Transforms array of requested PVs into an array of strings which is readable by the Extensible Display Manager
-to_display () {
-    local evr_num=${#req_evrs[@]} # counter for discerning which screen file to display
-
-    if [[ evr_num -lt 10 ]]; then
-        for ((i=0; i< evr_num; i++)); do  # assign EVR00=<HUTCH:EVR:PV0>, EVR01=<HUTCH:EVR:PV1>...
-            local macro_array+="EVR0$i=${req_evrs[$i]}"  # array containing macro assignments 
-        done
-
-    elif [[ evr_num -ge 10 ]]; then
-        for ((i=0; i< 10; i++)); do  # assign EVR00=<HUTCH:EVR:PV0>, EVR01=<HUTCH:EVR:PV1>...
-             local macro_array+="EVR0$i=${req_evrs[$i]}"  # array containing macro assignments 
-        done
-        for ((j=10; j < ${#req_evrs[@]}; j++ )); do
-            macro_array+="EVR$j=${req_evrs[$j]}"
-        done
-    fi
-    local macros_exported=${macro_array[*]} # macros are exported to edm as a string
-    export macros_exported evr_num
-#   echo $macros_exported
-    echo "Displaying EVR status screen for " "$hutch" "..."    
-    printf "\n"           
-    
-    /reg/g/pcds/epics-dev/screens/edm/common/current/evrStatus/edm-evrs.cmd
-}
-
-# Begin Command line argument handling:
-
-command_args_string="$*"
-
-
-# Types of command line arguments:
-
-pv_args=()
-opt_args=()
-opts_available=("-L" "--PVS" "-H" "--H" "--HELP" "-Help" "Help" "-EVR" "--SHOW")
-area_args=()
-except_args=()
-
-# Command line args classification logic:
-
-for i in $command_args_string; do
-    i=${i^^}
-    if [[ "$i" =~ ":" && ${#i} -gt 10 ]]; then
-        pv_args+=("$i")
-    elif [[ "${areas[*]}" =~ $i ]]; then   # Initial classification filtering
-        for j in "${areas[@]}"; do           
-            if [[ "$j" == "$i" ]]; then      # Exact Match Filtering
-                area_args+=("$i")
-            fi
-        done
-    elif [[ "${opts_available[*]}" =~ $i ]]; then  # Initial classification filtering
-	for j in "${opts_available[@]}"; do            
-	    if [[ "$j" == "$i" ]];then                 # Exact Match Filtering
-                opt_args+=("$i")
-            fi
-        done
-    elif [[ "${#i}" -eq  1 ]]; then 
-        except_args+=("$i")
-    else
-        except_args+=("$i")
-    fi
-done
-
-
-# Argument Handling Functions:
-
-# pv_args Handling Function: allow the user to manually enter EVR PVs to see the status of either on the command line
-args_pv_handling() { 
-    evr_num=0
-    for i in "${pv_args[@]}"; do
-        local macro_array+="EVR0$evr_num=$i,"
-        evr_num=$((evr_num + 1))
-    done
-
-    local macros_exported=${macro_array[*]}
-    export macros_exported evr_num
-    
-    /reg/g/pcds/epics-dev/screens/edm/common/current/evrStatus/edm-evrs.cmd
-}
-
-# allow the user to manually enter EVR PVs to see the status when propmpted
-
-manual_pv_entry() { 
-    local evr_num=0
-    echo "Enter the EVR PV(s) you would like to see the display status of. Please only enter one per line:" 
-    echo "(Press Return to exit this dialog)"
-    read -r input
-    if [[ "$input" == "" ]]; then
-        exit
-    else
-        local macro_array+="EVR0$evr_num=$input,"
-        evr_num=$((evr_num + 1))
-    fi
-    while read -r line; do
-        if [[ "$line" == "" ]]; then
-            break
-        else
-            local macro_array+="EVR0$evr_num=$line,"
-            evr_num=$((evr_num + 1))
-        fi
-    done 
-                                                                                
-    local macros_exported=${macro_array[*]}
-    export macros_exported evr_num
-
-    /reg/g/pcds/epics-dev/screens/edm/common/current/evrStatus/edm-evrs.cmd
-}
-
-except_handling() {
-    for i in "${except_args[@]}"; do
-
-# 1: Wrong type of PV format  
-        if [[ "$i" =~ ":" && ${#i} -lt 10 ]]; then
-            echo "There seems to be a typo in your requested PV: " "$i" 
-            echo "Please try again"
-
-# 2: Wrong type of area format --> error handling is already executed in the in_areas function
-
-# 3: Option non-existant
-        elif ! [[ "${opts_available[*]}" =~ $i ]]; then
-            echo "Invalid Argument: " "$i"
-            printf "\n"
-	    printf "The list of supported command line arguments are: \n -l \n -evr \n <hutch> \n <PV> \n --pvs [<hutch>...] \n --show [<keyword>...] \n"
-            printf "\n"
-	    echo "For full documentation: $ evrStatus -h "
-	elif [[ "${#i}" -eq 1 ]]; then
-            echo "Invalid Argument: " "$i"
-	    printf "\n"
-            printf "The list of supported command line arguments are: \n -l \n -evr \n <hutch> \n <PV> \n --pvs [<hutch>...] \n --show [<keyword>...] \n"
-	    printf "\n"
-            echo "For full documentation: $ evrStatus -h "
-	elif [[ "${command_args_string[*]}" -eq 1 ]]; then
-	    echo "Invalid Argument: " "$i"
-	    printf "\n"
-            printf "The list of supported command line arguments are: \n -l \n -evr \n <hutch> \n <PV> \n --pvs [<hutch>...] \n --show [<keyword>...] \n"
-	    printf "\n"
-            echo "For full documentation: $ evrStatus -h "
-        fi
-    done
-}
-
-# allow the user to display EVRs containing keywords via a command line search
-
-keyword_search(){
-
-count=0
-command_args_string="${command_args_string^^}"
-
-IFS=" " 
-read -ra command_args <<< "$command_args_string"
-
-for i in "${command_args[@]}"; do
-    if  [[ $i != "--SHOW" ]]; then
-        keywords+=("$i")
-    fi
-
-done 
-
-    for keyword in "${keywords[@]}"; do
- 
-        keyword_in_evrs=$(echo "${evrs[@]}" | grep -o "$keyword" | wc -w) # 1 or 0 depending if user input returns a match or not
-        
-	if [[ $keyword_in_evrs -eq 0 ]]; then
-            echo "Sorry your search:" "$keyword"
-            echo "Did not yield any results"
-	    printf "\n"
-	  
- 	else
-	    matches+=("$keyword")
-	    count=$((count + 1))   
-            for evr in "${evrs[@]}"; do
-                if [[ $evr =~ $keyword ]]; then
-                req_evrs+=("$evr")
-                fi    
-	    done
-	fi
-    done
-export req_evrs count matches
-}
+    def setup_ui(self, pv):
+        self.gl = QGridLayout()
+        self.setLayout(self.gl)
+        plainlabels = [
+            "Link",
+            "Status",
+            "Rx Error",
+            "Fiducial",
+            "Fid.Rate",
+            "Pattern State",
+        ]
+        pvlabels = [
+            ":LINK",
+            ":STATUS",
+            ":CTRL.TAXI",
+            ":Fiducial",
+            ":FIDUCIALRATE",
+            ":PATTERNSTATE",
+        ]
+        ioc = subprocess.getoutput(
+            ". /cds/group/pcds/setup/pcds_shortcuts.sh; "
+            f"find_pv {pv} | awk 'FNR == 2 {{print $2}}'"
+        )
+        ioc_label = QLabel(f"IOC {ioc}")
+        ioc_label.setAlignment(QtCore.Qt.AlignCenter)
+        self.gl.addWidget(ioc_label, 0, 0)
+        hl = QHBoxLayout()
+        hl.setContentsMargins(0, 0, 0, 0)
+        ql = QLabel("Ref. Time")
+        hl.addWidget(ql)
+        pl = PyDMLabel(init_channel="ca://" + pv + ":TREF")
+        hl.addWidget(pl)
+        hl.setAlignment(ql, QtCore.Qt.AlignRight)
+        self.gl.addLayout(hl, 1, 0)
+        for i in range(2):
+            for j in range(3):
+                hl = QHBoxLayout()
+                hl.setContentsMargins(0, 0, 0, 0)
+                ql = QLabel(plainlabels[i * 3 + j] + ":")
+                hl.addWidget(ql)
+                pl = PyDMLabel(init_channel="ca://" + pv + pvlabels[i * 3 + j])
+                hl.addWidget(pl)
+                hl.setAlignment(ql, QtCore.Qt.AlignRight)
+                self.gl.addLayout(hl, i, j + 1)
+        self.table = QTableWidget()
+        self.table.setColumnCount(11)
+        self.table.setRowCount(12 * 2)
+        col_names = [
+            "",
+            "Trigger #",
+            "Event Code",
+            "Description",
+            "State",
+            "Polarity",
+            "Width(ns)",
+            "Delay(ns)*",
+            "Delay(ticks)*",
+            "Count",
+            "Rate(Hz)",
+        ]
+        self.table.setHorizontalHeaderLabels(col_names)
+        self.table.verticalHeader().setVisible(False)
+        for row in range(int(self.table.rowCount() / 2)):
+            trow = 2 * row
+            ca = "ca://"
+            pv_idx = f"{row:x}".upper()
+            button = PyDMPushButton(
+                label="Acquire",
+                pressValue=1,
+                init_channel=f"{ca}{pv}:CTRL.IP{pv_idx}E",
+            )
+            self.table.setCellWidget(trow, 0, button)
+            button = PyDMPushButton(
+                label="Release",
+                pressValue=0,
+                init_channel=f"{ca}{pv}:CTRL.IP{pv_idx}E",
+            )
+            self.table.setCellWidget(trow + 1, 0, button)
+            pfx = f"{ca}{pv}:TRIG{row}:"
+            self.table.setCellWidget(trow, 1, QLabel(f"Front Panel {row}"))
+            self.table.setCellWidget(trow + 1, 1, QLabel("Event Code Rdbk"))
+            self.table.setCellWidget(
+                trow, 2, PyDMLabel(init_channel=f"{pfx}TEC")
+            )
+            self.table.setCellWidget(
+                trow + 1, 2, PyDMLabel(init_channel=f"{pfx}EC_RBV")
+            )
+            self.table.setCellWidget(
+                trow, 3, PyDMLabel(init_channel=f"{pfx}TCTL.DESC")
+            )
+            self.table.setCellWidget(
+                trow + 1, 3, PyDMLabel(init_channel=f"{pfx}EC_NAME")
+            )
+            self.table.setCellWidget(
+                trow, 4, PyDMLabel(init_channel=f"{pfx}EVENTCTRL.SEVR")
+            )
+            self.table.setCellWidget(
+                trow, 5, PyDMLabel(init_channel=f"{pfx}TPOL")
+            )
+            self.table.setCellWidget(trow + 1, 5, QLabel("Computed"))
+            self.table.setCellWidget(
+                trow, 6, PyDMLabel(init_channel=f"{pfx}TWID")
+            )
+            self.table.setCellWidget(
+                trow + 1, 6, PyDMLabel(init_channel=f"{pfx}BW_TWIDCALC")
+            )
+            self.table.setCellWidget(
+                trow, 7, PyDMLabel(init_channel=f"{pfx}TDES")
+            )
+            self.table.setCellWidget(
+                trow + 1, 7, PyDMLabel(init_channel=f"{pfx}BW_TDES")
+            )
+            self.table.setCellWidget(
+                trow, 8, PyDMLabel(init_channel=f"{ca}{pv}:DG{row}D")
+            )
+            self.table.setCellWidget(
+                trow + 1, 8, PyDMLabel(init_channel=f"{pfx}BW_TDLY")
+            )
+            self.table.setCellWidget(
+                trow, 9, PyDMLabel(init_channel=f"{pfx}CNT")
+            )
+            self.table.setCellWidget(
+                trow, 10, PyDMLabel(init_channel=f"{pfx}RATE")
+            )
+        self.gl.addWidget(self.table, 2, 0, 1, -1)
+        self.gl.setColumnStretch(0, 0)
+        self.gl.setColumnStretch(1, 1)
+        self.gl.setColumnStretch(2, 1)
+        self.table.resizeColumnsToContents()
+        self.table.horizontalHeader().setSectionResizeMode(
+            QHeaderView.ResizeToContents
+        )
 
 
-# Status Screen Display Handling Logic:
+class EVR(QWidget):
+    def __init__(self, pvs: list[str] = []):
+        super().__init__()
+        self.app = QApplication.instance()
+        self.setWindowTitle("EVR Status")
+        self.channel_sfxs = [
+            "LINK",
+            "STATUS",
+            "CTRL.TAXI",
+            "Fiducial",
+            "FIDUCIALRATE",
+            "PATTERNSTATE",
+        ]
+        self.col_names = [
+            "Link",
+            "Status",
+            "Rx Error",
+            "Fiducial",
+            "Fid. Rate",
+            "Pattern State",
+        ]
+        self.pvs = pvs
+        self.expert_screens = []
+        self.setup_ui()
 
-if [[ "$1" == "" ]]; then
+    def sizeHint(self):
+        return QtCore.QSize(900, len(self.pvs) * 50 + 100)
 
-    read_hutch #execute user input function first
-    in_areas # test if user input is in accepted list
-    req_evrs_func 
-    to_display
-fi
-if [[ "${opt_args[*]}" == *"--SHOW"* ]]; then
-    
-    keyword_search
-    if [[ ${#req_evrs[@]} -gt 48 ]]; then
-	echo "ERROR: More than maximum amount of evrs requested than can be displayed"
-        printf "\n"
-        echo "HINT: Use fewer keyword search terms"
-	exit 
-    fi      
-    
-    if [[ $count -gt 0 ]]; then
-        to_display
-        echo "Terms containing: " "${matches[@]}" 
-        exit
-    fi
-fi
-if [[ "${opt_args[*]}" == *"-L"* ]]; then
-    echo "The areas available to see EVR status are:"
-    printf '%s\n' "${areas[@]}"
-    printf "\n"
-fi
-if [[ "${opt_args[*]}" == *"-H" || "$i" == *"HELP" ]]; then
-    echo " $( usage ) "
-    printf "\n"
-fi
+    def setup_ui(self):
+        self.main_layout = QGridLayout()
+        self.setLayout(self.main_layout)
+        self.main_layout.addWidget(QLabel("Master Trigger Generator"), 1, 0)
+        self.main_layout.addWidget(
+            PyDMLabel(init_channel="ca://IOC:IN20:EV01:IISFRQ"), 1, 1
+        )
+        self.main_layout.addWidget(QLabel("Fiducial Rate at EVG"), 2, 0)
+        self.main_layout.addWidget(
+            PyDMLabel(init_channel="ca://EVNT:SYS0:1:FIDUCIALRATE"), 2, 1
+        )
+        self.table = QTableWidget()
+        self.table.setColumnCount(6)
+        self.table.setHorizontalHeaderLabels(self.col_names)
+        self.table.setRowCount(len(self.pvs))
+        self.table.setVerticalHeaderLabels(self.pvs)
+        self.table.setCornerButtonEnabled(False)
+        for row, pv in enumerate(self.pvs):
+            for column in range(6):
+                url = "ca://" + pv + ":" + self.channel_sfxs[column]
+                pydm_label = PyDMLabel(init_channel=url)
+                self.table.setCellWidget(row, column, pydm_label)
+                cell = self.table.cellWidget(row, column)
+                cell.setAlignment(QtCore.Qt.AlignCenter)
+                if row % 2 == 0:
+                    cell.setStyleSheet(
+                        cell.styleSheet()
+                        + "\
+                    PyDMLabel {\
+                    background-color: lightblue;\
+                    }"
+                    )
+                else:
+                    cell.setStyleSheet(
+                        cell.styleSheet()
+                        + "\
+                    PyDMLabel {\
+                    background-color: white;\
+                    }"
+                    )
+                cell.alarmSensitiveContent = True
+        self.main_layout.addWidget(self.table, 0, 0, 1, -1)
+        self.main_layout.setColumnStretch(0, 0)
+        self.main_layout.setColumnStretch(1, 1)
+        self.table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        self.table.horizontalHeader().setMinimumSectionSize(90)
+        self.table.setStyleSheet("font-size: 16px; font-weight: 200;")
+        self.table.cellDoubleClicked.connect(self.handle_cell_double)
+        self.table.verticalHeader().sectionDoubleClicked.connect(
+            self.handle_vheader_double
+        )
 
-if [[ "${opt_args[*]}" == *"--PVS"* && ${#area_args[@]} -ne 0 ]]; then
+    def expert_mode(self, pv):
+        e = Expert(pv, parent=self)
+        e.show()
+        self.expert_screens.append(e)
 
-    for i in "${area_args[@]}"; do  
-	hutch=${i^^}
-	req_evrs_func
-        printf "\n"
-        echo "Here are the PVs currently loaded into the script for:" "$hutch"
-        printf "\n"
-        for j in "${req_evrs[@]}"; do echo "$j"; done
-        printf "\n"
-    done
-    exit
-fi
+    def handle_cell_double(self, row, column):
+        self.expert_mode(self.pvs[row])
 
-if [[ "${opt_args[*]}" == "--PVS" && ${#area_args[@]} -eq 0 ]]; then
-     read_hutch
-     in_areas
-     printf "\n"
-     req_evrs_func 
-     echo "Here are the PVs currently loaded into the script for:" "$hutch"
-     for j in "${req_evrs[@]}"; do echo "$j"; done
-         printf "\n" 
-fi
-  
-if [[ ${#area_args[@]} -ne 0 ]]; then
-   for i in "${area_args[@]}"; do
-       hutch=$i
-       in_areas
-       req_evrs_func
-       to_display
-   done
-fi
-if [[ ${#pv_args[@]} -ne 0 ]]; then
-   args_pv_handling
-
-elif [[ "${opt_args[*]}" == *"-EVR"* && ${#pv_args[@]} -eq 0 ]]; then
-   manual_pv_entry
-fi
-if [[ ${#except_args[@]} -ne 0 && "${opt_args[*]}" != "--SHOW" ]]; then
-    except_handling
-fi
+    def handle_vheader_double(self, logicalIndex):
+        self.expert_mode(self.pvs[logicalIndex])
 
 
-
+if __name__ == "__main__":
+    hutches = [
+        "ALL",
+        "FEE",
+        "LAS",
+        "RIX",
+        "TMO",
+        "XPP",
+        "XRT",
+        "XCS",
+        "MFX",
+        "CXI",
+        "MEC",
+    ]
+    default_pvs = {
+        "FEE": ["EVR:FEE1:441", "EVR:FEE:GASDET:DAQ", "IM1L1:PPM:CAM:EVR"],
+        "LAS": [
+            "EVR:LAS:FTL:01",
+            "EVR:LAS:LHN:01",
+            "EVR:LAS:LHN:04",
+            "EVR:LAS:LLN:01",
+        ],
+        "RIX": [],
+        "TMO": [],
+        "XPP": [
+            "XPP:IPM:EVR",
+            "XPP:R30:EVR:26",
+            "XPP:R30:EVR:28",
+            "XPP:R32:EVR:32",
+            "XPP:SB2:BMMON:EVR",
+            "XPP:USR:EVR",
+        ],
+        "XRT": [
+            "HFX:DG2:BMMON:EVR",
+            "HFX:EVR:DG2:CVV:01",
+            "HFX:EVR:MON:CVV:01",
+            "XRT:EVR:MISC02",
+            "XRT:EVR:R48",
+            "XRT:R04:EVR:33",
+            "XRT:R05:EVR:41",
+            "EVR:DET:01",
+        ],
+        "XCS": [
+            "XCS:R42:EVR:01",
+            "XCS:R44:EVR:01",
+            "XCS:SB2:BMMON:EVR",
+            "XCS:SND:DIO:EVR",
+            "XCS:USR:EVR",
+            "EVR:XCS:USDUSB4:01",
+            "EVR:LAS:XCS:01",
+        ],
+        "MFX": [
+            "MFX:DG1:BMMON:EVR",
+            "MFX:EVR:DG2:P6740",
+            "MFX:EVR:DIA:P6740",
+            "MFX:LAS:EVR:01",
+            "MFX:REC:EVR:02",
+            "EVR:LAS:MFX:01",
+        ],
+        "CXI": [
+            "CXI:DG2:BMMON:EVR",
+            "CXI:IPM:EVR",
+            "CXI:R48:EVR:41",
+            "CXI:REC:EVR:01",
+            "CXI:REC:EVR:04",
+            "EVR:LAS:CXI:01",
+        ],
+        "MEC": [
+            "MEC:BEAM:EVR:01",
+            "MEC:LAS:EVR:01",
+            "MEC:TC1:EVR:01",
+            "MEC:XT2-1:BMMON:EVR",
+            "EVR:MEC:REC01",
+            "EVR:MEC:USR01",
+            "LAS:MEC:EVR:01",
+            "LAS:MEC:EVR:03",
+        ],
+    }
+    parser = AP(
+        description="Displays a status GUI for the EVRs of the"
+        "selected hutch or EVR PVs. GUI includes links to event code"
+        " expert screens. The List of EVRs is not exhaustive,"
+        " but rather displays one EVR per host."
+    )
+    parser.add_argument(
+        "-e",
+        "--evr",
+        required=False,
+        action="store_true",
+        help="Prompt user to enter in EVR PVs manually" " line by line.",
+    )
+    parser.add_argument(
+        "-l",
+        "--list",
+        required=False,
+        action="store_true",
+        help="List available hutches to display EVR status.",
+    )
+    parser.add_argument(
+        "-p",
+        "--pvs",
+        required=False,
+        nargs="*",
+        help="Display the EVR PVs for a requested hutch that"
+        " are built into this script.",
+    )
+    parser.add_argument(
+        "-s",
+        "--show",
+        required=False,
+        nargs="*",
+        help="Display EVRs matching user specified keyword" " search term(s).",
+    )
+    parser.add_argument("inputs", nargs="*", help="hutches/PVs to display")
+    args = parser.parse_args()
+    if args.list:
+        print("The areas available to see the EVR status of are:")
+        for hutch in hutches:
+            print(hutch)
+    if args.pvs:
+        for hutch in args.pvs:
+            if hutch.upper() in hutches:
+                print(
+                    "Here are the PVs currently loaded into the script for:",
+                    hutch,
+                )
+                for pv in default_pvs[hutch.upper()]:
+                    print(pv)
+            else:
+                print(f"{hutch} is not a valid hutch")
+    display_pvs = []
+    if args.show:
+        for keyword in args.show:
+            for pv in [p for h in default_pvs.values() for p in h]:
+                if keyword.upper() in pv:
+                    display_pvs.append(pv)
+    for i in args.inputs:
+        if i.upper() in hutches:
+            display_pvs.extend(default_pvs[i.upper()])
+        else:
+            display_pvs.append(i)
+    if args.evr:
+        print("Please enter PVs line by line:")
+        while line := stdin.readline().strip():
+            display_pvs.append(line)
+    if display_pvs:
+        app = QApplication([])
+        w = EVR(display_pvs)
+        w.show()
+        exit(app.exec_())
