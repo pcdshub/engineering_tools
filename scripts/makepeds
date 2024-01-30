@@ -160,7 +160,9 @@ EXP=${EXP:='xxx'}
 QUEUE=${QUEUE:='xxx'}
 INTERACTIVE=${INTERACTIVE:=0}
 
-SDFQUEUES=('milano' 'roma')
+# also put 'xxx' (default q name) as S3DF so that even if no queue is given,
+# it goes to S3DF
+SDFQUEUES=('milano' 'roma' 'xxx')
 for SDFQUEUE in ${SDFQUEUES[@]}; do
     if [[ $QUEUE == $SDFQUEUE ]]; then 
 	S3DF=1
