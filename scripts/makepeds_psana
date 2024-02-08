@@ -47,8 +47,6 @@ OPTIONS:
                 write pixel mask file for pixels with pedestal below xxx (currently integer only)
         -x|--adu_max <#>  
                 write pixel mask file for pixels with pedestal above xxx )currently integer only)
-        -i|--interactive 
-                start calibman. -r 0: show all darks, -r n: show runs (n-25) - 25
         -d|--calibdir
                 give path for alternative calibdir
         -b|--nbunch
@@ -208,9 +206,7 @@ deploy_geometry()
         echo No geometry file found, deploying.
 
         CMD='geometry_deploy_constants -e '$EXP' -r '$RUN' -d '$1' -D'
-        if [[ $HOSTNAME =~ "drp-srcf" ]]; then
-            CMD=$CMD' -x :dir='$XTCDIR'/:stream=0-79'
-        fi
+        CMD=$CMD' -x :dir='$XTCDIR'/:stream=0-79'
 
         echo calling "$CMD"
         $CMD
@@ -443,28 +439,25 @@ fi
 #(hopefully) effectively turn off relative cuts for status bits. Defaults to 6. used in calibrun
 ARG=' -n '$NUMEVT' -Z 1000000 -U 1000000 -z 1000000 -u 1000000 '
 
+if [[ ! $HOSTNAME =~ "sdf" ]]; then
+    echo "makepeds_psana is only supported on the S3DF system"
+    exit 1
+fi
 ###########
 # find xtc directory
 # look for xtc w/o in progress if not using live mode. TOBEIMPLEMENTED
 ###########
-XTCDIR=/reg/d/psdm/"$HUTCH"/"$EXP"/xtc
+XTCDIR=/sdf/data/lcls/ds/"$HUTCH"/"$EXP"/xtc
 RUNSTR=$(printf '%04d' $RUN)
 RUNSTR=$EXP-r$RUNSTR*.xtc
-if [[ $HOSTNAME =~ "sdf" ]]; then
-    XTCDIR=/sdf/data/lcls/ds/"$HUTCH"/"$EXP"/xtc
-    # If inprogress files use FFB location
-    if compgen -G "$XTCDIR/$RUNSTR.inprogress" > /dev/null; then
-        XTCDIR=/sdf/data/lcls/drpsrcf/ffb/"$HUTCH"/"$EXP"/xtc
-    # If no corresponding xtc files use FFB location
-    elif ! compgen -G "$XTCDIR/$RUNSTR" > /dev/null; then
-        XTCDIR=/sdf/data/lcls/drpsrcf/ffb/"$HUTCH"/"$EXP"/xtc
-    fi
 
-
-elif [[ $HOSTNAME =~ "drp-srcf" ]]; then
-    XTCDIR=/cds/data/drpsrcf/${HUTCH}/$EXP/xtc
+# If inprogress files use FFB location
+if compgen -G "$XTCDIR/$RUNSTR.inprogress" > /dev/null; then
+    XTCDIR=/sdf/data/lcls/drpsrcf/ffb/"$HUTCH"/"$EXP"/xtc
+# If no corresponding xtc files use FFB location
+elif ! compgen -G "$XTCDIR/$RUNSTR" > /dev/null; then
+    XTCDIR=/sdf/data/lcls/drpsrcf/ffb/"$HUTCH"/"$EXP"/xtc
 fi
-
 echo "Use XTC files from  $XTCDIR."
 
 
@@ -476,12 +469,7 @@ if [ $CALIBDIR != 'xxx' ]; then
     JFARG=' -C '$CALIBDIR
 else
     JFARG=''
-    CALIBDIR=/reg/d/psdm/${HUTCH}/$EXP/calib/
-    if [[ $HOSTNAME =~ "drp-srcf" ]]; then
-        CALIBDIR=/cds/data/drpsrcf/${HUTCH}/$EXP/calib/
-    elif [[ $HOSTNAME =~ "sdf" ]]; then
-        CALIBDIR=/sdf/data/lcls/ds/${HUTCH}/$EXP/calib/
-    fi
+    CALIBDIR=/sdf/data/lcls/ds/${HUTCH}/$EXP/calib/
     if [[ $LCLS2 -gt 0 ]]; then
         CALIBDIR=${CALIBDIR/calib/scratch}
     fi
@@ -526,13 +514,6 @@ fi
 ###########
 # few generic parameters
 ###########
-if [ $INTERACTIVE == 1 ]; then
-    echo 'now calling calibman (GUI) - switch to old release for now'
-    source /reg/g/psdm/etc/psconda.sh.old
-    calibman
-    exit
-fi
-
 if [ $CALIBCODE -ne 0 ]; then
     if [ $NUMEVT -le 1000 ]; then
         NUMEVT=1000000
@@ -555,13 +536,7 @@ fi
 CREATE_TIME=$(date '+%m_%d_%Y_%H:%M:%S')
 printf -v RUNSTR "%04g" "$RUN"
 
-if [[ $HOSTNAME =~ "sdf" ]]; then
-    echo check detectors at SDF: 
-elif [[ $HOSTNAME =~ "drp-srcf" ]]; then
-    echo check FFB files: 
-else
-    echo Process offline files in psana: 
-fi
+echo check detectors at SDF: 
 
 ls -ltr "$XTCDIR"/*r"$RUNSTR"*s*xtc*
 if [[ $LCLS2 -gt 0 ]]; then
@@ -709,7 +684,7 @@ if [[ $LCLS2 -gt 0 ]]; then
     S="$((T2/1000000000))"
     M="$((T2/1000000))"
     echo "xxxxxxxxxxxxxxxxx END LCLS2 MAKEPEDS at $(date +'%T') after  $S.$M XXXXXXXXXXXXXXXXXXXXXXX"
-    exit
+    exit 0
 fi
 
 
@@ -730,11 +705,7 @@ if [[ ( $HAVE_JUNGFRAU -ge 1 ) && ( $WANT_ZYLA -eq 0 ) && ( $WANT_OPAL -eq 0 ) &
     (( RUN2=RUN+2 ))
     DSNAME="exp=$EXP:run=$RUN,$RUN1,$RUN2:smd:stream=0-79"
     fi
-    if [[ $HOSTNAME =~ "drp-srcf" ]]; then
-    DSNAME=$DSNAME':dir=/cds/data/drpsrcf/'$HUTCH'/'$EXP'/xtc/'
-    elif [[ $HOSTNAME =~ "sdf" ]]; then
     DSNAME=$DSNAME':dir='$XTCDIR
-    fi   
 
     #default arguments.
     JFARG=$JFARG' -d '$DSNAME

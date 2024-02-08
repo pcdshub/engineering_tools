@@ -51,8 +51,6 @@ OPTIONS:
                 write pixel mask file for pixels with pedestal below xxx (currently integer only)
         -x|--adu_max <#>  
                 write pixel mask file for pixels with pedestal above xxx )currently integer only)
-        -i|--interactive 
-                start calibman. -r 0: show all darks, -r n: show runs (n-25) - 25
         -d|--calibdir
                 give path for alternative calibdir
         -b|--nbunch
