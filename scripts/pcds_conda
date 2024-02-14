@@ -110,6 +110,7 @@ TYPHOS_PROD_DEVICES_UI="${SITE_PACKAGES}/typhos/ui/devices"
 EPICS_ROOT="/cds/group/pcds/epics-dev"
 
 export PYDM_CONFIRM_QUIT=0
+export PYDM_DEFAULT_PROTOCOL=ca
 export PYDM_DESIGNER_ONLINE=1
 export PYDM_DISPLAYS_PATH="${PCDSDEVICES_PROD_UI}:${TYPHOS_PROD_DEVICES_UI}:${PCDSDEVICES_DEV_UI}:${EPICS_ROOT}/screens/pydm:${EPICS_ROOT}"
 export PYDM_STYLESHEET="${EPICS_ROOT}/screens/pydm/vacuumscreens/styleSheet/masterStyleSheet.qss"
