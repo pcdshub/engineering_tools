@@ -38,6 +38,7 @@ EPICS_ROOT="/cds/group/pcds/epics-dev"
 export PYTHONPATH="${APPS_ROOT}/dev/pythonpath"
 export PYQTDESIGNERPATH="${CONDA_ROOT}/dev_designer_plugins/:${PYQTDESIGNERPATH}"
 export PYDM_CONFIRM_QUIT=0
+export PYDM_DEFAULT_PROTOCOL=ca
 export PYDM_DESIGNER_ONLINE=1
 export PYDM_DISPLAYS_PATH="${PCDSDEVICES_DEV_UI}:${EPICS_ROOT}/screens/pydm:${EPICS_ROOT}"
 export PYDM_STYLESHEET="${EPICS_ROOT}/screens/pydm/vacuumscreens/styleSheet/masterStyleSheet.qss"
