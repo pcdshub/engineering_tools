@@ -292,7 +292,6 @@ else
 fi
 
 
-
 if [ "$CAMNUM" -eq 0 ]; then
     if [ "$hutch" = "tmo" ]; then
         CAMNAME=IM2K0
@@ -306,6 +305,8 @@ if [ "$CAMNUM" -eq 0 ]; then
         CAMNAME=cxi_dg1_yag
     elif [ "$hutch" = "mec" ]; then
         CAMNAME=GigE_Questar1
+    elif [ "$hutch" = "ued" ]; then
+        CAMNAME=ued-gige-01
     else
 	CAMNAME=xcs_yag2
     fi
