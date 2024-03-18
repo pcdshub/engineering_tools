@@ -131,7 +131,8 @@ data     : returns the path of the appropriate iocData directory if it exists
 autosave : opens the most recent autosave file in less
 archive  : opens the most recent archive file in less
 log      : opens the most recent log file in less
-telnet   : starts a telnet session with the ioc 
+telnet   : starts a telnet session with the ioc
+pvs      : opens the IOC.pvlist file in less
 
 EOF
 }
@@ -304,4 +305,14 @@ elif [ "$CMD" == "telnet" ]; then
    PORT=$(echo "$INFO" | sed -n "s/^.*port: \(\S*\),.*$/\1/p")
    echo "$HOST":"$PORT"
    telnet "$HOST" "$PORT"
+
+#################################################################                                                                           
+
+elif [ "$CMD" == "pvs" ]; then
+   pvlistfile=/cds/data/iocData/"${NAME}"/iocInfo/IOC.pvlist
+   if [ -f "$pvlistfile" ]; then
+      less "$pvlistfile"
+   else
+      echo "$pvlistfile could not be found." >&2
+   fi
 fi
