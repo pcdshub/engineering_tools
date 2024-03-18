@@ -309,7 +309,7 @@ elif [ "$CMD" == "telnet" ]; then
 #################################################################                                                                           
 
 elif [ "$CMD" == "pvs" ]; then
-   pvlistfile=/reg/d/iocData/"${NAME}"/iocInfo/IOC.pvlist
+   pvlistfile=/cds/data/iocData/"${NAME}"/iocInfo/IOC.pvlist
    if [ -f "$pvlistfile" ]; then
       less "$pvlistfile"
    else
