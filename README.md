@@ -306,6 +306,7 @@ usage: ioctool &lt;ioc&gt;|&lt;pv&gt; [option]<br/>
     archive  : opens the most recent archive file in less <br/>
     log      : opens the most recent log file in less<br/>
     telnet : starts a telnet session with the ioc<br/>
+    pvs	   : opens the IOC.pvlist file in less<br/>
     </td>
 </tr>          
 
