@@ -191,24 +191,21 @@ else
     if [[ $USER =~ "opr" ]]; then
         printf "Please enter user name (cannot run as from operator account): \n"; read USER
     fi
-    if [[ $S3DF == 1 ]]; then
-        echo calling on SDF system: makepeds_psana $@
-        # We need to change paths here as the S3DF filesytem is completely independent
-        if [ -v SDFDIR  ]; then
-            DIR=$SDFDIR
-        else
-            DIR=`echo $DIR | sed 's/\/cds\/group\/pcds/\/sdf\/group\/lcls\/ds\/tools/g' | sed 's/\/reg\/g\/pcds/\/sdf\/group\/lcls\/ds\/tools/g'`
-        fi
-        echo ssh -Y $USER@s3dflogin ssh -Y psana "$DIR/makepeds_psana $@"
-        ssh -Y $USER@s3dflogin ssh -Y psana "$DIR/makepeds_psana $@"
+    echo calling on SDF system: makepeds_psana $@
+    # We need to change paths here as the S3DF filesytem is completely independent
+    if [ -v SDFDIR  ]; then
+        DIR=$SDFDIR
+    else
+        DIR=`echo $DIR | sed 's/\/cds\/group\/pcds/\/sdf\/group\/lcls\/ds\/tools/g' | sed 's/\/reg\/g\/pcds/\/sdf\/group\/lcls\/ds\/tools/g'`
     fi
+    echo ssh -Y $USER@s3dflogin ssh -Y psana "$DIR/makepeds_psana $@"
+    ssh -Y $USER@s3dflogin ssh -Y psana "$DIR/makepeds_psana $@"
 fi
 
 if [[ $HOSTNAME =~ "sdf" ]]; then
     source /sdf/group/lcls/ds/ana/sw/conda1/manage/bin/psconda.sh
 else
     source pcds_conda
-fi
 elog_par_post --file pedestal -e "$EXP" -r $RUN
 
 #if this is a default pedestal run, then do not post as this is handled in takepeds

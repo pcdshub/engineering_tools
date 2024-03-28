@@ -358,13 +358,8 @@ if [ $RUN == 0 ]; then
     fi
 fi
 
-PCDSDIR='/reg/g/pcds/'
-SIT_ENV_DIR="/cds/sw/ds/ana/"
-S3DF="sdf"
-if [[ $HOSTNAME =~ "sdf" ]]; then
-    PCDSDIR='/sdf/group/lcls/ds/tools/'
-    SIT_ENV_DIR="/sdf/group/lcls/ds/ana/sw"
-fi
+PCDSDIR='/sdf/group/lcls/ds/tools/'
+SIT_ENV_DIR="/sdf/group/lcls/ds/ana/sw"
 
 if [ $EXP == 'xxx' ]; then
     echo 'no experiment passed!!!'
@@ -409,22 +404,15 @@ ARG=' -n '$NUMEVT' -Z 1000000 -U 1000000 -z 1000000 -u 1000000 '
 # find xtc directory
 # look for xtc w/o in progress if not using live mode. TOBEIMPLEMENTED
 ###########
-XTCDIR=/reg/d/psdm/"$HUTCH"/"$EXP"/xtc
 RUNSTR=$(printf '%04d' $RUN)
 RUNSTR=$EXP-r$RUNSTR*.xtc
-if [[ $HOSTNAME =~ "sdf" ]]; then
-    XTCDIR=/sdf/data/lcls/ds/"$HUTCH"/"$EXP"/xtc
-    # If inprogress files use FFB location
-    if compgen -G "$XTCDIR/$RUNSTR.inprogress" > /dev/null; then
-        XTCDIR=/sdf/data/lcls/drpsrcf/ffb/"$HUTCH"/"$EXP"/xtc
-    # If no corresponding xtc files use FFB location
-    elif ! compgen -G "$XTCDIR/$RUNSTR" > /dev/null; then
-        XTCDIR=/sdf/data/lcls/drpsrcf/ffb/"$HUTCH"/"$EXP"/xtc
-    fi
-
-
-elif [[ $HOSTNAME =~ "drp-srcf" ]]; then
-    XTCDIR=/cds/data/drpsrcf/${HUTCH}/$EXP/xtc
+XTCDIR=/sdf/data/lcls/ds/"$HUTCH"/"$EXP"/xtc
+# If inprogress files use FFB location
+if compgen -G "$XTCDIR/$RUNSTR.inprogress" > /dev/null; then
+    XTCDIR=/sdf/data/lcls/drpsrcf/ffb/"$HUTCH"/"$EXP"/xtc
+# If no corresponding xtc files use FFB location
+elif ! compgen -G "$XTCDIR/$RUNSTR" > /dev/null; then
+    XTCDIR=/sdf/data/lcls/drpsrcf/ffb/"$HUTCH"/"$EXP"/xtc
 fi
 
 echo "Use XTC files from  $XTCDIR."
@@ -438,12 +426,7 @@ if [ $CALIBDIR != 'xxx' ]; then
     JFARG=' -C '$CALIBDIR
 else
     JFARG=''
-    CALIBDIR=/reg/d/psdm/${HUTCH}/$EXP/calib/
-    if [[ $HOSTNAME =~ "drp-srcf" ]]; then
-        CALIBDIR=/cds/data/drpsrcf/${HUTCH}/$EXP/calib/
-    elif [[ $HOSTNAME =~ "sdf" ]]; then
-        CALIBDIR=/sdf/data/lcls/ds/${HUTCH}/$EXP/calib/
-    fi
+    CALIBDIR=/sdf/data/lcls/ds/${HUTCH}/$EXP/calib/
     if [[ $LCLS2 -gt 0 ]]; then
         CALIBDIR=${CALIBDIR/calib/scratch}
     fi
@@ -517,13 +500,7 @@ fi
 CREATE_TIME=$(date '+%m_%d_%Y_%H:%M:%S')
 printf -v RUNSTR "%04g" "$RUN"
 
-if [[ $HOSTNAME =~ "sdf" ]]; then
-    echo check detectors at SDF: 
-elif [[ $HOSTNAME =~ "drp-srcf" ]]; then
-    echo check FFB files: 
-else
-    echo Process offline files in psana: 
-fi
+echo Check detectors: 
 
 ls -ltr "$XTCDIR"/*r"$RUNSTR"*s*xtc*
 if [[ $LCLS2 -gt 0 ]]; then
@@ -685,17 +662,13 @@ if [[ ( $HAVE_JUNGFRAU -ge 1 ) && ( $WANT_ZYLA -eq 0 ) && ( $WANT_OPAL -eq 0 ) &
     DETNAMES=$(grep Jungfrau /tmp/detnames_"$EXP"_"$CREATE_TIME" | awk  'BEGIN { FS = "|"}; {print $1}' | paste -d " " -s)
 
     DSNAME='exp='$EXP':run='$RUN':smd:stream=0-79'
-    if [ -v OLD_JUNGFRAU ]; then
-    #get the dataset name
-    (( RUN1=RUN+1 ))
-    (( RUN2=RUN+2 ))
-    DSNAME="exp=$EXP:run=$RUN,$RUN1,$RUN2:smd:stream=0-79"
+    if [ -v OLD_JUNGFRAU ]; then # Do we need to keep the old JF stuff?
+        #get the dataset name
+        (( RUN1=RUN+1 ))
+        (( RUN2=RUN+2 ))
+        DSNAME="exp=$EXP:run=$RUN,$RUN1,$RUN2:smd:stream=0-79"
     fi
-    if [[ $HOSTNAME =~ "drp-srcf" ]]; then
-    DSNAME=$DSNAME':dir=/cds/data/drpsrcf/'$HUTCH'/'$EXP'/xtc/'
-    elif [[ $HOSTNAME =~ "sdf" ]]; then
     DSNAME=$DSNAME':dir='$XTCDIR
-    fi   
 
     #default arguments.
     JFARG=$JFARG' -d '$DSNAME
