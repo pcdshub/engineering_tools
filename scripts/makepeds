@@ -206,6 +206,8 @@ if [[ $HOSTNAME =~ "sdf" ]]; then
     source /sdf/group/lcls/ds/ana/sw/conda1/manage/bin/psconda.sh
 else
     source pcds_conda
+fi
+
 elog_par_post --file pedestal -e "$EXP" -r $RUN
 
 #if this is a default pedestal run, then do not post as this is handled in takepeds
