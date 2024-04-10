@@ -1,4 +1,3 @@
-#!/reg/g/pcds/pyps/conda/py36/envs/pcds-3.4.0/bin/python
 import argparse
 import socket
 import os
