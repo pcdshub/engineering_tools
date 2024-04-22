@@ -40,6 +40,6 @@ else
 fi
 
 # execute python script
-#python /cds/group/pcds/.../getPVAliases.py $@
+python "$ENG_TOOLS_SCRIPTS/getPVAliases.py" $@
 
 exit
