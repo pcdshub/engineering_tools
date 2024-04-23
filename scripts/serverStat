@@ -139,7 +139,7 @@ fi
 
 if [[ "${NAME,,}" == *drp* ]] && ([[ $CMD == "off" ]] || [[ $CMD == "cycle" ]]); then
     printf "The off and cycle serverStat commands are unavailable on DRP nodes. Do not use psipmi power off or psipmi power cycle directly on DRP nodes as this will disable the ipmi card. Instead, use the web interface as described on:\n\nhttps://confluence.slac.stanford.edu/display/PSDMInternal/Debugging+DAQ#DebuggingDAQ-IPMI\n"
-    exit 0
+    exit 1
 fi
 
 #check if this is a DAQ device
