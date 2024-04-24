@@ -9,8 +9,9 @@ of reports:
 3. PVs no connected.
 4. Files that do not exist.
 """
-import os
 import argparse
+import os
+
 import ophyd.signal
 from prettytable import PrettyTable
 
@@ -119,7 +120,7 @@ def create_Lists(entries):
         myPVs.append(entry[1])
         myFiles.append(entry[2])
         lineNumbers.append('№ ' + str(entry[3]))
-    return(myKeys, myPVs, myFiles, lineNumbers)
+    return (myKeys, myPVs, myFiles, lineNumbers)
 
 
 def find_index(myKeys, myPVs, myFiles):
@@ -146,7 +147,7 @@ def find_index(myKeys, myPVs, myFiles):
             if dmyPVs[dpv] == myPVs[pv]:
                 indPVs.append(pv)
 
-    return(indKeys, indPVs)
+    return (indKeys, indPVs)
 
 
 def report_duplicates(indKeys, indPVs, myKeys, myPVs, myFiles, numLines):

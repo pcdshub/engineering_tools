@@ -1,29 +1,30 @@
 #!/usr/bin/env python
 
-import psana
-from Detector.UtilsEpix10ka import find_gain_mode
-from Detector.UtilsEpix10ka import info_pixel_gain_mode_statistics_for_raw
-import sys
 import argparse
+import sys
+
+import psana
+from Detector.UtilsEpix10ka import (find_gain_mode,
+                                    info_pixel_gain_mode_statistics_for_raw)
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--run', help='run', type=str)
 parser.add_argument('--experiment', help='experiment name', type=str)
 args = parser.parse_args()
 
-exprun = 'exp=%s:run=%s'%(args.experiment,args.run)
+exprun = 'exp=%s:run=%s' % (args.experiment, args.run)
 
 ds = psana.DataSource(exprun+':smd')
 
 aliases = []
 for dn in psana.DetNames():
-    if dn[1]!='':
+    if dn[1] != '':
         alias = dn[1]
     else:
         alias = dn[0]
-    if alias.find('10k')>0:
+    if alias.find('10k') > 0:
         aliases.append(alias)
-if len(alias)==0:
+if len(alias) == 0:
     print('did not find an epix10k, quit.')
     sys.exit()
 
@@ -33,29 +34,31 @@ for ialias, alias in enumerate(aliases):
     epixs.append(psana.Detector(alias))
 
 for run in ds.runs():
-    print 'run loop'
-    for nstep,step in enumerate(run.steps()):
+    print('run loop')
+    for nstep, step in enumerate(run.steps()):
         for epix in epixs:
-            print '*** config gain mode: %s \t'%epix.name, find_gain_mode(det=epix)
+            print('*** config gain mode: %s \t' % epix.name, find_gain_mode(det=epix))
         pvList = cd().pvLabels()
         for pv in pvList:
-            print 'Step',nstep,'name/value:',pv.name(),pv.value()
+            print('Step', nstep, 'name/value:', pv.name(), pv.value())
         found = False
         nbad = 0
-        raws=[]
+        raws = []
         for epix in epixs:
             raws.append(None)
-        for nevt,evt in enumerate(step.events()):
+        for nevt, evt in enumerate(step.events()):
             if not found:
-                for iepix,epix in enumerate(epixs):
+                for iepix, epix in enumerate(epixs):
                     found = True
                     if epix.raw(evt) is None:
                         nbad += 1
-                        raws[iepix]=None
+                        raws[iepix] = None
                         found = False
                     else:
-                        raws[iepix]=epix.raw(evt)
+                        raws[iepix] = epix.raw(evt)
                 if found:
-                    for iepix,epix in enumerate(epixs):
-                        print '--- event gain mode for %s \t'%epix.name,find_gain_mode(det=epix,data=raws[iepix]),info_pixel_gain_mode_statistics_for_raw(epix, raws[iepix])
+                    for iepix, epix in enumerate(epixs):
+                        print('--- event gain mode for %s \t' % epix.name,
+                              find_gain_mode(det=epix, data=raws[iepix]),
+                              info_pixel_gain_mode_statistics_for_raw(epix, raws[iepix]))
             pass

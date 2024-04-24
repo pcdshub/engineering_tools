@@ -1,11 +1,12 @@
 #!/usr/bin/env python
-from argparse import ArgumentParser
-from subprocess import getoutput
-from time import time, sleep
 import os
-from hutch_python.cam_load import interpret_lines, build_cam
+from argparse import ArgumentParser
 from functools import partial
+from subprocess import getoutput
+from time import sleep, time
+
 from hdf5_to_gif import convert
+from hutch_python.cam_load import build_cam, interpret_lines
 
 
 def take_images(camera, num_images, path, filename, output_gif=""):
@@ -161,11 +162,11 @@ def button_gui(cameras, num_images, path, filenames, hutch, filename_prefix,
         Path to which hdf5 images taken will be converted to gifs and stored
         in. If empty, no gifs will be made.
     """
-    from qtpy.QtWidgets import (QApplication, QWidget, QGridLayout,
-                                QPushButton, QLineEdit, QLabel, QHBoxLayout,
-                                QInputDialog)
-    from qtpy.QtGui import QIntValidator
     from qtpy.QtCore import Qt
+    from qtpy.QtGui import QIntValidator
+    from qtpy.QtWidgets import (QApplication, QGridLayout, QHBoxLayout,
+                                QInputDialog, QLabel, QLineEdit, QPushButton,
+                                QWidget)
     app = QApplication([])
     window = QWidget()
     window.setWindowTitle("Imager")
