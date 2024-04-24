@@ -9,17 +9,16 @@ and repoint the symbolic link at
 to the new release folder.
 """
 import argparse
-import subprocess
-import stat
 import os
+import subprocess
 
 CONDA_BASE = '/reg/g/pcds/pyps/conda/py36'
 APPS_BASE = '/reg/g/pcds/pyps/apps'
 
 # Some basic py2/py3 compat for this standalone script
 try:
-    input = raw_input
-except:
+    input = raw_input  # NOQA
+except NameError:
     pass
 
 
@@ -60,7 +59,7 @@ def main():
     # Check the environment
     conda_setup = CONDA_BASE + '/etc/profile.d/conda.sh'
     if not os.path.exists(conda_setup):
-        print('No conda activate script at {}, aborting'.format(conda_source))
+        print('No conda activate script at {}, aborting'.format(conda_setup))
         return
     conda_env = CONDA_BASE + '/envs/' + args.conda
     if not os.path.exists(conda_env):
@@ -115,6 +114,7 @@ def main():
     else:
         print('{} does not exist, aborting'.format(APPS_BASE))
         return
+
 
 if __name__ == '__main__':
     main()

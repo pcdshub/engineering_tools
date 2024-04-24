@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-Updates items in the happi database to reflect the which line XPP is 
+Updates items in the happi database to reflect the which line XPP is
 using (mono line, pink line).
 
 Assumes pcds-conda, and grabs the currently active happi config.
@@ -37,7 +37,7 @@ def main():
     args = parser.parse_args()
     max_z = args.max_z
     min_z = args.min_z
-   
+
     pink_active = 0
     mono_active = 0
     if args.pink:
@@ -47,7 +47,7 @@ def main():
     else:
         pink_active = EpicsSignalRO('XPP:INS:POS:01:IN_DI').get()
         mono_active = EpicsSignalRO('XPP:INS:POS:01:OUT_DO').get()
-    
+
     # get current working config and happi client
     client = happi.client.Client.from_config()
     # grab all possibly relevant results
@@ -95,8 +95,9 @@ def main():
             print('  dry run, value not saved')
             continue
         res.item.save()
-    
+
     print('Mode change completed')
+
 
 if __name__ == '__main__':
     main()
