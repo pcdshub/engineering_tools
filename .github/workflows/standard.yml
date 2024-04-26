@@ -1,0 +1,53 @@
+name: PCDS Standard Testing
+
+on:
+  push:
+  pull_request:
+  release:
+    types:
+      - created
+
+jobs:
+  get_changed_files:
+    name: "get_changed_files"
+    runs-on: ubuntu-20.04
+    outputs:
+      PROJECT_FILES: ${{ steps.changed_files.outputs.PROJECT_FILES }}
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        submodules: 'recursive'
+
+    - name: Find all changed files
+      id: changed_files
+      if: ${{ github.event_name == 'pull_request' }}
+      run: |
+        # Fancy method of saying:
+        # * What files changed from this PR (the current checked out HEAD)
+        # * To the base that we're merging into (e.g., origin/master)
+        # Note that ACMRT = added/copied/modified/renamed/type change
+        # See more in `man git-diff-tree` under `--diff-filter`
+        git diff-tree --no-commit-id --name-only --diff-filter=ACM -r -z origin/${{ github.base_ref }} HEAD \
+          | tee "$HOME/project_files.txt"
+
+
+        if [ ! -s "$HOME/project_files.txt" ]; then
+          echo "No source code files changed in this PR.  Checking the entire repository."
+          find "." -print0 -type f \
+            > "$HOME/project_files.txt"
+        fi
+
+        # replace nulls with spaces
+        sed -i 's/\x0/ /g' $HOME/project_files.txt
+
+        # set output
+        echo "PROJECT_FILES=$(<$HOME/project_files.txt)" >> "$GITHUB_OUTPUT"
+
+  pre-commit:
+    needs:
+      - get_changed_files
+    name: 'pre-commit checks'
+    uses: pcdshub/pcds-ci-helpers/.github/workflows/pre-commit.yml@master
+    with:
+      args: "--files ${{ needs.get_changed_files.outputs.PROJECT_FILES }}"

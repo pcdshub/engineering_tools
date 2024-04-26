@@ -6,15 +6,8 @@ from sys import stdin
 from pydm.widgets import PyDMPushButton
 from pydm.widgets.label import PyDMLabel
 from qtpy import QtCore
-from qtpy.QtWidgets import (
-    QApplication,
-    QGridLayout,
-    QHBoxLayout,
-    QHeaderView,
-    QLabel,
-    QTableWidget,
-    QWidget,
-)
+from qtpy.QtWidgets import (QApplication, QGridLayout, QHBoxLayout,
+                            QHeaderView, QLabel, QTableWidget, QWidget)
 
 
 class Expert(QWidget):

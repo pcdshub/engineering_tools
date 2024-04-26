@@ -13,8 +13,9 @@ The script will generate a report for:
 3. If the current configuration matches or not with the
 appropriate values.
 """
-import os
 import argparse
+import os
+
 import ophyd.signal
 from pmgr import pmgrAPI
 from prettytable import PrettyTable

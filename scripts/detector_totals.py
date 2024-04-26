@@ -3,15 +3,15 @@
 Script for the detector group to pull totals out of the elog.
 We get DAQ run parameters for all experiments and count them up.
 """
-import sys
-import logging
 import argparse
+import logging
+import sys
 from collections import OrderedDict
-import requests
-import pytz
-import dateutil.parser as dateparser
-from krtc import KerberosTicket
 
+import dateutil.parser as dateparser
+import pytz
+import requests
+from krtc import KerberosTicket
 
 logger = logging.getLogger(__name__)
 krbheaders = KerberosTicket("HTTP@pswww.slac.stanford.edu").getAuthHeaders()
@@ -57,10 +57,11 @@ def getExperiments(run_period, after, before):
         except those whose first run is after the specified time
     """
     resp = requests.get(
-                f"{lgbkprefix}/ws/experiments",
-                params={"categorize": "instrument_runperiod",
-                        "sortby": "name"},
-                headers=krbheaders).json()
+        f"{lgbkprefix}/ws/experiments",
+        params={"categorize": "instrument_runperiod",
+                "sortby": "name"},
+        headers=krbheaders
+    ).json()
     exps = []
     for k, v in resp["value"].items():
         insexps = map(lambda x: x["_id"], v.get("Run " + str(run_period), []))
@@ -73,27 +74,29 @@ def getExperiments(run_period, after, before):
         return exp.get("first_run", {}).get("begin_time", None)
 
     def last_run_before_specified_after(exp):
-        return exp.get("last_run", {}).get("begin_time", None) \
-                and dateparser.parse(exp["last_run"]["begin_time"])\
-                .astimezone(tz) < after
+        return (exp.get("last_run", {}).get("begin_time", None)
+                and dateparser.parse(exp["last_run"]["begin_time"])
+                .astimezone(tz) < after)
 
     def first_run_after_specified_before(exp):
-        return exp.get("first_run", {}).get("begin_time", None) \
-                and dateparser.parse(exp["first_run"]["begin_time"])\
-                .astimezone(tz) > before
+        return (exp.get("first_run", {}).get("begin_time", None)
+                and dateparser.parse(exp["first_run"]["begin_time"]).astimezone(tz) > before)
 
     sef = None
     if after and before:
-        sef = lambda x: last_run_exists(x) \
-                and not last_run_before_specified_after(x) \
-                and first_run_exists(x) \
-                and not first_run_after_specified_before(x)
+        def sef(x):
+            return (last_run_exists(x)
+                    and not last_run_before_specified_after(x)
+                    and first_run_exists(x)
+                    and not first_run_after_specified_before(x))
     elif after:
-        sef = lambda x: last_run_exists(x) \
-                and not last_run_before_specified_after(x)
+        def sef(x):
+            return (last_run_exists(x)
+                    and not last_run_before_specified_after(x))
     elif before:
-        sef = lambda x: first_run_exists(x) \
-                and not first_run_after_specified_before(x)
+        def sef(x):
+            return (first_run_exists(x)
+                    and not first_run_after_specified_before(x))
 
     if sef:
         expsset = set(exps)
