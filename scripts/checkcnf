@@ -18,6 +18,7 @@ HUTCH=$(get_info --gethutch)
 
 LCLS2_HUTCHES="rix, tmo, ued"
 if echo "$LCLS2_HUTCHES" | grep -iw "$HUTCH" > /dev/null; then
+    # shellcheck source=/reg/g/pcds/dist/pds/rix/scripts/setup_env.sh
     source /reg/g/pcds/dist/pds/"$HUTCH"/scripts/setup_env.sh
     PROCMGR='procmgr'
 else

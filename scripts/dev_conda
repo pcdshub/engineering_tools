@@ -2,7 +2,7 @@
 usage()
 {
 cat << EOF
-usage: source $0 
+usage: source $0
 
 Source this to activate the latest version a pcds conda environment.
 EOF
@@ -64,4 +64,3 @@ if [ -n "${SSH_CONNECTION}" ]; then
     fi
   fi
 fi
-

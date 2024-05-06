@@ -4,7 +4,7 @@ usage(){
 cat << EOF
 usage: ${BASH_SOURCE[0]} <hutch>
 
-Verifies that the passed argument is a known hutch, exit 0 for success and exit 1 for failure. 
+Verifies that the passed argument is a known hutch, exit 0 for success and exit 1 for failure.
 
 EOF
 }
@@ -21,7 +21,7 @@ fi
 
 hutch=${1,,}
 for i in "tmo" "txi" "rix" "xpp" "xcs" "mfx" "cxi" "mec" "ued" "ued" "det" "lfe" "kfe" "tst" "las" "hpl"; do
-    if [[ $hutch == $i ]]; then
+    if [[ $hutch == "$i" ]]; then
         exit 0
     fi
 done

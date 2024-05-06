@@ -50,7 +50,7 @@ else
 fi
 
 SET_IOC_PATH_CMD="${IMGR_CMD_PATH} ioc-lfe-gasdet-daq --upgrade $IOC_PATH"
-CURR_IOC_PATH=$(${IMGR_CMD_PATH} ioc-lfe-gasdet-daq --info | awk 'FNR == 4 {print $3}') #Warning: make sure your release of imgr supports --info 
+CURR_IOC_PATH=$(${IMGR_CMD_PATH} ioc-lfe-gasdet-daq --info | awk 'FNR == 4 {print $3}') #Warning: make sure your release of imgr supports --info
 if [[ $CURR_IOC_PATH = "$IOC_PATH" ]]; then
   echo "Current IOC path is: $CURR_IOC_PATH which is equiavlent to requested IOC path for the requested switch to $1, not invoking imgr"
 else
