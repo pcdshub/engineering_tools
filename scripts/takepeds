@@ -10,7 +10,7 @@ Takes a run with dark images for use in pedestals, and posts to the elog.
 EOF
 }
 
-if [[($1 == "--help") || ($1 == "-h")]]; then
+if [[ ($1 == "--help") || ($1 == "-h")]]; then
         usage
         exit 0
 fi
@@ -19,16 +19,16 @@ DAQ_RELEASE=/cds/group/pcds/dist/pds/current
 
 # -R: for norecord , -r forces recording
 station=$(get_info --getstation)
-$DAQ_RELEASE/tools/scanning/take_pedestals -p $station -r
+$DAQ_RELEASE/tools/scanning/take_pedestals -p "$station" -r
 
 elogMessage="DARK"
 source pcds_conda
 PYCMD=LogBookPost
 
-EXP=`get_curr_exp`
-RUN=`get_lastRun`
+EXP=$(get_curr_exp)
+RUN=$(get_lastRun)
 HUTCH=${EXP:0:3}
-echo $PYCMD -i "${HUTCH^^}" -u `whoami` -e "$EXP"  -t DARK  -r $RUN -m "$elogMessage"
-$PYCMD -i "${HUTCH^^}" -u `whoami` -p pcds -e "$EXP"  -t DARK  -r $RUN -m "$elogMessage"&
+echo $PYCMD -i "${HUTCH^^}" -u "$(whoami)" -e "$EXP"  -t DARK  -r "$RUN" -m "$elogMessage"
+$PYCMD -i "${HUTCH^^}" -u "$(whoami)" -p pcds -e "$EXP"  -t DARK  -r "$RUN" -m "$elogMessage"&
 
-echo 'Please call: makepeds -q milano -r '`get_lastRun`' -u <userID>'
+echo "Please call: makepeds -q milano -r $(get_lastRun) -u <userID>"

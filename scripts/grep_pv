@@ -17,20 +17,20 @@ KEYWORD=$1
 
 if [[ -n $KEYWORD ]]; then
     cd /reg/d/iocData/
-    for i in ioc-*; do 
-	cd /reg/d/iocData/$i
+    for i in ioc-*; do
+	cd /reg/d/iocData/"$i"
 	if [ -e ./iocInfo/ ] ; then
      	    cd iocInfo
 	    if [ -e ./IOC.pvlist ] ; then
-		if grep -q $KEYWORD IOC.pvlist
-		then 
+		if grep -q "$KEYWORD" IOC.pvlist
+		then
 		    pwd
-		    grep $KEYWORD IOC.pvlist;
+		    grep "$KEYWORD" IOC.pvlist;
 		    echo ""
 		else
 		    :
 		fi
-	    fi 
+	    fi
 	fi
 	cd ../../
     done

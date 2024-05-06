@@ -1,6 +1,6 @@
 #!/bin/bash
 cat << EOF
-This tool is deprecated. Please let your ECS staff 
-know what you were trying to do in case you are not 
+This tool is deprecated. Please let your ECS staff
+know what you were trying to do in case you are not
 aware of a supported alternative
 EOF

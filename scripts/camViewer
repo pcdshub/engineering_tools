@@ -23,7 +23,7 @@ VIEWERCFG=/reg/g/pcds/pyps/config/$hutch/camviewer.cfg
 # Match "-" or "_" or " ".
 NAME=$(echo "$1" | sed -e 's/-/ /g' -e 's/_/ /g' -e 's/ /[-_ ]/g')
 #
-# The story here: 
+# The story here:
 # See how many matches we have in the hutch.
 # If 0, try looking in all of the hutches.
 # If 1, then we're done.
@@ -34,11 +34,12 @@ NAME=$(echo "$1" | sed -e 's/-/ /g' -e 's/_/ /g' -e 's/ /[-_ ]/g')
 #
 # Make a temp file with just the PVs and camera names that match.
 tmp=/tmp/cv.$$
-cat "$VIEWERCFG" | grep -i "$NAME" | grep -v '#' | awk -F, '{ if (split($2,a,";")==1) n=$2; else n=a[2]; gsub(" ","",n); gsub(" ","",$4); printf "%s %s\n", n, $4; }' >$tmp
+grep -i "$NAME" "$VIEWERCFG" | grep -v '#' | awk -F, '{ if (split($2,a,";")==1) n=$2; else n=a[2]; gsub(" ","",n); gsub(" ","",$4); printf "%s %s\n", n, $4; }' >$tmp
 c=$(wc -l <$tmp)
 if [ "$c" -eq 0 ]; then
-    VIEWERCFG=/reg/g/pcds/pyps/config/*/camviewer.cfg
-    cat $VIEWERCFG | grep -i "$NAME" | grep -v '#' | awk -F, '{ if (split($2,a,";")==1) n=$2; else n=a[2]; gsub(" ","",n); gsub(" ","",$4); printf "%s %s\n", n, $4; }' >$tmp
+    VIEWERCFG="/reg/g/pcds/pyps/config/*/camviewer.cfg"
+    # shellcheck disable=SC2086
+    grep -i "$NAME" $VIEWERCFG | grep -v '#' | awk -F, '{ if (split($2,a,";")==1) n=$2; else n=a[2]; gsub(" ","",n); gsub(" ","",$4); printf "%s %s\n", n, $4; }' >$tmp
     c=$(wc -l <$tmp)
     if [ "$c" -eq 0 ]; then
 	echo "No match for $1"
@@ -52,14 +53,14 @@ if [ "$c" -eq 1 ]; then
     return
 fi
 # OK, ambiguous.  Look for a complete match on the second word.
-if [ "$(grep -E -i " $NAME\$" < $tmp | wc -l)" -eq 1 ]; then
+if [ "$(grep -E -i -c " $NAME\$" < $tmp)" -eq 1 ]; then
     CAMPVFULL=$(grep -E -i " $NAME\$" < $tmp | awk '{print $1;}')
     rm -f $tmp
     return
 fi
 # What about just a match at the end? (That is, if we are searching
 # for "yag1", prefer "mec_yag1" to "mec_yag11".)
-if [ "$(grep -E -i "$NAME\$" < $tmp | wc -l)" -eq 1 ]; then
+if [ "$(grep -E -i -c "$NAME\$" < $tmp)" -eq 1 ]; then
     CAMPVFULL=$(grep -E -i "$NAME\$" < $tmp | awk '{print $1;}')
     rm -f $tmp
     return
@@ -81,7 +82,7 @@ VIEWERCFG=/reg/g/pcds/pyps/config/$hutch/camviewer.cfg
 printf -v GIGENUM "%02d" "$2"
 GIGEBASE=$HUTCH:GIGE:$GIGENUM
 
-echo "$(grep "$GIGEBASE" "$VIEWERCFG" | grep -v '#' | awk -F, '{print $4}')"
+grep "$GIGEBASE" "$VIEWERCFG" | grep -v '#' | awk -F, '{print $4}'
 }
 
 isNum(){
@@ -103,27 +104,20 @@ fi
 HUTCH=$(echo "$1" | tr a-z A-Z)
 hutch=$(echo "$1" | tr A-Z a-z)
 
-ALLVIEWERCFG=/reg/g/pcds/pyps/config/*/camviewer.cfg
-echo cat $ALLVIEWERCFG | grep -v '#' | awk -F, '{ if (split($2,a,";")==1) n=$2; else n=a[2]; gsub(" ","",n); gsub(" ","",$4); printf "%s %s\n", n, $4; }' 
+ALLVIEWERCFG="/reg/g/pcds/pyps/config/*/camviewer.cfg"
+echo grep -v '#' "$ALLVIEWERCFG" | awk -F, '{ if (split($2,a,";")==1) n=$2; else n=a[2]; gsub(" ","",n); gsub(" ","",$4); printf "%s %s\n", n, $4; }'
 
 VIEWERCFGLFE=/reg/g/pcds/pyps/config/lfe/camviewer.cfg
-VIEWERCFG=/reg/g/pcds/pyps/config/$hutch/camviewer.cfg
 VIEWERCFGXRT=/reg/g/pcds/pyps/config/xrt/camviewer.cfg
-
+VIEWERCFG=/reg/g/pcds/pyps/config/$hutch/camviewer.cfg
 if  [ "$hutch" != 'tmo' ] && [ "$hutch" != 'rix' ]; then
-    for gige_cam in $(grep -v '#' $VIEWERCFGLFE | awk -F, '{print $4 "\n"} '); do
-        echo "$gige_cam"
-    done
-
-    for gige_cam in $(grep -v '#' $VIEWERCFGXRT | awk -F, '{print $4 "\n" }'); do
-	echo "$gige_cam"
-    done
+    grep -v '#' $VIEWERCFGLFE | awk -F, '{if ($4) print $4}' | sed 's/ //g'
+    grep -v '#' $VIEWERCFGXRT | awk -F, '{if ($4) print $4}' | sed 's/ //g'
 fi
 
-for gige_cam in $(grep -v '#' "$VIEWERCFG" | awk -F, '{print $4 "\n" }'); do
-    echo "$gige_cam"
-done
-
+if  [ "$hutch" != 'lfe' ]; then
+grep -v '#' "$VIEWERCFG" | awk -F, '{if ($4) print $4}' | sed 's/ //g'
+fi
 }
 
 iocfpv() {
@@ -138,7 +132,7 @@ iocinfo() {
             iochutch=$(echo "$INFO" | cut -d'/' -f7)
         fi
     done
-}    
+}
 
 usage()
 {
@@ -185,9 +179,10 @@ ACQUIRE=0
 STOP=0
 NUDGE=0
 
-OPTIONS=$(getopt -o lmredasnc:w:u:H: --long list,main,reboot,enable,disable,acquire,stop,nudge,cam:,wait:,rate:,hutch: -n \'$0\' -- "$@")
-
-if [ $? != 0 ] ; then echo "Terminating..." >&2 ; exit 1 ; fi
+if ! OPTIONS=$(getopt -o lmredasnc:w:u:H: --long list,main,reboot,enable,disable,acquire,stop,nudge,cam:,wait:,rate:,hutch: -n \'"$0"\' -- "$@"); then
+    echo "Terminating..." >&2
+    exit 1
+fi
 
 
 
@@ -195,10 +190,10 @@ eval set -- "$OPTIONS"
 
 
 
-while [ : ]
+while [[ $# -gt 0 ]]
 do
     case "$1" in
-        -l|--list)  
+        -l|--list)
             LIST=1
             shift
             ;;
@@ -246,9 +241,9 @@ do
             usage
             break
             ;;
-        --) 
-            shift 
-            break 
+        --)
+            shift
+            break
             ;;
         *)
             echo "Internal Error"
@@ -259,7 +254,7 @@ do
 done
 
 if [ $# -ge 1 ]; then
-    echo "Positional arguments unsupported: $@" >&2
+    echo "Positional arguments unsupported: $*" >&2
     usage
     exit 1
 fi
@@ -320,17 +315,18 @@ name_to_pv "$CAMNAME" "$hutch"
 if [ $MAINSCREEN -gt 0 ]; then
     tmp=/tmp/cv.$$
     list_cams "$hutch" >$tmp
-    c=$(wc <$tmp | grep "$CAMNAME" $tmp | awk '{print $1}')
+
+    c=$(wc $tmp | grep "$CAMNAME" $tmp | awk '{print $1}') # not sure what is happening here
     if [ "$c" == '' ]; then
         echo "Camera name not found in hutch. To see which cameras you can access from your current machine use the '-l/--list' option."
         sleep 3
     elif [ "$c" == "$CAMNAME" ] && [ "$hutch" != "$(get_info --gethutch)" ] ; then
-        echo "To use camera controls, you must be on the same hutch machine as your camera." 
+        echo "To use camera controls, you must be on the same hutch machine as your camera."
         echo "Opening read-only main screen..."
         sleep 3
-    
+
     rm -f $tmp
-    fi    
+    fi
     echo 'try to get the main screen for: ' "$CAMNAME"
     echo 'start the main screen for camera base PV: ' "$CAMPVFULL"
     cmdName=$(caget -St "$CAMPVFULL":LAUNCH_EDM)
