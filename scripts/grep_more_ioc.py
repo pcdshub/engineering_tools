@@ -310,9 +310,9 @@ def build_parser():
     # parser obj configuration
     parser = argparse.ArgumentParser(
         prog='grep_more_ioc',
-        description='transforms grep_ioc output to json object'
+        description='Transforms grep_ioc output to json object'
                     + ' and prints in pandas.DataFrame',
-        epilog='With extra utilities for daily ECS')
+        epilog='With extra utilities for daily ECS work.')
     # main command arguments
     parser.add_argument('patt', type=str)
     parser.add_argument('hutch', type=str)
@@ -354,10 +354,10 @@ def build_parser():
 # search subarguments
 # --------------------------------------------------------------------------- #
     search = subparsers.add_parser('search',
-                                   help='For searching regex patts in the'
-                                   + ' IOC *.cfg captured by grep_ioc.'
-                                   + ' Useful for checking the pointers'
-                                   + "to the parent's release")
+                                   help='For using regex-like searches in the'
+                                   + ' child IOC.cfg captured by grep_ioc.'
+                                   + ' Useful for quickly gathering instance'
+                                   + ' information, IP addr, etc.')
 
     search.add_argument('search',
                         type=str, help='PATT to use for regex search in file',
