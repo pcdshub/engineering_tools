@@ -9,15 +9,14 @@ A script for gathering alias associations from an IOC
 
 import argparse
 import copy
-import sys
-import re
 import os.path
+import re
+import sys
 
 from colorama import Fore, Style
 from grep_more_ioc import (find_ioc, simple_prompt, search_file,
                            find_parent_ioc, fix_dir, clean_ansi)
 from prettytable import PrettyTable
-
 
 ###############################################################################
 # %% Constants
