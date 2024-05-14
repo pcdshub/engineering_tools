@@ -431,7 +431,13 @@ def main():
                 # abbreviate path for standard IOC releases
                 elif 'common' in search_result:
                     output_str = (search_result
-                                  .rsplit('common/', maxsplit=1)[-1])
+                                  .rsplit(r'common/', maxsplit=1)[-1])
+                # check for children living in parent's dir
+                elif '$$UP(PATH)' in search_result:
+                    output_str = d.rsplit(r'/children', maxsplit=1)[0]
+                # else use the full path that's found
+                else:
+                    output_str = search_result
                 # add it to the list
                 output_list.append(output_str)
             # Then, finally, add the column to the dataframe
