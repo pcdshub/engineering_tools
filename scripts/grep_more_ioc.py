@@ -6,15 +6,16 @@ version = 1.0.6
 # %% Imports
 ###############################################################################
 
-import sys
-import re
-import os.path
 import argparse
-import json
 import glob as gb
+import json
+import os.path
+import re
+import sys
 from shutil import get_terminal_size
-from colorama import Fore, Style
+
 import pandas as pd
+from colorama import Fore, Style
 
 ###############################################################################
 # %% Global settings
