@@ -357,7 +357,7 @@ def main():
     # write to file, else do nothing
     if (len(final_output) > 0) & (args.dry_run is False):
         dest = request_file_dest('Choose base file destination',
-                                  default_dest)
+                                 default_dest)
         # make sure the destination exists and mkdir if it doesn't
         if os.path.exists(dest) is False:
             print(Fore.LIGHTBLUE_EX
