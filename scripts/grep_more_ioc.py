@@ -424,8 +424,8 @@ def main():
                     output_str = search_result
                 # abbreviate path for standard IOC releases
                 elif 'common' in search_result:
-                    output_str = '/'.join(
-                        search_result.rsplit('common/',maxsplit=1)[-1])
+                    output_str = (search_result
+                                  .rsplit('common/',maxsplit=1)[-1])
                 # add it to the list
                 output_list.append(output_str)
             # Then, finally, add the column to the dataframe
