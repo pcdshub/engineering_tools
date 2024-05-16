@@ -137,6 +137,11 @@ if  [[ $NAME == *rec* ]]; then
     fi
 fi
 
+if [[ "${NAME,,}" == *drp* ]] && ([[ $CMD == "off" ]] || [[ $CMD == "cycle" ]]); then
+    printf "serverStat $CMD is not supported for DRP nodes as the underlying psipmi power off or psipmi power cycle commands will disable the ipmi card. Instead, use the web interface as described on:\n\nhttps://confluence.slac.stanford.edu/display/PSDMInternal/Debugging+DAQ#DebuggingDAQ-IPMI\n"
+    exit 1
+fi
+
 #check if this is a DAQ device
 if [[ $ISSRV -lt 1 ]] && [[ $HUTCH != 'unknown_hutch' ]]; then
     if [[ $HUTCH == 'cxi' ]]; then # only supporting primary daq for now
