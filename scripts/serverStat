@@ -138,7 +138,7 @@ if  [[ $NAME == *rec* ]]; then
 fi
 
 if [[ "${NAME,,}" == *drp* ]] && ([[ $CMD == "off" ]] || [[ $CMD == "cycle" ]]); then
-    printf "serverStat $CMD is not supported on the DRP nodes as the underlying psipmi power off or psipmi power cycle commands will disable the ipmi card. Instead, use the web interface as described on:\n\nhttps://confluence.slac.stanford.edu/display/PSDMInternal/Debugging+DAQ#DebuggingDAQ-IPMI\n"
+    printf "serverStat $CMD is not supported for DRP nodes as the underlying psipmi power off or psipmi power cycle commands will disable the ipmi card. Instead, use the web interface as described on:\n\nhttps://confluence.slac.stanford.edu/display/PSDMInternal/Debugging+DAQ#DebuggingDAQ-IPMI\n"
     exit 1
 fi
 
