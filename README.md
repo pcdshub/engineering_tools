@@ -308,7 +308,7 @@ usage: ioctool &lt;ioc&gt;|&lt;pv&gt; [option]<br/>
     telnet : starts a telnet session with the ioc<br/>
     pvs	   : opens the IOC.pvlist file in less<br/>
     </td>
-</tr>          
+</tr>
 
 <tr>
     <td>ipmConfigEpics</td>
@@ -640,7 +640,7 @@ Optional arguments:<br/>
 
 <tr>
     <td> set_gem_timing</td>
-    <td> 
+    <td>
     Usage: set_gem_timing [SC or NC]
     </td>
 </tr>

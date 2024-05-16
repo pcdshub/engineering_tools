@@ -23,8 +23,8 @@ fi
 if [[ -z $2 ]]; then
     HUTCH="all"
 else
-    for hutchname in "xpp" "xcs" "cxi" "mfx" "mec" "tmo" "rix" "xrt" "aux" "det" "fee" "hpl" "icl" "las" "lfe" "kfe" "tst" "thz" "all"; do 
-        if [[ "${2}" == $hutchname ]]; then
+    for hutchname in "xpp" "xcs" "cxi" "mfx" "mec" "tmo" "rix" "xrt" "aux" "det" "fee" "hpl" "icl" "las" "lfe" "kfe" "tst" "thz" "all"; do
+        if [[ "${2}" == "$hutchname" ]]; then
             HUTCH=$hutchname
         fi
     done
@@ -35,6 +35,6 @@ else
     if [[ $HUTCH == "all" ]]; then
         grep -i "${1}" /reg/g/pcds/pyps/config/*/iocmanager.cfg
     else
-        grep -i "${1}" /reg/g/pcds/pyps/config/${HUTCH}/iocmanager.cfg
+        grep -i "${1}" /reg/g/pcds/pyps/config/"$HUTCH"/iocmanager.cfg
     fi
 fi

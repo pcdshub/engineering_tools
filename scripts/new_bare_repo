@@ -43,7 +43,7 @@ elif [[ ${CWD} != *${REPO}* ]]; then
 else
     git init
     cp -u /cds/sw/tools/bin/eco_tools/gitignore.template .gitignore
-    git add *.cfg Makefile .gitignore
+    git add -- *.cfg Makefile .gitignore
     git commit -m "Initial commit"
     git-bare-repo /afs/slac.stanford.edu/g/cd/swe/git/repos/package/epics/ioc/"${HUTCH}"/"${REPO}".git
     git remote add origin /afs/slac.stanford.edu/g/cd/swe/git/repos/package/epics/ioc/"${HUTCH}"/"${REPO}".git

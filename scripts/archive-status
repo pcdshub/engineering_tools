@@ -12,7 +12,7 @@ if [[ -z $1 ]]; then
     usage
     exit 1
 fi
-    
+
 if [[ ($1 == "--help") || ($1 == "-h") ]]; then
     usage
     exit 0
@@ -20,5 +20,5 @@ fi
 
 result=$(curl -s "http://pscaa01.slac.stanford.edu:17665/mgmt/bpl/getPVStatus?pv=$1")
 echo
-echo $result | cut -d'{' -f2 | cut -d'}' -f1 | tr ',' '\n'
+echo "$result" | cut -d'{' -f2 | cut -d'}' -f1 | tr ',' '\n'
 echo

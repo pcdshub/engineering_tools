@@ -18,7 +18,7 @@ imgr IOCNAME [--hutch HUTCH] --upgrade RELEASE_DIR
 imgr IOCNAME [--hutch HUTCH] --move HOST
 imgr IOCNAME [--hutch HUTCH] --move HOST:PORT
 imgr [--hutch HUTCH] --list [--host HOST] [--enabled_only|--disabled_only]
- 
+
 EOF
 }
 if [ $# -lt 1 ]; then
@@ -68,7 +68,7 @@ else
     export IOC_DATA=/cds/data/iocData
     export IOC_COMMON=/cds/data/iocCommon
 fi
-PSPKG_OS=$(${PSPKG_ROOT}/etc/pspkg_os.sh)
+PSPKG_OS=$("$PSPKG_ROOT"/etc/pspkg_os.sh)
 export PSPKG_OS
 if [ "$PSPKG_OS" == rhel5 ]; then
     echo "IocManager 2.0.0 and higher does not run on RHEL5!" >&2
@@ -76,6 +76,6 @@ if [ "$PSPKG_OS" == rhel5 ]; then
 fi
 export QT_XKB_CONFIG_ROOT=/usr/share/X11/xkb
 export PSPKG_RELEASE=controls-0.1.9
-source $PSPKG_ROOT/etc/set_env.sh
+source "$PSPKG_ROOT"/etc/set_env.sh
 
 /reg/g/pcds/pyps/config/"${HUTCH,,}"/iocmanager/imgr.py "$@" --hutch "${HUTCH,,}"

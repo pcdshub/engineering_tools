@@ -20,14 +20,14 @@ if [[ ($1 == "--help") || ($1 == "-h") ]]; then
 	exit 0
 fi
 
-HUTCH=`get_info --gethutch`
+HUTCH=$(get_info --gethutch)
 for i in "xpp" "xcs" "mfx" "cxi" "mec" "det"; do
-   if [ $HUTCH == $i ]; then
+   if [[ $HUTCH == "$i" ]]; then
       FOUNDHUTCH=1
       break
    fi
 done
-if [ -z $FOUNDHUTCH ]; then
+if [[ -z $FOUNDHUTCH ]]; then
    echo 'could not determine hutch or hutch not implemented, quit'
    exit
 fi
@@ -48,7 +48,7 @@ do
 	    ;;
 	esac
 done
-shift "$(($OPTIND-1))"
+shift "$((OPTIND-1))"
 
 # If specified a config file, then use that
 if [[ -z $CONFIG ]]; then
@@ -63,40 +63,39 @@ if [[ -z $CONFIG ]]; then
         elif [[ -z $CONFIG ]]; then
             echo 'You must provide cxi config file (-c) if not on daq machine'
             exit 1
-        fi 
+        fi
     fi
 
     CONFIG=$HUTCH$CNFEXT
 fi
 
 #create a tempoprary file with the procStatus so we only call that once;
-/reg/g/pcds/dist/pds/$HUTCH/current/tools/procmgr/procmgr status /reg/g/pcds/dist/pds/$HUTCH/scripts/$CONFIG > /tmp/procServStatus.$$
+/reg/g/pcds/dist/pds/"$HUTCH"/current/tools/procmgr/procmgr status /reg/g/pcds/dist/pds/"$HUTCH"/scripts/"$CONFIG" > /tmp/procServStatus.$$
 
-PSANA_NODES=(`grep monreqsrvpsana /tmp/procServStatus.$$ | awk {'print $1'}`)
-
+mapfile -t PSANA_NODES < <(grep monreqsrvpsana /tmp/procServStatus.$$ | awk '{print $1}')
 if [[ -z $DETAIL ]]; then
     NODESTR=''
-    for ((idx=0; idx<${#PSANA_NODES[@]}; ++idx)); do 
-        NODESTR=$NODESTR${PSANA_NODES[idx]}','; 
+    for ((idx=0; idx<${#PSANA_NODES[@]}; ++idx)); do
+        NODESTR=$NODESTR${PSANA_NODES[idx]}',';
     done
-    echo ${NODESTR::-1}
+    echo "${NODESTR::-1}"
 else
-    EVENT=(`grep event /tmp/procServStatus.$$ | awk {'print $1'}`)
-    PSANA_MASKS=(`grep monreqsrvpsana /tmp/procServStatus.$$ | awk -F "-i " {'print $2'} | awk {'print $1'}`)
-    EVENT_MASKS=(`grep event /tmp/procServStatus.$$ | awk -F "-s " '{print $2;}' | awk '{print lshift(1,$1);}'`)
+    mapfile -t EVENT < <(grep event /tmp/procServStatus.$$ | awk '{print $1}')
+    mapfile -t PSANA_MASKS < <(grep monreqsrvpsana /tmp/procServStatus.$$ | awk -F "-i " '{print $2}' | awk '{print $1}')
+    mapfile -t EVENT_MASKS < <(grep event /tmp/procServStatus.$$ | awk -F "-s " '{print $2;}' | awk '{print lshift(1,$1);}')
     echo 'psana runs on the following nodes looking at event nodes '${#EVENT[@]}
     NODESTR=''
-    for ((idx=0; idx<${#PSANA_NODES[@]}; ++idx)); do 
-        echo -n ${PSANA_NODES[idx]}':'
+    for ((idx=0; idx<${#PSANA_NODES[@]}; ++idx)); do
+        echo -n "${PSANA_NODES[idx]}:"
 	MASKS=${PSANA_MASKS[idx]}
-	for ((m=0; m<${#EVENT[@]}; ++m)); do 
-	    if [ $((${MASKS}&${EVENT_MASKS[m]})) != 0 ]; then
-	        echo -n ' '${EVENT[m]} 
-		MASKS=$((${MASKS}&~${EVENT_MASKS[m]}))
+	for ((m=0; m<${#EVENT[@]}; ++m)); do
+	    if [ $((MASKS&EVENT_MASKS[m])) != 0 ]; then
+	        echo -n "${EVENT[m]}"
+		MASKS=$((MASKS&~EVENT_MASKS[m]))
 	    fi
         done
-	if [ ${MASKS} != '0' ]; then
-	    echo " MISSING MON MASK: "$MASKS
+	if [[ ${MASKS} != '0' ]]; then
+	    echo "MISSING MON MASK: $MASKS"
 	fi
 	echo ""
     done

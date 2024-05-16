@@ -6,11 +6,11 @@ names_from_name(){
     fi
     INNAME=$1
     if [[ $INNAME == *'-ipmi'* ]]; then
-        INNAME=$(echo "$INNAME" | sed s/-ipmi//g)
+	INNAME=${INNAME//-ipmi/}
     elif [[ $INNAME == *'-fez'* ]]; then
-        INNAME=$(echo "$INNAME" | sed s/-fez//g)
+        INNAME=${INNAME//-fez/}
     elif [[ $INNAME == *'-ana'* ]]; then
-        INNAME=$(echo "$INNAME" | sed s/-ana//g)
+        INNAME=${INNAME//-ana/}
     fi
     CDSNAME=$INNAME
     CDSIP=$(netconfig search "$CDSNAME" | grep IP: | awk '{print $2}')
@@ -79,7 +79,7 @@ done
 
 
 HOST_HAS_FEZ=$(netconfig search "$HOSTNAME"-fez --brief | wc -l)
-let HOST_HAS_FEZ-=1
+(( HOST_HAS_FEZ-=1 ))
 
 if [[ $# -lt 2 ]]; then
     if [[ $# -lt 1 ]]; then
@@ -118,18 +118,18 @@ fi
 
 if [[ $NAME == *'-ipmi'* ]]; then
     NAMEIPMI=$NAME
-    NAME=$(echo "$NAME" | sed s/-ipmi//g)
+    NAME=${NAME//-ipmi/}
     DEV=$NAME
 elif [[ $NAME == *'-fez'* ]]; then
-    NAME=$(echo "$NAME" | sed s/-fez//g)
+    NAME=${NAME//-fez/}
     DEV=$NAME
 elif [[ $NAME == *'-ana'* ]]; then
-    NAME=$(echo "$NAME" | sed s/-ana//g)
+    NAME=${NAME//-ana/}
 fi
 
 if  [[ $NAME == *rec* ]]; then
     if [[ $CMD == "off" ]] || [[ $CMD == "cycle" ]]; then
-        echo "This is a recorder, better not to power cycle unless necessary, try to reset first. Quit? " "$NAME" "$CMD"; read ANSWER
+        echo "This is a recorder, better not to power cycle unless necessary, try to reset first. Quit? " "$NAME" "$CMD"; read -r ANSWER
         if [[ $ANSWER == 'y' ]] || [[ $ANSWER == 'Y' ]] || [[ $ANSWER == 'yes' ]]; then
             printf 'quit now\n'
             exit 0
@@ -152,22 +152,22 @@ if [[ $ISSRV -lt 1 ]] && [[ $HUTCH != 'unknown_hutch' ]]; then
 
     if [[  $DEV =~ 'event' ]]; then
         DSSNODES=$(grep dss_nodes "$CNF" | grep -v '^#' | head -n1 | grep -oE "daq-$HUTCH-dss[[:digit:]]+")
-        NEVENT=$(echo "${DEV:5}")  # grab the index (e.g. 2 if $DEV is event2)
-        SEDNUM=$(($NEVENT+1))  # adjust the number to correctly index the list of dssnodes with sed
+        NEVENT=${DEV:5}  # grab the index (e.g. 2 if $DEV is event2)
+        SEDNUM=$((NEVENT + 1))  # adjust the number to correctly index the list of dssnodes with sed
         NAME=$(echo "$DSSNODES" | sed -n ${SEDNUM}p)
         if [[ -z $NAME ]]; then
             echo "dss node not found for $DEV, exiting..." >&2
             exit 1
         fi
     else
-        NDEV=$(grep "$DEV" "$CNF" | grep -v '#' | grep host | wc -l)
+        NDEV=$(grep "$DEV" "$CNF" | grep -v '#' | grep -c host)
         if [ "$NDEV" -eq 1 ]; then
-            NAME=$(grep "$DEV" "$CNF" | grep -v '#' | grep host | awk '{print $1}' | sed s/{host://g | sed s/,// | sed s/_/-/g | sed s/\'//g | sed s/-fez//g)
+            NAME=$(grep "$DEV" "$CNF" | grep -v '#' | grep host | awk '{print $1}' | sed s/"{host:"//g | sed s/,// | sed s/_/-/g | sed s/\'//g | sed s/-fez//g)
         elif  [ "$NDEV" -eq 0 ]; then
             echo 'No device of this name found, exiting...' >&2
             exit 1
         else
-            NAME=$(grep "$DEV'" "$CNF" | grep -v '#' | grep host | awk '{print $1}' | sed s/{host://g | sed s/,// | sed s/_/-/g)
+            NAME=$(grep "$DEV'" "$CNF" | grep -v '#' | grep host | awk '{print $1}' | sed s/"{host:"//g | sed s/,// | sed s/_/-/g)
         fi
     fi
     if [[ $NAME ]]; then
@@ -209,22 +209,19 @@ elif [[ $CMD == "expert" ]]; then
     echo -e ""
     echo -e "Checking host/ipmi/fez network interfaces are online:"
     echo -e "-------------------------------------------------"
-    ping -w 2 "$NAME" >/dev/null 2>&1
-    if [[ $? == 0 ]]; then
+    if ping -w 2 "$NAME" >/dev/null 2>&1; then
        echo "$NAME pings."
        CDS_ONLINE=1
     else
        echo "$NAME does not ping."
        CDS_ONLINE=0
     fi
-    ping -w 2 "$NAME"-ipmi >/dev/null 2>&1
-    if [[ $? == 0 ]]; then
+    if ping -w 2 "$NAME"-ipmi >/dev/null 2>&1; then
        echo "$NAME-ipmi pings."
     else
        echo "$NAME-ipmi does not ping."
     fi
-    ping -w 2 "$NAME"-fez >/dev/null 2>&1
-    if [[ $? == 0 ]]; then
+    if ping -w 2 "$NAME"-fez >/dev/null 2>&1; then
        echo "$NAME-fez pings."
     else
        echo "$NAME-fez does not ping."
@@ -292,7 +289,7 @@ elif [[ $CMD == "status" ]]; then
         if [[ $HOST_HAS_FEZ -ge 1 ]]; then
             PNGFEZ=$(ping -c 1 "$FEZNAME" | grep transmitted | awk '{print $4}')
             echo "$NAME is a server with IP: $CDSIP (ping success: $PNG), $FEZIP (ping success: $PNGFEZ)"
-            if [[ $(($PNG+$PNGFEZ)) -gt 1 ]]; then
+            if [[ $((PNG + PNGFEZ)) -gt 1 ]]; then
                 echo 'cds&fez interfaces are up'
             fi
         else

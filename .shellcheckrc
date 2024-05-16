@@ -1,1 +1,1 @@
-disable=SC1091  # allow sourcing files that can't immediately be found (pcds_conda)
+disable=SC1091,SC2018,SC2019  # allow sourcing files that can't immediately be found (pcds_conda), disable warnings about supporting accents and foreign languages

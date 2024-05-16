@@ -15,7 +15,7 @@ function kauth {
 }
 
 function afsauth {
-    # need to be in g-pcds afs grup                                                                                                                  
+    # need to be in g-pcds afs grup
     if ! pts membership g-pcds 2>&1 | grep -q "$(whoami)"
     then
         echo "You do not have permission to use afs. See https://confluence.slac.stanford.edu/display/PCDS/Onboarding+Staff+Members"

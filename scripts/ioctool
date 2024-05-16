@@ -4,10 +4,10 @@ function iocfpv {
    ioc=""
    ioc=$(grep_pv "$1" | cut -d'/' -f5 -s)
    if [ -z "$ioc" ]; then
-      echo "Did not find an ioc associated with this PV." >&2 
+      echo "Did not find an ioc associated with this PV." >&2
       exit 1
    elif [[ $ioc = *[[:space:]]* ]]; then # multiple iocs found if space present
-      ioccount=$(echo $ioc | wc -w)
+      ioccount=$(echo "$ioc" | wc -w)
       echo "$1 is found in $ioccount places"
       echo "Which ioc do you care about here? (press enter to exit)"
       printf '%s\n' "$ioc" >&2
@@ -17,8 +17,8 @@ function iocfpv {
          exit 0
       fi
       ioc=$chosenioc
-   fi   
-   
+   fi
+
 }
 
 function iocdir {
@@ -29,9 +29,9 @@ function iocdir {
       echo "Did not find ${ioc} running anywhere. Exiting..." >&2
       exit 1
    fi
-   
+
    if [[ ! $iocpath =~ ^/.* ]]; then
-      iocpath=/reg/g/pcds/epics/"${iocpath}"  
+      iocpath=/reg/g/pcds/epics/"${iocpath}"
    fi
 
 }
@@ -51,7 +51,7 @@ function ioccfg {
 
 
 function camname_to_pv {
-   #A function that will loop through camviewer.cfg files throughout all hutches to find the name then use that to search for its PV 
+   #A function that will loop through camviewer.cfg files throughout all hutches to find the name then use that to search for its PV
    campv=""
    hutch="$1"
    if [ "$1" == "" ]; then
@@ -62,13 +62,13 @@ function camname_to_pv {
          exit 1
       fi
    fi
-         
+
    VIEWERCFG=/reg/g/pcds/pyps/config/$hutch/camviewer.cfg
    CAMNAME=$(echo "$2" | sed -e 's/-/ /g' -e 's/_/ /g' -e 's/ /[-_ ]/g')
-   
-   
 
-   # The story here: 
+
+
+   # The story here:
    # See how many matches we have in the hutch.
    # If 0, try looking in all of the hutches.
    # If 1, then we're done.
@@ -79,17 +79,17 @@ function camname_to_pv {
    #
    # Make a temp file with just the PVs and camera names that match.
    tmp=/tmp/cv.$$
-   cat $VIEWERCFG | grep -i "$CAMNAME" | grep -v '#' | awk -F, '{ if (split($2,a,";")==1) n=$2; else n=a[2]; gsub(" ","",n); gsub(" ","",$4); printf "%s %s\n", n, $4; }' >$tmp
+   grep -i "$CAMNAME" "$VIEWERCFG" | grep -v '#' | awk -F, '{ if (split($2,a,";")==1) n=$2; else n=a[2]; gsub(" ","",n); gsub(" ","",$4); printf "%s %s\n", n, $4; }' >$tmp
    c=$(wc -l <$tmp)
-   if [ "$c" -eq 0 ]; then 
-      VIEWERCFG=/reg/g/pcds/pyps/config/*/camviewer.cfg
-      cat $VIEWERCFG | grep -i "$CAMNAME" | grep -v '#' | awk -F, '{ if (split($2,a,";")==1) n=$2; else n=a[2]; gsub(" ","",n); gsub(" ","",$4); printf "%s %s\n", n, $4; }' >$tmp
-      c=$(wc -l <$tmp)
-      if [ "$c" -eq 0 ]; then
-         echo "No match for $2"
-         rm -f $tmp
-         exit
-      fi    
+   if [ "$c" -eq 0 ]; then
+       VIEWERCFG="/reg/g/pcds/pyps/config/*/camviewer.cfg"
+       grep -i "$CAMNAME" "$VIEWERCFG" | grep -v '#' | awk -F, '{ if (split($2,a,";")==1) n=$2; else n=a[2]; gsub(" ","",n); gsub(" ","",$4); printf "%s %s\n", n, $4; }' >$tmp
+       c=$(wc -l <$tmp)
+       if [ "$c" -eq 0 ]; then
+           echo "No match for $2"
+           rm -f $tmp
+           exit
+       fi
    fi
    if [ "$c" -eq 1 ]; then
       campv=$(awk '{print $1;}' <$tmp)
@@ -97,14 +97,14 @@ function camname_to_pv {
       return
    fi
    # OK, ambiguous.  Look for a complete match on the second word.
-   if [ "$(grep -E -i "$CAMNAME\$" < $tmp | wc -l)" -eq 1 ]; then
+   if [ "$(grep -E -i -c "$CAMNAME\$" < $tmp)" -eq 1 ]; then
       campv=$(grep -E -i "$CAMNAME\$" < $tmp | awk '{print $1;}')
       rm -f $tmp
       return
    fi
    # What about just a match at the end? (That is, if we are searching
    # for "yag1", prefer "mec_yag1" to "mec_yag11".)
-   if [ "$(grep -E -i "$CAMNAME\$" < $tmp | wc -l)" -eq 1 ]; then
+   if [ "$(grep -E -i -c "$CAMNAME\$" < $tmp)" -eq 1 ]; then
       campv=$(grep -E -i "$CAMNAME\$" < $tmp | awk '{print $1;}')
       rm -f $tmp
       return
@@ -143,8 +143,7 @@ if [[ ($1 == "--help") || ($1 == "-h") ]]; then
    exit 0
 fi
 
-OPTIONS=$(getopt -o H: --long hutch: -n \'$0\' -- "$@")
-if [ $? != 0 ]; then
+if OPTIONS=$(getopt -o H: --long hutch: -n \'"$0"\' -- "$@"); then
    echo "Terminating..." >&2
    exit 1
 fi
@@ -194,22 +193,22 @@ if [[ $NAME == *':'* ]]; then #we are assuming that PVs have a colon in them
 #2) If so, then search for ioc using grep_ioc
 #3) If that returns nothing, try converting the camera name to a PV and search for that
 #4) If neither of those produce results return "Did not find name anywhere"
-elif [[ $NAME == *'-'* || $NAME == *'_'* || ^[[:alnum:]]+$ ]]; then 
+elif [[ $NAME == *'-'* || $NAME == *'_'* || $NAME =~ ^[[:alnum:]]+$ ]]; then
    INFO=$(grep_ioc "$NAME" all | grep "id:'$NAME'")
       if [ -z "$INFO" ]; then
          #echo "Hutch = $hutch"
          camname_to_pv "$hutch" "$NAME"
          iocfpv "$campv"
          NAME="$ioc"
-        
+
       elif [[ -z "$NAME" ]]; then
          echo "Did not find ${NAME} running anywhere. Exiting..." >&2
          exit 1
-      fi 
+      fi
 
 elif [[ ! $NAME == *'-'* ]]; then #We are assuming that ioc names contain a dash in them
    echo "${NAME} does not match the format for PVs or IOC names. Exiting..." >&2
-   exit 1 
+   exit 1
 fi
 
 
@@ -232,9 +231,9 @@ elif [ "$CMD" == "cddir" ]; then
       echo "Script is not being sourced. Start with 'source $0' before calling script with this option." >&2
       exit 1
    fi
-   cd "${iocpath}" 
+   cd "${iocpath}"
 
- 
+
 #################################################################
 
 elif [ "$CMD" == "cfg" ]; then
@@ -306,7 +305,7 @@ elif [ "$CMD" == "telnet" ]; then
    echo "$HOST":"$PORT"
    telnet "$HOST" "$PORT"
 
-#################################################################                                                                           
+#################################################################
 
 elif [ "$CMD" == "pvs" ]; then
    pvlistfile=/cds/data/iocData/"${NAME}"/iocInfo/IOC.pvlist

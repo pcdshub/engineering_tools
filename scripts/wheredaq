@@ -38,6 +38,6 @@ if [[ ! -f /reg/g/pcds/dist/pds/"$HUTCH"/scripts/p"$PLATFORM".cnf.running ]]; th
 	echo 'DAQ is not running in '"$HUTCH"
     fi
 else
-    DAQ_HOST=$(grep "'HOST'" /reg/g/pcds/dist/pds/"$HUTCH"/scripts/p"$PLATFORM".cnf.running | awk {'print $3'} | sed s/\'//g)
+    DAQ_HOST=$(grep "'HOST'" /reg/g/pcds/dist/pds/"$HUTCH"/scripts/p"$PLATFORM".cnf.running | awk '{print $3}' | sed s/\'//g)
     echo 'DAQ is running on '"$DAQ_HOST"
 fi

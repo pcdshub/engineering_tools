@@ -32,3 +32,8 @@ repos:
     rev: 5.11.5
     hooks:
     -   id: isort
+-   repo: https://github.com/pecigonzalo/pre-commit-shfmt
+    rev: v2.2.0
+    hooks:
+    -   id: shell-fmt-go
+        args: [-l, -d, -s, -fn, -sr, -ci, -i=4]

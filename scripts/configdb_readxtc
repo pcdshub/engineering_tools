@@ -8,7 +8,7 @@ We will run configdb_readxtc
 
 OPTIONS:
 -u user (needs to be able to log into the psananeh/feh)
--e expnumber 
+-e expnumber
 EOF
 }
 
@@ -17,7 +17,7 @@ if [[ ($1 == "--help") || ($1 == "-h") ]]; then
 	exit 0
 fi
 
-USER=`whoami`
+USER=$(whoami)
 ARGSTR=''
 
 while getopts "u:e:" OPTION
@@ -37,10 +37,10 @@ do
 done
 
 if [[ $USER =~ "opr" ]]; then
-    printf "Please enter user name (cannot run as xppopr): \n"; read USER
+    printf "Please enter user name (cannot run as xppopr): \n"; read -r USER
 fi
 
-: ${EXP:=`get_curr_exp`}
+: "${EXP:=$(get_curr_exp)}"
 HUTCH=${EXP:0:3}
 
 # check if experiment is passed, then use that
@@ -54,15 +54,13 @@ HUTCH=${EXP:0:3}
 #
 
 opt_dir="/reg/g/pcds/dist/pds/$HUTCH/current/build/pdsapp/bin/x86_64-rhel7-opt"
-eval find $opt_dir/configdb_readxtc
+eval find "$opt_dir"/configdb_readxtc
 ret_code=$?
 if [ $ret_code == 0 ]; then
     EXE='/reg/g/pcds/dist/pds/'$HUTCH'/current/build/pdsapp/bin/x86_64-rhel7-opt/configdb_readxtc'
 else
     dir="/reg/g/pcds/dist/pds/xpp/current/build/pdsapp/bin/x86_64-rhel7"
-    eval find $dir/configdb_readxtc
-    ret_code=$?
-    if [ $ret_code2 == 0 ]; then
+    if eval find $dir/configdb_readxtc; then
 	EXE='/reg/g/pcds/dist/pds/'$HUTCH'/current/build/pdsapp/bin/x86_64-rhel7/configdb_readxtc'
     else
 	echo 'could not find configdb_readxtc executable'
@@ -74,12 +72,10 @@ fi
 # check hostname,only ssh if on control machine.
 #
 if [[ $HOSTNAME =~ "psana" ]]; then
-    $EXE /reg/d/psdm/$HUTCH/$EXP/xtc
+    $EXE /reg/d/psdm/"$HUTCH"/"$EXP"/xtc
 elif  [[ $HOSTNAME =~ "psusr" ]]; then
-    ssh -Y $USER@psana "$EXE /reg/d/psdm/$HUTCH/$EXP/xtc"
+    ssh -Y "$USER"@psana "$EXE /reg/d/psdm/$HUTCH/$EXP/xtc"
 else
-    echo $EXE /reg/d/psdm/$HUTCH/$EXP/xtc
-    ssh -Y $USER@psdev ssh -Y psana "$EXE /reg/d/psdm/$HUTCH/$EXP/xtc"
+    echo "$EXE /reg/d/psdm/$HUTCH/$EXP/xtc"
+    ssh -Y "$USER"@psdev ssh -Y psana "$EXE /reg/d/psdm/$HUTCH/$EXP/xtc"
 fi
- 
-   
