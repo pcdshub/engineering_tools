@@ -246,6 +246,28 @@ usage: grep_ioc KEYWORD [hutch]<br/>
 </tr>
 
 <tr>
+    <td>grep_more_ioc</td>
+    <td>
+usage: grep_more_ioc [-h] [-d] patt hutch {print,search} <br/>
+     positional arguments: <br/>
+     patt                            Regex str to search through iocmanager.cfg<br/>
+     hutch                           hutch to search<br/>
+         -h, --help                  Show help message and exit<br/>
+         -d, --ignore_disabled       Exclude IOCs based on disabled state <br/>
+     {print, search}<br/>
+         print                       Prints all the matching IOCs in a dataframe<br/>
+             -h, --help              Show help message and exit<br/>
+             -c, --skip_comments     Prints IOC.cfg file with comments skipped<br/>
+             -r, --release           Includes the parent IOC release in the dataframe<br/>
+             -s, --print_dirs        Dump child & parent directors to the terminal
+         search                      Regex-like search of child IOCs<br/>
+             PATT                    The regex str to use in the search<br/>
+             -h, --help              Show help message and exit<br/>
+             -q, --quiet             Surpresses file warning for paths that do not exist<br/>
+             -o, --only_search       Skip printing dataframe, only print search results<br/>
+</tr>
+
+<tr>
     <td>grep_pv</td>
     <td>
      GREP SEARCHES THROUGH ALL IOCs IN /reg/d/iocData/<br/>

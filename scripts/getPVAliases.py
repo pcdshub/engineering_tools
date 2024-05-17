@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 """
 A script for gathering alias associations from an IOC
-@author: aberges
 """
 ###############################################################################
 # %% Imports
@@ -19,28 +18,14 @@ from grep_more_ioc import (clean_ansi, find_ioc, find_parent_ioc, fix_dir,
 from prettytable import PrettyTable
 
 ###############################################################################
-# %% Constants
-###############################################################################
-
-VALID_HUTCH = sorted([s for s
-                      in next(os.walk('/cds/group/pcds/pyps/config'))[1]
-                      if '.' not in s]+['all'])
-# Keys from iocmanager. Found in /cds/group/pcds/config/*/iocmanager/utils.py
-# Update this as needed
-DEF_IMGR_KEYS = ['procmgr_config', 'hosts', 'dir', 'id', 'cmd',
-                 'flags', 'port', 'host', 'disable', 'history',
-                 'delay', 'alias', 'hard']
-
-###############################################################################
 # %% Functions
 ###############################################################################
 
 
-def request_file_dest(prompt: str,
-                      default: str = os.getcwd(),) -> str:
+def request_dir(prompt: str,
+                default: str = os.getcwd(),) -> str:
     """
     Requests the user for a destination to save a file.
-    Tests if the resultant path exists and makes the directory if necessary.
 
     Parameters
     ----------
@@ -68,25 +53,6 @@ def request_file_dest(prompt: str,
         if confirm is True:
             break
     return result
-
-
-def flatten_list(input_list: list[list]) -> list[str]:
-    """
-    Flatten a 2D lists and find its unique values.
-    Note: loses order due to set() call. sear
-
-    Parameters
-    ----------
-    input_list: list[list]
-        The 2D list to flatten.
-
-    Returns
-    -------
-    list
-        The list of unique elements from the 2D input_list
-    """
-    _result = [e for lst in input_list for e in lst]
-    return list(set(_result))
 
 
 def build_table(input_data: list[dict], columns: list[str] = None,
@@ -226,16 +192,16 @@ def show_temp_table(input_data: list, col_list: list):
 # parser obj configuration
 parser = argparse.ArgumentParser(
     prog='gatherPVAliases',
-    description="""gathers all record <-> alias associations from a child's
-     ioc.cfg, st.cmd, and parent ioc.cfg.""",
-    epilog='')
+    description="gathers all record <-> alias associations from a child's "
+     "ioc.cfg, st.cmd, and parent ioc.cfg.",
+      epilog='')
 # main command arguments
 parser.add_argument('patt', type=str)
 parser.add_argument('hutch', type=str)
 parser.add_argument('-d', '--dry_run', action='store_true',
                     default=False,
-                    help='''Forces a dry run for the script.
-                    No files are saved.''')
+                    help="Forces a dry run for the script. "
+                    "No files are saved.")
 
 ###############################################################################
 # %% Main
@@ -356,8 +322,8 @@ def main():
 
     # write to file, else do nothing
     if (len(final_output) > 0) & (args.dry_run is False):
-        dest = request_file_dest('Choose base file destination',
-                                 default_dest)
+        dest = request_dir('Choose base file destination',
+                           default_dest)
         # make sure the destination exists and mkdir if it doesn't
         if os.path.exists(dest) is False:
             print(Fore.LIGHTBLUE_EX

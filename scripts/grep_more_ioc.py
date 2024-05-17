@@ -1,6 +1,6 @@
-"""A tool for enhancing the grep_ioc CLI tool for ECS-Delivery team
-enginer = aberges
-version = 1.0.6
+# -*- coding: utf-8 -*-
+"""
+A tool for enhancing the grep_ioc CLI tool for ECS-Delivery team
 """
 ###############################################################################
 # %% Imports
@@ -15,6 +15,7 @@ import sys
 from shutil import get_terminal_size
 
 import pandas as pd
+from constants import (DEF_IMGR_KEYS, VALID_HUTCH)
 from colorama import Fore, Style
 
 ###############################################################################
@@ -24,19 +25,6 @@ from colorama import Fore, Style
 # We'll assume 1000 rows as an upper limit
 
 pd.set_option("display.max_rows", 1000)
-
-###############################################################################
-# %% Constants
-###############################################################################
-
-VALID_HUTCH = sorted([s for s
-                      in next(os.walk('/cds/group/pcds/pyps/config'))[1]
-                      if '.' not in s]+['all'])
-# Keys from iocmanager. Found in /cds/group/pcds/config/*/iocmanager/utils.py
-# Update this as needed
-DEF_IMGR_KEYS = ['procmgr_config', 'hosts', 'dir', 'id', 'cmd',
-                 'flags', 'port', 'host', 'disable', 'history',
-                 'delay', 'alias', 'hard']
 
 ###############################################################################
 # %% Functions
@@ -90,10 +78,14 @@ def search_file(*, file: str, output: list = None,
 
 def print_skip_comments(file: str):
     """Prints contents of a file while ignoring comments"""
-    with open(file, 'r', encoding='utf_8') as _f:
-        for line in _f.readlines():
-            if not line.strip().startswith('#'):
-                print(line.strip())
+    try:
+        with open(file, 'r', encoding='utf_8') as _f:
+            for line in _f.readlines():
+                if not line.strip().startswith('#'):
+                    print(line.strip())
+    except FileNotFoundError:
+        print(f'{Fore.RED}Could not open {Style.RESET_ALL}{file}'
+              + f' {Fore.RED}does not exist{Style.RESET_ALL}')
 
 
 def simple_prompt(prompt: str, default: str = 'N'):
@@ -323,9 +315,9 @@ def build_parser():
                         help='Flag for excluding based'
                         + ' on the "disabled" state.')
     # subparsers
-    subparsers = (parser
-                  .add_subparsers(help='Follow-up commands after grep_ioc '
-                                  + 'executes'))
+    subparsers = parser.add_subparsers(
+        help='Follow-up commands after grep_ioc executes'
+        )
 # --------------------------------------------------------------------------- #
 # print subarguments
 # --------------------------------------------------------------------------- #
@@ -350,7 +342,7 @@ def build_parser():
     print_frame.add_argument('-s', '--print_dirs', action='store_true',
                              default=False,
                              help='Prints the child & parent IOC'
-                             + 'directories as the final output')
+                             + ' directories as the final output')
 # --------------------------------------------------------------------------- #
 # search subarguments
 # --------------------------------------------------------------------------- #
@@ -365,7 +357,7 @@ def build_parser():
                         metavar='PATT')
     search.add_argument('-q', '--quiet', action='store_true', default=False,
                         help='Surpresses file warning for paths that do not'
-                        + 'exist.')
+                        + ' exist.')
     search.add_argument('-o', '--only_search', action='store_true',
                         default=False,
                         help="Don't print the dataframe, just search results.")
