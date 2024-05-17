@@ -16,7 +16,6 @@ from shutil import get_terminal_size
 
 import pandas as pd
 from colorama import Fore, Style
-
 from constants import DEF_IMGR_KEYS, VALID_HUTCH
 
 ###############################################################################
@@ -318,8 +317,7 @@ def build_parser():
                         + ' on the "disabled" state.')
     # subparsers
     subparsers = parser.add_subparsers(
-        help='Follow-up commands after grep_ioc executes'
-        )
+        help='Follow-up commands after grep_ioc executes')
 # --------------------------------------------------------------------------- #
 # print subarguments
 # --------------------------------------------------------------------------- #

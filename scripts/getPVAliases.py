@@ -13,10 +13,9 @@ import re
 import sys
 
 from colorama import Fore, Style
-from prettytable import PrettyTable
-
 from grep_more_ioc import (clean_ansi, find_ioc, find_parent_ioc, fix_dir,
                            search_file, simple_prompt)
+from prettytable import PrettyTable
 
 ###############################################################################
 # %% Functions
