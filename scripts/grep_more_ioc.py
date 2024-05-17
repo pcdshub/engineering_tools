@@ -85,8 +85,9 @@ def print_skip_comments(file: str):
                 if not line.strip().startswith('#'):
                     print(line.strip())
     except FileNotFoundError:
-        print(f'{Fore.RED}Could not open {Style.RESET_ALL}{file}'
-              + f' {Fore.RED}does not exist{Style.RESET_ALL}')
+        print(f'{Fore.RED}Could not open {Style.RESET_ALL}'
+              + f'{file}.'
+              + f'{Fore.RED} Does not exist{Style.RESET_ALL}')
 
 
 def simple_prompt(prompt: str, default: str = 'N'):
@@ -454,16 +455,23 @@ def main():
                 print_skip_comments(file=f'{target_dir}{ioc}.cfg')
 
         if args.print_dirs is True:
-            print(f'{Fore.LIGHTRED_EX}\nDumping directories:\n'
+            print(f'{Fore.LIGHTBLUE_EX}\nDumping directories:\n'
                   + Style.RESET_ALL)
             for f, d in df.loc[:, ['id', 'dir']].values:
                 search_result = find_parent_ioc(f, d)
                 d = fix_dir(d)
+                # check for cases where child IOC.cfg DNE
+                if not os.path.exists(f'{d}{f}.cfg'):
+                    child_ioc = ''
+                    color_prefix = Fore.LIGHTRED_EX
+                else:
+                    child_ioc = f'{f}.cfg'
+                    color_prefix = Fore.LIGHTBLUE_EX
                 # Print this for easier cd / pushd shenanigans
-                print(f'{d}{Fore.LIGHTYELLOW_EX}{f}.cfg{Style.RESET_ALL}'
+                print(f'{d}{Fore.LIGHTYELLOW_EX}{child_ioc}{Style.RESET_ALL}'
                       + '\n\t\t|-->'
                       + f'{Fore.LIGHTGREEN_EX}RELEASE={Style.RESET_ALL}'
-                      + f'{Fore.LIGHTBLUE_EX}{search_result}{Style.RESET_ALL}'
+                      + f'{color_prefix}{search_result}{Style.RESET_ALL}'
                       )
 
 # --------------------------------------------------------------------------- #
