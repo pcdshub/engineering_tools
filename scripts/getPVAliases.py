@@ -13,9 +13,10 @@ import re
 import sys
 
 from colorama import Fore, Style
+from prettytable import PrettyTable
+
 from grep_more_ioc import (clean_ansi, find_ioc, find_parent_ioc, fix_dir,
                            search_file, simple_prompt)
-from prettytable import PrettyTable
 
 ###############################################################################
 # %% Functions
@@ -193,8 +194,8 @@ def show_temp_table(input_data: list, col_list: list):
 parser = argparse.ArgumentParser(
     prog='gatherPVAliases',
     description="gathers all record <-> alias associations from a child's "
-     "ioc.cfg, st.cmd, and parent ioc.cfg.",
-      epilog='')
+                "ioc.cfg, st.cmd, and parent ioc.cfg.",
+                epilog='')
 # main command arguments
 parser.add_argument('patt', type=str)
 parser.add_argument('hutch', type=str)

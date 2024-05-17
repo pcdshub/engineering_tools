@@ -15,8 +15,9 @@ import sys
 from shutil import get_terminal_size
 
 import pandas as pd
-from constants import (DEF_IMGR_KEYS, VALID_HUTCH)
 from colorama import Fore, Style
+
+from constants import DEF_IMGR_KEYS, VALID_HUTCH
 
 ###############################################################################
 # %% Global settings
