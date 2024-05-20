@@ -33,9 +33,10 @@ pd.set_option("display.max_rows", 1000)
 
 def search_file(*, file: str, output: list = None,
                 patt: str = None, prefix: str = '',
-                quiet: bool = False, color_wrap: Fore = None) -> list[str]:
+                quiet: bool = False, color_wrap: Fore = None) -> str:
     """
-    Searches file for regex match and appends result to list
+    Searches file for regex match and appends the result to a list,
+    then formats back into a str with the prefix prepended.
 
     Parameters
     ----------
@@ -74,6 +75,54 @@ def search_file(*, file: str, output: list = None,
             if re.search(patt, line):
                 output.append(re.sub(patt, color + r'\g<0>' + reset, line))
         return prefix + prefix.join(output)
+
+
+def search_procmgr(*, file: str, patt: str = None, output: list = None,
+                   prefix: str = '') -> str:
+    """
+    Very similar to search_file, except it is to be used exclusively with
+    iocmanager.cfg files. Grabs the procmgr_cfg lists and searches the
+    regex 'patt' there. Can prepend text with 'prefix' and/or append
+    the results in 'output'.
+
+    Parameters
+    ----------
+    file : str
+        The iocmanager.cfg file to search.
+    patt : str, optional
+        Regex pattern to search with. The default is None.
+    output : list, optional
+        A list to append the results to. The default is None.
+    prefix : str, optional
+        A prefix to add to the start of each result. The default is ''.
+
+    Returns
+    -------
+    str
+        A list[str] that is flattened back into a single body with the prefix
+        prepended. Each result is separated by 'prefix' and '\n'.
+
+    """
+    # Some initialization
+    if output is None:
+        output = []
+    _patt = r'{.*' + patt + r'.*}'
+    # First open the iocmanager.cfg, if it exists
+    if not (os.path.exists(file) and ('iocmanager.cfg' in file)):
+        print(f'{file} does not exist or is otherwise invalid.')
+        return ''
+    with open(file, 'r', encoding='utf-8') as _f:
+        raw_text = _f.read()
+    # then only grab the procmgr_cfg for the search
+    pmgr_key = r'procmgr_config = [\n '
+    pmgr = raw_text[(raw_text.find(pmgr_key)+len(pmgr_key)):-3]
+    # get rid of those pesty inline breaks within the JSOB obj
+    pmgr = pmgr.replace(',\n ', ',').replace('},{', '},\n{')
+    # now let we'll finally search through the IOCs and insert into output
+    output.extend(re.findall(_patt, pmgr))
+    # now return the searches with the prefix prepended and the necessary
+    # line break for later JSONification
+    return prefix + prefix.join([s + '\n' for s in output])
 
 
 def print_skip_comments(file: str):
@@ -191,7 +240,6 @@ def find_ioc(hutch: str = None, patt: str = None,
     if patt is None:
         print('No regex pattern supplied')
         raise ValueError
-    _patt = r'{.*' + patt + r'.*}'
     # initialize output list
     result = []
     # iterate and capture results.
@@ -199,7 +247,7 @@ def find_ioc(hutch: str = None, patt: str = None,
         prefix = ''
         if len(path) != 1:
             prefix = _file+':'
-        output = search_file(file=_file, patt=_patt, prefix=prefix)
+        output = search_procmgr(file=_file, patt=patt, prefix=prefix)
         if output != prefix:
             result.append(output)
     # reconstruct the list of str
@@ -343,6 +391,9 @@ def build_parser():
                              default=False,
                              help='Prints the child & parent IOC'
                              + ' directories as the final output')
+    print_frame.add_argument('-y', '--print_history', action='store_true',
+                             default=False,
+                             help="Prints the child IOC's history to terminal")
 # --------------------------------------------------------------------------- #
 # search subarguments
 # --------------------------------------------------------------------------- #
@@ -471,6 +522,18 @@ def main():
                       + f'{Fore.LIGHTGREEN_EX}RELEASE={Style.RESET_ALL}'
                       + f'{color_prefix}{search_result}{Style.RESET_ALL}'
                       )
+
+        if args.print_history is True:
+            print(f'{Fore.LIGHTMAGENTA_EX}\nDumping histories:\n'
+                  + Style.RESET_ALL)
+            if 'history' in df.columns:
+                for f, h in df.loc[:, ['id', 'history']].values:
+                    print(f'{Fore.LIGHTYELLOW_EX}{f}{Style.RESET_ALL}'
+                          + '\nhistory:\n\t'
+                          + '\n\t'.join(h))
+            else:
+                print(f'{Fore.LIGHTRED_EX}No histories found in captured IOCs.'
+                      + Style.RESET_ALL)
 
 # --------------------------------------------------------------------------- #
 # %%% search
