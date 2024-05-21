@@ -352,12 +352,20 @@ def build_parser():
     # parser obj configuration
     parser = argparse.ArgumentParser(
         prog='grep_more_ioc',
+        formatter_class=argparse.RawTextHelpFormatter,
         description='Transforms grep_ioc output to json object'
                     + ' and prints in pandas.DataFrame',
-        epilog='With extra utilities for daily ECS work.')
+        epilog='For more information on subcommands, use: '
+               'grep_more_ioc . all [subcommand] --help')
     # main command arguments
-    parser.add_argument('patt', type=str)
-    parser.add_argument('hutch', type=str)
+    parser.add_argument('patt', type=str,
+                        help='Regex pattern to match IOCs with. '
+                        '\nCan match anything in the IOC procmanager object. '
+                        'e.g. "lm2k2" or "mcs2" or "gige"')
+    parser.add_argument('hutch', type=str,
+                        help='3 letter hutch code. Use "all" to search through'
+                        ' all hutches.\n'
+                        f'Valid arguments: {", ".join(VALID_HUTCH)}')
     parser.add_argument('-d', '--ignore_disabled',
                         action='store_true',
                         default=False,
@@ -365,7 +373,7 @@ def build_parser():
                         + ' on the "disabled" state.')
     # subparsers
     subparsers = parser.add_subparsers(
-        help='Follow-up commands after grep_ioc executes')
+        help='Required subcommands after capturing IOC information:')
 # --------------------------------------------------------------------------- #
 # print subarguments
 # --------------------------------------------------------------------------- #
@@ -400,7 +408,7 @@ def build_parser():
     search = subparsers.add_parser('search',
                                    help='For using regex-like searches in the'
                                    + ' child IOC.cfg captured by grep_ioc.'
-                                   + ' Useful for quickly gathering instance'
+                                   + '\nUseful for quickly gathering instance'
                                    + ' information, IP addr, etc.')
 
     search.add_argument('search',

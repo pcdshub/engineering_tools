@@ -13,6 +13,7 @@ import re
 import sys
 
 from colorama import Fore, Style
+from constants import VALID_HUTCH
 from grep_more_ioc import (clean_ansi, find_ioc, find_parent_ioc, fix_dir,
                            search_file, simple_prompt)
 from prettytable import PrettyTable
@@ -192,12 +193,20 @@ def show_temp_table(input_data: list, col_list: list):
 # parser obj configuration
 parser = argparse.ArgumentParser(
     prog='gatherPVAliases',
+    formatter_class=argparse.RawTextHelpFormatter,
     description="gathers all record <-> alias associations from a child's "
-                "ioc.cfg, st.cmd, and parent ioc.cfg.",
+                "ioc.cfg, st.cmd, and parent ioc.cfg and then optionally "
+                "saves it to a record_alias_dump.txt file.",
                 epilog='')
 # main command arguments
-parser.add_argument('patt', type=str)
-parser.add_argument('hutch', type=str)
+parser.add_argument('patt', type=str,
+                    help='Regex pattern to match IOCs with. '
+                    '\nCan match anything in the IOC procmanager object. '
+                    'e.g. "lm2k2" or "mcs2" or "ek9000"')
+parser.add_argument('hutch', type=str,
+                    help='3 letter hutch code. Use "all" to search through '
+                    'all hutches.\n'
+                    f'Valid arguments: {", ".join(VALID_HUTCH)}')
 parser.add_argument('-d', '--dry_run', action='store_true',
                     default=False,
                     help="Forces a dry run for the script. "
@@ -257,12 +266,13 @@ def main():
             print(build_table(alias_dicts, ['record', 'alias'], align='l'))
             # optional skip for all resulting PV aliases
             save_all = (simple_prompt(
-                'Do you want to save all resulting PV aliases? '
+                'Do you want to save all resulting PV <--> alias '
+                + 'associations found in this st.cmd?\n'
                 + 'This will append '
                 + Fore.LIGHTYELLOW_EX
                 + f'{len(alias_dicts)}'
                 + Style.RESET_ALL
-                + ' record sets (y/N): '))
+                + ' record <--> alias sets to your final output (y/N): '))
 
             # initialize flags
             skip_all = None
