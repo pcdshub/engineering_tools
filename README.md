@@ -236,6 +236,23 @@ usage: get_lastRun options<br/>
 </tr>
 
 <tr>
+    <td>getPVAliases</td>
+    <td>
+usage: gatherPVAliases [-h] [-d] patt hutch <br/>
+positional arguments: <br/>
+  patt           | Regex pattern to match IOCs with.<br/>
+                 -->Can match anything in the IOC procmanager object. e.g. "lm2k2" or "mcs2" or "ek9000"<br>
+  hutch          | 3 letter hutch code. Use "all" to search through all hutches.<br/>
+                 -->Valid arguments: all, aux, cxi, det, hpl, icl, kfe, las, lfe, mec,<br/>
+                    mfx, rix, rrl, thz, tmo, tst, txi, ued, xcs, xpp, xrt<br/>
+
+optional arguments:<br/>
+  -h, --help     | show this help message and exit<br/>
+  -d, --dry_run  | Forces a dry run for the script. No files are saved.<br/>
+
+</tr>
+
+<tr>
     <td>grep_ioc</td>
     <td>
 usage: grep_ioc KEYWORD [hutch]<br/>
@@ -253,23 +270,29 @@ usage: grep_more_ioc [-h] [-d] patt hutch {print,search} <br/>
      patt                            Regex str to search through iocmanager.cfg<br/>
                                      e.g. 'mcs2', 'lm2k2-atm.*', 'ek9000', 'gige.*'<br/>
      hutch                           3 letter hutch code to search through.<br/>
-                                     Use 'all' to search through all hutches.
+                                     Use 'all' to search through all hutches.<br/>
+                                     Valid arguments: all, aux, cxi, det, hpl, icl, kfe,<br/>
+                                     las, lfe, mec, mfx, rix, rrl, thz, tmo, tst, txi, ued,<br/>
+                                     xcs, xpp, xrt<br/>
          -h, --help                  Show help message and exit<br/>
          -d, --ignore_disabled       Exclude IOCs based on disabled state <br/>
      Necessary subcommands.<br/>
      Use: grep_more_ioc . all [subcommand] --help for more information
      {print, search}<br/>
-         print                       Prints all the matching IOCs in a dataframe<br/>
-             -h, --help              Show help message and exit<br/>
-             -c, --skip_comments     Prints IOC.cfg file with comments skipped<br/>
-             -r, --release           Includes the parent IOC release in the dataframe<br/>
-             -s, --print_dirs        Dump child & parent directors to the terminal<br/>
-             -y, --print_history     Dump child IOC's history to terminal, if it exists<br/>
-         search                      Regex-like search of child IOCs<br/>
-             PATT                    The regex str to use in the search<br/>
-             -h, --help              Show help message and exit<br/>
-             -q, --quiet             Surpresses file warning for paths that do not exist<br/>
-             -o, --only_search       Skip printing dataframe, only print search results<br/>
+         print                       | Prints all the matching IOCs in a dataframe<br/>
+         usage: grep_more_ioc patt hutch print [-h] [-c] [-r] [-s] [-y]<br/>
+             -h, --help              | Show help message and exit<br/>
+             -c, --skip_comments     | Prints IOC.cfg file with comments skipped<br/>
+             -r, --release           | Includes the parent IOC release in the dataframe<br/>
+             -s, --print_dirs        | Dump child & parent directors to the terminal<br/>
+             -y, --print_history     | Dump child IOC's history to terminal, if it exists<br/>
+         search                      | Regex-like search of child IOCs<br/>
+         usage: grep_more_ioc patt hutch search [-h] [-q] [-o] PATT<br/>
+             PATT                    | The regex str to use in the search<br/>
+             -h, --help              | Show help message and exit<br/>
+             -q, --quiet             | Surpresses file warning for paths that do not exist<br/>
+             -o, --only_search       | Skip printing dataframe, only print search results<br/>
+    </td>
 </tr>
 
 <tr>
