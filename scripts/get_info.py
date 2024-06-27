@@ -72,7 +72,7 @@ else:
     for ihutch in hutches:  # use the IP address to match the host to a hutch by subnet
         if subnet in hutch_subnets.get(ihutch):
             hutch = ihutch.upper()
-            if hutch in "TMO" or hutch in "RIX":
+            if hutch in ("TMO", "RIX"):
                 user = getpass.getuser()
                 if user[:3].upper() == "TXI":
                     hutch = "TXI"
@@ -82,7 +82,7 @@ else:
         for ihutch in hutches:
             if hostname.find(ihutch) >= 0:
                 hutch = ihutch.upper()
-                if hutch in "TMO" or hutch in "RIX":
+                if hutch in ("TMO", "RIX"):
                     user = getpass.getuser()
                     if user[:3].upper() == "TXI":
                         hutch = "TXI"
