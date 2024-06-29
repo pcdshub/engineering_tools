@@ -41,13 +41,13 @@ do
 	s)
 	    SILENT=1
 	    ;;
-	m) 
+	m)
 	    AIMHOST=$OPTARG
 	    ;;
- 	c) 
- 	    CORESIZE=2000000000 
+ 	c)
+ 	    CORESIZE=2000000000
  	    ;;
- 	d) 
+ 	d)
  	    DSSTEST=1
  	    ;;
 	?)
@@ -86,7 +86,7 @@ unset LD_LIBRARY_PATH
 cd /reg/g/pcds/dist/pds/"$HUTCH"/scripts/ || exit
 
 DAQNETWORK='fez'
-LCLS2_HUTCHES="rix, tmo, ued"
+LCLS2_HUTCHES="rix, tmo, ued, txi"
 if echo "$LCLS2_HUTCHES" | grep -iw "$HUTCH" > /dev/null; then
     source /reg/g/pcds/dist/pds/"$HUTCH"/scripts/setup_env.sh
     PROCMGR='procmgr'
@@ -122,7 +122,7 @@ if [[ "$DAQHOST" != *$NOTRUNNING* ]]; then
     echo stop the DAQ on "$DAQHOST" from "$HOSTNAME"
     T="$(date +%s%N)"
     $PROCMGR stop \
-	/reg/g/pcds/dist/pds/"$HUTCH"/scripts/$CNFFILE 
+	/reg/g/pcds/dist/pds/"$HUTCH"/scripts/$CNFFILE
 
 
     if [ -f /reg/g/pcds/dist/pds/"$HUTCH"/scripts/p"$PLATFORM"$CNFEXT.running ]; then
@@ -138,7 +138,7 @@ else
 	echo while DAQ reports to not run, will stop the DAQ on "$DAQHOST" from "$HOSTNAME" to clear the p"$PLATFORM"$CNFEXT.running file
 	T="$(date +%s%N)"
 	$PROCMGR stop \
-	    /reg/g/pcds/dist/pds/"$HUTCH"/scripts/$CNFFILE 
+	    /reg/g/pcds/dist/pds/"$HUTCH"/scripts/$CNFFILE
 
         if [ -f /reg/g/pcds/dist/pds/"$HUTCH"/scripts/p"$PLATFORM"$CNFEXT.running ]; then
             echo 'the DAQ did not stop properly, exit now and try again follow the escalation procedure'
@@ -199,7 +199,7 @@ if [ ${#DOWIN} != 0 ] ||  [ ${#SELPART} != 0 ]; then
     fi
 fi
 
-if [ ${#DOWIN} != 0 ]; then    
+if [ ${#DOWIN} != 0 ]; then
     T="$(date +%s%N)"
     if [ "$HUTCH" == 'xpp' ]; then
 	test=$(xdotool search --sync --onlyvisible --name 'ProcStat')
@@ -215,18 +215,18 @@ if [ ${#DOWIN} != 0 ]; then
     echo 'and '"$Sinter"'.'"$Minter"' extra seconds for windows'
 fi
 
-if [ ${#SELPART} != 0 ]; then    
+if [ ${#SELPART} != 0 ]; then
     DAQC=$(xdotool search  --onlyvisible --name 'DAQ Control')
     #echo $DAQC
     xdotool mousemove --sync --window "$DAQC" 80 230
     xdotool windowfocus "$DAQC"
-    xdotool click 1 
-    
+    xdotool click 1
+
     PARTSEL=$(xdotool search  --onlyvisible --sync --name 'Partition Selection')
     YLOW=$(xdotool search --name 'Partition Selection' getwindowgeometry %@ | grep Geometry | awk '{print $2}' | sed s/x/" "/g | awk '{print $2}')
         #echo $PARTSEL
-    xdotool mousemove --sync --window "$PARTSEL" 80 $(("$YLOW"-28)) 
-    xdotool click 1 
+    xdotool mousemove --sync --window "$PARTSEL" 80 $(("$YLOW"-28))
+    xdotool click 1
 fi
 
 if [ "$SILENT" == 0 ];then
