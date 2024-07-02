@@ -128,4 +128,3 @@ source "${TOKEN_DIR}/typhos.sh"
 if [ -n "${SSH_CONNECTION}" ]; then
   export QT_QUICK_BACKEND="software"
 fi
-
