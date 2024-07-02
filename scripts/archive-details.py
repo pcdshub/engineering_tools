@@ -1,11 +1,13 @@
 #!/usr/bin/env python
 """
-Pretty prints archiver details of a PV. 
+Pretty prints archiver details of a PV.
 """
 
 import argparse
 import json
+
 import requests
+
 
 def main():
     parser = argparse.ArgumentParser(
@@ -28,8 +30,8 @@ def main():
         'Is this PV paused:',
         'Instance archiving PV',
         'Number of elements:',
-        'Precision', 
-        'Units', 
+        'Precision',
+        'Units',
         'Sampling method:',
         'Sampling period:',
         'Are we using PVACCESS?',
@@ -39,13 +41,13 @@ def main():
         'Extra info - RTYP:',
         'Host name'
     ]
-        
+
     pv = args.pv
     request_str = "http://pscaa01.slac.stanford.edu:17665/mgmt/bpl/getPVDetails?pv={}".format(pv)
-    resp = requests.get(request_str)    
+    resp = requests.get(request_str)
     if args.json:
-        # Had to use .text and json library rather than .json() to get 
-        # external apps like jq to take the output here. 
+        # Had to use .text and json library rather than .json() to get
+        # external apps like jq to take the output here.
         parsed = json.loads(resp.text)
         print(json.dumps(parsed))
     else:
@@ -54,7 +56,7 @@ def main():
             for d in resp.json():
                 print("\t{} : {}".format(d['name'], d['value']))
             print("\n")
-        
+
         else:
             print("\n")
             for field in include_fields:
@@ -62,8 +64,7 @@ def main():
                     if entry['name'] == field:
                         print("\t{} : {}".format(entry['name'], entry['value']))
             print("\n")
-    
-   
+
 
 if __name__ == '__main__':
     main()
