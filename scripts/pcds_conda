@@ -127,13 +127,4 @@ source "${TOKEN_DIR}/typhos.sh"
 # The same was done with PyDM and this fixes Designer and friends.
 if [ -n "${SSH_CONNECTION}" ]; then
   export QT_QUICK_BACKEND="software"
-  # Check for errors in the opengl rendering
-  # Manually fall back to mesa library if we know there is a problem
-  if [ -x "$(command -v glxinfo)" ] && [ -z "${__GLX_VENDOR_LIBRARY_NAME}" ]; then
-    # Expecting either a segfault or exit code 1 if there is a problem
-    if ! { glxinfo -B; } > /dev/null 2>&1; then
-      export __GLX_VENDOR_LIBRARY_NAME="mesa"
-    fi
-  fi
 fi
-
