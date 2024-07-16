@@ -327,6 +327,47 @@ usage: grep_more_ioc [-h] [-d] patt hutch {print,search} <br/>
 </tr>
 
 <tr>
+    <td>ioc-deploy</td>
+    <td>
+usage: ioc-deploy [-h] [--version] [--name NAME] [--release RELEASE]
+                  [--ioc-dir IOC_DIR] [--github_org GITHUB_ORG]
+                  [--auto-confirm] [--dry-run] [--verbose]
+
+ioc-deploy is a script for building and deploying ioc tags from github. It
+will create a shallow clone of your IOC in the standard release area at the
+correct path and "make" it.
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --version             Show version number and exit.
+  --name NAME, -n NAME  The name of the repository to deploy. This is a
+                        required argument. If it does not exist on github,
+                        we'll also try prepending with 'ioc-common-'.
+  --release RELEASE, -r RELEASE
+                        The version of the IOC to deploy. This is a required
+                        argument.
+  --ioc-dir IOC_DIR, -i IOC_DIR
+                        The directory to deploy IOCs in. This defaults to
+                        $EPICS_SITE_TOP/ioc, or /cds/group/pcds/epics/ioc if
+                        the environment variable is not set. With your current
+                        environment variables, this defaults to
+                        /reg/g/pcds/epics/ioc.
+  --github_org GITHUB_ORG, --org GITHUB_ORG
+                        The github org to deploy IOCs from. This defaults to
+                        $GITHUB_ORG, or pcdshub if the environment variable is
+                        not set. With your current environment variables, this
+                        defaults to pcdshub.
+  --auto-confirm, --confirm, --yes, -y
+                        Skip the confirmation promps, automatically saying yes
+                        to each one.
+  --dry-run             Do not deploy anything, just print what would have
+                        been done.
+  --verbose, -v, --debug
+                        Display additional debug information.
+    </td>
+</tr>
+
+<tr>
     <td>iocmanager</td>
     <td>
 iocmanager [hutch]<br/>
