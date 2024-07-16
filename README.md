@@ -329,40 +329,40 @@ usage: grep_more_ioc [-h] [-d] patt hutch {print,search} <br/>
 <tr>
     <td>ioc-deploy</td>
     <td>
-usage: ioc-deploy [-h] [--version] [--name NAME] [--release RELEASE]
-                  [--ioc-dir IOC_DIR] [--github_org GITHUB_ORG]
-                  [--auto-confirm] [--dry-run] [--verbose]
-
+usage: ioc-deploy [-h] [--version] [--name NAME] [--release RELEASE]<br/>
+                  [--ioc-dir IOC_DIR] [--github_org GITHUB_ORG]<br/>
+                  [--auto-confirm] [--dry-run] [--verbose]<br/>
+<br/>
 ioc-deploy is a script for building and deploying ioc tags from github. It
 will create a shallow clone of your IOC in the standard release area at the
 correct path and "make" it.
-
-optional arguments:
-  -h, --help            show this help message and exit
-  --version             Show version number and exit.
-  --name NAME, -n NAME  The name of the repository to deploy. This is a
-                        required argument. If it does not exist on github,
-                        we'll also try prepending with 'ioc-common-'.
-  --release RELEASE, -r RELEASE
-                        The version of the IOC to deploy. This is a required
-                        argument.
-  --ioc-dir IOC_DIR, -i IOC_DIR
-                        The directory to deploy IOCs in. This defaults to
-                        $EPICS_SITE_TOP/ioc, or /cds/group/pcds/epics/ioc if
-                        the environment variable is not set. With your current
-                        environment variables, this defaults to
-                        /reg/g/pcds/epics/ioc.
-  --github_org GITHUB_ORG, --org GITHUB_ORG
-                        The github org to deploy IOCs from. This defaults to
-                        $GITHUB_ORG, or pcdshub if the environment variable is
-                        not set. With your current environment variables, this
-                        defaults to pcdshub.
-  --auto-confirm, --confirm, --yes, -y
-                        Skip the confirmation promps, automatically saying yes
-                        to each one.
-  --dry-run             Do not deploy anything, just print what would have
-                        been done.
-  --verbose, -v, --debug
+<br/>
+optional arguments:<br/>
+  -h, --help            show this help message and exit<br/>
+  --version             Show version number and exit.<br/>
+  --name NAME, -n NAME  The name of the repository to deploy. This is a<br/>
+                        required argument. If it does not exist on github,<br/>
+                        we'll also try prepending with 'ioc-common-'.<br/>
+  --release RELEASE, -r RELEASE<br/>
+                        The version of the IOC to deploy. This is a required<br/>
+                        argument.<br/>
+  --ioc-dir IOC_DIR, -i IOC_DIR<br/>
+                        The directory to deploy IOCs in. This defaults to<br/>
+                        $EPICS_SITE_TOP/ioc, or /cds/group/pcds/epics/ioc if<br/>
+                        the environment variable is not set. With your current<br/>
+                        environment variables, this defaults to<br/>
+                        /reg/g/pcds/epics/ioc.<br/>
+  --github_org GITHUB_ORG, --org GITHUB_ORG<br/>
+                        The github org to deploy IOCs from. This defaults to<br/>
+                        $GITHUB_ORG, or pcdshub if the environment variable is<br/>
+                        not set. With your current environment variables, this<br/>
+                        defaults to pcdshub.<br/>
+  --auto-confirm, --confirm, --yes, -y<br/>
+                        Skip the confirmation promps, automatically saying yes<br/>
+                        to each one.<br/>
+  --dry-run             Do not deploy anything, just print what would have<br/>
+                        been done.<br/>
+  --verbose, -v, --debug<br/>
                         Display additional debug information.
     </td>
 </tr>
