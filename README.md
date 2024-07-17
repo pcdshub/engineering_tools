@@ -35,6 +35,18 @@ git pull origin master
 
 <table>
 <tr>
+    <td>afs-remote-fix</td>
+    <td>
+usage: afs-remote-fix<br/>
+Will change your afs remotes from e.g.<br/>
+origin          /afs/slac.stanford.edu/g/cd/swe/git/repos/package/epics/ioc/common/ims.git<br/>
+to</br>
+origin          git@github.com:your-username/ioc-common-ims.git<br/>
+upstream        git@github.com:pcdshub/ioc-common-ims.git<br/>
+    </td>
+</tr>
+
+<tr>
     <td>ami_offline_psana</td>
     <td>
 usage: ami_offline_psana options<br/>
