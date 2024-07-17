@@ -335,7 +335,12 @@ usage: ioc-deploy [-h] [--version] [--name NAME] [--release RELEASE]
 &nbsp;
 ioc-deploy is a script for building and deploying ioc tags from github. It
 will create a shallow clone of your IOC in the standard release area at the
-correct path and "make" it.
+correct path and "make" it. If the tag directory already exists, the script
+will exit. Example command: "ioc-deploy -n ioc-foo-bar -r R1.0.0" This will
+clone the repository to the default ioc directory and run make using the
+currently set EPICS environment variables. With default settings this will
+clone from https://github.com/pcdshub/ioc-foo-bar to
+/cds/group/pcds/epics/ioc/foo/bar/R1.0.0 then cd and make.
 &nbsp;
 optional arguments:
 &nbsp; -h, --help            show this help message and exit
