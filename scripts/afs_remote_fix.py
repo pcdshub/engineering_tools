@@ -18,11 +18,14 @@ If the origin is not an afs path, this script will exit without taking any actio
 The script will prompt you for your github username, which is not necessarily
 the same as your slac username.
 """
+
 import subprocess
 
 
 def main() -> int:
-    origin = subprocess.check_output(["git", "remote", "get-url", "origin"], universal_newlines=True).strip()
+    origin = subprocess.check_output(
+        ["git", "remote", "get-url", "origin"], universal_newlines=True
+    ).strip()
     if not origin.startswith("/afs/"):
         print(f"Your origin {origin} is not an afs repo.")
         return 1
