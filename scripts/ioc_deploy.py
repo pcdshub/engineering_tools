@@ -126,23 +126,23 @@ def main(args: CliArgs) -> int:
     deploy_dir = get_target_dir(name=upd_name, ioc_dir=args.ioc_dir, release=upd_rel)
 
     logger.info(f"Deploying {args.github_org}/{upd_name} at {upd_rel} to {deploy_dir}")
+    if Path(deploy_dir).exists():
+        raise RuntimeError(f"Deploy directory {deploy_dir} already exists! Aborting.")
     if not args.auto_confirm:
         user_text = input("Confirm release source and target? y/n\n")
         if not user_text.strip().lower().startswith("y"):
             return ReturnCode.NO_CONFIRM
-    if Path(deploy_dir).exists():
-        logger.info(f"{deploy_dir} exists, skip git clone step.")
-    else:
-        rval = clone_repo_tag(
-            name=upd_name,
-            github_org=args.github_org,
-            release=upd_rel,
-            deploy_dir=deploy_dir,
-            dry_run=args.dry_run,
-        )
-        if rval != ReturnCode.SUCCESS:
-            logger.error(f"Nonzero return value {rval} from git clone")
-            return rval
+    logger.info(f"Cloning IOC to {deploy_dir}")
+    rval = clone_repo_tag(
+        name=upd_name,
+        github_org=args.github_org,
+        release=upd_rel,
+        deploy_dir=deploy_dir,
+        dry_run=args.dry_run,
+    )
+    if rval != ReturnCode.SUCCESS:
+        logger.error(f"Nonzero return value {rval} from git clone")
+        return rval
 
     logger.info(f"Building IOC at {deploy_dir}")
     rval = make_in(deploy_dir=deploy_dir, dry_run=args.dry_run)
