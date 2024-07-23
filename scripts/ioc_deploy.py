@@ -226,9 +226,9 @@ def finalize_tag(name: str, github_org: str, release: str) -> str:
                 _clone(
                     name=name,
                     github_org=github_org,
-                    release=release,
+                    release=rel,
                     working_dir=tmpdir,
-                    target_dir=release,
+                    target_dir=rel,
                 )
             except subprocess.CalledProcessError:
                 logger.warning(f"Did not find release {rel} in {github_org}/{name}")
