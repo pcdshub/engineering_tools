@@ -1,1 +1,13 @@
-ioc_deploy.py
+#!/usr/bin/bash
+# Wrapper script for deploying IOCs from github.
+# See ioc_deploy.py or try --help for usage
+THIS_SCRIPT="$(realpath "${BASH_SOURCE[0]}")"
+THIS_DIR="$(dirname "${THIS_SCRIPT}")"
+
+# Register the ssh key with the ssh agent if needed
+source "${THIS_DIR}/ssh_agent_helper.sh"
+# Stop the ssh agent at exit if we started it here
+trap ssh_agent_helper_cleanup EXIT
+
+# Run the deploy script
+/usr/bin/python3 "${THIS_DIR}"/ioc_deploy.py "$@"
