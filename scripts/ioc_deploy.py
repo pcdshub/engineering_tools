@@ -132,9 +132,14 @@ def main(args: CliArgs) -> int:
         )
 
     logger.info("Running ioc-deploy: checking inputs")
-    upd_name = finalize_name(name=args.name, github_org=args.github_org, verbose=args.verbose)
+    upd_name = finalize_name(
+        name=args.name, github_org=args.github_org, verbose=args.verbose
+    )
     upd_rel = finalize_tag(
-        name=upd_name, github_org=args.github_org, release=args.release, verbose=args.verbose,
+        name=upd_name,
+        github_org=args.github_org,
+        release=args.release,
+        verbose=args.verbose,
     )
     deploy_dir = get_target_dir(name=upd_name, ioc_dir=args.ioc_dir, release=upd_rel)
 
@@ -191,7 +196,9 @@ def finalize_name(name: str, github_org: str, verbose: bool) -> str:
     logger.debug(f"Checking for {name} in org {github_org}")
     with TemporaryDirectory() as tmpdir:
         try:
-            _clone(name=name, github_org=github_org, working_dir=tmpdir, verbose=verbose)
+            _clone(
+                name=name, github_org=github_org, working_dir=tmpdir, verbose=verbose
+            )
         except subprocess.CalledProcessError as exc:
             raise ValueError(
                 f"Error cloning repo, make sure {name} exists in {github_org} and check your permissions!"
@@ -252,7 +259,12 @@ def get_target_dir(name: str, ioc_dir: str, release: str) -> str:
 
 
 def clone_repo_tag(
-    name: str, github_org: str, release: str, deploy_dir: str, dry_run: bool, verbose: bool,
+    name: str,
+    github_org: str,
+    release: str,
+    deploy_dir: str,
+    dry_run: bool,
+    verbose: bool,
 ) -> int:
     """
     Create a shallow clone of the git repository in the correct location.
@@ -270,7 +282,11 @@ def clone_repo_tag(
         return ReturnCode.SUCCESS
     else:
         return _clone(
-            name=name, github_org=github_org, release=release, target_dir=deploy_dir, verbose=verbose,
+            name=name,
+            github_org=github_org,
+            release=release,
+            target_dir=deploy_dir,
+            verbose=verbose,
         ).returncode
 
 
@@ -324,7 +340,9 @@ def _clone(
         cmd.append(target_dir)
     if working_dir:
         logger.debug(f"Calling {' '.join(cmd)} in {working_dir}")
-        return subprocess.run(cmd, check=True, cwd=working_dir, capture_output=not verbose)
+        return subprocess.run(
+            cmd, check=True, cwd=working_dir, capture_output=not verbose
+        )
     else:
         logger.debug(f"Calling {' '.join(cmd)}")
         return subprocess.run(cmd, check=True, capture_output=not verbose)
