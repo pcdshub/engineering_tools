@@ -132,9 +132,9 @@ def main(args: CliArgs) -> int:
         )
 
     logger.info("Running ioc-deploy: checking inputs")
-    upd_name = finalize_name(name=args.name, github_org=args.github_org)
+    upd_name = finalize_name(name=args.name, github_org=args.github_org, verbose=args.verbose)
     upd_rel = finalize_tag(
-        name=upd_name, github_org=args.github_org, release=args.release
+        name=upd_name, github_org=args.github_org, release=args.release, verbose=args.verbose,
     )
     deploy_dir = get_target_dir(name=upd_name, ioc_dir=args.ioc_dir, release=upd_rel)
 
@@ -152,6 +152,7 @@ def main(args: CliArgs) -> int:
         release=upd_rel,
         deploy_dir=deploy_dir,
         dry_run=args.dry_run,
+        verbose=args.verbose,
     )
     if rval != ReturnCode.SUCCESS:
         logger.error(f"Nonzero return value {rval} from git clone")
@@ -165,7 +166,7 @@ def main(args: CliArgs) -> int:
     return ReturnCode.SUCCESS
 
 
-def finalize_name(name: str, github_org: str) -> str:
+def finalize_name(name: str, github_org: str, verbose: bool) -> str:
     """
     Check if name is present in org and is well-formed.
 
@@ -190,7 +191,7 @@ def finalize_name(name: str, github_org: str) -> str:
     logger.debug(f"Checking for {name} in org {github_org}")
     with TemporaryDirectory() as tmpdir:
         try:
-            _clone(name=name, github_org=github_org, working_dir=tmpdir)
+            _clone(name=name, github_org=github_org, working_dir=tmpdir, verbose=verbose)
         except subprocess.CalledProcessError as exc:
             raise ValueError(
                 f"Error cloning repo, make sure {name} exists in {github_org} and check your permissions!"
@@ -198,7 +199,7 @@ def finalize_name(name: str, github_org: str) -> str:
     return name
 
 
-def finalize_tag(name: str, github_org: str, release: str) -> str:
+def finalize_tag(name: str, github_org: str, release: str, verbose: bool) -> str:
     """
     Check if release is present in the org.
 
@@ -229,6 +230,7 @@ def finalize_tag(name: str, github_org: str, release: str) -> str:
                     release=rel,
                     working_dir=tmpdir,
                     target_dir=rel,
+                    verbose=verbose,
                 )
             except subprocess.CalledProcessError:
                 logger.warning(f"Did not find release {rel} in {github_org}/{name}")
@@ -250,7 +252,7 @@ def get_target_dir(name: str, ioc_dir: str, release: str) -> str:
 
 
 def clone_repo_tag(
-    name: str, github_org: str, release: str, deploy_dir: str, dry_run: bool
+    name: str, github_org: str, release: str, deploy_dir: str, dry_run: bool, verbose: bool,
 ) -> int:
     """
     Create a shallow clone of the git repository in the correct location.
@@ -268,7 +270,7 @@ def clone_repo_tag(
         return ReturnCode.SUCCESS
     else:
         return _clone(
-            name=name, github_org=github_org, release=release, target_dir=deploy_dir
+            name=name, github_org=github_org, release=release, target_dir=deploy_dir, verbose=verbose,
         ).returncode
 
 
@@ -310,6 +312,7 @@ def _clone(
     release: str = "",
     working_dir: str = "",
     target_dir: str = "",
+    verbose: bool = False,
 ) -> subprocess.CompletedProcess:
     """
     Clone the repo or raise a subprocess.CalledProcessError
@@ -321,10 +324,10 @@ def _clone(
         cmd.append(target_dir)
     if working_dir:
         logger.debug(f"Calling {' '.join(cmd)} in {working_dir}")
-        return subprocess.run(cmd, check=True, cwd=working_dir)
+        return subprocess.run(cmd, check=True, cwd=working_dir, capture_output=not verbose)
     else:
         logger.debug(f"Calling {' '.join(cmd)}")
-        return subprocess.run(cmd, check=True)
+        return subprocess.run(cmd, check=True, capture_output=not verbose)
 
 
 def _main() -> int:
