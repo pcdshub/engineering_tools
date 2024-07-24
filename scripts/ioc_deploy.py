@@ -344,7 +344,7 @@ def _clone(
     if not verbose:
         kwds["stdin"] = subprocess.PIPE
         kwds["stderr"] = subprocess.PIPE
-    logger.debug(f"Calling {' '.join(cmd)} with kwargs {kwds}")
+    logger.debug(f"Calling '{' '.join(cmd)}' with kwargs {kwds}")
     return subprocess.run(cmd, **kwds)
 
 
