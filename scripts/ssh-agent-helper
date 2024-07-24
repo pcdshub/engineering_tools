@@ -27,5 +27,5 @@ fi
 if [ "$rval" -gt 0 ]; then
     echo "Running ssh-add, may prompt for ssh key password"
     # Expire after 12h just in case to avoid infinite key storage
-    ssh-add -t 12h
+    ssh-add -t 12h 2> /dev/null
 fi
