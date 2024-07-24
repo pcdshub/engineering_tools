@@ -1,0 +1,31 @@
+#!/usr/bin/bash
+# Helper script for starting the ssh agent if needed and doing an ssh-add.
+# This will let anyone smoothly run github/ssh related scripts without multiple password prompts.
+# This script is intended to be sourced.
+# Sourcing this script lets ssh-agent set the proper environment variables it needs to run properly.
+#
+# Expected usage:
+#
+# source ssh-agent-helper
+
+# SSH agent check: return code is 1 if there are no identities, 2 if cannot connect to agent.
+# Only start the agent on return code 2, otherwise we can just add our identity.
+# On return code 0 we don't have to do anything, the user already has this set up.
+ssh-add -L &> /dev/null
+rval=$?
+if [ "$rval" -eq 2 ]; then
+    echo "Starting ssh agent"
+    eval "$(ssh-agent -s)" &> /dev/null
+    ssh_agent_helper_cleanup() {
+        if [ -n "${SSH_AGENT_PID}" ]; then
+            echo "Cleaning up SSH agent"
+            eval "$(ssh-agent -k)" &> /dev/null
+        fi
+    }
+    trap ssh_agent_helper_cleanup EXIT
+fi
+if [ "$rval" -gt 0 ]; then
+    echo "Running ssh-add, may prompt for ssh key password"
+    # Expire after 12h just in case to avoid infinite key storage
+    ssh-add -t 12h
+fi
