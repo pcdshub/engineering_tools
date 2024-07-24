@@ -1,27 +1,39 @@
 #!/usr/bin/bash
+#
 # Helper script for starting the ssh agent if needed and doing an ssh-add.
 # This will let anyone smoothly run github/ssh related scripts without multiple password prompts.
+#
 # This script is intended to be sourced.
 # Sourcing this script lets ssh-agent set the proper environment variables it needs to run properly.
 #
 # Expected usage:
 #
 # source ssh-agent-helper
+#
 
+ssh-add -L &> /dev/null
+rval=$?
 # SSH agent check: return code is 1 if there are no identities, 2 if cannot connect to agent.
 # Only start the agent on return code 2, otherwise we can just add our identity.
 # On return code 0 we don't have to do anything, the user already has this set up.
-ssh-add -L &> /dev/null
-rval=$?
+# If the user is already forwarding their SSH key via ssh agent forwarding, this
+# helpfully returns 0 and nothing needs to be done.
 if [ "$rval" -eq 2 ]; then
     echo "Starting ssh agent"
+    # This ssh-agent -s command starts the agent and outputs some environment variable
+    # set and export commands to stdout that the user must execute in their shell via eval.
+    # This sets SSH_AGENT_PID to be used to kill the agent later,
+    # and SSH_AUTH_SOCK to be used to authorise ssh commands via the agent.
     eval "$(ssh-agent -s)" &> /dev/null
+    # If the agent hasn't already been killed, this helper will kill it.
     ssh_agent_helper_cleanup() {
         if [ -n "${SSH_AGENT_PID}" ]; then
             echo "Cleaning up SSH agent"
+            # Kills the agent and un-sets the environment variables
             eval "$(ssh-agent -k)" &> /dev/null
         fi
     }
+    # This will ensure that ssh_agent_helper_cleanup runs when the user's shell exits.
     trap ssh_agent_helper_cleanup EXIT
 fi
 if [ "$rval" -gt 0 ]; then
