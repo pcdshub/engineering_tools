@@ -2,6 +2,7 @@
 #
 # Helper script for starting the ssh agent if needed and doing an ssh-add.
 # This will let anyone smoothly run github/ssh related scripts without multiple password prompts.
+# An ssh-agent instance set up using this script will be automaticalls closed on logout.
 #
 # This script is intended to be sourced.
 # Sourcing this script lets ssh-agent set the proper environment variables it needs to run properly.
