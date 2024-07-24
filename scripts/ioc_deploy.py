@@ -338,14 +338,14 @@ def _clone(
         cmd.extend(["-b", release])
     if target_dir:
         cmd.append(target_dir)
+    kwds = {"check": True}
     if working_dir:
-        logger.debug(f"Calling {' '.join(cmd)} in {working_dir}")
-        return subprocess.run(
-            cmd, check=True, cwd=working_dir, capture_output=not verbose
-        )
-    else:
-        logger.debug(f"Calling {' '.join(cmd)}")
-        return subprocess.run(cmd, check=True, capture_output=not verbose)
+        kwds["cwd"] = working_dir
+    if not verbose:
+        kwds["stdin"] = subprocess.PIPE
+        kwds["stderr"] = subprocess.PIPE
+    logger.debug(f"Calling {' '.join(cmd)} with kwargs {kwds}")
+    return subprocess.run(cmd, **kwds)
 
 
 def _main() -> int:
