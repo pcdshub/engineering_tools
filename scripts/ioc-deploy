@@ -1,1 +1,18 @@
-ioc_deploy.py
+#!/usr/bin/bash
+# Wrapper script for deploying IOCs from github.
+# See ioc_deploy.py or try --help for usage
+if ! ssh-add -L &> /dev/null; then
+    >&2 echo ""
+    >&2 echo "  WARNING: Your ssh key is not in the ssh agent."
+    >&2 echo "           If you run ioc-deploy like this, you may need to input"
+    >&2 echo "           your ssh key password multiple times!"
+    >&2 echo "           Try '$(tput bold)source ssh-agent-helper$(tput sgr0)' to input your ssh key"
+    >&2 echo "           password only once per login."
+    >&2 echo ""
+fi
+
+THIS_SCRIPT="$(realpath "${BASH_SOURCE[0]}")"
+THIS_DIR="$(dirname "${THIS_SCRIPT}")"
+
+# Run the deploy script
+/usr/bin/python3 "${THIS_DIR}"/ioc_deploy.py "$@"

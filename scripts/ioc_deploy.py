@@ -24,9 +24,8 @@ import logging
 import os
 import subprocess
 import sys
-import urllib.error
-import urllib.request
 from pathlib import Path
+from tempfile import TemporaryDirectory
 
 EPICS_SITE_TOP_DEFAULT = "/cds/group/pcds/epics"
 GITHUB_ORG_DEFAULT = "pcdshub"
@@ -133,9 +132,14 @@ def main(args: CliArgs) -> int:
         )
 
     logger.info("Running ioc-deploy: checking inputs")
-    upd_name = finalize_name(name=args.name, github_org=args.github_org)
+    upd_name = finalize_name(
+        name=args.name, github_org=args.github_org, verbose=args.verbose
+    )
     upd_rel = finalize_tag(
-        name=upd_name, github_org=args.github_org, release=args.release
+        name=upd_name,
+        github_org=args.github_org,
+        release=args.release,
+        verbose=args.verbose,
     )
     deploy_dir = get_target_dir(name=upd_name, ioc_dir=args.ioc_dir, release=upd_rel)
 
@@ -153,6 +157,7 @@ def main(args: CliArgs) -> int:
         release=upd_rel,
         deploy_dir=deploy_dir,
         dry_run=args.dry_run,
+        verbose=args.verbose,
     )
     if rval != ReturnCode.SUCCESS:
         logger.error(f"Nonzero return value {rval} from git clone")
@@ -166,7 +171,7 @@ def main(args: CliArgs) -> int:
     return ReturnCode.SUCCESS
 
 
-def finalize_name(name: str, github_org: str) -> str:
+def finalize_name(name: str, github_org: str, verbose: bool) -> str:
     """
     Check if name is present in org and is well-formed.
 
@@ -189,20 +194,19 @@ def finalize_name(name: str, github_org: str) -> str:
         logger.warning(f"{name} is not an ioc name, trying {new_name}")
         name = new_name
     logger.debug(f"Checking for {name} in org {github_org}")
-    try:
-        resp = urllib.request.urlopen(f"https://github.com/{github_org}/{name}")
-        if resp.code == 200:
-            logger.info(f"{name} exists in {github_org}")
-            return name
-        else:
-            logger.error(f"Unexpected http error code {resp.code}")
-    except urllib.error.HTTPError as exc:
-        logger.error(exc)
-        logger.debug("", exc_info=True)
-    raise ValueError(f"{name} does not exist in {github_org}")
+    with TemporaryDirectory() as tmpdir:
+        try:
+            _clone(
+                name=name, github_org=github_org, working_dir=tmpdir, verbose=verbose
+            )
+        except subprocess.CalledProcessError as exc:
+            raise ValueError(
+                f"Error cloning repo, make sure {name} exists in {github_org} and check your permissions!"
+            ) from exc
+    return name
 
 
-def finalize_tag(name: str, github_org: str, release: str) -> str:
+def finalize_tag(name: str, github_org: str, release: str, verbose: bool) -> str:
     """
     Check if release is present in the org.
 
@@ -223,19 +227,23 @@ def finalize_tag(name: str, github_org: str, release: str) -> str:
     else:
         try_release.extend([f"R{release}", f"v{release}"])
 
-    for rel in try_release:
-        logger.debug(f"Checking for release {rel} in {github_org}/{name}")
-        try:
-            resp = urllib.request.urlopen(
-                f"https://github.com/{github_org}/{name}/releases/tag/{rel}"
-            )
-            if resp.code == 200:
+    with TemporaryDirectory() as tmpdir:
+        for rel in try_release:
+            logger.debug(f"Checking for release {rel} in {github_org}/{name}")
+            try:
+                _clone(
+                    name=name,
+                    github_org=github_org,
+                    release=rel,
+                    working_dir=tmpdir,
+                    target_dir=rel,
+                    verbose=verbose,
+                )
+            except subprocess.CalledProcessError:
+                logger.warning(f"Did not find release {rel} in {github_org}/{name}")
+            else:
                 logger.info(f"Release {rel} exists in {github_org}/{name}")
                 return rel
-            else:
-                logger.warning(f"Unexpected http error code {resp.code}")
-        except urllib.error.HTTPError:
-            logger.warning(f"Did not find release {rel} in {github_org}/{name}")
     raise ValueError(f"Unable to find {release} in {github_org}/{name}")
 
 
@@ -251,7 +259,12 @@ def get_target_dir(name: str, ioc_dir: str, release: str) -> str:
 
 
 def clone_repo_tag(
-    name: str, github_org: str, release: str, deploy_dir: str, dry_run: bool
+    name: str,
+    github_org: str,
+    release: str,
+    deploy_dir: str,
+    dry_run: bool,
+    verbose: bool,
 ) -> int:
     """
     Create a shallow clone of the git repository in the correct location.
@@ -263,22 +276,18 @@ def clone_repo_tag(
     else:
         logger.debug(f"Ensure {parent_dir} exists")
         parent_dir.mkdir(parents=True, exist_ok=True)
-    # Shell out to git clone
-    cmd = [
-        "git",
-        "clone",
-        f"https://github.com/{github_org}/{name}",
-        "--depth",
-        "1",
-        "-b",
-        release,
-        deploy_dir,
-    ]
+
     if dry_run:
-        logger.debug(f"Dry-run: skip shell command \"{' '.join(cmd)}\"")
+        logger.debug("Dry-run: skip git clone")
         return ReturnCode.SUCCESS
     else:
-        return subprocess.run(cmd).returncode
+        return _clone(
+            name=name,
+            github_org=github_org,
+            release=release,
+            target_dir=deploy_dir,
+            verbose=verbose,
+        ).returncode
 
 
 def make_in(deploy_dir: str, dry_run: bool) -> int:
@@ -311,6 +320,32 @@ def get_version() -> str:
     else:
         # We tried our best
         return "unknown.dev"
+
+
+def _clone(
+    name: str,
+    github_org: str,
+    release: str = "",
+    working_dir: str = "",
+    target_dir: str = "",
+    verbose: bool = False,
+) -> subprocess.CompletedProcess:
+    """
+    Clone the repo or raise a subprocess.CalledProcessError
+    """
+    cmd = ["git", "clone", f"git@github.com:{github_org}/{name}", "--depth", "1"]
+    if release:
+        cmd.extend(["-b", release])
+    if target_dir:
+        cmd.append(target_dir)
+    kwds = {"check": True}
+    if working_dir:
+        kwds["cwd"] = working_dir
+    if not verbose:
+        kwds["stdout"] = subprocess.PIPE
+        kwds["stderr"] = subprocess.PIPE
+    logger.debug(f"Calling '{' '.join(cmd)}' with kwargs {kwds}")
+    return subprocess.run(cmd, **kwds)
 
 
 def _main() -> int:

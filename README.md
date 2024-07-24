@@ -686,6 +686,19 @@ usage: serverStat servername options<br/>
 </tr>
 
 <tr>
+    <td>ssh-agent-helper</td>
+    <td>
+usage: source ssh-agent-helper<br/><br/>
+Helper script for starting the ssh agent if needed and doing an ssh-add -t 12h.
+This will let anyone smoothly run github/ssh related scripts without multiple password prompts.
+An ssh-agent process started by using this script will be automatically closed on logout.
+<br/><br/>
+This script is intended to be sourced.
+Sourcing this script lets ssh-agent set the proper environment variables it needs to run properly.
+    </td>
+</tr>
+
+<tr>
     <td>startami</td>
     <td>
 usage: startami options<br/>
