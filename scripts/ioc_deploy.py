@@ -342,7 +342,7 @@ def _clone(
     if working_dir:
         kwds["cwd"] = working_dir
     if not verbose:
-        kwds["stdin"] = subprocess.PIPE
+        kwds["stdout"] = subprocess.PIPE
         kwds["stderr"] = subprocess.PIPE
     logger.debug(f"Calling '{' '.join(cmd)}' with kwargs {kwds}")
     return subprocess.run(cmd, **kwds)
