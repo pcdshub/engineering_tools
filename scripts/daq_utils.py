@@ -8,7 +8,7 @@ from subprocess import PIPE
 import socket
 import os, sys
 import getpass
-
+import time
 
 DAQBATCH_HUTCHES=['tmo', 'rix']
 LOCALHOST = socket.gethostname()
@@ -16,6 +16,7 @@ SLURM_PARTITION='drpq'
 SLURM_JOBNAME='submit_daq'
 DAQBATCH_SCRIPT='submit_daq.sh'
 DAQBATCH_OUTPUT='slurm_daq.log'
+MAX_RETRIES=10
 
 def silentremove(filename):
     try:
@@ -45,8 +46,8 @@ def call_sbatch(cmd, nodelist, scripts_dir):
     daqbatch_script = os.path.join(scripts_dir, DAQBATCH_SCRIPT)
     with open(daqbatch_script, "w") as f:
         f.write(sb_script)
-    #call_subprocess('sbatch', daqbatch_script)
-    #silentremove(daqbatch_script)
+    call_subprocess('sbatch', daqbatch_script)
+    silentremove(daqbatch_script)
 
 class SbatchManager:
     def __init__(self, user):
@@ -81,9 +82,9 @@ class SbatchManager:
                         scontrol_cols = scontrol_line.split("=")
                         logfile = scontrol_cols[1]
 
-                job_details[comment] = {
+                job_details[job_name] = {
                     "job_id": job_id,
-                    "job_name": job_name,
+                    "comment": comment,
                     "state": state,
                     "nodelist": nodelist,
                     "logfile": logfile,
@@ -170,7 +171,7 @@ class DaqManager:
             # Use control_gui job name to locate the running host for the daq
             job_details = self.sbman.get_job_info()
             if 'control_gui' in job_details:
-                daq_host = job_details['nodelist']
+                daq_host = job_details['control_gui']['nodelist']
         else:
             # For other hutches, we get daq host from the running cnf file. 
             cnf_file = os.path.join(self.scripts_dir, f'p{self.platform}.cnf.running')
@@ -204,8 +205,17 @@ class DaqManager:
         call_sbatch(cmd, daq_host, self.scripts_dir)
 
         if subcmd == 'stop':
-            if self.wheredaq(quiet=True) is not None:
-                print('the DAQ did not stop properly, exit now and try again or call your POC or the DAQ phone')
+            daq_host = self.wheredaq(quiet=True)
+            if daq_host is not None:
+                if self.isdaqbatch():
+                    for i_retry in range(MAX_RETRIES):
+                        daq_host = self.wheredaq(quiet=True)
+                        if daq_host is None:
+                            break
+                        print(f'wait for daqbatch to stop #retry: {i_retry}')
+                        time.sleep(1)
+                else:
+                    print(f'the DAQ did not stop properly (DAQ HOST: {daq_host}), exit now and try again or call your POC or the DAQ phone')
 
     def stopdaq(self):
         """ Stop the running daq for the current user.
@@ -216,19 +226,26 @@ class DaqManager:
     def startdaq(self, daq_host):
         self.calldaq('start', daq_host=daq_host)
 
+    def restart_daqbatch(self, daq_host):
+        self.calldaq('restart', daq_host=daq_host)
+
     def restartdaq(self):
         if not self.isvaliduser():
             print(f'Please run the DAQ from the operator account!')
             return
-        self.stopdaq()
-        
+	
         daq_host = LOCALHOST
         # User can use -m to specify the host to run the daq
         for o, a in self.opts:
             if o == '-m':
                 daq_host = a
                 break
-        self.startdaq(daq_host)
+	
+        if self.isdaqbatch():
+            self.restart_daqbatch(daq_host)
+        else:
+            self.stopdaq()
+            self.startdaq(daq_host)
 
 
 

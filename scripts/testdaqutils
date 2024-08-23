@@ -1,2 +1,2 @@
 #!/bin/bash
-python3 run_daq_utils.py wheredaq $@
+python3 run_daq_utils.py ${1} $@
