@@ -6,10 +6,11 @@ help_messages = {
         'wheredaq': 'Discover what host is running the daq in the current hutch, if any.',
         'stopdaq': 'Stop the daq in the current hutch.',
         'restartdaq': 'Verify requirements for running the daq then stop and start it.',
+        'isdaqbatch': "Determine if the current user's hutch uses daqbatch",
         }
 
 if __name__ == "__main__":
-    commands = ['wheredaq', 'stopdaq', 'restartdaq']
+    commands = ['wheredaq', 'stopdaq', 'restartdaq', 'isdaqbatch']
     opts, args = getopt.getopt(sys.argv[2:], 'hm:pwscd', ["help","dss"])
     cmd = sys.argv[1]
     if cmd not in commands:
