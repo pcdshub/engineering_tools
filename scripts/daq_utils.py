@@ -118,16 +118,22 @@ class ProcMgrHelper:
 class DaqManager:
     def __init__(self, opts):
         self.opts = opts
+        self.verbose = False
+        for o, a in self.opts:
+            if o in ('-v', '--verbose'):
+                self.verbose = True
         self.hutch = call_subprocess("get_info", "--gethutch")
         self.user = self.hutch+'opr'
         self.sbman = SbatchManager(self.user)
         self.scripts_dir = f'/reg/g/pcds/dist/pds/{self.hutch}/scripts'
         self.set_cnf_file_and_platform()
 
-    def isdaqbatch(self):
+    def isdaqbatch(self, quiet=False):
         if self.hutch in DAQBATCH_HUTCHES:
+            if not quiet: print('true')
             return True
         else:
+            if not quiet: print('false')
             return False
 
     def isvaliduser(self):
@@ -145,7 +151,7 @@ class DaqManager:
                 cnf_ext = '_0.cnf'
             elif LOCALHOST == 'cxi-monitor':
                 cnf_ext = '_1.cnf'
-            elif self.isdaqbatch():
+            elif self.isdaqbatch(quiet=True):
                 cnf_ext = '.py'
             else:
                 cnf_ext = '.cnf'
@@ -167,7 +173,7 @@ class DaqManager:
         For daqbatch, we use slurm to check if the hutch user is running control_gui.
         """
         daq_host = None
-        if self.isdaqbatch():
+        if self.isdaqbatch(quiet=True):
             # Use control_gui job name to locate the running host for the daq
             job_details = self.sbman.get_job_info()
             if 'control_gui' in job_details:
@@ -190,7 +196,7 @@ class DaqManager:
             print(f'DAQ is running on {daq_host}')
     
     def calldaq(self, subcmd, daq_host=None):
-        if self.isdaqbatch(): 
+        if self.isdaqbatch(quiet=True): 
             prog = 'daqbatch'
         else:
             prog = 'procmgr'
@@ -207,7 +213,7 @@ class DaqManager:
         if subcmd == 'stop':
             daq_host = self.wheredaq(quiet=True)
             if daq_host is not None:
-                if self.isdaqbatch():
+                if self.isdaqbatch(quiet=True):
                     for i_retry in range(MAX_RETRIES):
                         daq_host = self.wheredaq(quiet=True)
                         if daq_host is None:
@@ -241,17 +247,10 @@ class DaqManager:
                 daq_host = a
                 break
 	
-        if self.isdaqbatch():
+        if self.isdaqbatch(quiet=True):
             self.restart_daqbatch(daq_host)
         else:
             self.stopdaq()
             self.startdaq(daq_host)
-
-
-
-
-
-
-
 
         
