@@ -11,7 +11,7 @@ help_messages = {
 
 if __name__ == "__main__":
     commands = ['wheredaq', 'stopdaq', 'restartdaq', 'isdaqbatch']
-    opts, args = getopt.getopt(sys.argv[2:], 'hm:pwscdv', ["help","dss"])
+    opts, args = getopt.getopt(sys.argv[2:], 'hm:dv', ["help","dss"])
     cmd = sys.argv[1]
     if cmd not in commands:
         print(f'Unsupported command {cmd}')
