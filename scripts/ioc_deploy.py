@@ -3,25 +3,30 @@
 ioc-deploy is a script for building and deploying ioc tags from github.
 It will create a shallow clone of your IOC in the standard release area at the correct path and "make" it.
 If the tag directory already exists, the script will exit.
+After making the IOC, we'll write-protect all files and all directories that contain built files
+(e.g. those that contain files that are not tracked in git).
+We'll also write-protect the top-level directory to help indicate completion.
 
 Example command:
 "ioc-deploy -n ioc-foo-bar -r R1.0.0"
 
 This will clone the repository to the default ioc directory and run make
-using the currently set EPICS environment variables.
+using the currently set EPICS environment variables, then apply write protection.
 
 With default settings this will clone
 
 from https://github.com/pcdshub/ioc-foo-bar
 to /cds/group/pcds/epics/ioc/foo/bar/R1.0.0
 
-then cd and make.
+then cd and make and chmod as appropriate.
 """
 
 import argparse
 import enum
 import logging
 import os
+import os.path
+import stat
 import subprocess
 import sys
 from pathlib import Path
@@ -46,6 +51,8 @@ if sys.version_info >= (3, 7, 0):
         release: str = ""
         ioc_dir: str = ""
         github_org: str = ""
+        remove_write_protection: bool = False,
+        apply_write_protection: bool = False,
         auto_confirm: bool = False
         dry_run: bool = False
         verbose: bool = False
@@ -92,6 +99,16 @@ def get_parser() -> argparse.ArgumentParser:
         help=f"The github org to deploy IOCs from. This defaults to $GITHUB_ORG, or {GITHUB_ORG_DEFAULT} if the environment variable is not set. With your current environment variables, this defaults to {current_default_org}.",
     )
     parser.add_argument(
+        "--remove-write-protection",
+        action="store_true",
+        help="If provided, instead of doing a release, we will remove write protection from an existing release. Incompatible with --apply-write-protection."
+    )
+    parser.add_argument(
+        "--apply-write-protection",
+        action="store_true",
+        help="If provided, instead of doing a release, we will add write protection to an existing release. Incompatible with --remove-write-protection."
+    )
+    parser.add_argument(
         "--auto-confirm",
         "--confirm",
         "--yes",
@@ -126,12 +143,17 @@ def main(args: CliArgs) -> int:
 
     Will either return an int return code or raise.
     """
-    if not (args.name and args.release):
-        raise ValueError(
-            "Must provide both --name and --release. Check ioc-deploy --help for usage."
-        )
-
     logger.info("Running ioc-deploy: checking inputs")
+    has_input_error = False
+    if not (args.name and args.release):
+        logger.error("Must provide both --name and --release. Check ioc-deploy --help for usage.")
+        has_input_error = True
+    if args.apply_write_protection and args.remove_write_protection:
+        logger.error("Must provide at most one of --apply-write-protection and --remove-write-protection")
+        has_input_error = True
+    if has_input_error:
+        return ReturnCode.EXCEPTION
+
     upd_name = finalize_name(
         name=args.name, github_org=args.github_org, verbose=args.verbose
     )
@@ -143,6 +165,23 @@ def main(args: CliArgs) -> int:
     )
     deploy_dir = get_target_dir(name=upd_name, ioc_dir=args.ioc_dir, release=upd_rel)
 
+    # Branch off for permission modification options
+    if args.apply_write_protection:
+        logger.info(f"Applying write permissions to {deploy_dir}")
+        if not args.auto_confirm:
+            user_text = input("Confirm target? y/n\n")
+            if not user_text.strip().lower().startswith("y"):
+                return ReturnCode.NO_CONFIRM
+        return set_permissions(deploy_dir=deploy_dir, protect=True, dry_run=args.dry_run)
+    elif args.remove_write_protection:
+        logger.info(f"Removing write permissions from {deploy_dir}")
+        if not args.auto_confirm:
+            user_text = input("Confirm target? y/n\n")
+            if not user_text.strip().lower().startswith("y"):
+                return ReturnCode.NO_CONFIRM
+        return set_permissions(deploy_dir=deploy_dir, protect=False, dry_run=args.dry_run)
+
+    # Main deploy routines
     logger.info(f"Deploying {args.github_org}/{upd_name} at {upd_rel} to {deploy_dir}")
     if Path(deploy_dir).exists():
         raise RuntimeError(f"Deploy directory {deploy_dir} already exists! Aborting.")
@@ -167,6 +206,10 @@ def main(args: CliArgs) -> int:
     rval = make_in(deploy_dir=deploy_dir, dry_run=args.dry_run)
     if rval != ReturnCode.SUCCESS:
         logger.error(f"Nonzero return value {rval} from make")
+        return rval
+    rval = set_permissions(deploy_dir=deploy_dir, protect=True, dry_run=args.dry_run)
+    if rval != ReturnCode.SUCCESS:
+        logger.error(f"Nonzero return value {rval} from set_permissions")
         return rval
     return ReturnCode.SUCCESS
 
@@ -299,6 +342,86 @@ def make_in(deploy_dir: str, dry_run: bool) -> int:
         return ReturnCode.SUCCESS
     else:
         return subprocess.run(["make"], cwd=deploy_dir).returncode
+
+
+def set_permissions(deploy_dir: str, protect: bool, dry_run: bool) -> int:
+    """
+    Apply or remove write protection from a deploy repo.
+
+    You may or may not have permissions to do this to releases created by other users.
+
+    Applying write permissions (protect=True) involves removing the "w" permissions
+    from all files, and from directories that contain untracked files.
+    We will also remove permissions from the top-level direcotry.
+
+    Removing write permissions (protect=False) involves adding "w" permissions
+    for the owner and for the group. "w" permissions will never be added for other users.
+    We will also add write permissions to the top-level directory.
+    """
+    if not protect:
+        # Lazy and simple: chmod everything
+        perms = get_add_write_rule(os.stat(deploy_dir, follow_symlinks=False).st_mode)
+        os.chmod(deploy_dir, perms)
+        for dirpath, dirnames, filenames in os.walk(deploy_dir):
+            for name in dirnames + filenames:
+                full_path = os.path.join(dirpath, name)
+                perms = get_add_write_rule(os.stat(full_path, follow_symlinks=False).st_mode)
+                os.chmod(full_path, perms)
+        return ReturnCode.SUCCESS
+
+    # Compare the files that exist to the files that are tracked by git
+    try:
+        ls_files_output = subprocess.check_output(
+            ["git", "-C", deploy_dir, "ls-files"],
+            universal_newlines=True,
+        )
+    except subprocess.CalledProcessError as exc:
+        return exc.returncode
+    deploy_path = Path(deploy_dir)
+    tracked_paths = [deploy_path / subpath.strip() for subpath in ls_files_output.splitlines()]
+    build_dir_paths = set()
+
+    def accumulate_subpaths(subpath: Path):
+        for path in subpath.iterdir():
+            if path.is_symlink():
+                continue
+            elif path.is_dir():
+                accumulate_subpaths(path)
+            elif path.is_file():
+                if path not in tracked_paths:
+                    build_dir_paths.add(str(path.parent))
+
+    accumulate_subpaths(deploy_path)
+
+    # Follow the write protection rules from the docstring
+    perms = get_remove_write_rule(os.stat(deploy_dir, follow_symlinks=False).st_mode)
+    os.chmod(deploy_dir, perms)
+    for dirpath, dirnames, filenames in os.walk(deploy_dir):
+        for dirn in dirnames:
+            if dirn in build_dir_paths:
+                full_path = os.path.join(dirpath, dirn)
+                perms = get_remove_write_rule(os.stat(full_path, follow_symlinks=False).st_mode)
+                os.chmod(full_path, perms)
+        for filn in filenames:
+            full_path = os.path.join(dirpath, filn)
+            perms = get_remove_write_rule(os.stat(full_path, follow_symlinks=False).st_mode)
+            os.chmod(full_path, perms)
+
+    return ReturnCode.SUCCESS
+
+
+def get_remove_write_rule(perms: int) -> int:
+    """
+    Given some existing file permissions, return the same permissions with no writes permitted.
+    """
+    return perms ^ stat.S_IWUSR ^ stat.S_IWGRP ^ stat.S_IWOTH
+
+
+def get_add_write_rule(perms: int) -> int:
+    """
+    Given some existing file permissions, return the same permissions with user and group writes permitted.
+    """
+    return perms | stat.S_IWUSR | stat.S_IWGRP
 
 
 def get_version() -> str:
