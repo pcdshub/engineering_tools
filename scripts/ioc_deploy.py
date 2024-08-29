@@ -159,7 +159,7 @@ def main_deploy(args: CliArgs) -> int:
     deploy_dir, upd_name, upd_rel = pick_deploy_dir(args)
 
     if upd_name is None or upd_rel is None:
-        logger.error(f"Something went wrong at package/tag normalization: {upd_name}@{upd_rel}")
+        logger.error(f"Something went wrong at package/tag normalization: package {upd_name} at version {upd_rel}")
         return ReturnCode.EXCEPTION
 
     logger.info(f"Deploying {args.github_org}/{upd_name} at {upd_rel} to {deploy_dir}")
