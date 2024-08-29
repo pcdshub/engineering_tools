@@ -53,6 +53,7 @@ if sys.version_info >= (3, 7, 0):
         github_org: str = ""
         remove_write_protection: bool = False,
         apply_write_protection: bool = False,
+        path_override: str = ""
         auto_confirm: bool = False
         dry_run: bool = False
         verbose: bool = False
@@ -109,6 +110,11 @@ def get_parser() -> argparse.ArgumentParser:
         help="If provided, instead of doing a release, we will add write protection to an existing release. Incompatible with --remove-write-protection."
     )
     parser.add_argument(
+        "--path-override",
+        action="store",
+        help="If provided, ignore all normal path-selection rules in favor of the specific provided path. This will let you deploy IOCs or apply protection rules outside of normal deployment directory structures.",
+    )
+    parser.add_argument(
         "--auto-confirm",
         "--confirm",
         "--yes",
@@ -137,51 +143,25 @@ class ReturnCode(enum.IntEnum):
     NO_CONFIRM = 2
 
 
-def main(args: CliArgs) -> int:
+def main_deploy(args: CliArgs) -> int:
     """
-    All main steps of the script.
+    All main steps of the deploy script.
+
+    This will be called when args has neither of apply_write_protection and remove_write_protection
 
     Will either return an int return code or raise.
     """
     logger.info("Running ioc-deploy: checking inputs")
-    has_input_error = False
     if not (args.name and args.release):
         logger.error("Must provide both --name and --release. Check ioc-deploy --help for usage.")
-        has_input_error = True
-    if args.apply_write_protection and args.remove_write_protection:
-        logger.error("Must provide at most one of --apply-write-protection and --remove-write-protection")
-        has_input_error = True
-    if has_input_error:
         return ReturnCode.EXCEPTION
 
-    upd_name = finalize_name(
-        name=args.name, github_org=args.github_org, verbose=args.verbose
-    )
-    upd_rel = finalize_tag(
-        name=upd_name,
-        github_org=args.github_org,
-        release=args.release,
-        verbose=args.verbose,
-    )
-    deploy_dir = get_target_dir(name=upd_name, ioc_dir=args.ioc_dir, release=upd_rel)
+    deploy_dir, upd_name, upd_rel = pick_deploy_dir(args)
 
-    # Branch off for permission modification options
-    if args.apply_write_protection:
-        logger.info(f"Applying write permissions to {deploy_dir}")
-        if not args.auto_confirm:
-            user_text = input("Confirm target? y/n\n")
-            if not user_text.strip().lower().startswith("y"):
-                return ReturnCode.NO_CONFIRM
-        return set_permissions(deploy_dir=deploy_dir, protect=True, dry_run=args.dry_run)
-    elif args.remove_write_protection:
-        logger.info(f"Removing write permissions from {deploy_dir}")
-        if not args.auto_confirm:
-            user_text = input("Confirm target? y/n\n")
-            if not user_text.strip().lower().startswith("y"):
-                return ReturnCode.NO_CONFIRM
-        return set_permissions(deploy_dir=deploy_dir, protect=False, dry_run=args.dry_run)
+    if upd_name is None or upd_rel is None:
+        logger.error(f"Something went wrong at package/tag normalization: {upd_name}@{upd_rel}")
+        return ReturnCode.EXCEPTION
 
-    # Main deploy routines
     logger.info(f"Deploying {args.github_org}/{upd_name} at {upd_rel} to {deploy_dir}")
     if Path(deploy_dir).exists():
         raise RuntimeError(f"Deploy directory {deploy_dir} already exists! Aborting.")
@@ -212,6 +192,72 @@ def main(args: CliArgs) -> int:
         logger.error(f"Nonzero return value {rval} from set_permissions")
         return rval
     return ReturnCode.SUCCESS
+
+
+def main_perms(args: CliArgs) -> int:
+    """
+    All main steps of the only-apply-permissions script.
+
+    This will be called when args has at least one of apply_write_protection and remove_write_protection
+
+    Will either return an int code or raise.
+    """
+    logger.info("Running ioc-deploy write protection change: checking inputs")
+    if args.apply_write_protection and args.remove_write_protection:
+        logger.error("Must provide at most one of --apply-write-protection and --remove-write-protection")
+        return ReturnCode.EXCEPTION
+
+    deploy_dir, _, _ = pick_deploy_dir(args)
+
+    if args.apply_write_protection:
+        logger.info(f"Applying write permissions to {deploy_dir}")
+        if not args.auto_confirm:
+            user_text = input("Confirm target? y/n\n")
+            if not user_text.strip().lower().startswith("y"):
+                return ReturnCode.NO_CONFIRM
+        return set_permissions(deploy_dir=deploy_dir, protect=True, dry_run=args.dry_run)
+    elif args.remove_write_protection:
+        logger.info(f"Removing write permissions from {deploy_dir}")
+        if not args.auto_confirm:
+            user_text = input("Confirm target? y/n\n")
+            if not user_text.strip().lower().startswith("y"):
+                return ReturnCode.NO_CONFIRM
+        return set_permissions(deploy_dir=deploy_dir, protect=False, dry_run=args.dry_run)
+
+    logger.error("Invalid codepath, how did you get here? Submit a bug report please.")
+    return ReturnCode.EXCEPTION
+
+
+def pick_deploy_dir(args: CliArgs) -> tuple[str, str | None, str | None]:
+    """
+    Normalize user inputs and figure out where to deploy to.
+
+    Returns a tuple of three elements:
+    - The deploy dir
+    - A normalized package name if applicable, or None
+    - A normalized tag name if applicable, or None
+    """
+    if args.name and args.github_org:
+        upd_name = finalize_name(
+            name=args.name, github_org=args.github_org, verbose=args.verbose
+        )
+    else:
+        upd_name = None
+    if upd_name and args.github_org and args.release:
+        upd_rel = finalize_tag(
+            name=upd_name,
+            github_org=args.github_org,
+            release=args.release,
+            verbose=args.verbose,
+        )
+    else:
+        upd_rel = None
+    if args.path_override:
+        deploy_dir = args.path_override
+    else:
+        deploy_dir = get_target_dir(name=upd_name, ioc_dir=args.ioc_dir, release=upd_rel)
+
+    return deploy_dir, upd_name, upd_rel
 
 
 def finalize_name(name: str, github_org: str, verbose: bool) -> str:
@@ -488,7 +534,10 @@ def _main() -> int:
         if args.version:
             print(get_version())
             return ReturnCode.SUCCESS
-        return main(args)
+        if args.apply_write_protection or args.remove_write_protection:
+            return main_perms(args)
+        else:
+            return main_deploy(args)
     except Exception as exc:
         logger.error(exc)
         logger.debug("Traceback", exc_info=True)
