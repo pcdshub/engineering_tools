@@ -407,12 +407,25 @@ def set_permissions(deploy_dir: str, protect: bool, dry_run: bool) -> int:
     if not protect:
         # Lazy and simple: chmod everything
         perms = get_add_write_rule(os.stat(deploy_dir, follow_symlinks=False).st_mode)
-        os.chmod(deploy_dir, perms)
+        if dry_run:
+            logger.info(f"Dry-run: skipping chmod({deploy_dir}, {perms})")
+        else:
+            os.chmod(deploy_dir, perms)
         for dirpath, dirnames, filenames in os.walk(deploy_dir):
             for name in dirnames + filenames:
                 full_path = os.path.join(dirpath, name)
                 perms = get_add_write_rule(os.stat(full_path, follow_symlinks=False).st_mode)
-                os.chmod(full_path, perms)
+                if dry_run:
+                    logger.debug(f"Dry-run: skipping chmod({full_path}, {perms})")
+                else:
+                    logger.debug(f"chmod({full_path}, {perms})")
+                    os.chmod(full_path, perms)
+        return ReturnCode.SUCCESS
+
+    if dry_run and not os.path.isdir(deploy_dir):
+        # Dry run has nothing more to do if we didn't build the dir
+        # Everything past this point will error out
+        logger.info("Dry-run: skipping permission changes on never-made directory")
         return ReturnCode.SUCCESS
 
     # Compare the files that exist to the files that are tracked by git
@@ -441,17 +454,26 @@ def set_permissions(deploy_dir: str, protect: bool, dry_run: bool) -> int:
 
     # Follow the write protection rules from the docstring
     perms = get_remove_write_rule(os.stat(deploy_dir, follow_symlinks=False).st_mode)
-    os.chmod(deploy_dir, perms)
+    if dry_run:
+        logger.info(f"Dry-run: skipping chmod({deploy_dir}, {perms})")
+    else:
+        os.chmod(deploy_dir, perms)
     for dirpath, dirnames, filenames in os.walk(deploy_dir):
         for dirn in dirnames:
             if dirn in build_dir_paths:
                 full_path = os.path.join(dirpath, dirn)
                 perms = get_remove_write_rule(os.stat(full_path, follow_symlinks=False).st_mode)
-                os.chmod(full_path, perms)
+                if dry_run:
+                    logger.debug(f"Dry-run: skipping chmod({full_path}, {perms})")
+                else:
+                    os.chmod(full_path, perms)
         for filn in filenames:
             full_path = os.path.join(dirpath, filn)
             perms = get_remove_write_rule(os.stat(full_path, follow_symlinks=False).st_mode)
-            os.chmod(full_path, perms)
+            if dry_run:
+                logger.debug(f"Dry-run: skipping chmod({full_path}, {perms})")
+            else:
+                os.chmod(full_path, perms)
 
     return ReturnCode.SUCCESS
 
