@@ -21,6 +21,8 @@ to /cds/group/pcds/epics/ioc/foo/bar/R1.0.0
 then cd and make and chmod as appropriate.
 """
 
+from __future__ import annotations
+
 import argparse
 import enum
 import logging
