@@ -404,6 +404,12 @@ def set_permissions(deploy_dir: str, protect: bool, dry_run: bool) -> int:
     for the owner and for the group. "w" permissions will never be added for other users.
     We will also add write permissions to the top-level directory.
     """
+    if dry_run and not os.path.isdir(deploy_dir):
+        # Dry run has nothing to do if we didn't build the dir
+        # Most things past this point will error out
+        logger.info("Dry-run: skipping permission changes on never-made directory")
+        return ReturnCode.SUCCESS
+
     if not protect:
         # Lazy and simple: chmod everything
         perms = get_add_write_rule(os.stat(deploy_dir, follow_symlinks=False).st_mode)
@@ -420,12 +426,6 @@ def set_permissions(deploy_dir: str, protect: bool, dry_run: bool) -> int:
                 else:
                     logger.debug(f"chmod({full_path}, {perms})")
                     os.chmod(full_path, perms)
-        return ReturnCode.SUCCESS
-
-    if dry_run and not os.path.isdir(deploy_dir):
-        # Dry run has nothing more to do if we didn't build the dir
-        # Everything past this point will error out
-        logger.info("Dry-run: skipping permission changes on never-made directory")
         return ReturnCode.SUCCESS
 
     # Compare the files that exist to the files that are tracked by git
