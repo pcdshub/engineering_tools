@@ -20,9 +20,6 @@ to /cds/group/pcds/epics/ioc/foo/bar/R1.0.0
 
 then cd and make and chmod as appropriate.
 """
-
-from __future__ import annotations
-
 import argparse
 import enum
 import logging
@@ -33,6 +30,7 @@ import subprocess
 import sys
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from typing import Optional, Tuple
 
 EPICS_SITE_TOP_DEFAULT = "/cds/group/pcds/epics"
 GITHUB_ORG_DEFAULT = "pcdshub"
@@ -53,8 +51,8 @@ if sys.version_info >= (3, 7, 0):
         release: str = ""
         ioc_dir: str = ""
         github_org: str = ""
-        remove_write_protection: bool = False,
-        apply_write_protection: bool = False,
+        remove_write_protection: bool = False
+        apply_write_protection: bool = False
         path_override: str = ""
         auto_confirm: bool = False
         dry_run: bool = False
@@ -230,7 +228,7 @@ def main_perms(args: CliArgs) -> int:
     return ReturnCode.EXCEPTION
 
 
-def pick_deploy_dir(args: CliArgs) -> tuple[str, str | None, str | None]:
+def pick_deploy_dir(args: CliArgs) -> Tuple[str, Optional[str], Optional[str]]:
     """
     Normalize user inputs and figure out where to deploy to.
 
