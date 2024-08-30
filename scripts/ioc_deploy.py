@@ -187,10 +187,12 @@ def main_deploy(args: CliArgs) -> int:
     if rval != ReturnCode.SUCCESS:
         logger.error(f"Nonzero return value {rval} from make")
         return rval
+    logger.info(f"Applying write permissions to {deploy_dir}")
     rval = set_permissions(deploy_dir=deploy_dir, protect=True, dry_run=args.dry_run)
     if rval != ReturnCode.SUCCESS:
         logger.error(f"Nonzero return value {rval} from set_permissions")
         return rval
+    logger.info("ioc-deploy complete!")
     return ReturnCode.SUCCESS
 
 
