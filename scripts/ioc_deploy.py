@@ -187,7 +187,7 @@ def main_deploy(args: CliArgs) -> int:
     if rval != ReturnCode.SUCCESS:
         logger.error(f"Nonzero return value {rval} from make")
         return rval
-    logger.info(f"Applying write permissions to {deploy_dir}")
+    logger.info(f"Applying write protection to {deploy_dir}")
     rval = set_permissions(deploy_dir=deploy_dir, protect=True, dry_run=args.dry_run)
     if rval != ReturnCode.SUCCESS:
         logger.error(f"Nonzero return value {rval} from set_permissions")
@@ -211,23 +211,29 @@ def main_perms(args: CliArgs) -> int:
 
     deploy_dir, _, _ = pick_deploy_dir(args)
 
+    rval = None
     if args.apply_write_protection:
-        logger.info(f"Applying write permissions to {deploy_dir}")
+        logger.info(f"Applying write protection to {deploy_dir}")
         if not args.auto_confirm:
             user_text = input("Confirm target? y/n\n")
             if not user_text.strip().lower().startswith("y"):
                 return ReturnCode.NO_CONFIRM
-        return set_permissions(deploy_dir=deploy_dir, protect=True, dry_run=args.dry_run)
+        rval = set_permissions(deploy_dir=deploy_dir, protect=True, dry_run=args.dry_run)
     elif args.remove_write_protection:
-        logger.info(f"Removing write permissions from {deploy_dir}")
+        logger.info(f"Removing write protection from {deploy_dir}")
         if not args.auto_confirm:
             user_text = input("Confirm target? y/n\n")
             if not user_text.strip().lower().startswith("y"):
                 return ReturnCode.NO_CONFIRM
-        return set_permissions(deploy_dir=deploy_dir, protect=False, dry_run=args.dry_run)
+        rval = set_permissions(deploy_dir=deploy_dir, protect=False, dry_run=args.dry_run)
 
-    logger.error("Invalid codepath, how did you get here? Submit a bug report please.")
-    return ReturnCode.EXCEPTION
+    if rval == ReturnCode.SUCCESS:
+        logger.info("Write protection change complete!")
+    elif rval is None:
+        logger.error("Invalid codepath, how did you get here? Submit a bug report please.")
+        return ReturnCode.EXCEPTION
+
+    return rval
 
 
 def pick_deploy_dir(args: CliArgs) -> Tuple[str, Optional[str], Optional[str]]:
@@ -416,7 +422,7 @@ def set_permissions(deploy_dir: str, protect: bool, dry_run: bool) -> int:
         # Lazy and simple: chmod everything
         perms = get_add_write_rule(os.stat(deploy_dir, follow_symlinks=False).st_mode)
         if dry_run:
-            logger.info(f"Dry-run: skipping chmod({deploy_dir}, {perms})")
+            logger.info(f"Dry-run: skipping chmod({deploy_dir}, {oct(perms)})")
         else:
             os.chmod(deploy_dir, perms)
         for dirpath, dirnames, filenames in os.walk(deploy_dir):
@@ -424,9 +430,9 @@ def set_permissions(deploy_dir: str, protect: bool, dry_run: bool) -> int:
                 full_path = os.path.join(dirpath, name)
                 perms = get_add_write_rule(os.stat(full_path, follow_symlinks=False).st_mode)
                 if dry_run:
-                    logger.debug(f"Dry-run: skipping chmod({full_path}, {perms})")
+                    logger.debug(f"Dry-run: skipping chmod({full_path}, {oct(perms)})")
                 else:
-                    logger.debug(f"chmod({full_path}, {perms})")
+                    logger.debug(f"chmod({full_path}, {oct(perms)})")
                     os.chmod(full_path, perms)
         return ReturnCode.SUCCESS
 
@@ -453,28 +459,33 @@ def set_permissions(deploy_dir: str, protect: bool, dry_run: bool) -> int:
                     build_dir_paths.add(str(path.parent))
 
     accumulate_subpaths(deploy_path)
+    logger.debug(f"Discovered build dir paths {build_dir_paths}")
 
     # Follow the write protection rules from the docstring
     perms = get_remove_write_rule(os.stat(deploy_dir, follow_symlinks=False).st_mode)
     if dry_run:
-        logger.info(f"Dry-run: skipping chmod({deploy_dir}, {perms})")
+        logger.info(f"Dry-run: skipping chmod({deploy_dir}, {oct(perms)})")
     else:
         os.chmod(deploy_dir, perms)
     for dirpath, dirnames, filenames in os.walk(deploy_dir):
         for dirn in dirnames:
-            if dirn in build_dir_paths:
-                full_path = os.path.join(dirpath, dirn)
+            full_path = os.path.join(dirpath, dirn)
+            if full_path in build_dir_paths:
                 perms = get_remove_write_rule(os.stat(full_path, follow_symlinks=False).st_mode)
                 if dry_run:
-                    logger.debug(f"Dry-run: skipping chmod({full_path}, {perms})")
+                    logger.debug(f"Dry-run: skipping chmod({full_path}, {oct(perms)})")
                 else:
+                    logger.debug(f"chmod({full_path}, {oct(perms)})")
                     os.chmod(full_path, perms)
+            else:
+                logger.debug(f"Skip directory perms on {full_path}, not in build dir paths")
         for filn in filenames:
             full_path = os.path.join(dirpath, filn)
             perms = get_remove_write_rule(os.stat(full_path, follow_symlinks=False).st_mode)
             if dry_run:
-                logger.debug(f"Dry-run: skipping chmod({full_path}, {perms})")
+                logger.debug(f"Dry-run: skipping chmod({full_path}, {oct(perms)})")
             else:
+                logger.debug(f"chmod({full_path}, {oct(perms)})")
                 os.chmod(full_path, perms)
 
     return ReturnCode.SUCCESS
@@ -484,7 +495,7 @@ def get_remove_write_rule(perms: int) -> int:
     """
     Given some existing file permissions, return the same permissions with no writes permitted.
     """
-    return perms ^ stat.S_IWUSR ^ stat.S_IWGRP ^ stat.S_IWOTH
+    return perms & ~(stat.S_IWUSR | stat.S_IWGRP | stat.S_IWOTH)
 
 
 def get_add_write_rule(perms: int) -> int:
