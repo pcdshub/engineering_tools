@@ -396,11 +396,11 @@ def set_permissions(deploy_dir: str, protect: bool, dry_run: bool) -> int:
 
     You may or may not have permissions to do this to releases created by other users.
 
-    Applying write permissions (protect=True) involves removing the "w" permissions
+    Applying write protection (protect=True) involves removing the "w" permissions
     from all files, and from directories that contain untracked files.
     We will also remove permissions from the top-level direcotry.
 
-    Removing write permissions (protect=False) involves adding "w" permissions
+    Removing write protection (protect=False) involves adding "w" permissions
     for the owner and for the group. "w" permissions will never be added for other users.
     We will also add write permissions to the top-level directory.
     """
