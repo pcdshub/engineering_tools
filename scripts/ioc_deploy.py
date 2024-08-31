@@ -110,7 +110,6 @@ def get_parser() -> argparse.ArgumentParser:
         type=parse_allow_write,
         help="If provided, instead of doing a release, we will chmod an existing release to allow or prevent writes. Choose from 'true', 'yes', 'false', 'no', or any shortening of these."
     )
-
     parser.add_argument(
         "--path-override",
         "-p",
