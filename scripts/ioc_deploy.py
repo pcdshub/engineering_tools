@@ -30,7 +30,7 @@ import subprocess
 import sys
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from typing import Optional, Tuple
+from typing import Iterator, List, Optional, Tuple
 
 EPICS_SITE_TOP_DEFAULT = "/cds/group/pcds/epics"
 GITHUB_ORG_DEFAULT = "pcdshub"
@@ -418,6 +418,9 @@ def set_permissions(deploy_dir: str, protect: bool, dry_run: bool) -> int:
         logger.info("Dry-run: skipping permission changes on never-made directory")
         return ReturnCode.SUCCESS
 
+    # Ignore these directories
+    exclude = (".git",)
+
     if not protect:
         # Lazy and simple: chmod everything
         perms = get_add_write_rule(os.stat(deploy_dir, follow_symlinks=False).st_mode)
@@ -425,7 +428,7 @@ def set_permissions(deploy_dir: str, protect: bool, dry_run: bool) -> int:
             logger.info(f"Dry-run: skipping chmod({deploy_dir}, {oct(perms)})")
         else:
             os.chmod(deploy_dir, perms)
-        for dirpath, dirnames, filenames in os.walk(deploy_dir):
+        for dirpath, dirnames, filenames in exclude_walk(deploy_dir, exclude=exclude):
             for name in dirnames + filenames:
                 full_path = os.path.join(dirpath, name)
                 perms = get_add_write_rule(os.stat(full_path, follow_symlinks=False).st_mode)
@@ -452,6 +455,8 @@ def set_permissions(deploy_dir: str, protect: bool, dry_run: bool) -> int:
         for path in subpath.iterdir():
             if path.is_symlink():
                 continue
+            elif path.name in exclude:
+                continue
             elif path.is_dir():
                 accumulate_subpaths(path)
             elif path.is_file():
@@ -467,7 +472,7 @@ def set_permissions(deploy_dir: str, protect: bool, dry_run: bool) -> int:
         logger.info(f"Dry-run: skipping chmod({deploy_dir}, {oct(perms)})")
     else:
         os.chmod(deploy_dir, perms)
-    for dirpath, dirnames, filenames in os.walk(deploy_dir):
+    for dirpath, dirnames, filenames in exclude_walk(deploy_dir, exclude=exclude):
         for dirn in dirnames:
             full_path = os.path.join(dirpath, dirn)
             if full_path in build_dir_paths:
@@ -489,6 +494,23 @@ def set_permissions(deploy_dir: str, protect: bool, dry_run: bool) -> int:
                 os.chmod(full_path, perms)
 
     return ReturnCode.SUCCESS
+
+
+def exclude_walk(top_dir: str, exclude: Iterator[str]) -> Iterator[Tuple[str, List[str], List[str]]]:
+    """
+    Walk through a directory tree with os.walk but exclude some subdirectories.
+    """
+    for dirpath, dirnames, filenames in os.walk(top_dir):
+        for ecl in exclude:
+            try:
+                dirnames.remove(ecl)
+            except ValueError:
+                ...
+            try:
+                filenames.remove(ecl)
+            except ValueError:
+                ...
+        yield dirpath, dirnames, filenames
 
 
 def get_remove_write_rule(perms: int) -> int:
