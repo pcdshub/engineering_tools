@@ -370,7 +370,7 @@ def clone_repo_tag(
     # Make sure the parent dir exists
     parent_dir = Path(deploy_dir).resolve().parent
     if dry_run:
-        logger.info(f"Dry-run: make {parent_dir} if not existing.")
+        logger.info(f"Dry-run: make {parent_dir} if not existing")
     else:
         logger.debug(f"Ensure {parent_dir} exists")
         parent_dir.mkdir(parents=True, exist_ok=True)
