@@ -343,16 +343,30 @@ usage: grep_more_ioc [-h] [-d] patt hutch {print,search} <br/>
     <td><pre>
 usage: ioc-deploy [-h] [--version] [--name NAME] [--release RELEASE]
 &nbsp;                 [--ioc-dir IOC_DIR] [--github_org GITHUB_ORG]
+&nbsp;                 [--allow-write ALLOW_WRITE] [--path-override PATH_OVERRIDE]
 &nbsp;                 [--auto-confirm] [--dry-run] [--verbose]
 &nbsp;
-ioc-deploy is a script for building and deploying ioc tags from github. It
-will create a shallow clone of your IOC in the standard release area at the
+ioc-deploy is a script for building and deploying ioc tags from github.
+&nbsp;
+It will create a shallow clone of your IOC in the standard release area at the
 correct path and "make" it. If the tag directory already exists, the script
-will exit. Example command: "ioc-deploy -n ioc-foo-bar -r R1.0.0" This will
-clone the repository to the default ioc directory and run make using the
-currently set EPICS environment variables. With default settings this will
-clone from https://github.com/pcdshub/ioc-foo-bar to
-/cds/group/pcds/epics/ioc/foo/bar/R1.0.0 then cd and make.
+will exit.
+&nbsp;
+After making the IOC, we'll write-protect all files and all directories that
+contain built file (e.g. those that contain files that are not tracked in git).
+We'll also write-protect the top-level directory to help indicate completion.
+&nbsp;
+Example command:
+&nbsp;
+"ioc-deploy -n ioc-foo-bar -r R1.0.0"
+&nbsp;
+This will clone the repository to the default ioc directory and run make using the
+currently set EPICS environment variables, then apply write protection.
+&nbsp;
+With default settings, this will clone
+from https://github.com/pcdshub/ioc-foo-bar
+to /cds/group/pcds/epics/ioc/foo/bar/R1.0.0
+then cd and make and chmod as appropriate.
 &nbsp;
 optional arguments:
 &nbsp; -h, --help            show this help message and exit
@@ -374,6 +388,16 @@ optional arguments:
 &nbsp;                       $GITHUB_ORG, or pcdshub if the environment variable is
 &nbsp;                       not set. With your current environment variables, this
 &nbsp;                       defaults to pcdshub.
+&nbsp; --allow-write ALLOW_WRITE
+&nbsp;                       If provided, instead of doing a release, we will chmod
+&nbsp;                       an existing release to allow or prevent writes. Choose
+&nbsp;                       from 'true', 'yes', 'false', 'no', or any shortening
+&nbsp;                       of these.
+&nbsp; --path-override PATH_OVERRIDE, -p PATH_OVERRIDE
+&nbsp;                       If provided, ignore all normal path-selection rules in
+&nbsp;                       favor of the specific provided path. This will let you
+&nbsp;                       deploy IOCs or apply protection rules to arbitrary
+&nbsp;                       specific paths.
 &nbsp; --auto-confirm, --confirm, --yes, -y
 &nbsp;                       Skip the confirmation promps, automatically saying yes
 &nbsp;                       to each one.
