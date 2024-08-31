@@ -1,23 +1,25 @@
 #!/usr/bin/python3
 """
 ioc-deploy is a script for building and deploying ioc tags from github.
-It will create a shallow clone of your IOC in the standard release area at the correct path and "make" it.
-If the tag directory already exists, the script will exit.
-After making the IOC, we'll write-protect all files and all directories that contain built files
-(e.g. those that contain files that are not tracked in git).
+
+It will create a shallow clone of your IOC in the standard release area at the
+correct path and "make" it. If the tag directory already exists, the script
+will exit.
+
+After making the IOC, we'll write-protect all files and all directories that
+contain built file (e.g. those that contain files that are not tracked in git).
 We'll also write-protect the top-level directory to help indicate completion.
 
 Example command:
+
 "ioc-deploy -n ioc-foo-bar -r R1.0.0"
 
-This will clone the repository to the default ioc directory and run make
-using the currently set EPICS environment variables, then apply write protection.
+This will clone the repository to the default ioc directory and run make using the
+currently set EPICS environment variables, then apply write protection.
 
-With default settings this will clone
-
+With default settings, this will clone
 from https://github.com/pcdshub/ioc-foo-bar
 to /cds/group/pcds/epics/ioc/foo/bar/R1.0.0
-
 then cd and make and chmod as appropriate.
 """
 import argparse
@@ -66,7 +68,11 @@ def get_parser() -> argparse.ArgumentParser:
         Path(os.environ.get("EPICS_SITE_TOP", EPICS_SITE_TOP_DEFAULT)) / "ioc"
     )
     current_default_org = os.environ.get("GITHUB_ORG", GITHUB_ORG_DEFAULT)
-    parser = argparse.ArgumentParser(prog="ioc-deploy", description=__doc__)
+    parser = argparse.ArgumentParser(
+        prog="ioc-deploy",
+        description=__doc__,
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
     parser.add_argument(
         "--version", action="store_true", help="Show version number and exit."
     )
