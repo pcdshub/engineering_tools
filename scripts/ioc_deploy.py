@@ -107,6 +107,7 @@ def get_parser() -> argparse.ArgumentParser:
 
     parser.add_argument(
         "--path-override",
+        "-p",
         action="store",
         help="If provided, ignore all normal path-selection rules in favor of the specific provided path. This will let you deploy IOCs or apply protection rules to arbitrary specific paths.",
     )
