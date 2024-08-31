@@ -51,8 +51,7 @@ if sys.version_info >= (3, 7, 0):
         release: str = ""
         ioc_dir: str = ""
         github_org: str = ""
-        remove_write_protection: bool = False
-        apply_write_protection: bool = False
+        allow_write: bool | None = None
         path_override: str = ""
         auto_confirm: bool = False
         dry_run: bool = False
@@ -100,15 +99,12 @@ def get_parser() -> argparse.ArgumentParser:
         help=f"The github org to deploy IOCs from. This defaults to $GITHUB_ORG, or {GITHUB_ORG_DEFAULT} if the environment variable is not set. With your current environment variables, this defaults to {current_default_org}.",
     )
     parser.add_argument(
-        "--remove-write-protection",
-        action="store_true",
-        help="If provided, instead of doing a release, we will remove write protection from an existing release. Incompatible with --apply-write-protection."
+        "--allow-write",
+        action="store",
+        type=parse_allow_write,
+        help="If provided, instead of doing a release, we will chmod an existing release to allow or prevent writes. Choose from 'true', 'yes', 'false', 'no', or any shortening of these."
     )
-    parser.add_argument(
-        "--apply-write-protection",
-        action="store_true",
-        help="If provided, instead of doing a release, we will add write protection to an existing release. Incompatible with --remove-write-protection."
-    )
+
     parser.add_argument(
         "--path-override",
         action="store",
@@ -135,6 +131,14 @@ def get_parser() -> argparse.ArgumentParser:
         help="Display additional debug information.",
     )
     return parser
+
+
+def parse_allow_write(option: str):
+    if option[0].lower() in ("t", "y"):
+        return True
+    elif option[0].lower() in ("f", "n"):
+        return False
+    raise ValueError(f"{option} is not a valid argument")
 
 
 class ReturnCode(enum.IntEnum):
@@ -188,7 +192,7 @@ def main_deploy(args: CliArgs) -> int:
         logger.error(f"Nonzero return value {rval} from make")
         return rval
     logger.info(f"Applying write protection to {deploy_dir}")
-    rval = set_permissions(deploy_dir=deploy_dir, protect=True, dry_run=args.dry_run)
+    rval = set_permissions(deploy_dir=deploy_dir, allow_write=False, dry_run=args.dry_run)
     if rval != ReturnCode.SUCCESS:
         logger.error(f"Nonzero return value {rval} from set_permissions")
         return rval
@@ -205,34 +209,24 @@ def main_perms(args: CliArgs) -> int:
     Will either return an int code or raise.
     """
     logger.info("Running ioc-deploy write protection change: checking inputs")
-    if args.apply_write_protection and args.remove_write_protection:
-        logger.error("Must provide at most one of --apply-write-protection and --remove-write-protection")
+    if args.allow_write is None:
+        logger.error("Entered main_perms without args.apply_write selected")
         return ReturnCode.EXCEPTION
 
     deploy_dir, _, _ = pick_deploy_dir(args)
 
-    rval = None
-    if args.apply_write_protection:
-        logger.info(f"Applying write protection to {deploy_dir}")
-        if not args.auto_confirm:
-            user_text = input("Confirm target? y/n\n")
-            if not user_text.strip().lower().startswith("y"):
-                return ReturnCode.NO_CONFIRM
-        rval = set_permissions(deploy_dir=deploy_dir, protect=True, dry_run=args.dry_run)
-    elif args.remove_write_protection:
-        logger.info(f"Removing write protection from {deploy_dir}")
-        if not args.auto_confirm:
-            user_text = input("Confirm target? y/n\n")
-            if not user_text.strip().lower().startswith("y"):
-                return ReturnCode.NO_CONFIRM
-        rval = set_permissions(deploy_dir=deploy_dir, protect=False, dry_run=args.dry_run)
+    if args.allow_write:
+        logger.info(f"Allowing writes to {deploy_dir}")
+    else:
+        logger.info(f"Preventing writes to {deploy_dir}")
+    if not args.auto_confirm:
+        user_text = input("Confirm target? y/n\n")
+        if not user_text.strip().lower().startswith("y"):
+            return ReturnCode.NO_CONFIRM
+    rval = set_permissions(deploy_dir=deploy_dir, allow_write=args.allow_write, dry_run=args.dry_run)
 
     if rval == ReturnCode.SUCCESS:
         logger.info("Write protection change complete!")
-    elif rval is None:
-        logger.error("Invalid codepath, how did you get here? Submit a bug report please.")
-        return ReturnCode.EXCEPTION
-
     return rval
 
 
@@ -398,19 +392,19 @@ def make_in(deploy_dir: str, dry_run: bool) -> int:
         return subprocess.run(["make"], cwd=deploy_dir).returncode
 
 
-def set_permissions(deploy_dir: str, protect: bool, dry_run: bool) -> int:
+def set_permissions(deploy_dir: str, allow_write: bool, dry_run: bool) -> int:
     """
     Apply or remove write protection from a deploy repo.
 
     You may or may not have permissions to do this to releases created by other users.
 
-    Applying write protection (protect=True) involves removing the "w" permissions
-    from all files, and from directories that contain untracked files.
-    We will also remove permissions from the top-level direcotry.
-
-    Removing write protection (protect=False) involves adding "w" permissions
+    allow_write=True involves adding "w" permissions
     for the owner and for the group. "w" permissions will never be added for other users.
     We will also add write permissions to the top-level directory.
+
+    allow_write=False involves removing the "w" permissions
+    from all files, and from directories that contain untracked files.
+    We will also remove permissions from the top-level direcotry.
     """
     if dry_run and not os.path.isdir(deploy_dir):
         # Dry run has nothing to do if we didn't build the dir
@@ -421,9 +415,9 @@ def set_permissions(deploy_dir: str, protect: bool, dry_run: bool) -> int:
     # Ignore these directories
     exclude = (".git",)
 
-    if not protect:
+    if allow_write:
         # Lazy and simple: chmod everything
-        perms = get_add_write_rule(os.stat(deploy_dir, follow_symlinks=False).st_mode)
+        perms = get_allow_write_rule(deploy_dir)
         if dry_run:
             logger.info(f"Dry-run: skipping chmod({deploy_dir}, {oct(perms)})")
         else:
@@ -431,7 +425,7 @@ def set_permissions(deploy_dir: str, protect: bool, dry_run: bool) -> int:
         for dirpath, dirnames, filenames in exclude_walk(deploy_dir, exclude=exclude):
             for name in dirnames + filenames:
                 full_path = os.path.join(dirpath, name)
-                perms = get_add_write_rule(os.stat(full_path, follow_symlinks=False).st_mode)
+                perms = get_allow_write_rule(full_path)
                 if dry_run:
                     logger.debug(f"Dry-run: skipping chmod({full_path}, {oct(perms)})")
                 else:
@@ -467,7 +461,7 @@ def set_permissions(deploy_dir: str, protect: bool, dry_run: bool) -> int:
     logger.debug(f"Discovered build dir paths {build_dir_paths}")
 
     # Follow the write protection rules from the docstring
-    perms = get_remove_write_rule(os.stat(deploy_dir, follow_symlinks=False).st_mode)
+    perms = get_remove_write_rule(deploy_dir)
     if dry_run:
         logger.info(f"Dry-run: skipping chmod({deploy_dir}, {oct(perms)})")
     else:
@@ -476,7 +470,7 @@ def set_permissions(deploy_dir: str, protect: bool, dry_run: bool) -> int:
         for dirn in dirnames:
             full_path = os.path.join(dirpath, dirn)
             if full_path in build_dir_paths:
-                perms = get_remove_write_rule(os.stat(full_path, follow_symlinks=False).st_mode)
+                perms = get_remove_write_rule(full_path)
                 if dry_run:
                     logger.debug(f"Dry-run: skipping chmod({full_path}, {oct(perms)})")
                 else:
@@ -486,7 +480,7 @@ def set_permissions(deploy_dir: str, protect: bool, dry_run: bool) -> int:
                 logger.debug(f"Skip directory perms on {full_path}, not in build dir paths")
         for filn in filenames:
             full_path = os.path.join(dirpath, filn)
-            perms = get_remove_write_rule(os.stat(full_path, follow_symlinks=False).st_mode)
+            perms = get_remove_write_rule(full_path)
             if dry_run:
                 logger.debug(f"Dry-run: skipping chmod({full_path}, {oct(perms)})")
             else:
@@ -513,18 +507,18 @@ def exclude_walk(top_dir: str, exclude: Iterator[str]) -> Iterator[Tuple[str, Li
         yield dirpath, dirnames, filenames
 
 
-def get_remove_write_rule(perms: int) -> int:
+def get_remove_write_rule(path: str) -> int:
     """
-    Given some existing file permissions, return the same permissions with no writes permitted.
+    Given some file with existing permissions, return the same permissions but with no writes permitted.
     """
-    return perms & ~(stat.S_IWUSR | stat.S_IWGRP | stat.S_IWOTH)
+    return os.stat(path, follow_symlinks=False).st_mode & ~(stat.S_IWUSR | stat.S_IWGRP | stat.S_IWOTH)
 
 
-def get_add_write_rule(perms: int) -> int:
+def get_allow_write_rule(path: str) -> int:
     """
-    Given some existing file permissions, return the same permissions with user and group writes permitted.
+    Given some file with existing permissions, return the same permissions but with user and group writes permitted.
     """
-    return perms | stat.S_IWUSR | stat.S_IWGRP
+    return os.stat(path, follow_symlinks=False).st_mode | stat.S_IWUSR | stat.S_IWGRP
 
 
 def get_version() -> str:
@@ -591,10 +585,10 @@ def _main() -> int:
         if args.version:
             print(get_version())
             return ReturnCode.SUCCESS
-        if args.apply_write_protection or args.remove_write_protection:
-            return main_perms(args)
-        else:
+        if args.allow_write is None:
             return main_deploy(args)
+        else:
+            return main_perms(args)
     except Exception as exc:
         logger.error(exc)
         logger.debug("Traceback", exc_info=True)
