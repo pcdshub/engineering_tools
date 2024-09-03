@@ -22,6 +22,7 @@ from https://github.com/pcdshub/ioc-foo-bar
 to /cds/group/pcds/epics/ioc/foo/bar/R1.0.0
 then cd and make and chmod as appropriate.
 """
+
 import argparse
 import enum
 import logging
@@ -122,7 +123,7 @@ def get_parser() -> argparse.ArgumentParser:
         "--allow-write",
         action="store",
         type=parse_allow_write,
-        help="If provided, instead of doing a release, we will chmod an existing release to allow or prevent writes. Choose from 'true', 'yes', 'false', 'no', or any shortening of these."
+        help="If provided, instead of doing a release, we will chmod an existing release to allow or prevent writes. Choose from 'true', 'yes', 'false', 'no', or any shortening of these.",
     )
     parser.add_argument(
         "--path-override",
@@ -177,7 +178,9 @@ def main_deploy(args: CliArgs) -> int:
     """
     logger.info("Running ioc-deploy: checking inputs")
     if not (args.name and args.release):
-        logger.error("Must provide both --name and --release. Check ioc-deploy --help for usage.")
+        logger.error(
+            "Must provide both --name and --release. Check ioc-deploy --help for usage."
+        )
         return ReturnCode.EXCEPTION
 
     deploy_info = get_deploy_info(args)
@@ -186,7 +189,9 @@ def main_deploy(args: CliArgs) -> int:
     rel_name = deploy_info.rel_name
 
     if pkg_name is None or rel_name is None:
-        logger.error(f"Something went wrong at package/tag normalization: package {pkg_name} at version {rel_name}")
+        logger.error(
+            f"Something went wrong at package/tag normalization: package {pkg_name} at version {rel_name}"
+        )
         return ReturnCode.EXCEPTION
 
     logger.info(f"Deploying {args.github_org}/{pkg_name} at {rel_name} to {deploy_dir}")
@@ -215,7 +220,9 @@ def main_deploy(args: CliArgs) -> int:
         logger.error(f"Nonzero return value {rval} from make")
         return rval
     logger.info(f"Applying write protection to {deploy_dir}")
-    rval = set_permissions(deploy_dir=deploy_dir, allow_write=False, dry_run=args.dry_run)
+    rval = set_permissions(
+        deploy_dir=deploy_dir, allow_write=False, dry_run=args.dry_run
+    )
     if rval != ReturnCode.SUCCESS:
         logger.error(f"Nonzero return value {rval} from set_permissions")
         return rval
@@ -246,7 +253,9 @@ def main_perms(args: CliArgs) -> int:
         user_text = input("Confirm target? y/n\n")
         if not user_text.strip().lower().startswith("y"):
             return ReturnCode.NO_CONFIRM
-    rval = set_permissions(deploy_dir=deploy_dir, allow_write=args.allow_write, dry_run=args.dry_run)
+    rval = set_permissions(
+        deploy_dir=deploy_dir, allow_write=args.allow_write, dry_run=args.dry_run
+    )
 
     if rval == ReturnCode.SUCCESS:
         logger.info("Write protection change complete!")
@@ -280,7 +289,9 @@ def get_deploy_info(args: CliArgs) -> DeployInfo:
     if args.path_override:
         deploy_dir = args.path_override
     else:
-        deploy_dir = get_target_dir(name=pkg_name, ioc_dir=args.ioc_dir, release=rel_name)
+        deploy_dir = get_target_dir(
+            name=pkg_name, ioc_dir=args.ioc_dir, release=rel_name
+        )
 
     return DeployInfo(deploy_dir=deploy_dir, pkg_name=pkg_name, rel_name=rel_name)
 
@@ -465,7 +476,9 @@ def set_permissions(deploy_dir: str, allow_write: bool, dry_run: bool) -> int:
     except subprocess.CalledProcessError as exc:
         return exc.returncode
     deploy_path = Path(deploy_dir)
-    tracked_paths = [deploy_path / subpath.strip() for subpath in ls_files_output.splitlines()]
+    tracked_paths = [
+        deploy_path / subpath.strip() for subpath in ls_files_output.splitlines()
+    ]
     build_dir_paths = set()
 
     def accumulate_subpaths(subpath: Path):
@@ -500,7 +513,9 @@ def set_permissions(deploy_dir: str, allow_write: bool, dry_run: bool) -> int:
                     logger.debug(f"chmod({full_path}, {oct(perms)})")
                     os.chmod(full_path, perms)
             else:
-                logger.debug(f"Skip directory perms on {full_path}, not in build dir paths")
+                logger.debug(
+                    f"Skip directory perms on {full_path}, not in build dir paths"
+                )
         for filn in filenames:
             full_path = os.path.join(dirpath, filn)
             perms = get_remove_write_rule(full_path)
@@ -513,7 +528,9 @@ def set_permissions(deploy_dir: str, allow_write: bool, dry_run: bool) -> int:
     return ReturnCode.SUCCESS
 
 
-def exclude_walk(top_dir: str, exclude: Iterator[str]) -> Iterator[Tuple[str, List[str], List[str]]]:
+def exclude_walk(
+    top_dir: str, exclude: Iterator[str]
+) -> Iterator[Tuple[str, List[str], List[str]]]:
     """
     Walk through a directory tree with os.walk but exclude some subdirectories.
     """
@@ -534,7 +551,9 @@ def get_remove_write_rule(path: str) -> int:
     """
     Given some file with existing permissions, return the same permissions but with no writes permitted.
     """
-    return os.stat(path, follow_symlinks=False).st_mode & ~(stat.S_IWUSR | stat.S_IWGRP | stat.S_IWOTH)
+    return os.stat(path, follow_symlinks=False).st_mode & ~(
+        stat.S_IWUSR | stat.S_IWGRP | stat.S_IWOTH
+    )
 
 
 def get_allow_write_rule(path: str) -> int:
