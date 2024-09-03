@@ -32,7 +32,7 @@ import subprocess
 import sys
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from typing import Iterator, List, Optional, Tuple
+from typing import Iterator, List, Tuple
 
 EPICS_SITE_TOP_DEFAULT = "/cds/group/pcds/epics"
 GITHUB_ORG_DEFAULT = "pcdshub"
@@ -59,8 +59,22 @@ if sys.version_info >= (3, 7, 0):
         dry_run: bool = False
         verbose: bool = False
         version: bool = False
+
+    @dataclasses.dataclass(frozen=True)
+    class DeployInfo:
+        """
+        Finalized deploy name and release information.
+        """
+
+        deploy_dir: str
+        pkg_name: str | None
+        rel_name: str | None
+
 else:
-    from types import SimpleNamespace as CliArgs
+    from types import SimpleNamespace
+
+    CliArgs = SimpleNamespace
+    DeployInfo = SimpleNamespace
 
 
 def get_parser() -> argparse.ArgumentParser:
@@ -166,13 +180,16 @@ def main_deploy(args: CliArgs) -> int:
         logger.error("Must provide both --name and --release. Check ioc-deploy --help for usage.")
         return ReturnCode.EXCEPTION
 
-    deploy_dir, upd_name, upd_rel = pick_deploy_dir(args)
+    deploy_info = get_deploy_info(args)
+    deploy_dir = deploy_info.deploy_dir
+    pkg_name = deploy_info.pkg_name
+    rel_name = deploy_info.rel_name
 
-    if upd_name is None or upd_rel is None:
-        logger.error(f"Something went wrong at package/tag normalization: package {upd_name} at version {upd_rel}")
+    if pkg_name is None or rel_name is None:
+        logger.error(f"Something went wrong at package/tag normalization: package {pkg_name} at version {rel_name}")
         return ReturnCode.EXCEPTION
 
-    logger.info(f"Deploying {args.github_org}/{upd_name} at {upd_rel} to {deploy_dir}")
+    logger.info(f"Deploying {args.github_org}/{pkg_name} at {rel_name} to {deploy_dir}")
     if Path(deploy_dir).exists():
         raise RuntimeError(f"Deploy directory {deploy_dir} already exists! Aborting.")
     if not args.auto_confirm:
@@ -181,9 +198,9 @@ def main_deploy(args: CliArgs) -> int:
             return ReturnCode.NO_CONFIRM
     logger.info(f"Cloning IOC to {deploy_dir}")
     rval = clone_repo_tag(
-        name=upd_name,
+        name=pkg_name,
         github_org=args.github_org,
-        release=upd_rel,
+        release=rel_name,
         deploy_dir=deploy_dir,
         dry_run=args.dry_run,
         verbose=args.verbose,
@@ -219,7 +236,7 @@ def main_perms(args: CliArgs) -> int:
         logger.error("Entered main_perms without args.apply_write selected")
         return ReturnCode.EXCEPTION
 
-    deploy_dir, _, _ = pick_deploy_dir(args)
+    deploy_dir = get_deploy_info(args).deploy_dir
 
     if args.allow_write:
         logger.info(f"Allowing writes to {deploy_dir}")
@@ -236,36 +253,36 @@ def main_perms(args: CliArgs) -> int:
     return rval
 
 
-def pick_deploy_dir(args: CliArgs) -> Tuple[str, Optional[str], Optional[str]]:
+def get_deploy_info(args: CliArgs) -> DeployInfo:
     """
     Normalize user inputs and figure out where to deploy to.
 
-    Returns a tuple of three elements:
-    - The deploy dir
-    - A normalized package name if applicable, or None
-    - A normalized tag name if applicable, or None
+    Returns the following in a dataclass:
+    - The deploy dir (deploy_dir)
+    - A normalized package name if applicable, or None (pkg_name)
+    - A normalized tag name if applicable, or None (rel_name)
     """
     if args.name and args.github_org:
-        upd_name = finalize_name(
+        pkg_name = finalize_name(
             name=args.name, github_org=args.github_org, verbose=args.verbose
         )
     else:
-        upd_name = None
-    if upd_name and args.github_org and args.release:
-        upd_rel = finalize_tag(
-            name=upd_name,
+        pkg_name = None
+    if pkg_name and args.github_org and args.release:
+        rel_name = finalize_tag(
+            name=pkg_name,
             github_org=args.github_org,
             release=args.release,
             verbose=args.verbose,
         )
     else:
-        upd_rel = None
+        rel_name = None
     if args.path_override:
         deploy_dir = args.path_override
     else:
-        deploy_dir = get_target_dir(name=upd_name, ioc_dir=args.ioc_dir, release=upd_rel)
+        deploy_dir = get_target_dir(name=pkg_name, ioc_dir=args.ioc_dir, release=rel_name)
 
-    return deploy_dir, upd_name, upd_rel
+    return DeployInfo(deploy_dir=deploy_dir, pkg_name=pkg_name, rel_name=rel_name)
 
 
 def finalize_name(name: str, github_org: str, verbose: bool) -> str:
