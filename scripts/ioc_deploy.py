@@ -26,6 +26,7 @@ import subprocess
 import sys
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from typing import Tuple
 
 EPICS_SITE_TOP_DEFAULT = "/cds/group/pcds/epics"
 GITHUB_ORG_DEFAULT = "pcdshub"
@@ -230,7 +231,7 @@ def finalize_name(name: str, github_org: str, ioc_dir: str, verbose: bool) -> st
         logger.debug(f"{repo_dir} exists, using as-is")
         return name
     logger.info(f"{repo_dir} does not exist, checking for other casings")
-    _, area, suffix = name.split("-", maxsplit=2)
+    _, area, suffix = split_ioc_name(name)
     # First, check for casing on area
     found_area = False
     for path in Path(ioc_dir).iterdir():
@@ -241,7 +242,9 @@ def finalize_name(name: str, github_org: str, ioc_dir: str, verbose: bool) -> st
             break
     if not found_area:
         logger.info("This is a new area, checking readme for casing")
-        return casing_from_readme(name=name, readme_text=readme_text)
+        name = casing_from_readme(name=name, readme_text=readme_text)
+        logger.info(f"Using casing: {name}")
+        return name
 
     found_suffix = False
     for path in (Path(ioc_dir) / area).iterdir():
@@ -253,24 +256,55 @@ def finalize_name(name: str, github_org: str, ioc_dir: str, verbose: bool) -> st
     if not found_suffix:
         logger.info("This is a new ioc, checking readme for casing")
         # Use suffix from readme but keep area from directory search
-        suffix = casing_from_readme(name=name, readme_text=readme_text).split("-", maxsplit=2)[2]
+        suffix = split_ioc_name(casing_from_readme(name=name, readme_text=readme_text))[2]
 
     name = "-".join(("ioc", area, suffix))
     logger.info(f"Using casing: {name}")
     return name
 
 
+def split_ioc_name(name: str) -> Tuple[str, str, str]:
+    """
+    Split an IOC name into ioc, area, suffix
+    """
+    return tuple(name.split("-", maxsplit=2))
+
+
 def casing_from_readme(name: str, readme_text: str) -> str:
+    """
+    Returns the correct casing of name in readme_text if available.
+
+    If this isn't available, check for the suffix in readme_text and use it.
+    This helps for IOCs that only have the suffix in the readme.
+
+    If neither is available, return the original name and log some warnings.
+    """
     try:
-        index = readme_text.lower().index(name.lower())
+        return casing_from_text(uncased=name, casing_source=readme_text)
+    except ValueError:
+        ...
+    _, area, suffix = split_ioc_name(name)
+    try:
+        new_suffix = casing_from_text(uncased=suffix, casing_source=readme_text)
     except ValueError:
         logger.warning(
-            "Did not find casing information in readme. Please double-check the name!"
+            "Did not find any casing information in readme. Please double-check the name!"
         )
         return name
-    new_name = readme_text[index : index + len(name)]
-    logger.info(f"Found casing in readme: {new_name}")
-    return new_name
+    logger.warning(
+        "Did not find area casing information in readme. Please double-check the name!"
+    )
+    return f"ioc-{area}-{new_suffix}"
+
+
+def casing_from_text(uncased: str, casing_source: str) -> str:
+    """
+    Returns the casing of the uncased text as found in casing_source.
+
+    Raises ValueError if this fails.
+    """
+    index = casing_source.lower().index(uncased.lower())
+    return casing_source[index : index + len(uncased)]
 
 
 def finalize_tag(name: str, github_org: str, release: str, verbose: bool) -> str:
