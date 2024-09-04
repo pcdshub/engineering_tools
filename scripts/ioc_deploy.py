@@ -209,12 +209,14 @@ def finalize_name(name: str, github_org: str, ioc_dir: str, verbose: bool) -> st
             raise ValueError(
                 f"Error cloning repo, make sure {name} exists in {github_org} and check your permissions!"
             ) from exc
-        try:
-            with open(Path(tmpdir) / name / "README.md", "r") as fd:
-                readme_text = fd.read()
+        readme_text = ""
+        # Search for readme in any casing with any file extension
+        pattern = "".join(f"[{char.lower()}{char.upper()}]" for char in "readme") + "*"
+        for readme_path in (Path(tmpdir) / name).glob(pattern):
+            with open(readme_path, "r") as fd:
+                readme_text += fd.read()
             logger.debug("Successfully read repo readme for backup casing check")
-        except FileNotFoundError:
-            readme_text = ""
+        if not readme_text:
             logger.debug("Unable to read repo readme for backup casing check")
     logger.debug("Checking deploy area for casing")
     # GitHub URLs are case-insensitive, so we need further checks
