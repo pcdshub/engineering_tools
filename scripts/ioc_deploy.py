@@ -6,8 +6,7 @@ It will create a shallow clone of your IOC in the standard release area at the
 correct path and "make" it. If the tag directory already exists, the script
 will exit.
 
-After making the IOC, we'll write-protect all files and all directories that
-contain built file (e.g. those that contain files that are not tracked in git).
+After making the IOC, we'll write-protect all files and all directories.
 We'll also write-protect the top-level directory to help indicate completion.
 
 Example command:
@@ -33,7 +32,7 @@ import subprocess
 import sys
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from typing import Iterator, List, Tuple
+from typing import Tuple
 
 EPICS_SITE_TOP_DEFAULT = "/cds/group/pcds/epics"
 GITHUB_ORG_DEFAULT = "pcdshub"
@@ -531,17 +530,15 @@ def make_in(deploy_dir: str, dry_run: bool) -> int:
 
 def set_permissions(deploy_dir: str, allow_write: bool, dry_run: bool) -> int:
     """
-    Apply or remove write protection from a deploy repo.
+    Apply or remove write permissions from a deploy repo.
 
-    You may or may not have permissions to do this to releases created by other users.
-
-    allow_write=True involves adding "w" permissions
+    allow_write=True involves adding "w" permissions to all files and directories
     for the owner and for the group. "w" permissions will never be added for other users.
     We will also add write permissions to the top-level directory.
 
-    allow_write=False involves removing the "w" permissions
-    from all files, and from directories that contain untracked files.
-    We will also remove permissions from the top-level direcotry.
+    allow_write=False involves removing the "w" permissions from all files and directories
+    for the owner, group, and other users.
+    We will also remove write permissions from the top-level direcotry.
     """
     if dry_run and not os.path.isdir(deploy_dir):
         # Dry run has nothing to do if we didn't build the dir
@@ -549,121 +546,39 @@ def set_permissions(deploy_dir: str, allow_write: bool, dry_run: bool) -> int:
         logger.info("Dry-run: skipping permission changes on never-made directory")
         return ReturnCode.SUCCESS
 
-    # Ignore these directories
-    exclude = (".git",)
+    set_one_permission(deploy_dir, allow_write=allow_write, dry_run=dry_run)
 
-    if allow_write:
-        # Lazy and simple: chmod everything
-        perms = get_allow_write_rule(deploy_dir)
-        if dry_run:
-            logger.info(f"Dry-run: skipping chmod({deploy_dir}, {oct(perms)})")
-        else:
-            os.chmod(deploy_dir, perms)
-        for dirpath, dirnames, filenames in exclude_walk(deploy_dir, exclude=exclude):
-            for name in dirnames + filenames:
-                full_path = os.path.join(dirpath, name)
-                perms = get_allow_write_rule(full_path)
-                if dry_run:
-                    logger.debug(f"Dry-run: skipping chmod({full_path}, {oct(perms)})")
-                else:
-                    logger.debug(f"chmod({full_path}, {oct(perms)})")
-                    os.chmod(full_path, perms)
-        return ReturnCode.SUCCESS
-
-    # Compare the files that exist to the files that are tracked by git
-    try:
-        ls_files_output = subprocess.check_output(
-            ["git", "-C", deploy_dir, "ls-files"],
-            universal_newlines=True,
-        )
-    except subprocess.CalledProcessError as exc:
-        return exc.returncode
-    deploy_path = Path(deploy_dir)
-    tracked_paths = [
-        deploy_path / subpath.strip() for subpath in ls_files_output.splitlines()
-    ]
-    build_dir_paths = set()
-
-    def accumulate_subpaths(subpath: Path):
-        for path in subpath.iterdir():
-            if path.is_symlink():
-                continue
-            elif path.name in exclude:
-                continue
-            elif path.is_dir():
-                accumulate_subpaths(path)
-            elif path.is_file():
-                if path not in tracked_paths:
-                    build_dir_paths.add(str(path.parent))
-
-    accumulate_subpaths(deploy_path)
-    logger.debug(f"Discovered build dir paths {build_dir_paths}")
-
-    # Follow the write protection rules from the docstring
-    perms = get_remove_write_rule(deploy_dir)
-    if dry_run:
-        logger.info(f"Dry-run: skipping chmod({deploy_dir}, {oct(perms)})")
-    else:
-        os.chmod(deploy_dir, perms)
-    for dirpath, dirnames, filenames in exclude_walk(deploy_dir, exclude=exclude):
-        for dirn in dirnames:
-            full_path = os.path.join(dirpath, dirn)
-            if full_path in build_dir_paths:
-                perms = get_remove_write_rule(full_path)
-                if dry_run:
-                    logger.debug(f"Dry-run: skipping chmod({full_path}, {oct(perms)})")
-                else:
-                    logger.debug(f"chmod({full_path}, {oct(perms)})")
-                    os.chmod(full_path, perms)
-            else:
-                logger.debug(
-                    f"Skip directory perms on {full_path}, not in build dir paths"
-                )
-        for filn in filenames:
-            full_path = os.path.join(dirpath, filn)
-            perms = get_remove_write_rule(full_path)
-            if dry_run:
-                logger.debug(f"Dry-run: skipping chmod({full_path}, {oct(perms)})")
-            else:
-                logger.debug(f"chmod({full_path}, {oct(perms)})")
-                os.chmod(full_path, perms)
+    for dirpath, dirnames, filenames in os.walk(deploy_dir):
+        for name in dirnames + filenames:
+            full_path = os.path.join(dirpath, name)
+            set_one_permission(full_path, allow_write=allow_write, dry_run=dry_run)
 
     return ReturnCode.SUCCESS
 
 
-def exclude_walk(
-    top_dir: str, exclude: Iterator[str]
-) -> Iterator[Tuple[str, List[str], List[str]]]:
+def set_one_permission(path: str, allow_write: bool, dry_run: bool):
     """
-    Walk through a directory tree with os.walk but exclude some subdirectories.
-    """
-    for dirpath, dirnames, filenames in os.walk(top_dir):
-        for ecl in exclude:
-            try:
-                dirnames.remove(ecl)
-            except ValueError:
-                ...
-            try:
-                filenames.remove(ecl)
-            except ValueError:
-                ...
-        yield dirpath, dirnames, filenames
+    Given some file, adjust the permissions as needed for this script.
 
+    If allow_write is True, allow owner and group writes.
+    If allow_write is False, prevent all writes.
 
-def get_remove_write_rule(path: str) -> int:
+    During a dry run, log what would be changed at info level without
+    making any changes. This log will be present at debug level
+    for verbose mode during real changes.
     """
-    Given some file with existing permissions, return the same permissions but with no writes permitted.
-    """
-    return os.stat(path, follow_symlinks=False).st_mode & ~(
-        stat.S_IWUSR | stat.S_IWGRP | stat.S_IWOTH
-    )
-
-
-def get_allow_write_rule(path: str) -> int:
-    """
-    Given some file with existing permissions, return the same permissions but with user and group writes permitted.
-    """
-    return os.stat(path, follow_symlinks=False).st_mode | stat.S_IWUSR | stat.S_IWGRP
+    mode = os.stat(path, follow_symlinks=False).st_mode
+    if allow_write:
+        new_mode = mode | stat.S_IWUSR | stat.S_IWGRP
+    else:
+        new_mode = mode & ~(
+            stat.S_IWUSR | stat.S_IWGRP | stat.S_IWOTH
+        )
+    if dry_run:
+        logger.info(f"Dry-run: would change {path} from {oct(mode)} to {oct(new_mode)}")
+    else:
+        logger.debug(f"Changing {path} from {oct(mode)} to {oct(new_mode)}")
+        os.chmod(path, new_mode, follow_symlinks=False)
 
 
 def get_version() -> str:
