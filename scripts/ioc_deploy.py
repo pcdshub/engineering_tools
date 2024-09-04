@@ -143,7 +143,7 @@ def get_parser() -> argparse.ArgumentParser:
         "--allow-write",
         "--allow-writes",
         action="store",
-        type=parse_allow_write,
+        type=is_yes,
         help="If provided, instead of doing a release, we will chmod an existing release to allow or prevent writes. Choose from 'true', 'yes', 'false', 'no', or any shortening of these.",
     )
     parser.add_argument(
@@ -175,10 +175,15 @@ def get_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def parse_allow_write(option: str):
-    if option[0].lower() in ("t", "y"):
+def is_yes(option: str, error_on_empty: bool = True) -> bool:
+    option = option.strip().lower()
+    if option:
+        option = option[0]
+    if option in ("t", "y"):
         return True
-    elif option[0].lower() in ("f", "n"):
+    elif option in ("f", "n"):
+        return False
+    if not option and not error_on_empty:
         return False
     raise ValueError(f"{option} is not a valid argument")
 
@@ -219,8 +224,8 @@ def main_deploy(args: CliArgs) -> int:
     if Path(deploy_dir).exists():
         raise RuntimeError(f"Deploy directory {deploy_dir} already exists! Aborting.")
     if not args.auto_confirm:
-        user_text = input("Confirm release source and target? y/n\n")
-        if not user_text.strip().lower().startswith("y"):
+        user_text = input("Confirm release source and target? yes/true or no/false\n")
+        if not is_yes(user_text, error_on_empty=False):
             return ReturnCode.NO_CONFIRM
     logger.info(f"Cloning IOC to {deploy_dir}")
     rval = clone_repo_tag(
@@ -271,8 +276,8 @@ def main_perms(args: CliArgs) -> int:
     else:
         logger.info(f"Preventing writes to {deploy_dir}")
     if not args.auto_confirm:
-        user_text = input("Confirm target? y/n\n")
-        if not user_text.strip().lower().startswith("y"):
+        user_text = input("Confirm target? yes/true or no/false\n")
+        if not is_yes(user_text, error_on_empty=False):
             return ReturnCode.NO_CONFIRM
     rval = set_permissions(
         deploy_dir=deploy_dir, allow_write=args.allow_write, dry_run=args.dry_run
@@ -671,13 +676,21 @@ def _main() -> int:
             print(get_version())
             return ReturnCode.SUCCESS
         if args.allow_write is None:
-            return main_deploy(args)
+            rval = main_deploy(args)
         else:
-            return main_perms(args)
+            rval = main_perms(args)
     except Exception as exc:
         logger.error(exc)
         logger.debug("Traceback", exc_info=True)
-        return ReturnCode.EXCEPTION
+        rval = ReturnCode.EXCEPTION
+
+    if rval == ReturnCode.SUCCESS:
+        logger.info("ioc-deploy completed successfully")
+    elif rval == ReturnCode.EXCEPTION:
+        logger.error("ioc-deploy errored out")
+    elif rval == ReturnCode.NO_CONFIRM:
+        logger.info("ioc-deploy cancelled")
+    return rval
 
 
 if __name__ == "__main__":
