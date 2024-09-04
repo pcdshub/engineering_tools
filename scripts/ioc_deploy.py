@@ -571,9 +571,7 @@ def set_one_permission(path: str, allow_write: bool, dry_run: bool):
     if allow_write:
         new_mode = mode | stat.S_IWUSR | stat.S_IWGRP
     else:
-        new_mode = mode & ~(
-            stat.S_IWUSR | stat.S_IWGRP | stat.S_IWOTH
-        )
+        new_mode = mode & ~(stat.S_IWUSR | stat.S_IWGRP | stat.S_IWOTH)
     if dry_run:
         logger.info(f"Dry-run: would change {path} from {oct(mode)} to {oct(new_mode)}")
     else:
