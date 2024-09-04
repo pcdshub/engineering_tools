@@ -245,7 +245,7 @@ def main_deploy(args: CliArgs) -> int:
     if rval != ReturnCode.SUCCESS:
         logger.error(f"Nonzero return value {rval} from set_permissions")
         return rval
-    logger.info("ioc-deploy complete!")
+    logger.info("IOC clone, make, and permission change complete!")
     return ReturnCode.SUCCESS
 
 
