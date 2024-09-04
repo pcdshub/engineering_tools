@@ -348,13 +348,19 @@ usage: ioc-deploy [-h] [--version] [--name NAME] [--release RELEASE]
 &nbsp;
 ioc-deploy is a script for building and deploying ioc tags from github.
 &nbsp;
-It will create a shallow clone of your IOC in the standard release area at the
-correct path and "make" it. If the tag directory already exists, the script
-will exit.
+It has two paths: the normal deploy path, and a second path that adjusts
+write permissions on an existing deployed release.
 &nbsp;
-After making the IOC, we'll write-protect all files and all directories that
-contain built file (e.g. those that contain files that are not tracked in git).
+The normal deploy path will create a shallow clone of your IOC in the
+standard release area at the correct path and "make" it.
+If the tag directory already exists, the script will exit.
+&nbsp;
+In the normal path, after making the IOC, we'll write-protect all files
+and all directories.
 We'll also write-protect the top-level directory to help indicate completion.
+&nbsp;
+Note that this means you'll need to restore write permissions if you'd like
+to rebuild an existing release on a new architecture or remove it entirely.
 &nbsp;
 Example command:
 &nbsp;
@@ -367,6 +373,19 @@ With default settings, this will clone
 from https://github.com/pcdshub/ioc-foo-bar
 to /cds/group/pcds/epics/ioc/foo/bar/R1.0.0
 then cd and make and chmod as appropriate.
+&nbsp;
+The second path will not do any git or make actions, it will only find the
+release directory and change the file and directory permissions.
+This can be done with similar commands as above, adding one new argument,
+or it can be done by passing the path you'd like to modify
+if this is more convenient for you.
+&nbsp;
+Example commands:
+&nbsp;
+"ioc-deploy -n ioc-foo-bar -r R1.0.0 --allow-write true"
+"ioc-deploy -n ioc-foo-bar -r R1.0.0 --allow-write false"
+"ioc-deploy -p /cds/group/pcds/epics/ioc/foo/bar/R1.0.0 --allow-write true"
+"ioc-deploy -p /cds/group/pcds/epics/ioc/foo/bar/R1.0.0 --allow-write false"
 &nbsp;
 optional arguments:
 &nbsp; -h, --help            show this help message and exit
@@ -388,7 +407,7 @@ optional arguments:
 &nbsp;                       $GITHUB_ORG, or pcdshub if the environment variable is
 &nbsp;                       not set. With your current environment variables, this
 &nbsp;                       defaults to pcdshub.
-&nbsp; --allow-write ALLOW_WRITE
+&nbsp; --allow-write ALLOW_WRITE, --allow-writes ALLOW_WRITE
 &nbsp;                       If provided, instead of doing a release, we will chmod
 &nbsp;                       an existing release to allow or prevent writes. Choose
 &nbsp;                       from 'true', 'yes', 'false', 'no', or any shortening
