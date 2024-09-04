@@ -52,7 +52,7 @@ import subprocess
 import sys
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from typing import Tuple
+from typing import List, Tuple
 
 EPICS_SITE_TOP_DEFAULT = "/cds/group/pcds/epics"
 GITHUB_ORG_DEFAULT = "pcdshub"
@@ -202,13 +202,6 @@ def main_deploy(args: CliArgs) -> int:
 
     Will either return an int return code or raise.
     """
-    logger.info("Running ioc-deploy: checking inputs")
-    if not (args.name and args.release):
-        logger.error(
-            "Must provide both --name and --release. Check ioc-deploy --help for usage."
-        )
-        return ReturnCode.EXCEPTION
-
     deploy_info = get_deploy_info(args)
     deploy_dir = deploy_info.deploy_dir
     pkg_name = deploy_info.pkg_name
@@ -264,12 +257,11 @@ def main_perms(args: CliArgs) -> int:
 
     Will either return an int code or raise.
     """
-    logger.info("Running ioc-deploy write protection change: checking inputs")
     if args.allow_write is None:
         logger.error("Entered main_perms without args.apply_write selected")
         return ReturnCode.EXCEPTION
 
-    deploy_dir = get_deploy_info(args).deploy_dir
+    deploy_dir = get_perms_target(args)
 
     if args.allow_write:
         logger.info(f"Allowing writes to {deploy_dir}")
@@ -323,6 +315,42 @@ def get_deploy_info(args: CliArgs) -> DeployInfo:
         )
 
     return DeployInfo(deploy_dir=deploy_dir, pkg_name=pkg_name, rel_name=rel_name)
+
+
+def get_perms_target(args: CliArgs) -> str:
+    """
+    Normalize user inputs and figure out which directory to modify.
+
+    Unlike get_deploy_info, this will not check github.
+    Instead, we'll check local filepaths for existing targets.
+
+    This is implemented separately to remove the network dependencies,
+    but it uses the same helper functions.
+    """
+    if args.path_override:
+        return args.path_override
+    _, area, suffix = split_ioc_name(args.name)
+    area = find_casing_in_dir(dir=args.ioc_dir, name=area)
+    suffix = find_casing_in_dir(dir=str(Path(args.ioc_dir) / area), name=suffix)
+    full_name = "-".join(("ioc", area, suffix))
+    try_release = release_permutations(args.release)
+    for release in try_release:
+        target = get_target_dir(name=full_name, ioc_dir=args.ioc_dir, release=release)
+        if Path(target).is_dir():
+            return target
+    raise RuntimeError("Unable to find existing release matching the inputs.")
+
+
+def find_casing_in_dir(dir: str, name: str) -> str:
+    """
+    Find a file or directory in dir that matches name aside from casing.
+
+    Raises a RuntimeError if nothing could be found.
+    """
+    for path in Path(dir).iterdir():
+        if path.name.lower() == name.lower():
+            return path.name
+    raise RuntimeError(f"Did not find {name} in {dir}")
 
 
 def finalize_name(name: str, github_org: str, ioc_dir: str, verbose: bool) -> str:
@@ -383,32 +411,24 @@ def finalize_name(name: str, github_org: str, ioc_dir: str, verbose: bool) -> st
     logger.info(f"{repo_dir} does not exist, checking for other casings")
     _, area, suffix = split_ioc_name(name)
     # First, check for casing on area
-    found_area = False
-    for path in Path(ioc_dir).iterdir():
-        if path.name.lower() == area.lower():
-            area = path.name
-            found_area = True
-            logger.info(f"Using {area} as the area")
-            break
-    if not found_area:
+    try:
+        area = find_casing_in_dir(dir=ioc_dir, name=area)
+    except RuntimeError:
         logger.info("This is a new area, checking readme for casing")
         name = casing_from_readme(name=name, readme_text=readme_text)
         logger.info(f"Using casing: {name}")
         return name
+    logger.info(f"Using {area} as the area")
 
-    found_suffix = False
-    for path in (Path(ioc_dir) / area).iterdir():
-        if path.name.lower() == suffix.lower():
-            suffix = path.name
-            found_suffix = True
-            logger.info(f"Using {suffix} as the name")
-            break
-    if not found_suffix:
+    try:
+        suffix = find_casing_in_dir(dir=str(Path(ioc_dir) / area), name=suffix)
+    except RuntimeError:
         logger.info("This is a new ioc, checking readme for casing")
         # Use suffix from readme but keep area from directory search
         suffix = split_ioc_name(casing_from_readme(name=name, readme_text=readme_text))[
             2
         ]
+    logger.info(f"Using {suffix} as the name")
 
     name = "-".join(("ioc", area, suffix))
     logger.info(f"Using casing: {name}")
@@ -470,15 +490,7 @@ def finalize_tag(name: str, github_org: str, release: str, verbose: bool) -> str
     - v1.0.0
     - 1.0.0
     """
-    try_release = [release]
-    if release.startswith("R"):
-        try_release.extend([f"v{release[1:]}", f"{release[1:]}"])
-    elif release.startswith("v"):
-        try_release.extend([f"R{release[1:]}", f"{release[1:]}"])
-    elif release[0].isalpha():
-        try_release.extend([f"R{release[1:]}", f"v{release[1:]}", f"{release[1:]}"])
-    else:
-        try_release.extend([f"R{release}", f"v{release}"])
+    try_release = release_permutations(release=release)
 
     with TemporaryDirectory() as tmpdir:
         for rel in try_release:
@@ -498,6 +510,22 @@ def finalize_tag(name: str, github_org: str, release: str, verbose: bool) -> str
                 logger.info(f"Release {rel} exists in {github_org}/{name}")
                 return rel
     raise ValueError(f"Unable to find {release} in {github_org}/{name}")
+
+
+def release_permutations(release: str) -> List[str]:
+    """
+    Given a user-provided tag/release name, return all the variants we'd like to check for.
+    """
+    try_release = [release]
+    if release.startswith("R"):
+        try_release.extend([f"v{release[1:]}", f"{release[1:]}"])
+    elif release.startswith("v"):
+        try_release.extend([f"R{release[1:]}", f"{release[1:]}"])
+    elif release[0].isalpha():
+        try_release.extend([f"R{release[1:]}", f"v{release[1:]}", f"{release[1:]}"])
+    else:
+        try_release.extend([f"R{release}", f"v{release}"])
+    return try_release
 
 
 def get_target_dir(name: str, ioc_dir: str, release: str) -> str:
@@ -675,6 +703,12 @@ def _main() -> int:
         if args.version:
             print(get_version())
             return ReturnCode.SUCCESS
+        logger.info("ioc-deploy: checking inputs")
+        if not (args.name and args.release) and not args.path_override:
+            logger.error(
+                "Must provide both --name and --release, or --path-override. Check ioc-deploy --help for usage."
+            )
+            return ReturnCode.EXCEPTION
         if args.allow_write is None:
             rval = main_deploy(args)
         else:
