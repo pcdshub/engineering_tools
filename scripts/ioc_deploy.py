@@ -133,7 +133,10 @@ def main(args: CliArgs) -> int:
 
     logger.info("Running ioc-deploy: checking inputs")
     upd_name = finalize_name(
-        name=args.name, github_org=args.github_org, ioc_dir=args.ioc_dir, verbose=args.verbose
+        name=args.name,
+        github_org=args.github_org,
+        ioc_dir=args.ioc_dir,
+        verbose=args.verbose,
     )
     upd_rel = finalize_tag(
         name=upd_name,
@@ -218,7 +221,9 @@ def finalize_name(name: str, github_org: str, ioc_dir: str, verbose: bool) -> st
     # REST API is most reliable but requires different auth
     # Checking existing directories is ideal because it ensures consistency with earlier releases
     # Check the readme last as a backup
-    repo_dir = Path(get_target_dir(name=name, ioc_dir=ioc_dir, release="placeholder")).parent
+    repo_dir = Path(
+        get_target_dir(name=name, ioc_dir=ioc_dir, release="placeholder")
+    ).parent
     if repo_dir.exists():
         logger.debug(f"{repo_dir} exists, using as-is")
         return name
@@ -254,9 +259,11 @@ def casing_from_readme(name: str, readme_text: str) -> str:
     try:
         index = readme_text.lower().index(name.lower())
     except ValueError:
-        logger.warning("Did not find casing information in readme. Please double-check the name!")
+        logger.warning(
+            "Did not find casing information in readme. Please double-check the name!"
+        )
         return name
-    new_name = readme_text[index:index+len(name)]
+    new_name = readme_text[index : index + len(name)]
     logger.info(f"Found casing in readme: {new_name}")
     return new_name
 
