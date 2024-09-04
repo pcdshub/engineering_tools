@@ -133,7 +133,7 @@ def main(args: CliArgs) -> int:
 
     logger.info("Running ioc-deploy: checking inputs")
     upd_name = finalize_name(
-        name=args.name, github_org=args.github_org, verbose=args.verbose
+        name=args.name, github_org=args.github_org, ioc_dir=args.ioc_dir, verbose=args.verbose
     )
     upd_rel = finalize_tag(
         name=upd_name,
@@ -171,11 +171,11 @@ def main(args: CliArgs) -> int:
     return ReturnCode.SUCCESS
 
 
-def finalize_name(name: str, github_org: str, verbose: bool) -> str:
+def finalize_name(name: str, github_org: str, ioc_dir: str, verbose: bool) -> str:
     """
-    Check if name is present in org and is well-formed.
+    Check if name is present in org, is well-formed, and has correct casing.
 
-    If the name is present, return it.
+    If the name is present, return it, fixing the casing if needed.
     If the name is not present and the correct name can be guessed, guess.
     If the name is not present and cannot be guessed, raise.
 
@@ -187,6 +187,9 @@ def finalize_name(name: str, github_org: str, verbose: bool) -> str:
 
     However, "ads-ioc" will resolve to "ioc-common-ads-ioc".
     Only common IOCs will be automatically discovered using this method.
+
+    Note that GitHub URLs are case-insensitive, so there's no native way to tell
+    from a clone step if you've maintained the correct casing information.
     """
     split_name = name.split("-")
     if len(split_name) < 3 or split_name[0] != "ioc":
@@ -203,7 +206,59 @@ def finalize_name(name: str, github_org: str, verbose: bool) -> str:
             raise ValueError(
                 f"Error cloning repo, make sure {name} exists in {github_org} and check your permissions!"
             ) from exc
+        try:
+            with open(Path(tmpdir) / name / "README.md", "r") as fd:
+                readme_text = fd.read()
+            logger.debug("Successfully read repo readme for backup casing check")
+        except FileNotFoundError:
+            readme_text = ""
+            logger.debug("Unable to read repo readme for backup casing check")
+    logger.debug("Checking deploy area for casing")
+    # GitHub URLs are case-insensitive, so we need further checks
+    # REST API is most reliable but requires different auth
+    # Checking existing directories is ideal because it ensures consistency with earlier releases
+    # Check the readme last as a backup
+    repo_dir = Path(get_target_dir(name=name, ioc_dir=ioc_dir, release="placeholder")).parent
+    if repo_dir.exists():
+        logger.debug(f"{repo_dir} exists, using as-is")
+        return name
+    logger.info(f"{repo_dir} does not exist, checking for other casings")
+    _, area, suffix = name.split("-", maxsplit=2)
+    # First, check for casing on area
+    found_area = False
+    for path in Path(ioc_dir).iterdir():
+        if path.name.lower() == area.lower():
+            area = path.name
+            found_area = True
+            break
+    if not found_area:
+        logger.info("This is a new area, checking readme for casing")
+        return casing_from_readme(name=name, readme_text=readme_text)
+
+    found_suffix = False
+    for path in (Path(ioc_dir) / area).iterdir():
+        if path.name.lower() == suffix.lower():
+            suffix = path.name
+            found_suffix = True
+            break
+    if not found_suffix:
+        logger.info("This is a new ioc, checking readme for casing")
+        return casing_from_readme(name=name, readme_text=readme_text)
+
+    name = "-".join(("ioc", area, suffix))
+    logger.info(f"Found casing: {name}")
     return name
+
+
+def casing_from_readme(name: str, readme_text: str) -> str:
+    try:
+        index = readme_text.lower().index(name.lower())
+    except ValueError:
+        logger.warning("Did not find casing information in readme. Please double-check the name!")
+        return name
+    new_name = readme_text[index:index+len(name)]
+    logger.info(f"Found casing in readme: {new_name}")
+    return new_name
 
 
 def finalize_tag(name: str, github_org: str, release: str, verbose: bool) -> str:
