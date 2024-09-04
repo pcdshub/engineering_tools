@@ -237,6 +237,7 @@ def finalize_name(name: str, github_org: str, ioc_dir: str, verbose: bool) -> st
         if path.name.lower() == area.lower():
             area = path.name
             found_area = True
+            logger.info(f"Using {area} as the area")
             break
     if not found_area:
         logger.info("This is a new area, checking readme for casing")
@@ -247,13 +248,15 @@ def finalize_name(name: str, github_org: str, ioc_dir: str, verbose: bool) -> st
         if path.name.lower() == suffix.lower():
             suffix = path.name
             found_suffix = True
+            logger.info(f"Using {suffix} as the name")
             break
     if not found_suffix:
         logger.info("This is a new ioc, checking readme for casing")
-        return casing_from_readme(name=name, readme_text=readme_text)
+        # Use suffix from readme but keep area from directory search
+        suffix = casing_from_readme(name=name, readme_text=readme_text).split("-", maxsplit=2)[2]
 
     name = "-".join(("ioc", area, suffix))
-    logger.info(f"Found casing: {name}")
+    logger.info(f"Using casing: {name}")
     return name
 
 
