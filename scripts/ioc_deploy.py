@@ -121,6 +121,7 @@ def get_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--allow-write",
+        "--allow-writes",
         action="store",
         type=parse_allow_write,
         help="If provided, instead of doing a release, we will chmod an existing release to allow or prevent writes. Choose from 'true', 'yes', 'false', 'no', or any shortening of these.",
