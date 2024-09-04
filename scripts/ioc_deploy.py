@@ -36,6 +36,7 @@ from typing import Tuple
 
 EPICS_SITE_TOP_DEFAULT = "/cds/group/pcds/epics"
 GITHUB_ORG_DEFAULT = "pcdshub"
+CHMOD_SYMLINKS = os.chmod in os.supports_follow_symlinks
 
 logger = logging.getLogger("ioc-deploy")
 
@@ -556,7 +557,7 @@ def set_permissions(deploy_dir: str, allow_write: bool, dry_run: bool) -> int:
     return ReturnCode.SUCCESS
 
 
-def set_one_permission(path: str, allow_write: bool, dry_run: bool):
+def set_one_permission(path: str, allow_write: bool, dry_run: bool) -> None:
     """
     Given some file, adjust the permissions as needed for this script.
 
@@ -567,6 +568,9 @@ def set_one_permission(path: str, allow_write: bool, dry_run: bool):
     making any changes. This log will be present at debug level
     for verbose mode during real changes.
     """
+    if os.path.islink(path) and not CHMOD_SYMLINKS:
+        logger.debug(f"Skip {path}, os doesn't support follow_symlinks in chmod.")
+        return
     mode = os.stat(path, follow_symlinks=False).st_mode
     if allow_write:
         new_mode = mode | stat.S_IWUSR | stat.S_IWGRP
@@ -576,7 +580,10 @@ def set_one_permission(path: str, allow_write: bool, dry_run: bool):
         logger.info(f"Dry-run: would change {path} from {oct(mode)} to {oct(new_mode)}")
     else:
         logger.debug(f"Changing {path} from {oct(mode)} to {oct(new_mode)}")
-        os.chmod(path, new_mode, follow_symlinks=False)
+        if CHMOD_SYMLINKS:
+            os.chmod(path, new_mode, follow_symlinks=False)
+        else:
+            os.chmod(path, new_mode)
 
 
 def get_version() -> str:
