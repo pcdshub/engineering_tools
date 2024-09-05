@@ -271,9 +271,24 @@ def main_perms(args: CliArgs) -> int:
         user_text = input("Confirm target? yes/true or no/false\n")
         if not is_yes(user_text, error_on_empty=False):
             return ReturnCode.NO_CONFIRM
-    rval = set_permissions(
-        deploy_dir=deploy_dir, allow_write=args.allow_write, dry_run=args.dry_run
-    )
+    try:
+        rval = set_permissions(
+            deploy_dir=deploy_dir, allow_write=args.allow_write, dry_run=args.dry_run
+        )
+    except OSError as exc:
+        logger.error(f"OSError during chmod: {exc}")
+        error_path = Path(exc.filename)
+        logger.error(
+            f"Please contact file owner {error_path.owner()} or someone with sudo permissions if you'd like to change the permissions here."
+        )
+        if args.allow_write:
+            mode = "ug+w"
+        else:
+            mode = "a-w"
+        logger.error(
+            f"For example, you might try 'sudo chmod -R {mode} {deploy_dir}' from a server you have sudo access on."
+        )
+        return ReturnCode.EXCEPTION
 
     if rval == ReturnCode.SUCCESS:
         logger.info("Write protection change complete!")
