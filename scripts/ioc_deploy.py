@@ -440,9 +440,8 @@ def finalize_name(name: str, github_org: str, ioc_dir: str, verbose: bool) -> st
     except RuntimeError:
         logger.info("This is a new ioc, checking readme for casing")
         # Use suffix from readme but keep area from directory search
-        suffix = split_ioc_name(casing_from_readme(name=name, readme_text=readme_text))[
-            2
-        ]
+        casing = casing_from_readme(name=name, readme_text=readme_text)
+        suffix = split_ioc_name(casing)[2]
     logger.info(f"Using {suffix} as the name")
 
     name = "-".join(("ioc", area, suffix))
