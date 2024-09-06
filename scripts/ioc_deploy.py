@@ -568,7 +568,7 @@ def finalize_tag(name: str, github_org: str, release: str, verbose: bool) -> str
             verbose=verbose,
         )
     except subprocess.CalledProcessError as exc:
-        raise ValueError(f"Unable to access {github_org}/{name}") from exc
+        raise ValueError(f"Unable to access {github_org}/{name}, please make sure you have the correct access rights and the repository exists.") from exc
     for rel in release_permutations(release=release):
         logger.debug(f"Trying variant {rel}")
         if rel in tags:
@@ -827,7 +827,10 @@ def _ls_remote(
     verbose: bool = False,
 ) -> List[str]:
     """
-    Run git ls-remote --tags --refs or raise a subprocess.CalledProcessError
+    Return git ls-remote's output or raise a subprocess.CalledProcessError
+
+    This will call "git ls-remote --tags --refs", which is a fast way
+    to check if a remote repo is accessible and get a list of tags.
 
     The code here is more complex than _clone so we can print stdout and stderr
     interleaved in verbose mode while also capturing stdout separately.
@@ -849,6 +852,11 @@ def _ls_remote(
             if verbose:
                 print(line, end="")
             output.append(line.strip())
+    if proc.returncode:
+        raise subprocess.CalledProcessError(
+            returncode=proc.returncode,
+            cmd=cmd,
+        )
     return output
 
 
