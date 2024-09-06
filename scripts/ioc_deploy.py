@@ -52,7 +52,7 @@ import subprocess
 import sys
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from typing import List, Optional, Tuple
+from typing import List, Tuple
 
 EPICS_SITE_TOP_DEFAULT = "/cds/group/pcds/epics"
 GITHUB_ORG_DEFAULT = "pcdshub"
@@ -89,8 +89,8 @@ if sys.version_info >= (3, 7, 0):
         """
 
         deploy_dir: str
-        pkg_name: Optional[str]
-        rel_name: Optional[str]
+        pkg_name: str
+        rel_name: str
 
 else:
     from types import SimpleNamespace
@@ -224,14 +224,15 @@ def main_deploy(args: CliArgs) -> int:
         logger.error("Github is not reachable, please check to make sure you're on a psbuild host.")
         return ReturnCode.EXCEPTION
 
+    logger.info("Checking repos and ioc deploy directories")
     deploy_info = get_deploy_info(args)
     deploy_dir = deploy_info.deploy_dir
     pkg_name = deploy_info.pkg_name
     rel_name = deploy_info.rel_name
 
-    if pkg_name is None or rel_name is None:
+    if not (deploy_dir and pkg_name and rel_name):
         logger.error(
-            f"Something went wrong at package/tag normalization: package {pkg_name} at version {rel_name}"
+            f"Something went wrong at package/tag normalization: package {pkg_name} at version {rel_name} to dir {deploy_dir}"
         )
         return ReturnCode.EXCEPTION
 
@@ -325,36 +326,84 @@ def get_deploy_info(args: CliArgs) -> DeployInfo:
     Normalize user inputs and figure out where to deploy to.
 
     Returns the following in a dataclass:
-    - The deploy dir (deploy_dir)
+    - The directory name we'll deploy to (deploy_dir)
     - A normalized package name if applicable, or None (pkg_name)
     - A normalized tag name if applicable, or None (rel_name)
+
+    Normalized names will have correct casing and be well-formed.
+
+    A name is well-formed if it starts with "ioc", is hyphen-delimited,
+    and has at least three sections.
+
+    For example, "ioc-common-gigECam" is a well-formed name for the purposes
+    of an IOC deployment. "ads-ioc" and "pcdsdevices" are not.
+
+    However, "ads-ioc" will resolve to "ioc-common-ads-ioc".
+    Only common IOCs will be automatically discovered using this method.
+
+    Normalized tag names will match existing repo tags if you forget or
+    pick the wrong tag prefix.
+
+    This can go in one of three ways:
+    1. start from a name and tag, get a path (--name, --release)
+    2. start from a path, get a name and tag (--path-override)
+    3. validate a name and tag, then use the path (all three args)
     """
-    if args.name and args.github_org:
-        pkg_name = finalize_name(
-            name=args.name,
+    deploy_dir = ""
+
+    if args.path_override:
+        deploy_dir = args.path_override
+        if (args.name and args.release):
+            name = args.name
+            release = args.release
+        else:
+            # Decompose /some/long/path/area/suffix/release
+            # or, maybe /some/long/path/area/suffix/release/
+            dir, tail = os.path.split(deploy_dir)
+            if tail:
+                release = tail
+            else:
+                # One extra split if it ends with a /
+                dir, release = os.path.split(dir)
+            # Now it's /some/long/path/area/suffix
+            dir, suffix = os.path.split(dir)
+            _, area = os.path.split(dir)
+            name = args.name or "-".join(("ioc", area, suffix))
+            release = args.release or release
+    else:
+        name = args.name
+        release = args.release
+
+    # Force name into ioc-area-suffix structure before finalize_tag
+    if name and (len(name) < 5 or name[:4] != "ioc-"):
+        new_name = f"ioc-common-{name}"
+        logger.warning(f"{name} is not an ioc name, trying {new_name}")
+        name = new_name
+
+    if name and release and args.github_org:
+        # Implicitly check if our repo exists here
+        # Let exceptions bubble up to _main
+        release = finalize_tag(
+            name=name,
+            github_org=args.github_org,
+            release=release,
+            verbose=args.verbose,
+        )
+
+    if name:
+        name = finalize_name(
+            name=name,
             github_org=args.github_org,
             ioc_dir=args.ioc_dir,
             verbose=args.verbose,
         )
-    else:
-        pkg_name = None
-    if pkg_name and args.github_org and args.release:
-        rel_name = finalize_tag(
-            name=pkg_name,
-            github_org=args.github_org,
-            release=args.release,
-            verbose=args.verbose,
-        )
-    else:
-        rel_name = None
-    if args.path_override:
-        deploy_dir = args.path_override
-    else:
+
+    if not args.path_override:
         deploy_dir = get_target_dir(
-            name=pkg_name, ioc_dir=args.ioc_dir, release=rel_name
+            name=name, ioc_dir=args.ioc_dir, release=release
         )
 
-    return DeployInfo(deploy_dir=deploy_dir, pkg_name=pkg_name, rel_name=rel_name)
+    return DeployInfo(deploy_dir=deploy_dir, pkg_name=name, rel_name=release)
 
 
 def get_perms_target(args: CliArgs) -> str:
@@ -395,48 +444,8 @@ def find_casing_in_dir(dir: str, name: str) -> str:
 
 def finalize_name(name: str, github_org: str, ioc_dir: str, verbose: bool) -> str:
     """
-    Check if name is present in org, is well-formed, and has correct casing.
-
-    If the name is present, return it, fixing the casing if needed.
-    If the name is not present and the correct name can be guessed, guess.
-    If the name is not present and cannot be guessed, raise.
-
-    A name is well-formed if it starts with "ioc", is hyphen-delimited,
-    and has at least three sections.
-
-    For example, "ioc-common-gigECam" is a well-formed name for the purposes
-    of an IOC deployment. "ads-ioc" and "pcdsdevices" are not.
-
-    However, "ads-ioc" will resolve to "ioc-common-ads-ioc".
-    Only common IOCs will be automatically discovered using this method.
-
-    Note that GitHub URLs are case-insensitive, so there's no native way to tell
-    from a clone step if you've maintained the correct casing information.
+    Fix name's casing if necessary, checking existing deployments and github as needed.
     """
-    split_name = name.split("-")
-    if len(split_name) < 3 or split_name[0] != "ioc":
-        new_name = f"ioc-common-{name}"
-        logger.warning(f"{name} is not an ioc name, trying {new_name}")
-        name = new_name
-    logger.debug(f"Checking for {name} in org {github_org}")
-    with TemporaryDirectory() as tmpdir:
-        try:
-            _clone(
-                name=name, github_org=github_org, working_dir=tmpdir, verbose=verbose
-            )
-        except subprocess.CalledProcessError as exc:
-            raise ValueError(
-                f"Error cloning repo, make sure {name} exists in {github_org} and check your permissions!"
-            ) from exc
-        readme_text = ""
-        # Search for readme in any casing with any file extension
-        pattern = "".join(f"[{char.lower()}{char.upper()}]" for char in "readme") + "*"
-        for readme_path in (Path(tmpdir) / name).glob(pattern):
-            with open(readme_path, "r") as fd:
-                readme_text += fd.read()
-            logger.debug("Successfully read repo readme for backup casing check")
-        if not readme_text:
-            logger.debug("Unable to read repo readme for backup casing check")
     logger.debug("Checking deploy area for casing")
     # GitHub URLs are case-insensitive, so we need further checks
     # REST API is most reliable but requires different auth
@@ -455,7 +464,7 @@ def finalize_name(name: str, github_org: str, ioc_dir: str, verbose: bool) -> st
         area = find_casing_in_dir(dir=ioc_dir, name=area)
     except RuntimeError:
         logger.info("This is a new area, checking readme for casing")
-        name = casing_from_readme(name=name, readme_text=readme_text)
+        name = casing_from_readme_clone(name=name, github_org=github_org, verbose=verbose)
         logger.info(f"Using casing: {name}")
         return name
     logger.info(f"Using {area} as the area")
@@ -464,8 +473,8 @@ def finalize_name(name: str, github_org: str, ioc_dir: str, verbose: bool) -> st
         suffix = find_casing_in_dir(dir=str(Path(ioc_dir) / area), name=suffix)
     except RuntimeError:
         logger.info("This is a new ioc, checking readme for casing")
+        casing = casing_from_readme_clone(name=name, github_org=github_org, verbose=verbose)
         # Use suffix from readme but keep area from directory search
-        casing = casing_from_readme(name=name, readme_text=readme_text)
         suffix = split_ioc_name(casing)[2]
     logger.info(f"Using {suffix} as the name")
 
@@ -481,7 +490,29 @@ def split_ioc_name(name: str) -> Tuple[str, str, str]:
     return tuple(name.split("-", maxsplit=2))
 
 
-def casing_from_readme(name: str, readme_text: str) -> str:
+def casing_from_readme_clone(name: str, github_org: str, verbose: bool) -> str:
+    with TemporaryDirectory() as tmpdir:
+        try:
+            _clone(
+                name=name, github_org=github_org, working_dir=tmpdir, verbose=verbose
+            )
+        except subprocess.CalledProcessError as exc:
+            raise ValueError(
+                f"Error cloning repo, make sure {name} exists in {github_org} and check your permissions!"
+            ) from exc
+        readme_text = ""
+        # Search for readme in any casing with any file extension
+        pattern = "".join(f"[{char.lower()}{char.upper()}]" for char in "readme") + "*"
+        for readme_path in (Path(tmpdir) / name).glob(pattern):
+            with open(readme_path, "r") as fd:
+                readme_text += fd.read()
+            logger.debug("Successfully read repo readme for casing check")
+        if not readme_text:
+            logger.debug("Unable to read repo readme for casing check")
+    return casing_from_readme_text(name=name, readme_text=readme_text)
+
+
+def casing_from_readme_text(name: str, readme_text: str) -> str:
     """
     Returns the correct casing of name in readme_text if available.
 
@@ -530,11 +561,14 @@ def finalize_tag(name: str, github_org: str, release: str, verbose: bool) -> str
     - 1.0.0
     """
     logger.debug(f"Getting all tags in {github_org}/{name}")
-    tags = get_repo_tags(
-        name=name,
-        github_org=github_org,
-        verbose=verbose,
-    )
+    try:
+        tags = get_repo_tags(
+            name=name,
+            github_org=github_org,
+            verbose=verbose,
+        )
+    except subprocess.CalledProcessError as exc:
+        raise ValueError(f"Unable to access {github_org}/{name}") from exc
     for rel in release_permutations(release=release):
         logger.debug(f"Trying variant {rel}")
         if rel in tags:
