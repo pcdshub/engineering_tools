@@ -839,7 +839,7 @@ def _main() -> int:
         if args.version:
             print(get_version())
             return ReturnCode.SUCCESS
-        logger.info("ioc-deploy: checking inputs")
+        logger.info("Checking inputs")
         if not (args.name and args.release) and not args.path_override:
             logger.error(
                 "Must provide both --name and --release, or --path-override. Check ioc-deploy --help for usage."
