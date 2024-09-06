@@ -2,14 +2,14 @@
 """
 ioc-deploy is a script for building and deploying ioc tags from github.
 
-It has two paths: the normal deploy path, and a second path that adjusts
-write permissions on an existing deployed release.
+It will take one of two different actions: the normal deploy action,
+or a write permissions change on an existing deployed release.
 
-The normal deploy path will create a shallow clone of your IOC in the
+The normal deploy action will create a shallow clone of your IOC in the
 standard release area at the correct path and "make" it.
 If the tag directory already exists, the script will exit.
 
-In the normal path, after making the IOC, we'll write-protect all files
+In the deploy action, after making the IOC, we'll write-protect all files
 and all directories.
 We'll also write-protect the top-level directory to help indicate completion.
 
@@ -28,18 +28,18 @@ from https://github.com/pcdshub/ioc-foo-bar
 to /cds/group/pcds/epics/ioc/foo/bar/R1.0.0
 then cd and make and chmod as appropriate.
 
-The second path will not do any git or make actions, it will only find the
+The second action will not do any git or make actions, it will only find the
 release directory and change the file and directory permissions.
-This can be done with similar commands as above, adding one new argument,
-or it can be done by passing the path you'd like to modify
+This can be done with similar commands as above, adding the subparser command,
+and it can be done by passing the specific path you'd like to modify
 if this is more convenient for you.
 
 Example commands:
 
-"ioc-deploy -n ioc-foo-bar -r R1.0.0 --allow-write true"
-"ioc-deploy -n ioc-foo-bar -r R1.0.0 --allow-write false"
-"ioc-deploy -p /cds/group/pcds/epics/ioc/foo/bar/R1.0.0 --allow-write true"
-"ioc-deploy -p /cds/group/pcds/epics/ioc/foo/bar/R1.0.0 --allow-write false"
+"ioc-deploy update-perms rw -n ioc-foo-bar -r R1.0.0"
+"ioc-deploy update-perms ro -n ioc-foo-bar -r R1.0.0"
+"ioc-deploy update-perms rw -p /cds/group/pcds/epics/ioc/foo/bar/R1.0.0"
+"ioc-deploy update-perms ro -p /cds/group/pcds/epics/ioc/foo/bar/R1.0.0"
 """
 
 import argparse
