@@ -221,7 +221,9 @@ def main_deploy(args: CliArgs) -> int:
     """
     logger.info("Checking github connectivity")
     if not get_github_available(verbose=args.verbose):
-        logger.error("Github is not reachable, please check to make sure you're on a psbuild host.")
+        logger.error(
+            "Github is not reachable, please check to make sure you're on a psbuild host."
+        )
         return ReturnCode.EXCEPTION
 
     logger.info("Checking repos and ioc deploy directories")
@@ -353,7 +355,7 @@ def get_deploy_info(args: CliArgs) -> DeployInfo:
 
     if args.path_override:
         deploy_dir = args.path_override
-        if (args.name and args.release):
+        if args.name and args.release:
             name = args.name
             release = args.release
         else:
@@ -399,9 +401,7 @@ def get_deploy_info(args: CliArgs) -> DeployInfo:
         )
 
     if not args.path_override:
-        deploy_dir = get_target_dir(
-            name=name, ioc_dir=args.ioc_dir, release=release
-        )
+        deploy_dir = get_target_dir(name=name, ioc_dir=args.ioc_dir, release=release)
 
     return DeployInfo(deploy_dir=deploy_dir, pkg_name=name, rel_name=release)
 
@@ -464,7 +464,9 @@ def finalize_name(name: str, github_org: str, ioc_dir: str, verbose: bool) -> st
         area = find_casing_in_dir(dir=ioc_dir, name=area)
     except RuntimeError:
         logger.info("This is a new area, checking readme for casing")
-        name = casing_from_readme_clone(name=name, github_org=github_org, verbose=verbose)
+        name = casing_from_readme_clone(
+            name=name, github_org=github_org, verbose=verbose
+        )
         logger.info(f"Using casing: {name}")
         return name
     logger.info(f"Using {area} as the area")
@@ -473,7 +475,9 @@ def finalize_name(name: str, github_org: str, ioc_dir: str, verbose: bool) -> st
         suffix = find_casing_in_dir(dir=str(Path(ioc_dir) / area), name=suffix)
     except RuntimeError:
         logger.info("This is a new ioc, checking readme for casing")
-        casing = casing_from_readme_clone(name=name, github_org=github_org, verbose=verbose)
+        casing = casing_from_readme_clone(
+            name=name, github_org=github_org, verbose=verbose
+        )
         # Use suffix from readme but keep area from directory search
         suffix = split_ioc_name(casing)[2]
     logger.info(f"Using {suffix} as the name")
@@ -568,7 +572,9 @@ def finalize_tag(name: str, github_org: str, release: str, verbose: bool) -> str
             verbose=verbose,
         )
     except subprocess.CalledProcessError as exc:
-        raise ValueError(f"Unable to access {github_org}/{name}, please make sure you have the correct access rights and the repository exists.") from exc
+        raise ValueError(
+            f"Unable to access {github_org}/{name}, please make sure you have the correct access rights and the repository exists."
+        ) from exc
     for rel in release_permutations(release=release):
         logger.debug(f"Trying variant {rel}")
         if rel in tags:
@@ -838,7 +844,13 @@ def _ls_remote(
 
     Returns the stdout lines as a list of strings.
     """
-    cmd = ["git", "ls-remote", "--tags", "--refs", f"git@github.com:{github_org}/{name}"]
+    cmd = [
+        "git",
+        "ls-remote",
+        "--tags",
+        "--refs",
+        f"git@github.com:{github_org}/{name}",
+    ]
     kwds = {
         "stdout": subprocess.PIPE,
         "bufsize": 1,
