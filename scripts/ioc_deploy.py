@@ -529,25 +529,17 @@ def finalize_tag(name: str, github_org: str, release: str, verbose: bool) -> str
     - v1.0.0
     - 1.0.0
     """
-    try_release = release_permutations(release=release)
-
-    with TemporaryDirectory() as tmpdir:
-        for rel in try_release:
-            logger.debug(f"Checking for release {rel} in {github_org}/{name}")
-            try:
-                _clone(
-                    name=name,
-                    github_org=github_org,
-                    release=rel,
-                    working_dir=tmpdir,
-                    target_dir=rel,
-                    verbose=verbose,
-                )
-            except subprocess.CalledProcessError:
-                logger.warning(f"Did not find release {rel} in {github_org}/{name}")
-            else:
-                logger.info(f"Release {rel} exists in {github_org}/{name}")
-                return rel
+    logger.debug(f"Getting all tags in {github_org}/{name}")
+    tags = get_repo_tags(
+        name=name,
+        github_org=github_org,
+        verbose=verbose,
+    )
+    for rel in release_permutations(release=release):
+        logger.debug(f"Trying variant {rel}")
+        if rel in tags:
+            logger.info(f"Release {rel} exists in {github_org}/{name}")
+            return rel
     raise ValueError(f"Unable to find {release} in {github_org}/{name}")
 
 
@@ -773,6 +765,57 @@ def _ping(
     if last_exc is None:
         raise RuntimeError("Impossible code path?")
     raise last_exc
+
+
+def get_repo_tags(
+    name: str,
+    github_org: str,
+    verbose: bool = False,
+) -> List[str]:
+    """
+    Get a list of tags that exist in the github repo.
+
+    Raises a subprocess.CalledProcessError if the repo doesn't exist
+    or we have insufficient permissions.
+    """
+    lines = _ls_remote(name=name, github_org=github_org, verbose=verbose)
+    tags = []
+    for line in lines:
+        if "refs/tags/" not in line:
+            continue
+        tags.append(line.split("refs/tags/")[-1])
+    return tags
+
+
+def _ls_remote(
+    name: str,
+    github_org: str,
+    verbose: bool = False,
+) -> List[str]:
+    """
+    Run git ls-remote --tags --refs or raise a subprocess.CalledProcessError
+
+    The code here is more complex than _clone so we can print stdout and stderr
+    interleaved in verbose mode while also capturing stdout separately.
+    This isn't possible with subprocess.run.
+
+    Returns the stdout lines as a list of strings.
+    """
+    cmd = ["git", "ls-remote", "--tags", "--refs", f"git@github.com:{github_org}/{name}"]
+    kwds = {
+        "stdout": subprocess.PIPE,
+        "bufsize": 1,
+        "universal_newlines": True,
+    }
+    if not verbose:
+        kwds["stderr"] = subprocess.PIPE
+    output = []
+    with subprocess.Popen(cmd, **kwds) as proc:
+        for line in proc.stdout:
+            if verbose:
+                print(line, end="")
+            output.append(line.strip())
+    return output
 
 
 def print_help_text_for_readme():
