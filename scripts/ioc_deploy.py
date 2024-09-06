@@ -52,11 +52,12 @@ import subprocess
 import sys
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from typing import List, Tuple
+from typing import List, Optional, Tuple
 
 EPICS_SITE_TOP_DEFAULT = "/cds/group/pcds/epics"
 GITHUB_ORG_DEFAULT = "pcdshub"
 CHMOD_SYMLINKS = os.chmod in os.supports_follow_symlinks
+PERMS_CMD = "update-perms"
 
 logger = logging.getLogger("ioc-deploy")
 
@@ -74,12 +75,12 @@ if sys.version_info >= (3, 7, 0):
         release: str = ""
         ioc_dir: str = ""
         github_org: str = ""
-        allow_write: bool | None = None
         path_override: str = ""
         auto_confirm: bool = False
         dry_run: bool = False
         verbose: bool = False
         version: bool = False
+        permissions: str = ""
 
     @dataclasses.dataclass(frozen=True)
     class DeployInfo:
@@ -88,8 +89,8 @@ if sys.version_info >= (3, 7, 0):
         """
 
         deploy_dir: str
-        pkg_name: str | None
-        rel_name: str | None
+        pkg_name: Optional[str]
+        rel_name: Optional[str]
 
 else:
     from types import SimpleNamespace
@@ -103,76 +104,86 @@ def get_parser() -> argparse.ArgumentParser:
         Path(os.environ.get("EPICS_SITE_TOP", EPICS_SITE_TOP_DEFAULT)) / "ioc"
     )
     current_default_org = os.environ.get("GITHUB_ORG", GITHUB_ORG_DEFAULT)
-    parser = argparse.ArgumentParser(
+    main_parser = argparse.ArgumentParser(
         prog="ioc-deploy",
         description=__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
-    parser.add_argument(
+    # main_parser unique arguments that should go first
+    main_parser.add_argument(
         "--version", action="store_true", help="Show version number and exit."
     )
-    parser.add_argument(
-        "--name",
-        "-n",
-        action="store",
-        default="",
-        help="The name of the repository to deploy. This is a required argument. If it does not exist on github, we'll also try prepending with 'ioc-common-'.",
+    subparsers = main_parser.add_subparsers(help="Subcommands (will not deploy):")
+    # perms_parser unique arguments that should go first
+    perms_parser = subparsers.add_parser(
+        PERMS_CMD,
+        help=f"Use 'ioc-deploy {PERMS_CMD}' to update the write permissions of a deployment. See 'ioc-deploy {PERMS_CMD} --help' for more information.",
+        description="Update the write permissions of a deployment. This will make all the files read-only (ro), or owner and group writable (rw).",
     )
-    parser.add_argument(
-        "--release",
-        "-r",
-        action="store",
-        default="",
-        help="The version of the IOC to deploy. This is a required argument.",
+    perms_parser.add_argument(
+        "permissions",
+        choices=("ro", "rw"),
+        type=force_lower,
+        help="Select whether to make the deployment permissions read-only (ro) or read-write (rw).",
     )
-    parser.add_argument(
-        "--ioc-dir",
-        "-i",
-        action="store",
-        default=current_default_target,
-        help=f"The directory to deploy IOCs in. This defaults to $EPICS_SITE_TOP/ioc, or {EPICS_SITE_TOP_DEFAULT}/ioc if the environment variable is not set. With your current environment variables, this defaults to {current_default_target}.",
-    )
-    parser.add_argument(
+    # shared arguments
+    for parser in main_parser, perms_parser:
+        parser.add_argument(
+            "--name",
+            "-n",
+            action="store",
+            default="",
+            help="The name of the repository to deploy. This is a required argument. If it does not exist on github, we'll also try prepending with 'ioc-common-'.",
+        )
+        parser.add_argument(
+            "--release",
+            "-r",
+            action="store",
+            default="",
+            help="The version of the IOC to deploy. This is a required argument.",
+        )
+        parser.add_argument(
+            "--ioc-dir",
+            "-i",
+            action="store",
+            default=current_default_target,
+            help=f"The directory to deploy IOCs in. This defaults to $EPICS_SITE_TOP/ioc, or {EPICS_SITE_TOP_DEFAULT}/ioc if the environment variable is not set. With your current environment variables, this defaults to {current_default_target}.",
+        )
+        parser.add_argument(
+            "--path-override",
+            "-p",
+            action="store",
+            help="If provided, ignore all normal path-selection rules in favor of the specific provided path. This will let you deploy IOCs or apply protection rules to arbitrary specific paths.",
+        )
+        parser.add_argument(
+            "--auto-confirm",
+            "--confirm",
+            "--yes",
+            "-y",
+            action="store_true",
+            help="Skip the confirmation promps, automatically saying yes to each one.",
+        )
+        parser.add_argument(
+            "--dry-run",
+            action="store_true",
+            help="Do not deploy anything, just print what would have been done.",
+        )
+        parser.add_argument(
+            "--verbose",
+            "-v",
+            "--debug",
+            action="store_true",
+            help="Display additional debug information.",
+        )
+    # main_parser unique arguments that should go last
+    main_parser.add_argument(
         "--github_org",
         "--org",
         action="store",
         default=current_default_org,
         help=f"The github org to deploy IOCs from. This defaults to $GITHUB_ORG, or {GITHUB_ORG_DEFAULT} if the environment variable is not set. With your current environment variables, this defaults to {current_default_org}.",
     )
-    parser.add_argument(
-        "--allow-write",
-        "--allow-writes",
-        action="store",
-        type=is_yes,
-        help="If provided, instead of doing a release, we will chmod an existing release to allow or prevent writes. Choose from 'true', 'yes', 'false', 'no', or any shortening of these.",
-    )
-    parser.add_argument(
-        "--path-override",
-        "-p",
-        action="store",
-        help="If provided, ignore all normal path-selection rules in favor of the specific provided path. This will let you deploy IOCs or apply protection rules to arbitrary specific paths.",
-    )
-    parser.add_argument(
-        "--auto-confirm",
-        "--confirm",
-        "--yes",
-        "-y",
-        action="store_true",
-        help="Skip the confirmation promps, automatically saying yes to each one.",
-    )
-    parser.add_argument(
-        "--dry-run",
-        action="store_true",
-        help="Do not deploy anything, just print what would have been done.",
-    )
-    parser.add_argument(
-        "--verbose",
-        "-v",
-        "--debug",
-        action="store_true",
-        help="Display additional debug information.",
-    )
-    return parser
+    return main_parser
 
 
 def is_yes(option: str, error_on_empty: bool = True) -> bool:
@@ -186,6 +197,10 @@ def is_yes(option: str, error_on_empty: bool = True) -> bool:
     if not option and not error_on_empty:
         return False
     raise ValueError(f"{option} is not a valid argument")
+
+
+def force_lower(text: str) -> str:
+    return str(text).lower()
 
 
 class ReturnCode(enum.IntEnum):
@@ -257,13 +272,16 @@ def main_perms(args: CliArgs) -> int:
 
     Will either return an int code or raise.
     """
-    if args.allow_write is None:
-        logger.error("Entered main_perms without args.apply_write selected")
+    if args.permissions not in ("ro", "rw"):
+        logger.error(
+            f"Entered main_perms with invalid permissions selected {args.permissions}"
+        )
         return ReturnCode.EXCEPTION
+    allow_write = args.permissions == "rw"
 
     deploy_dir = get_perms_target(args)
 
-    if args.allow_write:
+    if allow_write:
         logger.info(f"Allowing writes to {deploy_dir}")
     else:
         logger.info(f"Preventing writes to {deploy_dir}")
@@ -273,7 +291,7 @@ def main_perms(args: CliArgs) -> int:
             return ReturnCode.NO_CONFIRM
     try:
         rval = set_permissions(
-            deploy_dir=deploy_dir, allow_write=args.allow_write, dry_run=args.dry_run
+            deploy_dir=deploy_dir, allow_write=allow_write, dry_run=args.dry_run
         )
     except OSError as exc:
         logger.error(f"OSError during chmod: {exc}")
@@ -281,12 +299,12 @@ def main_perms(args: CliArgs) -> int:
         logger.error(
             f"Please contact file owner {error_path.owner()} or someone with sudo permissions if you'd like to change the permissions here."
         )
-        if args.allow_write:
-            mode = "ug+w"
+        if allow_write:
+            suggest = "ug+w"
         else:
-            mode = "a-w"
+            suggest = "a-w"
         logger.error(
-            f"For example, you might try 'sudo chmod -R {mode} {deploy_dir}' from a server you have sudo access on."
+            f"For example, you might try 'sudo chmod -R {suggest} {deploy_dir}' from a server you have sudo access on."
         )
         return ReturnCode.EXCEPTION
 
@@ -700,10 +718,40 @@ def _clone(
     return subprocess.run(cmd, **kwds)
 
 
+def rearrange_sys_argv_for_subcommands():
+    """
+    Small trick to help argparse deal with my optional subcommand.
+
+    This will make argv like this:
+    ioc-deploy -p some_path perms ro
+    be interpretted the same as:
+    ioc-deploy perms ro -p some_path
+
+    Otherwise, the first example here is interpretted as if -p was never passed,
+    which could be confusing.
+    """
+    try:
+        perms_index = sys.argv.index(PERMS_CMD)
+    except ValueError:
+        return
+    if perms_index == 1:
+        return
+    subcmd = sys.argv[perms_index]
+    try:
+        mode = sys.argv[perms_index + 1]
+    except IndexError:
+        return
+    sys.argv.remove(subcmd)
+    sys.argv.remove(mode)
+    sys.argv.insert(1, subcmd)
+    sys.argv.insert(2, mode)
+
+
 def _main() -> int:
     """
     Thin wrapper of main() for log setup, args handling, and high-level error handling.
     """
+    rearrange_sys_argv_for_subcommands()
     args = CliArgs(**vars(get_parser().parse_args()))
     if args.verbose:
         level = logging.DEBUG
@@ -723,10 +771,15 @@ def _main() -> int:
                 "Must provide both --name and --release, or --path-override. Check ioc-deploy --help for usage."
             )
             return ReturnCode.EXCEPTION
-        if args.allow_write is None:
-            rval = main_deploy(args)
-        else:
+        try:
+            do_perms_cmd = args.permissions
+        except AttributeError:
+            do_perms_cmd = False
+        if do_perms_cmd:
             rval = main_perms(args)
+        else:
+            rval = main_deploy(args)
+
     except Exception as exc:
         logger.error(exc)
         logger.debug("Traceback", exc_info=True)
