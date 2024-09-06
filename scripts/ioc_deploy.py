@@ -219,6 +219,11 @@ def main_deploy(args: CliArgs) -> int:
 
     Will either return an int return code or raise.
     """
+    logger.info("Checking github connectivity")
+    if not get_github_available(verbose=args.verbose):
+        logger.error("Github is not reachable, please check to make sure you're on a psbuild host.")
+        return ReturnCode.EXCEPTION
+
     deploy_info = get_deploy_info(args)
     deploy_dir = deploy_info.deploy_dir
     pkg_name = deploy_info.pkg_name
@@ -718,6 +723,56 @@ def _clone(
         kwds["stderr"] = subprocess.PIPE
     logger.debug(f"Calling '{' '.join(cmd)}' with kwargs {kwds}")
     return subprocess.run(cmd, **kwds)
+
+
+def get_github_available(verbose: bool = False) -> bool:
+    """
+    Return whether or not github is available.
+    """
+    try:
+        _ping(
+            hostname="github.com",
+            count=1,
+            wait=1.0,
+            tries=3,
+            verbose=verbose,
+        )
+    except subprocess.CalledProcessError:
+        return False
+    return True
+
+
+def _ping(
+    hostname: str,
+    count: int,
+    wait: float,
+    tries: int = 1,
+    verbose: bool = False,
+) -> subprocess.CompletedProcess:
+    """
+    Ping a host some tries number of times, return the last completed process or raise.
+    """
+    cmd = ["ping", "-c", str(count), "-W", str(wait), hostname]
+    if tries < 1:
+        tries = 1
+    kwds = {
+        "check": True,
+        "universal_newlines": True,
+    }
+    if not verbose:
+        kwds["stdout"] = subprocess.PIPE
+        kwds["stderr"] = subprocess.PIPE
+    last_exc = None
+    for _ in range(tries):
+        try:
+            proc = subprocess.run(cmd, **kwds)
+        except subprocess.CalledProcessError as exc:
+            last_exc = exc
+        else:
+            return proc
+    if last_exc is None:
+        raise RuntimeError("Impossible code path?")
+    raise last_exc
 
 
 def print_help_text_for_readme():
