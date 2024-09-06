@@ -342,20 +342,21 @@ usage: grep_more_ioc [-h] [-d] patt hutch {print,search} <br/>
     <td>ioc-deploy</td>
     <td><pre>
 usage: ioc-deploy [-h] [--version] [--name NAME] [--release RELEASE]
-&nbsp;                 [--ioc-dir IOC_DIR] [--github_org GITHUB_ORG]
-&nbsp;                 [--allow-write ALLOW_WRITE] [--path-override PATH_OVERRIDE]
+&nbsp;                 [--ioc-dir IOC_DIR] [--path-override PATH_OVERRIDE]
 &nbsp;                 [--auto-confirm] [--dry-run] [--verbose]
+&nbsp;                 [--github_org GITHUB_ORG]
+&nbsp;                 {update-perms} ...
 &nbsp;
 ioc-deploy is a script for building and deploying ioc tags from github.
 &nbsp;
-It has two paths: the normal deploy path, and a second path that adjusts
-write permissions on an existing deployed release.
+It will take one of two different actions: the normal deploy action,
+or a write permissions change on an existing deployed release.
 &nbsp;
-The normal deploy path will create a shallow clone of your IOC in the
+The normal deploy action will create a shallow clone of your IOC in the
 standard release area at the correct path and "make" it.
 If the tag directory already exists, the script will exit.
 &nbsp;
-In the normal path, after making the IOC, we'll write-protect all files
+In the deploy action, after making the IOC, we'll write-protect all files
 and all directories.
 We'll also write-protect the top-level directory to help indicate completion.
 &nbsp;
@@ -374,18 +375,24 @@ from https://github.com/pcdshub/ioc-foo-bar
 to /cds/group/pcds/epics/ioc/foo/bar/R1.0.0
 then cd and make and chmod as appropriate.
 &nbsp;
-The second path will not do any git or make actions, it will only find the
+The second action will not do any git or make actions, it will only find the
 release directory and change the file and directory permissions.
-This can be done with similar commands as above, adding one new argument,
-or it can be done by passing the path you'd like to modify
+This can be done with similar commands as above, adding the subparser command,
+and it can be done by passing the specific path you'd like to modify
 if this is more convenient for you.
 &nbsp;
 Example commands:
 &nbsp;
-"ioc-deploy -n ioc-foo-bar -r R1.0.0 --allow-write true"
-"ioc-deploy -n ioc-foo-bar -r R1.0.0 --allow-write false"
-"ioc-deploy -p /cds/group/pcds/epics/ioc/foo/bar/R1.0.0 --allow-write true"
-"ioc-deploy -p /cds/group/pcds/epics/ioc/foo/bar/R1.0.0 --allow-write false"
+"ioc-deploy update-perms rw -n ioc-foo-bar -r R1.0.0"
+"ioc-deploy update-perms ro -n ioc-foo-bar -r R1.0.0"
+"ioc-deploy update-perms rw -p /cds/group/pcds/epics/ioc/foo/bar/R1.0.0"
+"ioc-deploy update-perms ro -p /cds/group/pcds/epics/ioc/foo/bar/R1.0.0"
+&nbsp;
+positional arguments:
+&nbsp; {update-perms}        Subcommands (will not deploy):
+&nbsp;   update-perms        Use 'ioc-deploy update-perms' to update the write
+&nbsp;                       permissions of a deployment. See 'ioc-deploy update-
+&nbsp;                       perms --help' for more information.
 &nbsp;
 optional arguments:
 &nbsp; -h, --help            show this help message and exit
@@ -402,16 +409,51 @@ optional arguments:
 &nbsp;                       the environment variable is not set. With your current
 &nbsp;                       environment variables, this defaults to
 &nbsp;                       /reg/g/pcds/epics/ioc.
+&nbsp; --path-override PATH_OVERRIDE, -p PATH_OVERRIDE
+&nbsp;                       If provided, ignore all normal path-selection rules in
+&nbsp;                       favor of the specific provided path. This will let you
+&nbsp;                       deploy IOCs or apply protection rules to arbitrary
+&nbsp;                       specific paths.
+&nbsp; --auto-confirm, --confirm, --yes, -y
+&nbsp;                       Skip the confirmation promps, automatically saying yes
+&nbsp;                       to each one.
+&nbsp; --dry-run             Do not deploy anything, just print what would have
+&nbsp;                       been done.
+&nbsp; --verbose, -v, --debug
+&nbsp;                       Display additional debug information.
 &nbsp; --github_org GITHUB_ORG, --org GITHUB_ORG
 &nbsp;                       The github org to deploy IOCs from. This defaults to
 &nbsp;                       $GITHUB_ORG, or pcdshub if the environment variable is
 &nbsp;                       not set. With your current environment variables, this
 &nbsp;                       defaults to pcdshub.
-&nbsp; --allow-write ALLOW_WRITE, --allow-writes ALLOW_WRITE
-&nbsp;                       If provided, instead of doing a release, we will chmod
-&nbsp;                       an existing release to allow or prevent writes. Choose
-&nbsp;                       from 'true', 'yes', 'false', 'no', or any shortening
-&nbsp;                       of these.
+&nbsp;
+usage: ioc-deploy update-perms [-h] [--name NAME] [--release RELEASE]
+&nbsp;                              [--ioc-dir IOC_DIR]
+&nbsp;                              [--path-override PATH_OVERRIDE]
+&nbsp;                              [--auto-confirm] [--dry-run] [--verbose]
+&nbsp;                              {ro,rw}
+&nbsp;
+Update the write permissions of a deployment. This will make all the files
+read-only (ro), or owner and group writable (rw).
+&nbsp;
+positional arguments:
+&nbsp; {ro,rw}               Select whether to make the deployment permissions
+&nbsp;                       read-only (ro) or read-write (rw).
+&nbsp;
+optional arguments:
+&nbsp; -h, --help            show this help message and exit
+&nbsp; --name NAME, -n NAME  The name of the repository to deploy. This is a
+&nbsp;                       required argument. If it does not exist on github,
+&nbsp;                       we'll also try prepending with 'ioc-common-'.
+&nbsp; --release RELEASE, -r RELEASE
+&nbsp;                       The version of the IOC to deploy. This is a required
+&nbsp;                       argument.
+&nbsp; --ioc-dir IOC_DIR, -i IOC_DIR
+&nbsp;                       The directory to deploy IOCs in. This defaults to
+&nbsp;                       $EPICS_SITE_TOP/ioc, or /cds/group/pcds/epics/ioc if
+&nbsp;                       the environment variable is not set. With your current
+&nbsp;                       environment variables, this defaults to
+&nbsp;                       /reg/g/pcds/epics/ioc.
 &nbsp; --path-override PATH_OVERRIDE, -p PATH_OVERRIDE
 &nbsp;                       If provided, ignore all normal path-selection rules in
 &nbsp;                       favor of the specific provided path. This will let you

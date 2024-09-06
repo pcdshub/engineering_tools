@@ -99,7 +99,7 @@ else:
     DeployInfo = SimpleNamespace
 
 
-def get_parser() -> argparse.ArgumentParser:
+def get_parser(subparser: bool = False) -> argparse.ArgumentParser:
     current_default_target = str(
         Path(os.environ.get("EPICS_SITE_TOP", EPICS_SITE_TOP_DEFAULT)) / "ioc"
     )
@@ -183,6 +183,8 @@ def get_parser() -> argparse.ArgumentParser:
         default=current_default_org,
         help=f"The github org to deploy IOCs from. This defaults to $GITHUB_ORG, or {GITHUB_ORG_DEFAULT} if the environment variable is not set. With your current environment variables, this defaults to {current_default_org}.",
     )
+    if subparser:
+        return perms_parser
     return main_parser
 
 
@@ -716,6 +718,23 @@ def _clone(
         kwds["stderr"] = subprocess.PIPE
     logger.debug(f"Calling '{' '.join(cmd)}' with kwargs {kwds}")
     return subprocess.run(cmd, **kwds)
+
+
+def print_help_text_for_readme():
+    """
+    Prints a text blob for me to paste into the release notes table.
+    """
+    text = get_parser().format_help() + "\n" + get_parser(subparser=True).format_help()
+    lines = text.splitlines()
+    output = []
+    for line in lines:
+        if not line:
+            output.append("&nbsp;")
+        elif line[0] == " ":
+            output.append("&nbsp;" + line[1:])
+        else:
+            output.append(line)
+    print("\n".join(output))
 
 
 def rearrange_sys_argv_for_subcommands():
