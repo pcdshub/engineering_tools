@@ -554,7 +554,9 @@ def casing_from_text(uncased: str, casing_source: str) -> str:
     return casing_source[index : index + len(uncased)]
 
 
-def finalize_tag(name: str, github_org: str, release: str, auto_confirm: bool, verbose: bool) -> str:
+def finalize_tag(
+    name: str, github_org: str, release: str, auto_confirm: bool, verbose: bool
+) -> str:
     """
     Check if release is present in the org.
 
@@ -621,12 +623,16 @@ def finalize_tag(name: str, github_org: str, release: str, auto_confirm: bool, v
             else:
                 # No commit message = not an annotated commit = displays the linked commit's message
                 print()
-                print("The default message comes from the most recent commit, which is:")
+                print(
+                    "The default message comes from the most recent commit, which is:"
+                )
                 print()
                 print(last_commit.strip())
                 print()
             print("(Optional) if you'd like, you may type a different tag message.")
-            print("For multiline messages in git, the first line is a summary of the message.")
+            print(
+                "For multiline messages in git, the first line is a summary of the message."
+            )
             print("End with ctrl+D on blank line.")
             print()
             while True:
@@ -636,7 +642,12 @@ def finalize_tag(name: str, github_org: str, release: str, auto_confirm: bool, v
                     break
         # Raise errors from these without modifying the error message
         logger.info(f"Creating tag {suggested_tag}")
-        _tag(release=suggested_tag, message=tag_msg.strip(), working_dir=cloned_dir, verbose=verbose)
+        _tag(
+            release=suggested_tag,
+            message=tag_msg.strip(),
+            working_dir=cloned_dir,
+            verbose=verbose,
+        )
         logger.info("Pushing tag to GitHub")
         _push_tag(release=suggested_tag, working_dir=cloned_dir, verbose=verbose)
 
