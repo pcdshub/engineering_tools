@@ -28,6 +28,9 @@ from https://github.com/pcdshub/ioc-foo-bar
 to /cds/group/pcds/epics/ioc/foo/bar/R1.0.0
 then cd and make and chmod as appropriate.
 
+If the repository exists but the tag does not, the script will ask if you'd like
+to make a new tag and prompt you as appropriate.
+
 The second action will not do any git or make actions, it will only find the
 release directory and change the file and directory permissions.
 This can be done with similar commands as above, adding the subparser command,
