@@ -28,6 +28,9 @@ from https://github.com/pcdshub/ioc-foo-bar
 to /cds/group/pcds/epics/ioc/foo/bar/R1.0.0
 then cd and make and chmod as appropriate.
 
+If the repository exists but the tag does not, the script will ask if you'd like
+to make a new tag and prompt you as appropriate.
+
 The second action will not do any git or make actions, it will only find the
 release directory and change the file and directory permissions.
 This can be done with similar commands as above, adding the subparser command,
@@ -117,8 +120,14 @@ def get_parser(subparser: bool = False) -> argparse.ArgumentParser:
     # perms_parser unique arguments that should go first
     perms_parser = subparsers.add_parser(
         PERMS_CMD,
-        help=f"Use 'ioc-deploy {PERMS_CMD}' to update the write permissions of a deployment. See 'ioc-deploy {PERMS_CMD} --help' for more information.",
-        description="Update the write permissions of a deployment. This will make all the files read-only (ro), or owner and group writable (rw).",
+        help=(
+            f"Use 'ioc-deploy {PERMS_CMD}' to update the write permissions of a deployment. "
+            f"See 'ioc-deploy {PERMS_CMD} --help' for more information."
+        ),
+        description=(
+            "Update the write permissions of a deployment. "
+            "This will make all the files read-only (ro), or owner and group writable (rw)."
+        ),
     )
     perms_parser.add_argument(
         "permissions",
@@ -133,7 +142,10 @@ def get_parser(subparser: bool = False) -> argparse.ArgumentParser:
             "-n",
             action="store",
             default="",
-            help="The name of the repository to deploy. This is a required argument. If it does not exist on github, we'll also try prepending with 'ioc-common-'.",
+            help=(
+                "The name of the repository to deploy. This is a required argument. "
+                "If it does not exist on github, we'll also try prepending with 'ioc-common-'."
+            ),
         )
         parser.add_argument(
             "--release",
@@ -147,13 +159,20 @@ def get_parser(subparser: bool = False) -> argparse.ArgumentParser:
             "-i",
             action="store",
             default=current_default_target,
-            help=f"The directory to deploy IOCs in. This defaults to $EPICS_SITE_TOP/ioc, or {EPICS_SITE_TOP_DEFAULT}/ioc if the environment variable is not set. With your current environment variables, this defaults to {current_default_target}.",
+            help=(
+                f"The directory to deploy IOCs in. This defaults to $EPICS_SITE_TOP/ioc, "
+                f"or {EPICS_SITE_TOP_DEFAULT}/ioc if the environment variable is not set. "
+                f"With your current environment variables, this defaults to {current_default_target}."
+            ),
         )
         parser.add_argument(
             "--path-override",
             "-p",
             action="store",
-            help="If provided, ignore all normal path-selection rules in favor of the specific provided path. This will let you deploy IOCs or apply protection rules to arbitrary specific paths.",
+            help=(
+                "If provided, ignore all normal path-selection rules in favor of the specific provided path. "
+                "This will let you deploy IOCs or apply protection rules to arbitrary specific paths."
+            ),
         )
         parser.add_argument(
             "--auto-confirm",
@@ -181,7 +200,11 @@ def get_parser(subparser: bool = False) -> argparse.ArgumentParser:
         "--org",
         action="store",
         default=current_default_org,
-        help=f"The github org to deploy IOCs from. This defaults to $GITHUB_ORG, or {GITHUB_ORG_DEFAULT} if the environment variable is not set. With your current environment variables, this defaults to {current_default_org}.",
+        help=(
+            "The github org to deploy IOCs from. "
+            f"This defaults to $GITHUB_ORG, or {GITHUB_ORG_DEFAULT} if the environment variable is not set. "
+            f"With your current environment variables, this defaults to {current_default_org}."
+        ),
     )
     if subparser:
         return perms_parser
@@ -234,7 +257,8 @@ def main_deploy(args: CliArgs) -> int:
 
     if not (deploy_dir and pkg_name and rel_name):
         logger.error(
-            f"Something went wrong at package/tag normalization: package {pkg_name} at version {rel_name} to dir {deploy_dir}"
+            "Something went wrong at package/tag normalization: "
+            f"package {pkg_name} at version {rel_name} to dir {deploy_dir}"
         )
         return ReturnCode.EXCEPTION
 
@@ -307,14 +331,16 @@ def main_perms(args: CliArgs) -> int:
         logger.error(f"OSError during chmod: {exc}")
         error_path = Path(exc.filename)
         logger.error(
-            f"Please contact file owner {error_path.owner()} or someone with sudo permissions if you'd like to change the permissions here."
+            f"Please contact file owner {error_path.owner()} "
+            "or someone with sudo permissions if you'd like to change the permissions here."
         )
         if allow_write:
             suggest = "ug+w"
         else:
             suggest = "a-w"
         logger.error(
-            f"For example, you might try 'sudo chmod -R {suggest} {deploy_dir}' from a server you have sudo access on."
+            f"For example, you might try 'sudo chmod -R {suggest} {deploy_dir}' "
+            "from a server you have sudo access on."
         )
         return ReturnCode.EXCEPTION
 
@@ -389,6 +415,7 @@ def get_deploy_info(args: CliArgs) -> DeployInfo:
             name=name,
             github_org=args.github_org,
             release=release,
+            auto_confirm=args.auto_confirm,
             verbose=args.verbose,
         )
 
@@ -553,7 +580,9 @@ def casing_from_text(uncased: str, casing_source: str) -> str:
     return casing_source[index : index + len(uncased)]
 
 
-def finalize_tag(name: str, github_org: str, release: str, verbose: bool) -> str:
+def finalize_tag(
+    name: str, github_org: str, release: str, auto_confirm: bool, verbose: bool
+) -> str:
     """
     Check if release is present in the org.
 
@@ -565,6 +594,8 @@ def finalize_tag(name: str, github_org: str, release: str, verbose: bool) -> str
     - 1.0.0
     """
     logger.debug(f"Getting all tags in {github_org}/{name}")
+    if not release:
+        raise ValueError("Recieved empty string as release name")
     try:
         tags = get_repo_tags(
             name=name,
@@ -573,14 +604,84 @@ def finalize_tag(name: str, github_org: str, release: str, verbose: bool) -> str
         )
     except subprocess.CalledProcessError as exc:
         raise ValueError(
-            f"Unable to access {github_org}/{name}, please make sure you have the correct access rights and the repository exists."
+            f"Unable to access {github_org}/{name}, "
+            "please make sure you have the correct access rights and the repository exists."
         ) from exc
     for rel in release_permutations(release=release):
         logger.debug(f"Trying variant {rel}")
         if rel in tags:
             logger.info(f"Release {rel} exists in {github_org}/{name}")
             return rel
-    raise ValueError(f"Unable to find {release} in {github_org}/{name}")
+
+    logger.warning(f"Unable to find {release} in {github_org}/{name}")
+    if release[0] == "R":
+        suggested_tag = release
+    elif release[0].isdigit():
+        suggested_tag = f"R{release}"
+    else:
+        suggested_tag = f"R{release[1:]}"
+
+    if not auto_confirm:
+        user_text = input(f"Create a tag named {suggested_tag}? yes/true or no/false\n")
+        if not is_yes(user_text, error_on_empty=True):
+            raise ValueError(f"Unable to find {release} in {github_org}/{name}")
+
+    logger.info(f"Creating a tag named {suggested_tag}")
+
+    with TemporaryDirectory() as tmpdir:
+        logger.info(f"Cloning {github_org}/{name}")
+        try:
+            _clone(
+                name=name, github_org=github_org, working_dir=tmpdir, verbose=verbose
+            )
+        except subprocess.CalledProcessError as exc:
+            raise ValueError(
+                f"Error cloning {github_org}/{name}, "
+                "please make sure you have the correct access rights and the repository exists."
+            ) from exc
+        cloned_dir = str(Path(tmpdir) / name)
+        tag_msg = ""
+        if not auto_confirm:
+            # Best effort to get context for the commit and show the default message
+            # I'm not too bothered if this fails somehow, I'd rather keep going
+            try:
+                last_commit = get_last_commit_info(working_dir=cloned_dir)
+            except subprocess.CalledProcessError:
+                ...
+            else:
+                # No commit message = not an annotated commit = displays the linked commit's message
+                print()
+                print(
+                    "The default message comes from the most recent commit, which is:"
+                )
+                print()
+                print(last_commit.strip())
+                print()
+            print("(Optional) if you'd like, you may type a different tag message.")
+            print(
+                "For multiline messages in git, the first line is a summary of the message."
+            )
+            print("End with ctrl+D on blank line.")
+            print()
+            while True:
+                try:
+                    tag_msg += input() + "\n"
+                except EOFError:
+                    break
+        # Raise errors from these without modifying the error message
+        logger.info(f"Creating tag {suggested_tag}")
+        _tag(
+            release=suggested_tag,
+            message=tag_msg.strip(),
+            working_dir=cloned_dir,
+            verbose=verbose,
+        )
+        logger.info("Pushing tag to GitHub")
+        _push_tag(release=suggested_tag, working_dir=cloned_dir, verbose=verbose)
+
+    logger.info(f"{suggested_tag} created and pushed")
+    logger.info("Remember to create a GitHub release later!")
+    return suggested_tag
 
 
 def release_permutations(release: str) -> List[str]:
@@ -757,6 +858,74 @@ def _clone(
     return subprocess.run(cmd, **kwds)
 
 
+def _tag(
+    release: str,
+    message: str = "",
+    working_dir: str = "",
+    verbose: bool = False,
+) -> subprocess.CompletedProcess:
+    """
+    Create a tag on a github repo or raise a subprocess.CalledProcessError
+
+    Allow a release message but do not require it.
+    Avoid opening the editor dialog because this breaks the script.
+    """
+    cmd = ["git", "tag", release]
+    if message:
+        cmd.extend(["-a", "-m", message])
+    kwds = {"check": True}
+    if working_dir:
+        kwds["cwd"] = working_dir
+    if not verbose:
+        kwds["stdout"] = subprocess.PIPE
+        kwds["stderr"] = subprocess.PIPE
+    logger.debug(f"Calling '{' '.join(cmd)}' with kwargs {kwds}")
+    return subprocess.run(cmd, **kwds)
+
+
+def _push_tag(
+    release: str,
+    working_dir: str = "",
+    verbose: bool = False,
+) -> subprocess.CompletedProcess:
+    """
+    Push a tag to github or raise a subprocess.CalledProcessError
+
+    Relies on their being an existing git clone with origin set
+    appropriately and a local tag matching "release".
+    """
+    cmd = ["git", "push", "origin", release]
+    kwds = {"check": True}
+    if working_dir:
+        kwds["cwd"] = working_dir
+    if not verbose:
+        kwds["stdout"] = subprocess.PIPE
+        kwds["stderr"] = subprocess.PIPE
+    logger.debug(f"Calling '{' '.join(cmd)}' with kwargs {kwds}")
+    return subprocess.run(cmd, **kwds)
+
+
+def get_last_commit_info(
+    working_dir: str = "",
+    verbose: bool = False,
+) -> str:
+    """
+    Return the most recent commit's information or raise a subprocess.CalledProcessError
+    """
+    cmd = ["git", "log", "-1"]
+    kwds = {
+        "check": True,
+        "stdout": subprocess.PIPE,
+        "universal_newlines": True,
+    }
+    if working_dir:
+        kwds["cwd"] = working_dir
+    if not verbose:
+        kwds["stderr"] = subprocess.PIPE
+    logger.debug(f"Calling '{' '.join(cmd)}' with kwargs {kwds}")
+    return subprocess.run(cmd, **kwds).stdout
+
+
 def get_github_available(verbose: bool = False) -> bool:
     """
     Return whether or not github is available.
@@ -797,6 +966,7 @@ def _ping(
     last_exc = None
     for _ in range(tries):
         try:
+            logger.debug(f"Calling '{' '.join(cmd)}' with kwargs {kwds}")
             proc = subprocess.run(cmd, **kwds)
         except subprocess.CalledProcessError as exc:
             last_exc = exc
@@ -859,6 +1029,7 @@ def _ls_remote(
     if not verbose:
         kwds["stderr"] = subprocess.PIPE
     output = []
+    logger.debug(f"Calling '{' '.join(cmd)}' with kwargs {kwds}")
     with subprocess.Popen(cmd, **kwds) as proc:
         for line in proc.stdout:
             if verbose:
@@ -939,7 +1110,8 @@ def _main() -> int:
         logger.info("Checking inputs")
         if not (args.name and args.release) and not args.path_override:
             logger.error(
-                "Must provide both --name and --release, or --path-override. Check ioc-deploy --help for usage."
+                "Must provide both --name and --release, or --path-override. "
+                "Check ioc-deploy --help for usage."
             )
             return ReturnCode.EXCEPTION
         try:
@@ -955,13 +1127,17 @@ def _main() -> int:
         logger.error(exc)
         logger.debug("Traceback", exc_info=True)
         rval = ReturnCode.EXCEPTION
+    except KeyboardInterrupt:
+        logger.error("Interruped with ctrl+C")
+        logger.debug("Traceback", exc_info=True)
+        rval = ReturnCode.NO_CONFIRM
 
     if rval == ReturnCode.SUCCESS:
         logger.info("ioc-deploy completed successfully")
     elif rval == ReturnCode.EXCEPTION:
         logger.error("ioc-deploy errored out")
     elif rval == ReturnCode.NO_CONFIRM:
-        logger.info("ioc-deploy cancelled")
+        logger.warning("ioc-deploy cancelled")
     return rval
 
 
