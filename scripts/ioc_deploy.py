@@ -120,8 +120,14 @@ def get_parser(subparser: bool = False) -> argparse.ArgumentParser:
     # perms_parser unique arguments that should go first
     perms_parser = subparsers.add_parser(
         PERMS_CMD,
-        help=f"Use 'ioc-deploy {PERMS_CMD}' to update the write permissions of a deployment. See 'ioc-deploy {PERMS_CMD} --help' for more information.",
-        description="Update the write permissions of a deployment. This will make all the files read-only (ro), or owner and group writable (rw).",
+        help=(
+            f"Use 'ioc-deploy {PERMS_CMD}' to update the write permissions of a deployment. "
+            f"See 'ioc-deploy {PERMS_CMD} --help' for more information."
+        ),
+        description=(
+            "Update the write permissions of a deployment. "
+            "This will make all the files read-only (ro), or owner and group writable (rw)."
+        ),
     )
     perms_parser.add_argument(
         "permissions",
@@ -136,7 +142,10 @@ def get_parser(subparser: bool = False) -> argparse.ArgumentParser:
             "-n",
             action="store",
             default="",
-            help="The name of the repository to deploy. This is a required argument. If it does not exist on github, we'll also try prepending with 'ioc-common-'.",
+            help=(
+                "The name of the repository to deploy. This is a required argument. "
+                "If it does not exist on github, we'll also try prepending with 'ioc-common-'."
+            ),
         )
         parser.add_argument(
             "--release",
@@ -150,13 +159,20 @@ def get_parser(subparser: bool = False) -> argparse.ArgumentParser:
             "-i",
             action="store",
             default=current_default_target,
-            help=f"The directory to deploy IOCs in. This defaults to $EPICS_SITE_TOP/ioc, or {EPICS_SITE_TOP_DEFAULT}/ioc if the environment variable is not set. With your current environment variables, this defaults to {current_default_target}.",
+            help=(
+                f"The directory to deploy IOCs in. This defaults to $EPICS_SITE_TOP/ioc, "
+                f"or {EPICS_SITE_TOP_DEFAULT}/ioc if the environment variable is not set. "
+                f"With your current environment variables, this defaults to {current_default_target}."
+            ),
         )
         parser.add_argument(
             "--path-override",
             "-p",
             action="store",
-            help="If provided, ignore all normal path-selection rules in favor of the specific provided path. This will let you deploy IOCs or apply protection rules to arbitrary specific paths.",
+            help=(
+                "If provided, ignore all normal path-selection rules in favor of the specific provided path. "
+                "This will let you deploy IOCs or apply protection rules to arbitrary specific paths."
+            ),
         )
         parser.add_argument(
             "--auto-confirm",
@@ -184,7 +200,11 @@ def get_parser(subparser: bool = False) -> argparse.ArgumentParser:
         "--org",
         action="store",
         default=current_default_org,
-        help=f"The github org to deploy IOCs from. This defaults to $GITHUB_ORG, or {GITHUB_ORG_DEFAULT} if the environment variable is not set. With your current environment variables, this defaults to {current_default_org}.",
+        help=(
+            "The github org to deploy IOCs from. "
+            f"This defaults to $GITHUB_ORG, or {GITHUB_ORG_DEFAULT} if the environment variable is not set. "
+            f"With your current environment variables, this defaults to {current_default_org}."
+        ),
     )
     if subparser:
         return perms_parser
@@ -237,7 +257,8 @@ def main_deploy(args: CliArgs) -> int:
 
     if not (deploy_dir and pkg_name and rel_name):
         logger.error(
-            f"Something went wrong at package/tag normalization: package {pkg_name} at version {rel_name} to dir {deploy_dir}"
+            "Something went wrong at package/tag normalization: "
+            f"package {pkg_name} at version {rel_name} to dir {deploy_dir}"
         )
         return ReturnCode.EXCEPTION
 
@@ -310,14 +331,16 @@ def main_perms(args: CliArgs) -> int:
         logger.error(f"OSError during chmod: {exc}")
         error_path = Path(exc.filename)
         logger.error(
-            f"Please contact file owner {error_path.owner()} or someone with sudo permissions if you'd like to change the permissions here."
+            f"Please contact file owner {error_path.owner()} "
+            "or someone with sudo permissions if you'd like to change the permissions here."
         )
         if allow_write:
             suggest = "ug+w"
         else:
             suggest = "a-w"
         logger.error(
-            f"For example, you might try 'sudo chmod -R {suggest} {deploy_dir}' from a server you have sudo access on."
+            f"For example, you might try 'sudo chmod -R {suggest} {deploy_dir}' "
+            "from a server you have sudo access on."
         )
         return ReturnCode.EXCEPTION
 
@@ -581,7 +604,8 @@ def finalize_tag(
         )
     except subprocess.CalledProcessError as exc:
         raise ValueError(
-            f"Unable to access {github_org}/{name}, please make sure you have the correct access rights and the repository exists."
+            f"Unable to access {github_org}/{name}, "
+            "please make sure you have the correct access rights and the repository exists."
         ) from exc
     for rel in release_permutations(release=release):
         logger.debug(f"Trying variant {rel}")
@@ -612,7 +636,8 @@ def finalize_tag(
             )
         except subprocess.CalledProcessError as exc:
             raise ValueError(
-                f"Error cloning {github_org}/{name}, please make sure you have the correct access rights and the repository exists."
+                f"Error cloning {github_org}/{name}, "
+                "please make sure you have the correct access rights and the repository exists."
             ) from exc
         cloned_dir = str(Path(tmpdir) / name)
         tag_msg = ""
@@ -1085,7 +1110,8 @@ def _main() -> int:
         logger.info("Checking inputs")
         if not (args.name and args.release) and not args.path_override:
             logger.error(
-                "Must provide both --name and --release, or --path-override. Check ioc-deploy --help for usage."
+                "Must provide both --name and --release, or --path-override. "
+                "Check ioc-deploy --help for usage."
             )
             return ReturnCode.EXCEPTION
         try:
