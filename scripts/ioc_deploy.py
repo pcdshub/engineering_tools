@@ -910,7 +910,7 @@ def get_last_commit_info(
     verbose: bool = False,
 ) -> str:
     """
-    Return the most recent commit message or raise a subprocess.CalledProcessError
+    Return the most recent commit's information or raise a subprocess.CalledProcessError
     """
     cmd = ["git", "log", "-1"]
     kwds = {
