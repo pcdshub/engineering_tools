@@ -1130,7 +1130,7 @@ def _main() -> int:
     except KeyboardInterrupt:
         logger.error("Interruped with ctrl+C")
         logger.debug("Traceback", exc_info=True)
-        rval = ReturnCode.EXCEPTION
+        rval = ReturnCode.NO_CONFIRM
 
     if rval == ReturnCode.SUCCESS:
         logger.info("ioc-deploy completed successfully")
