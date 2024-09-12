@@ -238,7 +238,7 @@ def main_deploy(args: CliArgs) -> int:
     """
     All main steps of the deploy script.
 
-    This will be called when args has neither of apply_write_protection and remove_write_protection
+    This will be called when no subparser is included.
 
     Will either return an int return code or raise.
     """
@@ -302,7 +302,7 @@ def main_perms(args: CliArgs) -> int:
     """
     All main steps of the only-apply-permissions script.
 
-    This will be called when args has at least one of apply_write_protection and remove_write_protection
+    This will be called when the update-perms subparser is included.
 
     Will either return an int code or raise.
     """
@@ -1065,9 +1065,9 @@ def rearrange_sys_argv_for_subcommands():
     Small trick to help argparse deal with my optional subcommand.
 
     This will make argv like this:
-    ioc-deploy -p some_path perms ro
+    ioc-deploy -p some_path update-perms ro
     be interpretted the same as:
-    ioc-deploy perms ro -p some_path
+    ioc-deploy update-perms ro -p some_path
 
     Otherwise, the first example here is interpretted as if -p was never passed,
     which could be confusing.
