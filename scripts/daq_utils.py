@@ -141,6 +141,20 @@ class DaqManager:
             return True
         return False
 
+    def waitfor(self, subcmd):
+        if subcmd == 'stop':
+            daq_host = self.wheredaq(quiet=True)
+            if daq_host is not None:
+                if self.isdaqbatch(quiet=True):
+                    for i_retry in range(MAX_RETRIES):
+                        daq_host = self.wheredaq(quiet=True)
+                        if daq_host is None:
+                            break
+                        print(f'wait for daqbatch to stop #retry: {i_retry}')
+                        time.sleep(1)
+                else:
+                    print(f'the DAQ did not stop properly (DAQ HOST: {daq_host}), exit now and try again or call your POC or the DAQ phone')
+
     def set_cnf_file_and_platform(self):
         self.cnf_file = None
         for o, a in self.opts:
@@ -185,43 +199,45 @@ class DaqManager:
                 procmgr_helper = ProcMgrHelper(self.platform, cnf_file)
                 daq_host = procmgr_helper.get_value('procmgr_macro')['HOST']
         
-        if quiet: return daq_host
-        if daq_host is None:
-            if LOCALHOST == 'cxi-daq':
-                print(f'Main DAQ cxi_0 is not running on {LOCALHOST}')
-            elif LOCALHOST == 'cxi-monitor':
-                print(f'Secondary DAQ cxi_1 is not running on {LOCALHOST}')
-            print(f'DAQ is not running in {self.hutch}')
-        else:
-            print(f'DAQ is running on {daq_host}')
+        if not quiet:
+            if daq_host is None: 
+                if LOCALHOST == 'cxi-daq':
+                    print(f'Main DAQ cxi_0 is not running on {LOCALHOST}')
+                elif LOCALHOST == 'cxi-monitor':
+                    print(f'Secondary DAQ cxi_1 is not running on {LOCALHOST}')
+                print(f'DAQ is not running in {self.hutch}')
+            else:
+                print(f'DAQ is running on {daq_host}')
+        return daq_host
     
     def calldaq(self, subcmd, daq_host=None):
         if self.isdaqbatch(quiet=True): 
             prog = 'daqbatch'
         else:
             prog = 'procmgr'
-        cmd = f'pushd {self.scripts_dir}'+'\n'
-        cmd += f'source {os.path.join(self.scripts_dir, "setup_env.sh")}'+'\n'
-        cmd += f'{prog} {subcmd} {self.cnf_file}'+'\n'
-        cmd += f'popd'+'\n'
+        cmd = f'pushd {self.scripts_dir}'+' > /dev/null;'
+        cmd += f'source {os.path.join(self.scripts_dir, "setup_env.sh")}'+';'
+        cmd += f'WHEREPROG=$(which {prog}); set -x; $WHEREPROG {subcmd} {os.path.join(self.scripts_dir,self.cnf_file)}'+'; { set +x; } 2>/dev/null;'
+        cmd += f'popd'+' > /dev/null;'
+        
+        if subcmd == 'restart':
+            query_daq_host = self.wheredaq() 
+        else:
+            query_daq_host = self.wheredaq(quiet=True)
+
         if daq_host is None:
-            daq_host = self.wheredaq(quiet=True)
+            daq_host = query_daq_host
             if daq_host is None:
                 daq_host = LOCALHOST
-        call_sbatch(cmd, daq_host, self.scripts_dir)
 
-        if subcmd == 'stop':
-            daq_host = self.wheredaq(quiet=True)
-            if daq_host is not None:
-                if self.isdaqbatch(quiet=True):
-                    for i_retry in range(MAX_RETRIES):
-                        daq_host = self.wheredaq(quiet=True)
-                        if daq_host is None:
-                            break
-                        print(f'wait for daqbatch to stop #retry: {i_retry}')
-                        time.sleep(1)
-                else:
-                    print(f'the DAQ did not stop properly (DAQ HOST: {daq_host}), exit now and try again or call your POC or the DAQ phone')
+        if daq_host == LOCALHOST:
+            ret = subprocess.run(cmd, stdout=PIPE, shell=True)
+            print(ret.stdout.decode())
+        else:
+            call_sbatch(cmd, daq_host, self.scripts_dir)
+        
+        self.waitfor(subcmd)
+
 
     def stopdaq(self):
         """ Stop the running daq for the current user.
@@ -233,7 +249,10 @@ class DaqManager:
         self.calldaq('start', daq_host=daq_host)
 
     def restart_daqbatch(self, daq_host):
+        st = time.monotonic()
         self.calldaq('restart', daq_host=daq_host)
+        en = time.monotonic()
+        print(f'took {en-st:.4f}s. for starting the DAQ')
 
     def restartdaq(self):
         if not self.isvaliduser():
