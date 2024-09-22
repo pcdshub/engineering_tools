@@ -92,29 +92,6 @@ class SbatchManager:
         return job_details
 
 
-class ProcMgrHelper:
-    def __init__(self, platform, cnf_file):
-        self.platform = platform
-        self.cnf_file = cnf_file
-        self.parse_cnf()
-
-    def parse_cnf(self):
-        self.config = {'platform': repr(self.platform), 'procmgr_config': None, 'TESTRELDIR': None,
-                  'CONFIGDIR': os.path.dirname(os.path.abspath(self.cnf_file)),
-                  'id': 'id', 'cmd': 'cmd', 'flags': 'flags', 'port': 'port', 'host': 'host',
-                  '__file__': self.cnf_file,
-                  'rtprio': 'rtprio', 'env': 'env', 'evr': 'evr', 'conda': 'conda', 'procmgr_macro': {}}
-        try:
-            exec(compile(open(self.cnf_file).read(), self.cnf_file, 'exec'), {}, self.config)
-        except:
-            pass
-            #print('Error parsing configuration file:', sys.exc_info()[1]) 
-
-    def get_value(self, parm):
-        if parm in self.config:
-            return self.config[parm]
-
-
 class DaqManager:
     def __init__(self, opts):
         self.opts = opts
@@ -156,65 +133,39 @@ class DaqManager:
                     print(f'the DAQ did not stop properly (DAQ HOST: {daq_host}), exit now and try again or call your POC or the DAQ phone')
 
     def set_cnf_file_and_platform(self):
-        self.cnf_file = None
-        for o, a in self.opts:
-            if o in ('-d', '--dss'):
-                self.cnf_file = os.path.join(self.scripts_dir, 'dss.cnf')
-        if self.cnf_file is None:
-            if LOCALHOST == 'cxi-daq':
-                cnf_ext = '_0.cnf'
-            elif LOCALHOST == 'cxi-monitor':
-                cnf_ext = '_1.cnf'
-            elif self.isdaqbatch(quiet=True):
-                cnf_ext = '.py'
-            else:
-                cnf_ext = '.cnf'
-            self.cnf_file = f'{self.hutch}{cnf_ext}'
+        self.cnf_file = f'{self.hutch}.py'
         
-        # TODO: Read platform from the configuration file
-        # Current block is for daqbatch, we use psana2 slurm.Config class.
-        # This is current not working in the environment without psana2.
-        self.platform = 0
-        if LOCALHOST == 'cxi-monitor':
-            self.platform = 1
-        elif self.hutch == 'rix':
-            self.platform = 2
+        cc = {'platform': None}
+        configfilename = os.path.join(self.scripts_dir, self.cnf_file)
+        try:
+            exec(compile(open(configfilename).read(), configfilename, 'exec'), {}, cc)
+            if type(cc['platform']) == type('') and cc['platform'].isdigit():
+                rv = int(cc['platform'])
+        except:
+            print('deduce_platform Error:', sys.exc_info()[1])
+            raise
+        self.platform = rv
 
     def wheredaq(self, quiet=False):
         """ Locate where the daq is running.
         
-        For procmgr, we check the running cnf for active daq.
         For daqbatch, we use slurm to check if the hutch user is running control_gui.
         """
         daq_host = None
-        if self.isdaqbatch(quiet=True):
-            # Use control_gui job name to locate the running host for the daq
-            job_details = self.sbman.get_job_info()
-            if 'control_gui' in job_details:
-                daq_host = job_details['control_gui']['nodelist']
-        else:
-            # For other hutches, we get daq host from the running cnf file. 
-            cnf_file = os.path.join(self.scripts_dir, f'p{self.platform}.cnf.running')
-            if os.path.exists(cnf_file):
-                procmgr_helper = ProcMgrHelper(self.platform, cnf_file)
-                daq_host = procmgr_helper.get_value('procmgr_macro')['HOST']
+        # Use control_gui job name to locate the running host for the daq
+        job_details = self.sbman.get_job_info()
+        if 'control_gui' in job_details:
+            daq_host = job_details['control_gui']['nodelist']
         
         if not quiet:
             if daq_host is None: 
-                if LOCALHOST == 'cxi-daq':
-                    print(f'Main DAQ cxi_0 is not running on {LOCALHOST}')
-                elif LOCALHOST == 'cxi-monitor':
-                    print(f'Secondary DAQ cxi_1 is not running on {LOCALHOST}')
                 print(f'DAQ is not running in {self.hutch}')
             else:
                 print(f'DAQ is running on {daq_host}')
         return daq_host
     
     def calldaq(self, subcmd, daq_host=None):
-        if self.isdaqbatch(quiet=True): 
-            prog = 'daqbatch'
-        else:
-            prog = 'procmgr'
+        prog = 'daqbatch'
         cmd = f'pushd {self.scripts_dir}'+' > /dev/null;'
         cmd += f'source {os.path.join(self.scripts_dir, "setup_env.sh")}'+';'
         cmd += f'WHEREPROG=$(which {prog}); set -x; $WHEREPROG {subcmd} {os.path.join(self.scripts_dir,self.cnf_file)}'+'; { set +x; } 2>/dev/null;'
