@@ -28,10 +28,10 @@ do
 	PVFIELDS=${OPTARG//,/}
 	;;
     s)
-        STARTTIME=$OPTARG
+        export STARTTIME=$OPTARG
 	;;
     e)
-        ENDTIME=$OPTARG
+        export ENDTIME=$OPTARG
 	;;
     *)
 	echo "Invalid option \"$OPTION\" provided"
@@ -54,6 +54,7 @@ if [[ $1 ==  "$MOTOR_PV" ]]; then
 else
     echo "1: $1"
     echo "MOTOR_PV: $MOTOR_PV"
+    # shellcheck disable=SC2034
     FIELD=$(echo "$1" | cut -d . -f 2)
 fi
 

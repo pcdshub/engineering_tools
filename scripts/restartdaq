@@ -203,6 +203,7 @@ if [ ${#DOWIN} != 0 ]; then
     T="$(date +%s%N)"
     if [ "$HUTCH" == 'xpp' ]; then
 	test=$(xdotool search --sync --onlyvisible --name 'ProcStat')
+	export test
     fi
     if [ "$HUTCH" == 'xcs' ]; then
 	sleep 2

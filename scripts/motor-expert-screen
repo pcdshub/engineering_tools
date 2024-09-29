@@ -146,6 +146,7 @@ xwidth=${sizexy%x*}
 ywidth=${sizexy#*x}
 
 # Get mouse position
+# shellcheck disable=SC2034
 read -r x y s w <<<"$(xdotool getmouselocation 2> /dev/null)"
 xpos=$(echo "$x" | cut -d':' -f 2)
 ypos=$(echo "$y" | cut -d':' -f 2)

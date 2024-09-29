@@ -165,7 +165,7 @@ INTERACTIVE=${INTERACTIVE:=0}
 SDFQUEUES=('milano' 'roma' 'xxx')
 for SDFQUEUE in "${SDFQUEUES[@]}"; do
     if [[ $QUEUE == "$SDFQUEUE" ]]; then
-	S3DF=1
+	export S3DF=1
     fi
 done
 

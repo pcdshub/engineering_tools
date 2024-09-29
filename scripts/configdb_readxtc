@@ -18,7 +18,7 @@ if [[ ($1 == "--help") || ($1 == "-h") ]]; then
 fi
 
 USER=$(whoami)
-ARGSTR=''
+export ARGSTR=''
 
 while getopts "u:e:" OPTION
 do
