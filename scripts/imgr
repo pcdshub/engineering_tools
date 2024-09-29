@@ -3,7 +3,7 @@
 # Define usage here for faster return
 usage()
 {
-cat << EOF
+    cat << EOF
 usage: imgr <IOCNAME> [--hutch HUTCH] <OPTION>
 
 Control status of all IOCs running in a particular hutch from the command line.
@@ -35,9 +35,9 @@ DIR=$(readlink -f "$(dirname "${BASH_SOURCE[0]}")")
 PATH=$PATH:$DIR
 
 # Search for hutch in args
-for (( i=1; i<=$#; i++)); do
-    if [[ "${!i}" == "--hutch" ]]; then
-        ARGHUTCH_INDEX=$((i+1))
+for ((i = 1; i <= $#; i++)); do
+    if [[ ${!i} == "--hutch" ]]; then
+        ARGHUTCH_INDEX=$((i + 1))
         ARGHUTCH=${!ARGHUTCH_INDEX}
         break
     fi
@@ -52,7 +52,7 @@ HUTCH=${HUTCH:-$(get_hutch_name)}
 
 # Exit if hutch is still unknown
 # TODO: Replace with check for actual hutch names
-if [[ "$HUTCH" == "unknown_hutch" ]]; then
+if [[ $HUTCH == "unknown_hutch" ]]; then
     echo "Unknown hutch, please use --hutch argument" >&2
     exit 1
 fi

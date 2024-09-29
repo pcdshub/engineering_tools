@@ -1,7 +1,7 @@
 #!/bin/bash
 usage()
 {
-cat << EOF
+    cat << EOF
 usage: new_bare_repo <hutch> <repo name>
 
 Script for automating the tedious process of integrating an existing IOC into our git bare repo scheme
@@ -16,13 +16,13 @@ EOF
 }
 
 if [[ ($1 == "--help") || ($1 == "-h") ]]; then
-   usage
-   exit 0
+    usage
+    exit 0
 
 elif [ $# -lt 2 ]; then
-   echo 'Need to specify the hutch and name of the proposed bare repo' >&2
-   usage
-   exit 1
+    echo 'Need to specify the hutch and name of the proposed bare repo' >&2
+    usage
+    exit 1
 
 fi
 

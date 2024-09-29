@@ -1,7 +1,7 @@
 #!/bin/bash
 usage()
 {
-cat << EOF
+    cat << EOF
 usage: $0 [organization] <repo> <tag>
 
 Checks out a Github repository into the current directory, from the pcdshub organization unless told otherwise.
@@ -11,62 +11,62 @@ EOF
 }
 
 if [[ ($1 == "--help") || ($1 == "-h") ]]; then
-	usage
-	exit 0
+    usage
+    exit 0
 fi
 
 if [ $# -eq 2 ]; then # pcdshub is default organization
-  ORG="pcdshub"
-  PACKAGE="${1}"
-  TAG="${2}"
+    ORG="pcdshub"
+    PACKAGE="${1}"
+    TAG="${2}"
 elif [ $# -eq 3 ]; then # allow other orgs if provided
-  ORG="${1}"
-  PACKAGE="${2}"
-  TAG="${3}"
+    ORG="${1}"
+    PACKAGE="${2}"
+    TAG="${3}"
 else # display usage if used with improper number of arguments
-  usage
-  exit
+    usage
+    exit
 fi
 
 URL="https://github.com/${ORG}/${PACKAGE}"
 SSH_URL="git@github.com:${ORG}/${PACKAGE}"
 TEMP="pkg_release_tempdir"
 if [ -d "${TEMP}" ]; then
-  echo "Removing leftover ${TEMP} directory..."
-  rm -rf "${TEMP}"
+    echo "Removing leftover ${TEMP} directory..."
+    rm -rf "${TEMP}"
 fi
 echo "Testing connection to github.com" # Check connection before running clone
 if ! ping -c 1 github.com &> /dev/null; then
-  echo "github.com not responding to ping. Exiting."
-  exit
+    echo "github.com not responding to ping. Exiting."
+    exit
 fi
 echo "Connection successful."
 TEST_OUTPUT=$(ssh -Tx git@github.com 2>&1) # Test ssh key with github and use ssh if appropriate, https otherwise
 if echo "$TEST_OUTPUT" | grep "successfully authenticated" > /dev/null; then
-  echo "Attemping clone using SSH..."
-  echo "URL = $SSH_URL"
-  set -e  # Catch error in git clone
-  git clone "${SSH_URL}" "${TEMP}"
+    echo "Attemping clone using SSH..."
+    echo "URL = $SSH_URL"
+    set -e # Catch error in git clone
+    git clone "${SSH_URL}" "${TEMP}"
 elif echo "$TEST_OUTPUT" | grep "Permission denied\|no kex alg" > /dev/null; then
-  echo "Attemping clone using HTTPS..."
-  echo "URL = $URL"
-  set -e  # Catch error in git clone
-  git clone "${URL}" "${TEMP}"
+    echo "Attemping clone using HTTPS..."
+    echo "URL = $URL"
+    set -e # Catch error in git clone
+    git clone "${URL}" "${TEMP}"
 else
-  echo "Error: $TEST_OUTPUT"
-  exit
+    echo "Error: $TEST_OUTPUT"
+    exit
 fi
 set +e
 echo "Checking out tag..."
 pushd "${TEMP}"
-git tag -l | grep "${TAG}" >/dev/null
+git tag -l | grep "${TAG}" > /dev/null
 if [ "${?}" == "1" ]; then
-  echo "Error: could not find tag \"${TAG}.\" Aborting."
-  echo "Available tags:"
-  git tag -l
-  exit
+    echo "Error: could not find tag \"${TAG}.\" Aborting."
+    echo "Available tags:"
+    git tag -l
+    exit
 fi
-set -e  # Catch error in git checkout
+set -e # Catch error in git checkout
 git checkout "${TAG}"
 popd
 echo "Renaming \"${TEMP}\" directory to ${TAG}"

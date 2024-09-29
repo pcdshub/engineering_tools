@@ -5,7 +5,7 @@ PATH=$PATH:$DIR
 
 usage()
 {
-cat << EOF
+    cat << EOF
 usage: $0 options
 
 Make a pedestal file for offline use
@@ -62,80 +62,79 @@ OPTIONS:
 EOF
 }
 
-
 elogMessage="DARK"
 POSITIONAL=()
-while [[ $# -gt 0 ]]
-do
+while [[ $# -gt 0 ]]; do
     key="$1"
     case $key in
-        -h|--help)x
+        -h | --help)
+            x
             usage
             exit
             ;;
-        -p|--post)
+        -p | --post)
             ELOGTEXT="$2"
             shift
             shift
             ;;
-        -D|--xtcav_dark)
+        -D | --xtcav_dark)
             POSITIONAL+=("$1")
             elogMessage="DARK for XTCAV"
             shift
             ;;
-        -L|--xtcav_lasingoff)
+        -L | --xtcav_lasingoff)
             POSITIONAL+=("$1")
             elogMessage="Lasing off for XTCAV"
             shift
             ;;
-        -i|--interactive)
+        -i | --interactive)
             POSITIONAL+=("$1")
             elogMessage="start calibman GUI"
             shift
             ;;
-        -U|--uxi)
+        -U | --uxi)
             POSITIONAL+=("$1")
             elogMessage="DARK for Uxi"
             shift
             ;;
-        -Z|--zyla)
+        -Z | --zyla)
             POSITIONAL+=("$1")
             elogMessage="DARK for Zyla"
             shift
             ;;
-        -O|--opal)
+        -O | --opal)
             POSITIONAL+=("$1")
             elogMessage="DARK for opal"
             shift
             ;;
-        -R|--rayonix)
+        -R | --rayonix)
             POSITIONAL+=("$1")
             elogMessage="DARK for Rayonix"
             shift
             ;;
-        -j|--jungfrau3)
+        -j | --jungfrau3)
             POSITIONAL+=("$1")
             elogMessage="DARK for jungfrau, also next two runs."
             shift
             ;;
-        -u|--user)
+        -u | --user)
             USER="$2"
             shift
             shift
             ;;
-        -r|--run)
+        -r | --run)
             RUN="$2"
             POSITIONAL+=("--run $2")
             shift
             shift
             ;;
-        -e|--experiment)
+        -e | --experiment)
             EXP="$2"
             POSITIONAL+=("--experiment $2")
             shift
             shift
             ;;
-        -q|--queue)
+        -q | --queue)
             QUEUE="$2"
             POSITIONAL+=("--queue $2")
             shift
@@ -150,7 +149,7 @@ do
             POSITIONAL+=("$1")
             shift
             ;;
-        esac
+    esac
 done
 set -- "${POSITIONAL[@]}"
 
@@ -165,13 +164,14 @@ INTERACTIVE=${INTERACTIVE:=0}
 SDFQUEUES=('milano' 'roma' 'xxx')
 for SDFQUEUE in "${SDFQUEUES[@]}"; do
     if [[ $QUEUE == "$SDFQUEUE" ]]; then
-	export S3DF=1
+        export S3DF=1
     fi
 done
 
 if [[ $RUN == 0 ]]; then
     if [[ $INTERACTIVE == 0 ]]; then
-        printf "Please enter a run number: \n"; read -r RUN
+        printf "Please enter a run number: \n"
+        read -r RUN
         set -- "$@" '--run ' "$RUN"
     fi
 fi
@@ -189,11 +189,12 @@ if [[ $HOSTNAME =~ "sdf" ]]; then
     "$DIR"/makepeds_psana "$@"
 else
     if [[ $USER =~ "opr" ]]; then
-        printf "Please enter user name (cannot run as from operator account): \n"; read -r USER
+        printf "Please enter user name (cannot run as from operator account): \n"
+        read -r USER
     fi
     echo calling on SDF system: makepeds_psana "$@"
     # We need to change paths here as the S3DF filesytem is completely independent
-    if [ -v SDFDIR  ]; then
+    if [ -v SDFDIR ]; then
         DIR=$SDFDIR
     else
         DIR=$(echo "$DIR" | sed 's/\/cds\/group\/pcds/\/sdf\/group\/lcls\/ds\/tools/g' | sed 's/\/reg\/g\/pcds/\/sdf\/group\/lcls\/ds\/tools/g')
@@ -211,7 +212,7 @@ fi
 elog_par_post --file pedestal -e "$EXP" -r "$RUN"
 
 #if this is a default pedestal run, then do not post as this is handled in takepeds
-if [[ $elogMessage == 'DARK' ]] && [[ $ELOGTEXT == '' ]] ; then
+if [[ $elogMessage == 'DARK' ]] && [[ $ELOGTEXT == '' ]]; then
     echo ---- Done processing pedestals for Run "$RUN" -----
     exit 0
 fi
@@ -227,17 +228,17 @@ echo -- "$elogMessage" --
 
 elogMessage+=$ELOGTEXT
 if [[ $(whoami) =~ "opr" ]]; then
-    echo "$BINPATH" $PYCMD -i "${HUTCH^^}" -u "$(whoami)" -e "$EXP"  -t DARK  -r "$RUN" -m "$elogMessage"
+    echo "$BINPATH" $PYCMD -i "${HUTCH^^}" -u "$(whoami)" -e "$EXP" -t DARK -r "$RUN" -m "$elogMessage"
     if [[ $HOSTNAME == 'cxi-monitor' ]]; then
-        $BINPATH $PYCMD -i "${HUTCH^^}" -u "$(whoami)" -p pcds -e "$EXP"  -t DARK  -r "$RUN" -m "$elogMessage" -s 1&
+        $BINPATH $PYCMD -i "${HUTCH^^}" -u "$(whoami)" -p pcds -e "$EXP" -t DARK -r "$RUN" -m "$elogMessage" -s 1 &
     else
-        $BINPATH $PYCMD -i "${HUTCH^^}" -u "$(whoami)" -p pcds -e "$EXP"  -t DARK  -r "$RUN" -m "$elogMessage"&
+        $BINPATH $PYCMD -i "${HUTCH^^}" -u "$(whoami)" -p pcds -e "$EXP" -t DARK -r "$RUN" -m "$elogMessage" &
     fi
 else
-    echo "$BINPATH" $PYCMD -i "${HUTCH^^}" -e "$EXP"  -t DARK -r "$RUN" -m "$elogMessage"
+    echo "$BINPATH" $PYCMD -i "${HUTCH^^}" -e "$EXP" -t DARK -r "$RUN" -m "$elogMessage"
     if [[ $HOSTNAME == 'cxi-monitor' ]]; then
-        $BINPATH $PYCMD -i "${HUTCH^^}" -e "$EXP" -t DARK -r "$RUN" -m "$elogMessage" -s 1&
+        $BINPATH $PYCMD -i "${HUTCH^^}" -e "$EXP" -t DARK -r "$RUN" -m "$elogMessage" -s 1 &
     else
-        $BINPATH $PYCMD -i "${HUTCH^^}" -e "$EXP" -t DARK -r "$RUN" -m "$elogMessage"&
+        $BINPATH $PYCMD -i "${HUTCH^^}" -e "$EXP" -t DARK -r "$RUN" -m "$elogMessage" &
     fi
 fi

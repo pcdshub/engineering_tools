@@ -1,12 +1,13 @@
 #! /bin/bash
 
-names_from_name(){
+names_from_name()
+{
     if [ $# -lt 1 ]; then
         echo 'need arguments: input IP'
     fi
     INNAME=$1
     if [[ $INNAME == *'-ipmi'* ]]; then
-	INNAME=${INNAME//-ipmi/}
+        INNAME=${INNAME//-ipmi/}
     elif [[ $INNAME == *'-fez'* ]]; then
         INNAME=${INNAME//-fez/}
     elif [[ $INNAME == *'-ana'* ]]; then
@@ -27,8 +28,9 @@ names_from_name(){
     fi
 }
 
-host_from_PV(){
-    if [[ $NAME == *':'* ]]  && [[ $HUTCH == 'unknown_hutch' ]]; then
+host_from_PV()
+{
+    if [[ $NAME == *':'* ]] && [[ $HUTCH == 'unknown_hutch' ]]; then
         echo 'Getting info for a host of a PV currently only works on the hutch networks'
         exit 1
     fi
@@ -47,8 +49,9 @@ host_from_PV(){
     fi
 }
 
-usage(){
-cat << EOF
+usage()
+{
+    cat << EOF
 usage: $0 <servername> [command]
 
 Script to check status of servers & reboot/power cycle them using
@@ -65,8 +68,8 @@ expert  : display info and run checks on server
 EOF
 }
 
-DIRTMP=$(dirname  "${BASH_SOURCE[0]}")
-DIR=$( cd "$DIRTMP" && pwd -P )
+DIRTMP=$(dirname "${BASH_SOURCE[0]}")
+DIR=$(cd "$DIRTMP" && pwd -P)
 PATH=$PATH:$DIR
 
 HUTCH=$(get_hutch_name)
@@ -77,9 +80,8 @@ for name in "tmo" "rix" "txi" "xpp" "xcs" "mfx" "cxi" "mec" "det"; do
     fi
 done
 
-
 HOST_HAS_FEZ=$(netconfig search "$HOSTNAME"-fez --brief | wc -l)
-(( HOST_HAS_FEZ-=1 ))
+((HOST_HAS_FEZ -= 1))
 
 if [[ $# -lt 2 ]]; then
     if [[ $# -lt 1 ]]; then
@@ -127,9 +129,10 @@ elif [[ $NAME == *'-ana'* ]]; then
     NAME=${NAME//-ana/}
 fi
 
-if  [[ $NAME == *rec* ]]; then
+if [[ $NAME == *rec* ]]; then
     if [[ $CMD == "off" ]] || [[ $CMD == "cycle" ]]; then
-        echo "This is a recorder, better not to power cycle unless necessary, try to reset first. Quit? " "$NAME" "$CMD"; read -r ANSWER
+        echo "This is a recorder, better not to power cycle unless necessary, try to reset first. Quit? " "$NAME" "$CMD"
+        read -r ANSWER
         if [[ $ANSWER == 'y' ]] || [[ $ANSWER == 'Y' ]] || [[ $ANSWER == 'yes' ]]; then
             printf 'quit now\n'
             exit 0
@@ -137,7 +140,9 @@ if  [[ $NAME == *rec* ]]; then
     fi
 fi
 
-if [[ "${NAME,,}" == *drp* ]] && { [[ $CMD == "off" ]] || [[ $CMD == "cycle" ]]; }; then
+if [[ ${NAME,,} == *drp* ]] && {
+    [[ $CMD == "off" ]] || [[ $CMD == "cycle" ]]
+}; then
     printf "serverStat %s is not supported for DRP nodes as the underlying psipmi power off or psipmi power cycle commands will disable the ipmi card. Instead, use the web interface as described on:\n\nhttps://confluence.slac.stanford.edu/display/PSDMInternal/Debugging+DAQ#DebuggingDAQ-IPMI\n" "$CMD"
     exit 1
 fi
@@ -150,10 +155,10 @@ if [[ $ISSRV -lt 1 ]] && [[ $HUTCH != 'unknown_hutch' ]]; then
         CNF="/reg/g/pcds/dist/pds/${HUTCH}/scripts/${HUTCH}.cnf"
     fi
 
-    if [[  $DEV =~ 'event' ]]; then
+    if [[ $DEV =~ 'event' ]]; then
         DSSNODES=$(grep dss_nodes "$CNF" | grep -v '^#' | head -n1 | grep -oE "daq-$HUTCH-dss[[:digit:]]+")
-        NEVENT=${DEV:5}  # grab the index (e.g. 2 if $DEV is event2)
-        SEDNUM=$((NEVENT + 1))  # adjust the number to correctly index the list of dssnodes with sed
+        NEVENT=${DEV:5}        # grab the index (e.g. 2 if $DEV is event2)
+        SEDNUM=$((NEVENT + 1)) # adjust the number to correctly index the list of dssnodes with sed
         NAME=$(echo "$DSSNODES" | sed -n ${SEDNUM}p)
         if [[ -z $NAME ]]; then
             echo "dss node not found for $DEV, exiting..." >&2
@@ -163,7 +168,7 @@ if [[ $ISSRV -lt 1 ]] && [[ $HUTCH != 'unknown_hutch' ]]; then
         NDEV=$(grep "$DEV" "$CNF" | grep -v '#' | grep -c host)
         if [ "$NDEV" -eq 1 ]; then
             NAME=$(grep "$DEV" "$CNF" | grep -v '#' | grep host | awk '{print $1}' | sed s/"{host:"//g | sed s/,// | sed s/_/-/g | sed s/\'//g | sed s/-fez//g)
-        elif  [ "$NDEV" -eq 0 ]; then
+        elif [ "$NDEV" -eq 0 ]; then
             echo 'No device of this name found, exiting...' >&2
             exit 1
         else
@@ -183,7 +188,6 @@ if [[ $ISSRV -lt 1 ]] && [[ $HUTCH != 'unknown_hutch' ]]; then
 else
     SRVIP=$(netconfig search "$DEV" | grep IP: | awk '{print $2}')
 fi
-
 
 names_from_name "$NAME"
 
@@ -209,26 +213,26 @@ elif [[ $CMD == "expert" ]]; then
     echo -e ""
     echo -e "Checking host/ipmi/fez network interfaces are online:"
     echo -e "-------------------------------------------------"
-    if ping -w 2 "$NAME" >/dev/null 2>&1; then
-       echo "$NAME pings."
-       CDS_ONLINE=1
+    if ping -w 2 "$NAME" > /dev/null 2>&1; then
+        echo "$NAME pings."
+        CDS_ONLINE=1
     else
-       echo "$NAME does not ping."
-       CDS_ONLINE=0
+        echo "$NAME does not ping."
+        CDS_ONLINE=0
     fi
-    if ping -w 2 "$NAME"-ipmi >/dev/null 2>&1; then
-       echo "$NAME-ipmi pings."
+    if ping -w 2 "$NAME"-ipmi > /dev/null 2>&1; then
+        echo "$NAME-ipmi pings."
     else
-       echo "$NAME-ipmi does not ping."
+        echo "$NAME-ipmi does not ping."
     fi
-    if ping -w 2 "$NAME"-fez >/dev/null 2>&1; then
-       echo "$NAME-fez pings."
+    if ping -w 2 "$NAME"-fez > /dev/null 2>&1; then
+        echo "$NAME-fez pings."
     else
-       echo "$NAME-fez does not ping."
+        echo "$NAME-fez does not ping."
     fi
     echo -e " "
     if [[ $CDS_ONLINE == 1 ]]; then
-        ssh -qT "$NAME" <<EOF
+        ssh -qT "$NAME" << EOF
             source /reg/g/pcds/setup/pcds_shortcuts.sh
             export PATH=\$PATH:/sbin/:/usr/sbin
             echo -e "Red Hat Version:"

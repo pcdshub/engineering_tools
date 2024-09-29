@@ -1,7 +1,7 @@
 #!/bin/bash
 usage()
 {
-cat << EOF
+    cat << EOF
 usage: $0 options
 
 OPTIONS:
@@ -11,75 +11,74 @@ EOF
 }
 
 if [[ ($1 == "--help") || ($1 == "-h") ]]; then
-	usage
-	exit 0
+    usage
+    exit 0
 fi
 
 AskLive=0
 Ended=0
 INSTRUMENT='xxx'
 
-DIRTMP=$(dirname  "${BASH_SOURCE[0]}")
+DIRTMP=$(dirname "${BASH_SOURCE[0]}")
 DIR=$(cd "$DIRTMP" && pwd -P)
 PATH=$PATH:$DIR
 
-while getopts "H:i:le" OPTION
-do
+while getopts "H:i:le" OPTION; do
     case $OPTION in
-	l)
-	    AskLive=1
-	    ;;
-	e)
-	    Ended=1
-	    ;;
-	i)
-	    INSTRUMENT=$OPTARG
-	    ;;
-	H)
-	    INSTRUMENT=$OPTARG
-	    ;;
-	?)
-	    usage
-	    exit
-	    ;;
-	esac
+        l)
+            AskLive=1
+            ;;
+        e)
+            Ended=1
+            ;;
+        i)
+            INSTRUMENT=$OPTARG
+            ;;
+        H)
+            INSTRUMENT=$OPTARG
+            ;;
+        ?)
+            usage
+            exit
+            ;;
+    esac
 done
 
 if [ $AskLive -eq 1 ]; then
     if [[ $INSTRUMENT != 'xxx' ]]; then
-	CURR_EXP=$(get_info --hutch "$INSTRUMENT" --run --live)
+        CURR_EXP=$(get_info --hutch "$INSTRUMENT" --run --live)
     else
-	CURR_EXP=$(get_info --run --live)
-	if [[ $CURR_EXP == *'xxx'* ]]; then
-	    echo 'For which hutch would you like to get this information? '
-	    read -r hutch
-	    CURR_EXP=$(get_info --hutch "$hutch" --run --live)
-	fi
+        CURR_EXP=$(get_info --run --live)
+        if [[ $CURR_EXP == *'xxx'* ]]; then
+            echo 'For which hutch would you like to get this information? '
+            read -r hutch
+            CURR_EXP=$(get_info --hutch "$hutch" --run --live)
+        fi
     fi
 elif [ $Ended -eq 1 ]; then
     if [[ $INSTRUMENT != 'xxx' ]]; then
-	CURR_EXP=$(get_info --hutch "$INSTRUMENT" --run --ended)
+        CURR_EXP=$(get_info --hutch "$INSTRUMENT" --run --ended)
     else
-	CURR_EXP=$(get_info --run --ended)
-	if [[ $CURR_EXP == *'xxx'* ]]; then
-	    echo 'For which hutch would you like to get this information? '
-	    read -r hutch
-	    CURR_EXP=$(get_info --hutch "$hutch" --run --ended)
-	fi
+        CURR_EXP=$(get_info --run --ended)
+        if [[ $CURR_EXP == *'xxx'* ]]; then
+            echo 'For which hutch would you like to get this information? '
+            read -r hutch
+            CURR_EXP=$(get_info --hutch "$hutch" --run --ended)
+        fi
     fi
 else
     if [[ $INSTRUMENT != 'xxx' ]]; then
-	CURR_EXP=$(get_info --hutch "$INSTRUMENT" --run)
+        CURR_EXP=$(get_info --hutch "$INSTRUMENT" --run)
     else
-	CURR_EXP=$(get_info --run)
+        CURR_EXP=$(get_info --run)
     fi
     NUM_RET_WORD=$(echo "$CURR_EXP" | wc | awk '{print $2}')
     if [[ $NUM_RET_WORD == 1 ]]; then
-	if [[ $CURR_EXP == 'xxx' ]]; then
-	    echo 'For which hutch would you like to get this information?'
-	    read -r hutch
-	    CURR_EXP=$(get_info --hutch "$hutch" --run)
-	fi
+        if [[ $CURR_EXP == 'xxx' ]]; then
+            echo 'For which hutch would you like to get this information?'
+            read -r hutch
+            CURR_EXP=$(get_info --hutch "$hutch" --run)
+        fi
     fi
 fi
 echo "$CURR_EXP"

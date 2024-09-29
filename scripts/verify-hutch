@@ -1,7 +1,8 @@
 #!/bin/bash
 
-usage(){
-cat << EOF
+usage()
+{
+    cat << EOF
 usage: ${BASH_SOURCE[0]} <hutch>
 
 Verifies that the passed argument is a known hutch, exit 0 for success and exit 1 for failure.
@@ -10,13 +11,13 @@ EOF
 }
 
 if [ $# -lt 1 ]; then
-   echo 'need arguments: input hutch name' >&2
-   usage
-   exit 1
+    echo 'need arguments: input hutch name' >&2
+    usage
+    exit 1
 fi
 if [[ ($1 == "--help") || ($1 == "-h") ]]; then
-   usage
-   exit 0
+    usage
+    exit 0
 fi
 
 hutch=${1,,}

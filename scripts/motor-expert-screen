@@ -4,7 +4,7 @@ OLD_VERSION='R2.5.0'
 
 usage()
 {
-cat << EOF
+    cat << EOF
 usage: $0 <motor_pv_basename>
 
 Start an EDM for the specified motor.
@@ -13,8 +13,8 @@ EOF
 }
 
 if [[ ($1 == "--help") || ($1 == "-h") || (-z $1) ]]; then
-	usage
-	exit 0
+    usage
+    exit 0
 fi
 
 shift $((OPTIND - 1))
@@ -47,7 +47,7 @@ elif [ "${rtyp}" == 'motor' ]; then
     #   we set isbeckhoff based on this.
     if caget "${PREFIX}:PLC:nErrorId_RBV" > /dev/null 2>&1; then
         title="Typhos Suite - ${PREFIX}"
-        isbeckhoff=true;
+        isbeckhoff=true
     else
         title='Aerotech motor'
     fi
@@ -94,19 +94,19 @@ elif [ "${rtyp}" == 'motor' ]; then
     if caget "$PREFIX:PN" > /dev/null 2>&1; then
         /reg/g/pcds/package/epics/3.14//modules/pcds_motion/${OLD_VERSION}/launch-motor.sh "$PREFIX" > /dev/null 2>&1 &
     else
-	# smaracts have "motor" rtyp, so we catch them with the PREFIX or with smaract specific pvs
-	if [[ $PREFIX == *"MCS2"* || $(caget "$PREFIX:PTYPE_RBV" > /dev/null 2>&1) -eq 0 ]]; then
+        # smaracts have "motor" rtyp, so we catch them with the PREFIX or with smaract specific pvs
+        if [[ $PREFIX == *"MCS2"* || $(caget "$PREFIX:PTYPE_RBV" > /dev/null 2>&1) -eq 0 ]]; then
             enc=$(caget "$PREFIX".UEIP)
             if [[ $enc == *"Yes"* ]]; then
-		edm -x -eolc -m "MOTOR=$PREFIX" mcs2_main.edl > /dev/null 2>&1 &
+                edm -x -eolc -m "MOTOR=$PREFIX" mcs2_main.edl > /dev/null 2>&1 &
             else
-		edm -x -eolc -m "MOTOR=$PREFIX" mcs2_openloop.edl > /dev/null 2>&1 &
+                edm -x -eolc -m "MOTOR=$PREFIX" mcs2_openloop.edl > /dev/null 2>&1 &
             fi
-	else
+        else
             cd /reg/neh/home/klg/epics/ioc/common/aerotech/current/motorScreens
             #cd /reg/neh/home4/mcbrowne/trunk2/ioc/common/aerotech/current/motorScreens
-            edm -x -eolc -m "MOTOR=${PREFIX}" ens_main.edl >& /dev/null &
-	fi
+            edm -x -eolc -m "MOTOR=${PREFIX}" ens_main.edl >&/dev/null &
+        fi
     fi
 else
     edm -x -eolc -m "MOTOR=$PREFIX" ims_main.edl > /dev/null 2>&1 &
@@ -147,12 +147,12 @@ ywidth=${sizexy#*x}
 
 # Get mouse position
 # shellcheck disable=SC2034
-read -r x y s w <<<"$(xdotool getmouselocation 2> /dev/null)"
+read -r x y s w <<< "$(xdotool getmouselocation 2> /dev/null)"
 xpos=$(echo "$x" | cut -d':' -f 2)
 ypos=$(echo "$y" | cut -d':' -f 2)
 
 if [[ -z $xpos ]]; then
-  exit
+    exit
 # Check if mouse is already on the window. In this case, we wouldn't move it.
 elif [ "$xpos" -lt "$winx" ] || [ "$xpos" -gt $((winx + xwidth)) ] || [ "$ypos" -lt "$winy" ] || [ "$ypos" -gt $((winy + ywidth)) ]; then
     # Adjust xpos and ypos so center of window aligns with cursor.

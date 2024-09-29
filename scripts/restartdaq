@@ -1,7 +1,7 @@
 #!/bin/bash
 usage()
 {
-cat << EOF
+    cat << EOF
 usage: $0 options
 
 OPTIONS:
@@ -13,9 +13,6 @@ OPTIONS:
 EOF
 }
 
-
-
-
 NOTRUNNING='not running'
 AIMHOST=$HOSTNAME
 SELPART=''
@@ -24,38 +21,37 @@ DOWIN=''
 SILENT=1
 
 if [[ ($1 == "--help") || ($1 == "-h") ]]; then
-	usage
-	exit 0
+    usage
+    exit 0
 fi
 
 CORESIZE=0
-while getopts "m:pwscd" OPTION
-do
+while getopts "m:pwscd" OPTION; do
     case $OPTION in
-	p)
-	    SELPART='Select Partition'
-	    ;;
-	w)
-	    DOWIN='Sort Windows'
-	    ;;
-	s)
-	    SILENT=1
-	    ;;
-	m)
-	    AIMHOST=$OPTARG
-	    ;;
- 	c)
- 	    CORESIZE=2000000000
- 	    ;;
- 	d)
- 	    DSSTEST=1
- 	    ;;
-	?)
-	    usage
-	    exit 1
-	    ;;
+        p)
+            SELPART='Select Partition'
+            ;;
+        w)
+            DOWIN='Sort Windows'
+            ;;
+        s)
+            SILENT=1
+            ;;
+        m)
+            AIMHOST=$OPTARG
+            ;;
+        c)
+            CORESIZE=2000000000
+            ;;
+        d)
+            DSSTEST=1
+            ;;
+        ?)
+            usage
+            exit 1
+            ;;
 
-	esac
+    esac
 done
 
 if [[ $(whoami) != *'opr'* ]]; then
@@ -74,7 +70,7 @@ elif [ "$HOSTNAME" == 'cxi-monitor' ]; then
     CNFFILE=$HUTCH$PEXT$CNFEXT
 fi
 
-if [[ "$DSSTEST" == 1 ]]; then
+if [[ $DSSTEST == 1 ]]; then
     CNFFILE=dss.cnf
 fi
 
@@ -102,9 +98,9 @@ if [ "$IS_DAQ_HOST" == 0 ]; then
     WORKINGHOSTS=''
     #make sure at least cds is up.
     for HOST in $HOSTS; do
-	if ping -w 2 "$HOST" >/dev/null 2>&1; then
-	    WORKINGHOSTS=$WORKINGHOSTS' '$HOST
-	fi
+        if ping -w 2 "$HOST" > /dev/null 2>&1; then
+            WORKINGHOSTS=$WORKINGHOSTS' '$HOST
+        fi
     done
     echo "$AIMHOST" does not have "$DAQNETWORK", please choose one of the following machines to run the DAQ: "$WORKINGHOSTS"
     echo "restartdaq -m <machine_with_$DAQNETWORK>"
@@ -118,27 +114,26 @@ else
 fi
 
 PLATFORM=$(grep 'if not platform' /reg/g/pcds/dist/pds/"$HUTCH"/scripts/"$CNFFILE" | awk '{print $NF}' | sed s/\'//g)
-if [[ "$DAQHOST" != *$NOTRUNNING* ]]; then
+if [[ $DAQHOST != *$NOTRUNNING* ]]; then
     echo stop the DAQ on "$DAQHOST" from "$HOSTNAME"
     T="$(date +%s%N)"
     $PROCMGR stop \
-	/reg/g/pcds/dist/pds/"$HUTCH"/scripts/"$CNFFILE"
-
+        /reg/g/pcds/dist/pds/"$HUTCH"/scripts/"$CNFFILE"
 
     if [ -f /reg/g/pcds/dist/pds/"$HUTCH"/scripts/p"$PLATFORM"$CNFEXT.running ]; then
-	echo 'the DAQ did not stop properly, exit now and try again or call Silke or the DAQ phone'
-	exit
+        echo 'the DAQ did not stop properly, exit now and try again or call Silke or the DAQ phone'
+        exit
     fi
-    T2="$(($(date +%s%N)-T))"
-    S="$((T2/1000000000))"
-    M="$((T2/1000000))"
+    T2="$(($(date +%s%N) - T))"
+    S="$((T2 / 1000000000))"
+    M="$((T2 / 1000000))"
     echo 'it took '$S'.'$M' for stopping the DAQ'
 else
     if [ -f /reg/g/pcds/dist/pds/"$HUTCH"/scripts/p"$PLATFORM"$CNFEXT.running ]; then
-	echo while DAQ reports to not run, will stop the DAQ on "$DAQHOST" from "$HOSTNAME" to clear the p"$PLATFORM"$CNFEXT.running file
-	T="$(date +%s%N)"
-	$PROCMGR stop \
-	    /reg/g/pcds/dist/pds/"$HUTCH"/scripts/"$CNFFILE"
+        echo while DAQ reports to not run, will stop the DAQ on "$DAQHOST" from "$HOSTNAME" to clear the p"$PLATFORM"$CNFEXT.running file
+        T="$(date +%s%N)"
+        $PROCMGR stop \
+            /reg/g/pcds/dist/pds/"$HUTCH"/scripts/"$CNFFILE"
 
         if [ -f /reg/g/pcds/dist/pds/"$HUTCH"/scripts/p"$PLATFORM"$CNFEXT.running ]; then
             echo 'the DAQ did not stop properly, exit now and try again follow the escalation procedure'
@@ -149,7 +144,6 @@ else
         echo DAQ is currently not running
     fi
 fi
-
 
 #start DAQ on AIMHOST
 T="$(date +%s%N)"
@@ -169,68 +163,68 @@ else
     DAQHOST=$(wheredaq)
 fi
 
-if [[ "$DAQHOST" == *$NOTRUNNING* ]]; then
+if [[ $DAQHOST == *$NOTRUNNING* ]]; then
     echo 'We tried restarting the DAQ, but wheredaq says its still off!'
     #I cannot remember what this statement was supposed to do.
-    if [[ "$DAQHOST" != "$AIMHOST" ]]; then
-	echo 'We tried to run the DAQ on another host: target '"$AIMHOST"' from '"$HOSTNAME"
+    if [[ $DAQHOST != "$AIMHOST" ]]; then
+        echo 'We tried to run the DAQ on another host: target '"$AIMHOST"' from '"$HOSTNAME"
     fi
     exit
 else
-    T2="$(($(date +%s%N)-T))"
-    S="$((T2/1000000000))"
-    M="$((T2/1000000))"
+    T2="$(($(date +%s%N) - T))"
+    S="$((T2 / 1000000000))"
+    M="$((T2 / 1000000))"
     echo 'and '$S'.'$M' for starting the DAQ'
 fi
 
-if [ ${#DOWIN} != 0 ] ||  [ ${#SELPART} != 0 ]; then
-    if  [ "$HUTCH"  == 'xpp' ] || [ "$HUTCH"  == 'xcs' ]; then
-	if  [ ! -f /usr/bin/xdotool ]; then
-	    echo 'xdotool not installed, ask IT to do so'
-	    DOWIN=0
-	    SELPART=0
-	fi
+if [ ${#DOWIN} != 0 ] || [ ${#SELPART} != 0 ]; then
+    if [ "$HUTCH" == 'xpp' ] || [ "$HUTCH" == 'xcs' ]; then
+        if [ ! -f /usr/bin/xdotool ]; then
+            echo 'xdotool not installed, ask IT to do so'
+            DOWIN=0
+            SELPART=0
+        fi
     fi
     if [ -f /reg/neh/operator/"$HUTCH"opr/bin/"$HUTCH"_cleanup_windows_daq ]; then
-	if [ ${#DOWIN} != 0 ]; then
-	    echo 'This instrument does not have standard locations for DAQ windows setup'
-	fi
-	DOWIN=0
+        if [ ${#DOWIN} != 0 ]; then
+            echo 'This instrument does not have standard locations for DAQ windows setup'
+        fi
+        DOWIN=0
     fi
 fi
 
 if [ ${#DOWIN} != 0 ]; then
     T="$(date +%s%N)"
     if [ "$HUTCH" == 'xpp' ]; then
-	test=$(xdotool search --sync --onlyvisible --name 'ProcStat')
-	export test
+        test=$(xdotool search --sync --onlyvisible --name 'ProcStat')
+        export test
     fi
     if [ "$HUTCH" == 'xcs' ]; then
-	sleep 2
+        sleep 2
     fi
     echo 'resorting the windows now using: /reg/neh/operator/'"$HUTCH"'opr/bin/'"$HUTCH"'_cleanup_windows_daq'
     /reg/neh/operator/"$HUTCH"opr/bin/"$HUTCH"_cleanup_windows_daq
-    Tdinter="$(($(date +%s%N)-T))"
-    Sinter="$((Tdinter/1000000000))"
-    Minter="$((Tdinter/1000000))"
+    Tdinter="$(($(date +%s%N) - T))"
+    Sinter="$((Tdinter / 1000000000))"
+    Minter="$((Tdinter / 1000000))"
     echo 'and '"$Sinter"'.'"$Minter"' extra seconds for windows'
 fi
 
 if [ ${#SELPART} != 0 ]; then
-    DAQC=$(xdotool search  --onlyvisible --name 'DAQ Control')
+    DAQC=$(xdotool search --onlyvisible --name 'DAQ Control')
     #echo $DAQC
     xdotool mousemove --sync --window "$DAQC" 80 230
     xdotool windowfocus "$DAQC"
     xdotool click 1
 
-    PARTSEL=$(xdotool search  --onlyvisible --sync --name 'Partition Selection')
+    PARTSEL=$(xdotool search --onlyvisible --sync --name 'Partition Selection')
     YLOW=$(xdotool search --name 'Partition Selection' getwindowgeometry %@ | grep Geometry | awk '{print $2}' | sed s/x/" "/g | awk '{print $2}')
-        #echo $PARTSEL
-    xdotool mousemove --sync --window "$PARTSEL" 80 $(("$YLOW"-28))
+    #echo $PARTSEL
+    xdotool mousemove --sync --window "$PARTSEL" 80 $(("$YLOW" - 28))
     xdotool click 1
 fi
 
-if [ "$SILENT" == 0 ];then
+if [ "$SILENT" == 0 ]; then
     /reg/g/pcds/dist/pds/scripts/txtjana.sh
     printf 'email jana that we restarted the DAQ\n'
 fi

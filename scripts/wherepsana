@@ -1,7 +1,7 @@
 #!/bin/bash
 usage()
 {
-cat << EOF
+    cat << EOF
 usage: $0 [-h] [-c CONFIG] [-d]
 
 Checks where we have shared memory servers for psana running
@@ -16,39 +16,38 @@ EOF
 }
 
 if [[ ($1 == "--help") || ($1 == "-h") ]]; then
-	usage
-	exit 0
+    usage
+    exit 0
 fi
 
 HUTCH=$(get_info --gethutch)
 for i in "xpp" "xcs" "mfx" "cxi" "mec" "det"; do
-   if [[ $HUTCH == "$i" ]]; then
-      FOUNDHUTCH=1
-      break
-   fi
+    if [[ $HUTCH == "$i" ]]; then
+        FOUNDHUTCH=1
+        break
+    fi
 done
 if [[ -z $FOUNDHUTCH ]]; then
-   echo 'could not determine hutch or hutch not implemented, quit'
-   exit
+    echo 'could not determine hutch or hutch not implemented, quit'
+    exit
 fi
 export NOTRUNNING='Not running'
 
-while getopts "c:d" OPTION
-do
+while getopts "c:d" OPTION; do
     case "$OPTION" in
-	c)
-	    CONFIG="$OPTARG"
-	    ;;
-	d)
-	    DETAIL="1"
-	    ;;
-	?)
-	    usage
-	    exit
-	    ;;
-	esac
+        c)
+            CONFIG="$OPTARG"
+            ;;
+        d)
+            DETAIL="1"
+            ;;
+        ?)
+            usage
+            exit
+            ;;
+    esac
 done
-shift "$((OPTIND-1))"
+shift "$((OPTIND - 1))"
 
 # If specified a config file, then use that
 if [[ -z $CONFIG ]]; then
@@ -57,9 +56,9 @@ if [[ -z $CONFIG ]]; then
 
     if [[ $HUTCH == 'cxi' ]]; then
         if [[ $HOSTNAME == 'cxi-daq' ]]; then
-           CNFEXT=_0.cnf
+            CNFEXT=_0.cnf
         elif [[ $HOSTNAME == 'cxi-monitor' ]]; then
-           CNFEXT=_1.cnf
+            CNFEXT=_1.cnf
         elif [[ -z $CONFIG ]]; then
             echo 'You must provide cxi config file (-c) if not on daq machine'
             exit 1
@@ -75,8 +74,8 @@ fi
 mapfile -t PSANA_NODES < <(grep monreqsrvpsana /tmp/procServStatus.$$ | awk '{print $1}')
 if [[ -z $DETAIL ]]; then
     NODESTR=''
-    for ((idx=0; idx<${#PSANA_NODES[@]}; ++idx)); do
-        NODESTR=$NODESTR${PSANA_NODES[idx]}',';
+    for ((idx = 0; idx < ${#PSANA_NODES[@]}; ++idx)); do
+        NODESTR=$NODESTR${PSANA_NODES[idx]}','
     done
     echo "${NODESTR::-1}"
 else
@@ -85,21 +84,21 @@ else
     mapfile -t EVENT_MASKS < <(grep event /tmp/procServStatus.$$ | awk -F "-s " '{print $2;}' | awk '{print lshift(1,$1);}')
     echo 'psana runs on the following nodes looking at event nodes '${#EVENT[@]}
     NODESTR=''
-    for ((idx=0; idx<${#PSANA_NODES[@]}; ++idx)); do
+    for ((idx = 0; idx < ${#PSANA_NODES[@]}; ++idx)); do
         echo -n "${PSANA_NODES[idx]}:"
-	MASKS=${PSANA_MASKS[idx]}
-	for ((m=0; m<${#EVENT[@]}; ++m)); do
-	    if [ $((MASKS&EVENT_MASKS[m])) != 0 ]; then
-	        echo -n "${EVENT[m]}"
-		MASKS=$((MASKS&~EVENT_MASKS[m]))
-	    fi
+        MASKS=${PSANA_MASKS[idx]}
+        for ((m = 0; m < ${#EVENT[@]}; ++m)); do
+            if [ $((MASKS & EVENT_MASKS[m])) != 0 ]; then
+                echo -n "${EVENT[m]}"
+                MASKS=$((MASKS & ~EVENT_MASKS[m]))
+            fi
         done
-	if [[ ${MASKS} != '0' ]]; then
-	    echo "MISSING MON MASK: $MASKS"
-	fi
-	echo ""
+        if [[ ${MASKS} != '0' ]]; then
+            echo "MISSING MON MASK: $MASKS"
+        fi
+        echo ""
     done
 
 fi
 
-rm  /tmp/procServStatus.$$
+rm /tmp/procServStatus.$$

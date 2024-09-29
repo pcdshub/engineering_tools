@@ -1,7 +1,7 @@
 #!/bin/bash
 usage()
 {
-cat << EOF
+    cat << EOF
 usage: $0 options
 
 OPTIONS:
@@ -12,27 +12,26 @@ EOF
 INSTRUMENT='xxx'
 
 if [[ ($1 == "--help") || ($1 == "-h") ]]; then
-	usage
-	exit 0
+    usage
+    exit 0
 fi
 
-while getopts "H:i:le" OPTION
-do
+while getopts "H:i:le" OPTION; do
     case $OPTION in
-	i)
-	    INSTRUMENT=$OPTARG
-	    ;;
-	H)
-	    INSTRUMENT=$OPTARG
-	    ;;
-	?)
-	    usage
-	    exit
-	    ;;
-	esac
+        i)
+            INSTRUMENT=$OPTARG
+            ;;
+        H)
+            INSTRUMENT=$OPTARG
+            ;;
+        ?)
+            usage
+            exit
+            ;;
+    esac
 done
 
-DIRTMP=$(dirname  "${BASH_SOURCE[0]}")
+DIRTMP=$(dirname "${BASH_SOURCE[0]}")
 DIR=$(cd "$DIRTMP" && pwd -P)
 PATH=$PATH:$DIR
 
@@ -41,13 +40,13 @@ if [[ $INSTRUMENT != 'xxx' ]]; then
 else
     CURR_EXP=$(get_info --exp)
     if [[ $CURR_EXP == 'unknown_hutch' ]]; then
-	echo 'Cannot autodetermine hutch, for which hutch would you like to get this information?'
-	read -rt 5 hutch
-	if [[ $hutch == '' ]]; then
-	    echo 'no response, will quit'
-	    exit 1
-	fi
-	CURR_EXP=$(get_info --hutch "${hutch^^}" --exp)
+        echo 'Cannot autodetermine hutch, for which hutch would you like to get this information?'
+        read -rt 5 hutch
+        if [[ $hutch == '' ]]; then
+            echo 'no response, will quit'
+            exit 1
+        fi
+        CURR_EXP=$(get_info --hutch "${hutch^^}" --exp)
     fi
 fi
 

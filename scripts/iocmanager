@@ -3,7 +3,7 @@
 # Define usage here for faster return
 usage()
 {
-cat << EOF
+    cat << EOF
 usage: iocmanager [hutch]
 
 Control status of all IOCs running in a particular hutch in an interactive GUI.
@@ -11,8 +11,8 @@ Current hutch is used if not provided.
 EOF
 }
 if [[ ($1 == "--help") || ($1 == "-h") ]]; then
-	usage
-	exit 0
+    usage
+    exit 0
 fi
 
 # Check hutch
@@ -22,7 +22,7 @@ HUTCH=${1:-$(get_hutch_name)}
 
 # Exit if hutch is still unknown
 # TODO: Replace with check for actual hutch names
-if [[ "$HUTCH" == "unknown_hutch" ]]; then
+if [[ $HUTCH == "unknown_hutch" ]]; then
     echo "Unknown hutch, please specify e.g. 'iocmanager xrt'" >&2
     exit 1
 fi
@@ -54,10 +54,10 @@ ulimit -c unlimited
 # Do some window cleanup for xpp
 if [ "$(whoami)" == "xppopr" ]; then
     window_id=$(xdotool search --sync --onlyvisible --name 'IocManager')
-    if [ "xpp-control"  == "$HOSTNAME" ]; then
-	wmctrl -v -i -r "$window_id" -e 0,3310,1100,530,1000
+    if [ "xpp-control" == "$HOSTNAME" ]; then
+        wmctrl -v -i -r "$window_id" -e 0,3310,1100,530,1000
     elif [ "xpp-daq" == "$HOSTNAME" ]; then
-	wmctrl -v -i -r "$window_id" -e 0,3310,1100,530,1000
+        wmctrl -v -i -r "$window_id" -e 0,3310,1100,530,1000
     fi
     wmctrl -v -i -r "$window_id" -b add,sticky
 fi

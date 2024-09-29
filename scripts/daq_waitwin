@@ -1,7 +1,7 @@
 #!/bin/bash
 usage()
 {
-cat << EOF
+    cat << EOF
 usage: $0 [desktop number]
 
 Waits for the LCLS-I daq windows to load, then exits.
@@ -9,13 +9,12 @@ EOF
 }
 
 if [[ ($1 == "--help") || ($1 == "-h") ]]; then
-	usage
-	exit 0
+    usage
+    exit 0
 fi
 
 source /reg/g/pcds/setup/pathmunge.sh
 ldpathmunge /usr/local/lib
-
 
 if [[ $# -gt 0 ]]; then
     SEARCHOPT='--onlyvisible --maxdepth 2 --limit 1 --all --desktop '$1' --sync '

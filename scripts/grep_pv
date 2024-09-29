@@ -1,7 +1,7 @@
 #!/bin/bash
 usage()
 {
-cat << EOF
+    cat << EOF
 Usage: $0 <PV or PV keyword>
 
 Grep searches through IOC dirs in /reg/d/iocData/ for PVs that match keyword
@@ -9,8 +9,8 @@ EOF
 }
 
 if [[ ($1 == "--help") || ($1 == "-h") ]]; then
-	usage
-	exit 0
+    usage
+    exit 0
 fi
 
 KEYWORD=$1
@@ -18,23 +18,22 @@ KEYWORD=$1
 if [[ -n $KEYWORD ]]; then
     cd /reg/d/iocData/
     for i in ioc-*; do
-	cd /reg/d/iocData/"$i"
-	if [ -e ./iocInfo/ ] ; then
-     	    cd iocInfo
-	    if [ -e ./IOC.pvlist ] ; then
-		if grep -q "$KEYWORD" IOC.pvlist
-		then
-		    pwd
-		    grep "$KEYWORD" IOC.pvlist;
-		    echo ""
-		else
-		    :
-		fi
-	    fi
-	fi
-	cd ../../
+        cd /reg/d/iocData/"$i"
+        if [ -e ./iocInfo/ ]; then
+            cd iocInfo
+            if [ -e ./IOC.pvlist ]; then
+                if grep -q "$KEYWORD" IOC.pvlist; then
+                    pwd
+                    grep "$KEYWORD" IOC.pvlist
+                    echo ""
+                else
+                    :
+                fi
+            fi
+        fi
+        cd ../../
     done
 else
-	usage
-	exit 0
+    usage
+    exit 0
 fi

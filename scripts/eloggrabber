@@ -1,7 +1,7 @@
 #! /bin/bash
 usage()
 {
-cat << EOF
+    cat << EOF
 usage: $0 options
 
 start the eloggrabber, by default look at current exp
@@ -22,54 +22,54 @@ export PATH=/reg/g/psdm/web/ws/prod/apps/LogBookClient/LogBookClient:${PATH}
 grab()
 {
     if [[ $HUTCH == 'unknown_hutch' ]]; then
-	echo 'I cannot determine the current hutch and thus not the current experiment. Try another machine (control room/psusr) or different directory like /reg/d/psdm/<hutch>/..... Will quit.'
-	exit
+        echo 'I cannot determine the current hutch and thus not the current experiment. Try another machine (control room/psusr) or different directory like /reg/d/psdm/<hutch>/..... Will quit.'
+        exit
     fi
     LogBookGrabber_qt \
-	-i "$HUTCH" \
-	-e "$1" \
-	-u "$USERNAME" \
-	-p pcds \
-	-w https://pswww.slac.stanford.edu/ws-auth/lgbk
+        -i "$HUTCH" \
+        -e "$1" \
+        -u "$USERNAME" \
+        -p pcds \
+        -w https://pswww.slac.stanford.edu/ws-auth/lgbk
     exit
 }
 
 # To try and avoid everything else going on
 grab_script()
 {
-	LogBookGrabber_qt \
-    -i "$HUTCH" \
-    -e "$EXPNAME" \
-    -u "$USERNAME" \
-    -p pcds \
-    -w https://pswww.slac.stanford.edu/ws-auth/lgbk \
-    -c "$SCRIPT"
+    LogBookGrabber_qt \
+        -i "$HUTCH" \
+        -e "$EXPNAME" \
+        -u "$USERNAME" \
+        -p pcds \
+        -w https://pswww.slac.stanford.edu/ws-auth/lgbk \
+        -c "$SCRIPT"
     exit 1
 }
 
 grab_user()
 {
     LogBookGrabber_qt \
-	-i "$HUTCH" \
-	-e "$1" \
-	-u "$USERNAME" \
-	-w https://pswww.slac.stanford.edu/ws-kerb/lgbk
+        -i "$HUTCH" \
+        -e "$1" \
+        -u "$USERNAME" \
+        -w https://pswww.slac.stanford.edu/ws-kerb/lgbk
     exit
 }
 
 grab_instrument()
 {
     if [[ $HUTCH == 'unknown_hutch' ]]; then
-	echo 'I cannot determine the current hutch and thus not the current experiment. Try another machine (control room/psusr) or different directory like /reg/d/psdm/<hutch>/..... Will quit.'
-	exit
+        echo 'I cannot determine the current hutch and thus not the current experiment. Try another machine (control room/psusr) or different directory like /reg/d/psdm/<hutch>/..... Will quit.'
+        exit
     fi
     EXPNAME="$HUTCH Instrument"
     LogBookGrabber_qt \
-	-i OPS \
-	-e "$EXPNAME" \
-	-u "$USERNAME" \
-	-p pcds \
-	-w https://pswww.slac.stanford.edu/ws-auth/lgbk
+        -i OPS \
+        -e "$EXPNAME" \
+        -u "$USERNAME" \
+        -p pcds \
+        -w https://pswww.slac.stanford.edu/ws-auth/lgbk
     exit
 }
 
@@ -77,17 +77,17 @@ grab_controls()
 {
     EXPNAME="Controls"
     LogBookGrabber_qt \
-	-i OPS \
-	-e "$EXPNAME" \
-	-u "$USERNAME" \
-	-p pcds \
-	-w https://pswww.slac.stanford.edu/ws-auth/lgbk
+        -i OPS \
+        -e "$EXPNAME" \
+        -u "$USERNAME" \
+        -p pcds \
+        -w https://pswww.slac.stanford.edu/ws-auth/lgbk
     exit
 }
 
 if [[ ($1 == "--help") || ($1 == "-h") ]]; then
-	usage
-	exit 0
+    usage
+    exit 0
 fi
 
 ##who am I doing this? Why don't just use the actual username?
@@ -96,32 +96,31 @@ USERNAME=$(whoami)
 EXPNAME=$(get_curr_exp)
 HUTCH=$(get_info --gethutch)
 
-while getopts "e:u:s:xct" OPTION
-do
+while getopts "e:u:s:xct" OPTION; do
     case $OPTION in
-	e)
-	    EXPNAME=$OPTARG
-	    HUTCH=${EXPNAME:0:3}
-	    ;;
-	u)
-	    USERNAME=$OPTARG
-	    grab_user "$EXPNAME"
-	    ;;
-	s)
-	    SCRIPT=$OPTARG
-	    grab_script
-	    ;;
-	x)
-	    grab_instrument
-	    ;;
-	c)
-	    grab_controls
-	    ;;
-	?)
-	    usage
-	    exit
-	    ;;
-	esac
+        e)
+            EXPNAME=$OPTARG
+            HUTCH=${EXPNAME:0:3}
+            ;;
+        u)
+            USERNAME=$OPTARG
+            grab_user "$EXPNAME"
+            ;;
+        s)
+            SCRIPT=$OPTARG
+            grab_script
+            ;;
+        x)
+            grab_instrument
+            ;;
+        c)
+            grab_controls
+            ;;
+        ?)
+            usage
+            exit
+            ;;
+    esac
 done
 
 if [[ $USERNAME == *'opr'* ]]; then

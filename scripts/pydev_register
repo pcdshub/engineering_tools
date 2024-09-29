@@ -1,7 +1,7 @@
 #!/bin/bash
 usage()
 {
-cat << EOF
+    cat << EOF
 usage: $0 <path> module|bin
 
 Use this script to register development packages so that they will be
@@ -10,29 +10,29 @@ EOF
 }
 
 if [[ ($1 == "--help") || ($1 == "-h") ]]; then
-	usage
-	exit 0
+    usage
+    exit 0
 fi
 
 if [ -z "${1}" ]; then
-  usage
-  exit
+    usage
+    exit
 elif [ ! -e "${1}" ]; then
-  echo "Path Does Not Exist" >&2
-  usage
-  exit 1
+    echo "Path Does Not Exist" >&2
+    usage
+    exit 1
 fi
 
 PYDEV_DIR=~/pydev
 full_path=$(readlink -f "$1")
 if [ "${2}" == "module" ]; then
-  link="${PYDEV_DIR}"
+    link="${PYDEV_DIR}"
 elif [ "${2}" == "bin" ]; then
-  link="${PYDEV_DIR}/bin"
+    link="${PYDEV_DIR}/bin"
 else
-  echo "Invalid input."
-  usage
-  return
+    echo "Invalid input."
+    usage
+    return
 fi
 mkdir -p "${PYDEV_DIR}/bin"
 ln -sf "${full_path}" "${link}"

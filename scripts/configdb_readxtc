@@ -1,7 +1,7 @@
 #! /bin/bash
 usage()
 {
-cat << EOF
+    cat << EOF
 usage: $0 options
 
 We will run configdb_readxtc
@@ -13,31 +13,31 @@ EOF
 }
 
 if [[ ($1 == "--help") || ($1 == "-h") ]]; then
-	usage
-	exit 0
+    usage
+    exit 0
 fi
 
 USER=$(whoami)
 export ARGSTR=''
 
-while getopts "u:e:" OPTION
-do
+while getopts "u:e:" OPTION; do
     case $OPTION in
-	u)
-	    USER=$OPTARG
-	    ;;
-	e)
-	    EXP=$OPTARG
-	    ;;
-	?)
-	    usage
-	    exit
-	    ;;
-	esac
+        u)
+            USER=$OPTARG
+            ;;
+        e)
+            EXP=$OPTARG
+            ;;
+        ?)
+            usage
+            exit
+            ;;
+    esac
 done
 
 if [[ $USER =~ "opr" ]]; then
-    printf "Please enter user name (cannot run as xppopr): \n"; read -r USER
+    printf "Please enter user name (cannot run as xppopr): \n"
+    read -r USER
 fi
 
 : "${EXP:=$(get_curr_exp)}"
@@ -61,10 +61,10 @@ if [ $ret_code == 0 ]; then
 else
     dir="/reg/g/pcds/dist/pds/xpp/current/build/pdsapp/bin/x86_64-rhel7"
     if eval find $dir/configdb_readxtc; then
-	EXE='/reg/g/pcds/dist/pds/'$HUTCH'/current/build/pdsapp/bin/x86_64-rhel7/configdb_readxtc'
+        EXE='/reg/g/pcds/dist/pds/'$HUTCH'/current/build/pdsapp/bin/x86_64-rhel7/configdb_readxtc'
     else
-	echo 'could not find configdb_readxtc executable'
-	exit
+        echo 'could not find configdb_readxtc executable'
+        exit
     fi
 fi
 
@@ -73,7 +73,7 @@ fi
 #
 if [[ $HOSTNAME =~ "psana" ]]; then
     $EXE /reg/d/psdm/"$HUTCH"/"$EXP"/xtc
-elif  [[ $HOSTNAME =~ "psusr" ]]; then
+elif [[ $HOSTNAME =~ "psusr" ]]; then
     ssh -Y "$USER"@psana "$EXE /reg/d/psdm/$HUTCH/$EXP/xtc"
 else
     echo "$EXE /reg/d/psdm/$HUTCH/$EXP/xtc"

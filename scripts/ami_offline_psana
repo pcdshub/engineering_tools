@@ -1,7 +1,7 @@
 #! /bin/bash
 usage()
 {
-cat << EOF
+    cat << EOF
 usage: $0 options
 
 We will run ami_offline
@@ -14,39 +14,38 @@ EOF
 }
 
 if [[ ($1 == "--help") || ($1 == "-h") ]]; then
-	usage
-	exit 0
+    usage
+    exit 0
 fi
 
 USER=$(whoami)
 ARGSTR='-Z'
 
-while getopts "u:e:ntR" OPTION
-do
+while getopts "u:e:ntR" OPTION; do
     case $OPTION in
-	e)
-	    EXP=$OPTARG
-	    ;;
-	R)
-	    REBIN=1
-	    ;;
-	n)
-	    NOPLUG=1
-	    ;;
-	?)
-	    usage
-	    exit
-	    ;;
-	esac
+        e)
+            EXP=$OPTARG
+            ;;
+        R)
+            REBIN=1
+            ;;
+        n)
+            NOPLUG=1
+            ;;
+        ?)
+            usage
+            exit
+            ;;
+    esac
 done
 
 if [ -z "$EXP" ]; then
     echo getting the experiment "$EXP"
     HUTCH=$(get_hutch_name)
     if [ "$HUTCH" == 'unknown_hutch' ]; then
-	read -rp 'please enter an experiment name: ' EXP
+        read -rp 'please enter an experiment name: ' EXP
     else
-	EXP=$(get_curr_exp)
+        EXP=$(get_curr_exp)
     fi
 fi
 HUTCH=${EXP:0:3}
@@ -69,7 +68,7 @@ fi
 ami_base_path=$(grep ami_base_path /reg/g/pcds/dist/pds/"$HUTCH"/scripts/"$CNF" | grep -v '#' | grep -v 'ami_base_path+' | tail -n 1 | awk 'BEGIN { FS = "=" }; { print $2}' | sed s/\'//g)
 ami_path=$ami_base_path$(grep ami_path /reg/g/pcds/dist/pds/"$HUTCH"/scripts/"$CNF" | grep -v 'ami_path+' | grep -v '#' | awk 'BEGIN { FS = "= " }; { print $2}' | sed s/ami_base_path+//g | sed s/\'//g)
 
-if [[ ! -f  $ami_path/offline_ami ]]; then
+if [[ ! -f $ami_path/offline_ami ]]; then
     echo "could not find offline_ami executable in ""$ami_path"
     exit
 fi
@@ -89,19 +88,19 @@ if [ "${HOSTNAME:0:5}" == 'psana' ]; then
     XTCDIR=/reg/d/psdm/$HUTCH/$EXP/xtc/
     HAVE_RUNS=$(find "$XTCDIR"/*r* | wc -l)
     if [ "$HAVE_RUNS" == 0 ]; then
-	echo 'did not find any xtc files in /reg/d/psdm/'"$HUTCH"'/'"$EXP"', will exit'
-	exit
+        echo 'did not find any xtc files in /reg/d/psdm/'"$HUTCH"'/'"$EXP"', will exit'
+        exit
     fi
 elif [ "${HOSTNAME:0:3}" == 'drp' ]; then
     XTCDIR=/cds/data/drpsrcf/$HUTCH/$EXP/xtc/
     HAVE_RUNS=$(find "$XTCDIR"/*r* | wc -l)
     if [ "$HAVE_RUNS" == 0 ]; then
-	echo 'did not find any xtc files in /cds/data/drpsrcf/'"$HUTCH"'/'"$EXP"', will exit'
-	exit
+        echo 'did not find any xtc files in /cds/data/drpsrcf/'"$HUTCH"'/'"$EXP"', will exit'
+        exit
     fi
-elif  [ "${HOSTNAME:8:3}" == 'rec' ]; then
+elif [ "${HOSTNAME:8:3}" == 'rec' ]; then
     XTCDIR=/u2/REC/daq/xtc/
-elif  [ "${HOSTNAME:8:3}" == 'dss' ]; then
+elif [ "${HOSTNAME:8:3}" == 'dss' ]; then
     EXPID=$(get_info --setExp "$EXP" --experimentNumber)
     XTCDIR=/u2/pcds/pds/"$HUTCH"/e"$EXPID"/
 else
@@ -110,7 +109,7 @@ else
 fi
 
 #change to temporary directory where we'll need the favorites file (&maybe
-if [ ! -d /tmp/ami_offline_"$USER" ] ; then
+if [ ! -d /tmp/ami_offline_"$USER" ]; then
     mkdir /tmp/ami_offline_"$USER"
 fi
 

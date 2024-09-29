@@ -1,7 +1,7 @@
 #!/bin/bash
 usage()
 {
-cat << EOF
+    cat << EOF
 $0 <motor_pv> <motor_pv_2|autosave|archive|pmgr_diff|pmgr_save> [opt]
 
 If given two motors, compare their settings
@@ -17,27 +17,26 @@ EOF
 }
 
 if [[ ($1 == "--help") || ($1 == "-h") ]]; then
-	usage
-	exit 0
+    usage
+    exit 0
 fi
 
-while getopts "f:s:e:" OPTION
-do
+while getopts "f:s:e:" OPTION; do
     case $OPTION in
-    f)
-	PVFIELDS=${OPTARG//,/}
-	;;
-    s)
-        export STARTTIME=$OPTARG
-	;;
-    e)
-        export ENDTIME=$OPTARG
-	;;
-    *)
-	echo "Invalid option \"$OPTION\" provided"
-	usage
-	exit 1
-	;;
+        f)
+            PVFIELDS=${OPTARG//,/}
+            ;;
+        s)
+            export STARTTIME=$OPTARG
+            ;;
+        e)
+            export ENDTIME=$OPTARG
+            ;;
+        *)
+            echo "Invalid option \"$OPTION\" provided"
+            usage
+            exit 1
+            ;;
     esac
 done
 
@@ -49,7 +48,7 @@ if [ $# -lt 2 ]; then
 fi
 
 MOTOR_PV=$(echo "$1" | cut -d . -f 1)
-if [[ $1 ==  "$MOTOR_PV" ]]; then
+if [[ $1 == "$MOTOR_PV" ]]; then
     FIELD=''
 else
     echo "1: $1"
@@ -60,11 +59,11 @@ fi
 
 source /reg/g/pcds/setup/pcds_shortcuts.sh
 
-if [[ $PVFIELDS == '' ]] && [[ "$2" != *pmgr* ]]; then
+if [[ $PVFIELDS == '' ]] && [[ $2 != *pmgr* ]]; then
     IOC_DIR='/reg/g/pcds/epics/'$(find_pv "$MOTOR_PV" | grep DIR | grep ims | awk '{print $2}')'/build/autosave'
     PVLIST=$("grep $MOTOR_PV $IOC_DIR/*req")
     for pv in $PVLIST; do
-	PVFIELDS=$(echo "$pv" | awk -F "$MOTOR_PV" '{ print $2 }')' '$PVFIELDS
+        PVFIELDS=$(echo "$pv" | awk -F "$MOTOR_PV" '{ print $2 }')' '$PVFIELDS
     done
 fi
 
@@ -73,75 +72,76 @@ if [[ $2 == 'autosave' ]]; then
 
     files=$(ls -t "$IOC_DIR"/*sav_1*)
     for field in $PVFIELDS; do
-	if [[ "$field" == *RBV* ]] || [[ "$field" == *VAL* ]] || [[ "$field" == *DESC* ]]; then
-	    continue
-	fi
-	echo "Looking at the autosave history for: $MOTOR_PV$field"
-	same_value_dat='now'
-	currVal=$(caget -t "$MOTOR_PV$field")
-	currValN=$(caget -tn "$MOTOR_PV$field")
-	for file in $files; do
-	    autoVal=$(grep "$MOTOR_PV$field " "$file" | awk '{print $2}')
-	    if [[ $autoVal != "$currValN" ]] && [[ ${#autoVal} -gt 0 ]]; then
-		#if $autoVal #check that this is not empty.
-		file_date=$(echo "$file" | awk -F sav_ '{ print $2 }')
-		if [[ $currVal != "$currValN" ]]; then
-		    echo "$MOTOR_PV$field current: $currValN '('$currVal')' -- $autoVal at $file_date , was same last: $same_value_dat"
-		else
-		    echo "$MOTOR_PV$field current: $currValN -- $autoVal at $file_date , was same last: $same_value_dat"
-		fi
-	    else
-		same_value_dat=$(echo "$file" | awk -F sav_ '{ print $2 }')
-	    fi
-	done
-	echo
+        if [[ $field == *RBV* ]] || [[ $field == *VAL* ]] || [[ $field == *DESC* ]]; then
+            continue
+        fi
+        echo "Looking at the autosave history for: $MOTOR_PV$field"
+        same_value_dat='now'
+        currVal=$(caget -t "$MOTOR_PV$field")
+        currValN=$(caget -tn "$MOTOR_PV$field")
+        for file in $files; do
+            autoVal=$(grep "$MOTOR_PV$field " "$file" | awk '{print $2}')
+            if [[ $autoVal != "$currValN" ]] && [[ ${#autoVal} -gt 0 ]]; then
+                #if $autoVal #check that this is not empty.
+                file_date=$(echo "$file" | awk -F sav_ '{ print $2 }')
+                if [[ $currVal != "$currValN" ]]; then
+                    echo "$MOTOR_PV$field current: $currValN '('$currVal')' -- $autoVal at $file_date , was same last: $same_value_dat"
+                else
+                    echo "$MOTOR_PV$field current: $currValN -- $autoVal at $file_date , was same last: $same_value_dat"
+                fi
+            else
+                same_value_dat=$(echo "$file" | awk -F sav_ '{ print $2 }')
+            fi
+        done
+        echo
     done
 elif [[ $2 == 'archive' ]]; then
     echo 'Command-line archiver is not implemented yet'
-elif [[ "$2" == *pmgr* ]]; then
+elif [[ $2 == *pmgr* ]]; then
     HUTCH=$(echo "$MOTOR_PV" | cut -d : -f 1)
     hutch=${HUTCH,,}
     ACTION=$(echo "$2" | cut -d _ -f 2)
     if [[ $ACTION == 'diff' ]]; then
-	/reg/g/pcds/config/"$hutch"/pmgr/pmgrUtils.sh "$ACTION" "$MOTOR_PV"
+        /reg/g/pcds/config/"$hutch"/pmgr/pmgrUtils.sh "$ACTION" "$MOTOR_PV"
     elif [[ $ACTION == 'save' ]]; then
-	echo "Differences of $MOTOR_PV to saved config:"
-	/reg/g/pcds/config/"$hutch"/pmgr/pmgrUtils.sh diff "$MOTOR_PV"
-	echo 'Save current config (yes/no)? '; read -r ANSWER
-	if [[ $ANSWER == 'yes' ]]; then
-	    echo 'Save now...'
-	    /reg/g/pcds/config/"$hutch"/pmgr/pmgrUtils.sh save "$MOTOR_PV"
-	    echo 'Saved.'
-	fi
+        echo "Differences of $MOTOR_PV to saved config:"
+        /reg/g/pcds/config/"$hutch"/pmgr/pmgrUtils.sh diff "$MOTOR_PV"
+        echo 'Save current config (yes/no)? '
+        read -r ANSWER
+        if [[ $ANSWER == 'yes' ]]; then
+            echo 'Save now...'
+            /reg/g/pcds/config/"$hutch"/pmgr/pmgrUtils.sh save "$MOTOR_PV"
+            echo 'Saved.'
+        fi
     else
-	echo "$ACTION is not yet implemented for the pmgr function of motorInfo"
+        echo "$ACTION is not yet implemented for the pmgr function of motorInfo"
     fi
 else
     MOTOR2_PV=$(echo "$2" | cut -d . -f 1)
     ADD_MOTOR_PV=$MOTOR2_PV
     echo "MOTORS DIFF $# $ADD_MOTOR_PV"
     while [[ $# -gt 2 ]]; do
-	shift
-	ADD_MOTOR_PV="$ADD_MOTOR_PV $(echo "$2" | cut -d . -f 1)"
+        shift
+        ADD_MOTOR_PV="$ADD_MOTOR_PV $(echo "$2" | cut -d . -f 1)"
     done
 
-    echo Field :  "$MOTOR_PV" -- "$ADD_MOTOR_PV"
+    echo Field : "$MOTOR_PV" -- "$ADD_MOTOR_PV"
     for field in $PVFIELDS; do
-	if [[ "$field" == *RBV* ]] || [[ "$field" == *VAL* ]]; then
-	    continue
-	fi
-	value_mot1=$(caget -t "$MOTOR_PV$field")
-	values=''
-	HAS_DIFF=0
-	for PV in $ADD_MOTOR_PV; do
-	    newval=$(caget -t "$PV$field")
-	    values=$values' - '$newval
-	    if [[ $value_mot1 != "$newval" ]]; then
-		HAS_DIFF=1
-	    fi
-	done
-	if [[ $HAS_DIFF -gt 0 ]]; then
-	    echo "$field" :  "$value_mot1" -- "$values"
-	fi
+        if [[ $field == *RBV* ]] || [[ $field == *VAL* ]]; then
+            continue
+        fi
+        value_mot1=$(caget -t "$MOTOR_PV$field")
+        values=''
+        HAS_DIFF=0
+        for PV in $ADD_MOTOR_PV; do
+            newval=$(caget -t "$PV$field")
+            values=$values' - '$newval
+            if [[ $value_mot1 != "$newval" ]]; then
+                HAS_DIFF=1
+            fi
+        done
+        if [[ $HAS_DIFF -gt 0 ]]; then
+            echo "$field" : "$value_mot1" -- "$values"
+        fi
     done
 fi

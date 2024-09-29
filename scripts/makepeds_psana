@@ -7,7 +7,7 @@
 
 usage()
 {
-cat << EOF
+    cat << EOF
 usage: $0 options
 
 Make a pedestal file for offline use
@@ -80,29 +80,29 @@ check_for_submit_error()
 
 check_running_jobs()
 {
-    declare -A SLURM_STAT_MSG=( ["R"]="is RUNNING."
-                                ["PD"]="is PENDING."
-                                ["CG"]="is COMPLETING."
-                                ["CD"]="has COMPLETED."
-                                ["PR"]="was PREEMPTED!"
-                                ["F"]="has FAILED!"
-                                ["S"]="was SUSPENDED!"
-                                ["ST"]="was STOPPED!" )
+    declare -A SLURM_STAT_MSG=(["R"]="is RUNNING."
+        ["PD"]="is PENDING."
+        ["CG"]="is COMPLETING."
+        ["CD"]="has COMPLETED."
+        ["PR"]="was PREEMPTED!"
+        ["F"]="has FAILED!"
+        ["S"]="was SUSPENDED!"
+        ["ST"]="was STOPPED!")
     NJOBS=0
     REMJOBIDS=()
     for JOBID in "${JOBIDS[@]}"; do
-        if  squeue | grep -q "$JOBID"; then
+        if squeue | grep -q "$JOBID"; then
             JOBSTATUS=$(squeue | grep "${JOBID}" | awk '{print $5}')
             if [ "${SLURM_STAT_MSG[$JOBSTATUS]}" ]; then
                 echo "${JOBID} ${SLURM_STAT_MSG[$JOBSTATUS]}"
             else
                 echo "${JOBID} has unknown status ${JOBSTATUS}!"
             fi
-            REMJOBIDS+=( "$JOBID" )
-            NJOBS=$((NJOBS+1))
+            REMJOBIDS+=("$JOBID")
+            NJOBS=$((NJOBS + 1))
         fi
     done
-    if (( NJOBS == 0 )); then
+    if ((NJOBS == 0)); then
         echo Nothing running
         JOBIDS=''
     else
@@ -114,32 +114,32 @@ check_running_jobs()
 
 xtcav_dark()
 {
-   if [[ $RUNLOCAL == 1 ]]; then
-       xtcavDark "$EXP" "$RUN"
-   else
-       tmpScript=$(mktemp -p "$WORKDIR" xtcav_dark_tmpXXXXX.sh)
-       chmod u+x "$tmpScript"
-       printf "#!/bin/bash\nsource %s/manage/bin/psconda.sh\n" "$SIT_ENV_DIR" > "$tmpScript"
-       CMD="xtcavDark $EXP $RUN"
-       printf '%s\n' "${CMD}" >> "$tmpScript"
-       xtcavCmd="sbatch --exclusive  --account lcls:$EXP -p $QUEUE -o $WORKDIR/xtcav_${EXP}_Run${RUN}_%J.out $tmpScript"
-       echo "run in queue: $xtcavCmd"
-       SUBMISSION=$($xtcavCmd)
-       check_for_submit_error
-       echo "$SUBMISSION"
-       THISJOBID=$(echo "$SUBMISSION" | awk '{print $4}')
-       JOBIDS+=( "$THISJOBID" )
-       NJOBS=$((NJOBS+1))
+    if [[ $RUNLOCAL == 1 ]]; then
+        xtcavDark "$EXP" "$RUN"
+    else
+        tmpScript=$(mktemp -p "$WORKDIR" xtcav_dark_tmpXXXXX.sh)
+        chmod u+x "$tmpScript"
+        printf "#!/bin/bash\nsource %s/manage/bin/psconda.sh\n" "$SIT_ENV_DIR" > "$tmpScript"
+        CMD="xtcavDark $EXP $RUN"
+        printf '%s\n' "${CMD}" >> "$tmpScript"
+        xtcavCmd="sbatch --exclusive  --account lcls:$EXP -p $QUEUE -o $WORKDIR/xtcav_${EXP}_Run${RUN}_%J.out $tmpScript"
+        echo "run in queue: $xtcavCmd"
+        SUBMISSION=$($xtcavCmd)
+        check_for_submit_error
+        echo "$SUBMISSION"
+        THISJOBID=$(echo "$SUBMISSION" | awk '{print $4}')
+        JOBIDS+=("$THISJOBID")
+        NJOBS=$((NJOBS + 1))
 
-       sleep 10
-       echo Running $NJOBS jobs are PIDS: "${JOBIDS[@]}"
-       until check_running_jobs; do
-           echo 'Checking again in 10s'
-           sleep 10
-       done
-       echo 'All jobs finished'
-   fi
-   exit
+        sleep 10
+        echo Running $NJOBS jobs are PIDS: "${JOBIDS[@]}"
+        until check_running_jobs; do
+            echo 'Checking again in 10s'
+            sleep 10
+        done
+        echo 'All jobs finished'
+    fi
+    exit
 }
 
 xtcav_lasOff()
@@ -149,39 +149,39 @@ xtcav_lasOff()
     #    ARG=$ARG' -b '$NUMBUNCH
     #fi
 
-   if [[ $RUNLOCAL == 1 ]]; then
-       xtcavLasingOff "$EXP" "$RUN"
-   else
-       tmpScript=$(mktemp -p "$WORKDIR" xtcav_dark_tmpXXXXX.sh)
-       chmod u+x "$tmpScript"
-       printf "#!/bin/bash\nsource %s/manage/bin/psconda.sh\n" "$SIT_ENV_DIR" > "$tmpScript"
-       CMD="xtcavLasingOff $EXP $RUN"
-       printf '%s\n' "${CMD}" >> "$tmpScript"
-       xtcavCmd="sbatch --exclusive  --account lcls:$EXP -p $QUEUE -o $WORKDIR/xtcav_${EXP}_Run${RUN}_%J.out $tmpScript"
-       echo "run in queue: $xtcavCmd"
-       SUBMISSION=$($xtcavCmd)
-       check_for_submit_error
-       echo "$SUBMISSION"
-       THISJOBID=$(echo "$SUBMISSION" | awk '{print $4}')
-       JOBIDS+=( "$THISJOBID" )
-       NJOBS=$((NJOBS+1))
+    if [[ $RUNLOCAL == 1 ]]; then
+        xtcavLasingOff "$EXP" "$RUN"
+    else
+        tmpScript=$(mktemp -p "$WORKDIR" xtcav_dark_tmpXXXXX.sh)
+        chmod u+x "$tmpScript"
+        printf "#!/bin/bash\nsource %s/manage/bin/psconda.sh\n" "$SIT_ENV_DIR" > "$tmpScript"
+        CMD="xtcavLasingOff $EXP $RUN"
+        printf '%s\n' "${CMD}" >> "$tmpScript"
+        xtcavCmd="sbatch --exclusive  --account lcls:$EXP -p $QUEUE -o $WORKDIR/xtcav_${EXP}_Run${RUN}_%J.out $tmpScript"
+        echo "run in queue: $xtcavCmd"
+        SUBMISSION=$($xtcavCmd)
+        check_for_submit_error
+        echo "$SUBMISSION"
+        THISJOBID=$(echo "$SUBMISSION" | awk '{print $4}')
+        JOBIDS+=("$THISJOBID")
+        NJOBS=$((NJOBS + 1))
 
-       sleep 20
-       echo Running $NJOBS jobs are PIDS: "${JOBIDS[@]}"
-       until check_running_jobs; do
-           echo 'Checking again in 10s'
-           sleep 10
-       done
-       echo 'All jobs finished'
-   fi
-   exit
+        sleep 20
+        echo Running $NJOBS jobs are PIDS: "${JOBIDS[@]}"
+        until check_running_jobs; do
+            echo 'Checking again in 10s'
+            sleep 10
+        done
+        echo 'All jobs finished'
+    fi
+    exit
 }
 
 # Arg: DETECTOR class.  This could be a comma-separated list, but we're
 # matching it in the config file as a string.
 get_config()
 {
-    awk 'BEGIN{n=0;}/'"$1"' \{/{n=1;next;}/\}/{n=0;next;}{if(n)print;}' <"$CFGFILE" >/tmp/script.$$
+    awk 'BEGIN{n=0;}/'"$1"' \{/{n=1;next;}/\}/{n=0;next;}{if(n)print;}' < "$CFGFILE" > /tmp/script.$$
     # shellcheck disable=SC1090
     source /tmp/script.$$
     rm /tmp/script.$$
@@ -248,113 +248,112 @@ deploy_gain()
 }
 
 POSITIONAL=()
-while [[ $# -gt 0 ]]
-do
+while [[ $# -gt 0 ]]; do
     key="$1"
 
     case $key in
-        -h|--help)
+        -h | --help)
             usage
             exit
             ;;
-        -D|--xtcav_dark)
+        -D | --xtcav_dark)
             XTCAV=1
             shift
             ;;
-        -L|--xtcav_lasingoff)
+        -L | --xtcav_lasingoff)
             XTCAV=2
             shift
             ;;
-        -Z|--zyla)
+        -Z | --zyla)
             WANT_ZYLA=1
             shift
             ;;
-        -O|--opal)
+        -O | --opal)
             WANT_OPAL=1
             shift
             ;;
-        -R|--rayonix)
+        -R | --rayonix)
             WANT_RAYONIX=1
             shift
             ;;
-        -U|--uxi)
+        -U | --uxi)
             WANT_UXI=1
             shift
             ;;
-        -j|--jungfrau3)
+        -j | --jungfrau3)
             OLD_JUNGFRAU=1
             shift
             ;;
-        -r|--run)
+        -r | --run)
             RUN="$2"
             POSITIONAL+=("$1" "$2")
             shift
             shift
             ;;
-        -e|--experiment)
+        -e | --experiment)
             EXP="$2"
             POSITIONAL+=("$1" "$2")
             shift
             shift
             ;;
-        -l|--local)
+        -l | --local)
             RUNLOCAL=1
             shift
             ;;
-        -N|--nevents)
+        -N | --nevents)
             NUMEVT=("$2")
             shift
             shift
             ;;
-        -q|--queue)
+        -q | --queue)
             QUEUE=("$2")
             shift
             shift
             ;;
-        -i|--interactive)
+        -i | --interactive)
             INTERACTIVE=1
             shift
             ;;
-        -c|--eventcode)
+        -c | --eventcode)
             CALIBCODE=("$2")
             shift
             shift
             ;;
-        -v|--validity_start)
+        -v | --validity_start)
             VALSTR=("$2")
             shift
             shift
             ;;
-        -d|--calibdir)
+        -d | --calibdir)
             CALIBDIR=("$2")
             shift
             shift
             ;;
-        -t|--test)
+        -t | --test)
             DEPLOY=0
             shift
             ;;
-        -n|--noise_max)
+        -n | --noise_max)
             MYNOISESIGMAX=("$2")
             shift
             shift
             ;;
-        -C|--noise_min)
+        -C | --noise_min)
             MYNOISESIGMIN=("$2")
             shift
             shift
             ;;
-        -m|--adu_min)
+        -m | --adu_min)
             MYADUMIN=("$2")
             shift
             shift
             ;;
-        -x|--adu_max)
+        -x | --adu_max)
             MYADUMAX=("$2")
             shift
             shift
             ;;
-        -b|--nbunch)
+        -b | --nbunch)
             NUMBUNCH=("$2")
             shift
             shift
@@ -369,7 +368,6 @@ set -- "${POSITIONAL[@]}"
 
 T="$(date +%s%N)"
 echo "XXXXXXXXXXXXXXXXX START MAKEPEDS at $(date +'%T') on $HOSTNAME XXXXXXXXXXXXXXXXXXXXXXXXXXXX"
-
 
 RUN=${RUN:=0}
 EXP=${EXP:='xxx'}
@@ -391,7 +389,8 @@ EXCLUSIVE=0
 
 if [[ $RUN == 0 ]]; then
     if [[ $INTERACTIVE -ne 1 ]]; then
-        printf "Please enter a run number HERE: \n"; read -r RUN
+        printf "Please enter a run number HERE: \n"
+        read -r RUN
     fi
 fi
 
@@ -402,7 +401,7 @@ if [[ $EXP == 'xxx' ]]; then
     echo 'no experiment passed!!!'
     HUTCH=$($PCDSDIR/engineering_tools/latest-released/scripts/get_info --gethutch)
     echo HUTCH "$HUTCH"
-    if [[ "$HUTCH" != 'unknown_hutch' ]]; then
+    if [[ $HUTCH != 'unknown_hutch' ]]; then
         EXP=$($PCDSDIR/engineering_tools/latest-released/scripts/get_info --exp --hutch "$HUTCH")
     fi
 else
@@ -412,7 +411,8 @@ fi
 CFGFILE=$PCDSDIR/pyps/config/$HUTCH/makepeds.cfg
 
 if [[ $EXP == 'xxx' ]]; then
-    printf "Please enter an experiment name HERE: \n"; read -r EXP
+    printf "Please enter an experiment name HERE: \n"
+    read -r EXP
 fi
 
 # set the umask so all the files create are group writeable
@@ -453,7 +453,6 @@ elif ! compgen -G "$XTCDIR/$RUNSTR" > /dev/null; then
 fi
 
 echo "Use XTC files from  $XTCDIR."
-
 
 ###########
 # deduce calibdir.
@@ -534,7 +533,6 @@ if [[ $DEPLOY == 1 ]]; then
     ARG=$ARG' -D '
 fi
 
-
 CREATE_TIME=$(date '+%m_%d_%Y_%H:%M:%S')
 printf -v RUNSTR "%04g" "$RUN"
 
@@ -562,8 +560,8 @@ if [[ $LCLS2 -gt 0 ]]; then
     #check if epix100 detectors are present
     HAVE_EPIX100=$(grep -c epix100 /tmp/detnames_"$EXP"_"$CREATE_TIME")
     if [[ $HAVE_EPIX100 -ge 1 ]]; then
-        DETNAMES=$(grep epix100 /tmp/detnames_"$EXP"_"$CREATE_TIME" | grep raw | awk  'BEGIN { FS = "|"}; {print $1}' | paste -d " " -s)
-        DETTYPES=$(grep epix100 /tmp/detnames_"$EXP"_"$CREATE_TIME" | grep raw | awk  'BEGIN { FS = "|"}; {print $2}' | paste -d " " -s)
+        DETNAMES=$(grep epix100 /tmp/detnames_"$EXP"_"$CREATE_TIME" | grep raw | awk 'BEGIN { FS = "|"}; {print $1}' | paste -d " " -s)
+        DETTYPES=$(grep epix100 /tmp/detnames_"$EXP"_"$CREATE_TIME" | grep raw | awk 'BEGIN { FS = "|"}; {print $2}' | paste -d " " -s)
         for i in "${!DETNAMES[@]}"; do
             LOCARG='' #optional cuts, I suspect this will not be developed for LV17.
             MYDET=${DETNAMES[i]}
@@ -582,8 +580,8 @@ if [[ $LCLS2 -gt 0 ]]; then
     ####
     HAVE_EPIX10K=$(grep -c epix10ka /tmp/detnames_"$EXP"_"$CREATE_TIME")
     if [[ $HAVE_EPIX10K -ge 1 ]]; then
-        DETNAMES=$(grep epix10ka /tmp/detnames_"$EXP"_"$CREATE_TIME" | grep raw | awk  'BEGIN { FS = "|"}; {print $1}' | paste -d " " -s)
-        DETTYPES=$(grep epix10ka /tmp/detnames_"$EXP"_"$CREATE_TIME" | grep raw | awk  'BEGIN { FS = "|"}; {print $2}' | paste -d " " -s)
+        DETNAMES=$(grep epix10ka /tmp/detnames_"$EXP"_"$CREATE_TIME" | grep raw | awk 'BEGIN { FS = "|"}; {print $1}' | paste -d " " -s)
+        DETTYPES=$(grep epix10ka /tmp/detnames_"$EXP"_"$CREATE_TIME" | grep raw | awk 'BEGIN { FS = "|"}; {print $2}' | paste -d " " -s)
         for i in "${!DETNAMES[@]}"; do
             LOCARG='' #optional cuts, I suspect this will not be developed for LV17.
             EPIX10K="${DETNAMES[i]// /}"
@@ -594,7 +592,7 @@ if [[ $LCLS2 -gt 0 ]]; then
                 #Do not use workdir as you'd need to run the full charge injection run there for this to work
                 #revisit when we run into permission problems.
                 for calibcycle in {0..4}; do
-                    nextcycle=$(( calibcycle + 1 ))
+                    nextcycle=$((calibcycle + 1))
                     CMD="epix10ka_pedestals_calibration -d $EPIX10K -e $EXP -r $RUN --stepnum $calibcycle --stepmax $nextcycle -L INFO -x dir=$XTCDIR"
                     echo "---------------EPIX10K PEDESTALS FOR CYCLE $calibcycle --------------------"
                     if [[ $RUNLOCAL != 1 ]]; then
@@ -614,8 +612,8 @@ if [[ $LCLS2 -gt 0 ]]; then
                         check_for_submit_error
                         echo "$SUBMISSION"
                         THISJOBID=$(echo "$SUBMISSION" | awk '{print $4}')
-                        JOBIDS+=( "$THISJOBID" )
-                        NJOBS=$((NJOBS+1))
+                        JOBIDS+=("$THISJOBID")
+                        NJOBS=$((NJOBS + 1))
                     else
                         echo "$cmd"
                         $CMD
@@ -639,9 +637,9 @@ if [[ $LCLS2 -gt 0 ]]; then
                 for JOBID in "${ALLJOBIDS[@]}"; do
                     echo "Checking job $JOBID"
                     if grep -q 'exit code' "$WORKDIR"/*"$JOBID".out; then
-                        NFAILEDJOBS=$((NFAILEDJOBS+1))
+                        NFAILEDJOBS=$((NFAILEDJOBS + 1))
                     elif ! grep -q 'DONE' "$WORKDIR"/*"$JOBID".out; then
-                        NFAILEDJOBS=$((NFAILEDJOBS+1))
+                        NFAILEDJOBS=$((NFAILEDJOBS + 1))
                     fi
                 done
 
@@ -651,7 +649,7 @@ if [[ $LCLS2 -gt 0 ]]; then
             if [[ $DEPLOY == 1 ]]; then
                 if [ $NFAILEDJOBS -gt 0 ]; then
                     read -r -p "$NFAILEDJOBS of the calibration tasks failed, do you want to continue anyways (y/n)?"
-                    if [ "$REPLY" != "y" ];then
+                    if [ "$REPLY" != "y" ]; then
                         exit 1
                     fi
                 fi
@@ -667,14 +665,14 @@ if [[ $LCLS2 -gt 0 ]]; then
                 done
                 if [[ $RUNLOCAL != 1 ]]; then
                     echo 'Print Information about batch jobs'
-                JOBIDSTR=''
+                    JOBIDSTR=''
                     for JOBID in "${ALLJOBIDS[@]}"; do
-                if [[ $JOBIDSTR != '' ]]; then
-                     JOBIDSTR=$JOBIDSTR','
-                fi
-                JOBIDSTR=$JOBIDSTR$JOBID
-                done
-                sacct -j "$JOBIDSTR" --format=JobID,AveCPU,AveVMSize,CPUTime,Start,End,Elapsed
+                        if [[ $JOBIDSTR != '' ]]; then
+                            JOBIDSTR=$JOBIDSTR','
+                        fi
+                        JOBIDSTR=$JOBIDSTR$JOBID
+                    done
+                    sacct -j "$JOBIDSTR" --format=JobID,AveCPU,AveVMSize,CPUTime,Start,End,Elapsed
                 fi
             fi
         done
@@ -682,29 +680,27 @@ if [[ $LCLS2 -gt 0 ]]; then
     fi
 
     rm /tmp/detnames_"$EXP"_"$CREATE_TIME"
-    T2="$(($(date +%s%N)-T))"
-    S="$((T2/1000000000))"
-    M="$((T2/1000000))"
+    T2="$(($(date +%s%N) - T))"
+    S="$((T2 / 1000000000))"
+    M="$((T2 / 1000000))"
     echo "xxxxxxxxxxxxxxxxx END LCLS2 MAKEPEDS at $(date +'%T') after  $S.$M XXXXXXXXXXXXXXXXXXXXXXX"
     exit
 fi
-
-
 
 ####
 # Jungfrau related stuff. Different executable w/ different options. Ack.
 ###
 #check if jungfrau detectors are present
 HAVE_JUNGFRAU=$(grep -c Jungfrau /tmp/detnames_"$EXP"_"$CREATE_TIME")
-if [[ ( $HAVE_JUNGFRAU -ge 1 ) && ( $WANT_ZYLA -eq 0 ) && ( $WANT_OPAL -eq 0 ) && ( $WANT_RAYONIX -eq 0 )  && ( $WANT_UXI -eq 0 ) ]]; then
+if [[ ($HAVE_JUNGFRAU -ge 1) && ($WANT_ZYLA -eq 0) && ($WANT_OPAL -eq 0) && ($WANT_RAYONIX -eq 0) && ($WANT_UXI -eq 0) ]]; then
 
-    DETNAMES=$(grep Jungfrau /tmp/detnames_"$EXP"_"$CREATE_TIME" | awk  'BEGIN { FS = "|"}; {print $1}' | paste -d " " -s)
+    DETNAMES=$(grep Jungfrau /tmp/detnames_"$EXP"_"$CREATE_TIME" | awk 'BEGIN { FS = "|"}; {print $1}' | paste -d " " -s)
 
     DSNAME='exp='$EXP':run='$RUN':smd:stream=0-79'
     if [ -v OLD_JUNGFRAU ]; then # Do we need to keep the old JF stuff?
         #get the dataset name
-        (( RUN1=RUN+1 ))
-        (( RUN2=RUN+2 ))
+        ((RUN1 = RUN + 1))
+        ((RUN2 = RUN + 2))
         DSNAME="exp=$EXP:run=$RUN,$RUN1,$RUN2:smd:stream=0-79"
     fi
     DSNAME=$DSNAME':dir='$XTCDIR
@@ -749,10 +745,10 @@ if [[ ( $HAVE_JUNGFRAU -ge 1 ) && ( $WANT_ZYLA -eq 0 ) && ( $WANT_OPAL -eq 0 ) &
                 chmod u+x "$tmpScript"
                 printf '#!/bin/bash\n' > "$tmpScript"
                 {
-		    printf 'source %s/manage/bin/psconda.sh\n' "$SIT_ENV_DIR"
+                    printf 'source %s/manage/bin/psconda.sh\n' "$SIT_ENV_DIR"
                     printf "echo %s\n" "$HOSTNAME"
                     printf '%s\n' "${CMDC}"
-		} >> "tmpScript"
+                } >> "tmpScript"
                 if [[ $EXCLUSIVE == 1 ]]; then
                     jfCmd="sbatch --exclusive --account lcls:$EXP -p $QUEUE -o $WORKDIR/jungfrau_${EXP}_RUN${RUN}_%J.out $tmpScript"
                 else
@@ -763,8 +759,8 @@ if [[ ( $HAVE_JUNGFRAU -ge 1 ) && ( $WANT_ZYLA -eq 0 ) && ( $WANT_OPAL -eq 0 ) &
                 check_for_submit_error
                 echo "$SUBMISSION"
                 THISJOBID=$(echo "$SUBMISSION" | awk '{print $4}')
-                JOBIDS+=( "$THISJOBID" )
-                NJOBS=$((NJOBS+1))
+                JOBIDS+=("$THISJOBID")
+                NJOBS=$((NJOBS + 1))
             else
                 echo "$CMDC"
                 $CMDC
@@ -776,7 +772,7 @@ if [[ ( $HAVE_JUNGFRAU -ge 1 ) && ( $WANT_ZYLA -eq 0 ) && ( $WANT_OPAL -eq 0 ) &
                 break
             fi
         done
-    ALLJOBIDS=("${JOBIDS[@]}")
+        ALLJOBIDS=("${JOBIDS[@]}")
     done
 
     NFAILEDJOBS=0
@@ -785,17 +781,17 @@ if [[ ( $HAVE_JUNGFRAU -ge 1 ) && ( $WANT_ZYLA -eq 0 ) && ( $WANT_OPAL -eq 0 ) &
         sleep 30
         echo "Running $NJOBS jobs are PIDS: ${JOBIDS[*]}"
         until check_running_jobs; do
-                echo 'Checking again in 10s'
-                sleep 10
+            echo 'Checking again in 10s'
+            sleep 10
         done
         echo 'All jobs finished'
         # and now check that none of the jobs have existed with an error code:
         for JOBID in "${ALLJOBIDS[@]}"; do
             echo "Checking job $JOBID"
             if grep -q 'exit code' "$WORKDIR"/*"$JOBID".out; then
-                NFAILEDJOBS=$((NFAILEDJOBS+1))
+                NFAILEDJOBS=$((NFAILEDJOBS + 1))
             elif ! grep -q 'consumed' "$WORKDIR"/*"$JOBID".out; then
-                NFAILEDJOBS=$((NFAILEDJOBS+1))
+                NFAILEDJOBS=$((NFAILEDJOBS + 1))
             fi
         done
     fi
@@ -804,7 +800,7 @@ if [[ ( $HAVE_JUNGFRAU -ge 1 ) && ( $WANT_ZYLA -eq 0 ) && ( $WANT_OPAL -eq 0 ) &
     if [[ $DEPLOY == 1 ]]; then
         if [[ $NFAILEDJOBS -gt 0 ]]; then
             read -r -p "$NFAILEDJOBS of the calibration tasks failed, do you want to continue (y/n)?"
-            if [ "$REPLY" != "y" ];then
+            if [ "$REPLY" != "y" ]; then
                 exit 1
             fi
         fi
@@ -834,9 +830,9 @@ fi
 ###
 #check if epix10k detectors are present
 HAVE_EPIX10K=$(grep -c Epix10ka /tmp/detnames_"$EXP"_"$CREATE_TIME")
-if [[ ( $HAVE_EPIX10K -ge 1 ) && ( $WANT_ZYLA -eq 0 ) && ( $WANT_OPAL -eq 0 ) && ( $WANT_RAYONIX -eq 0 ) && ( $WANT_UXI -eq 0 ) ]]; then
+if [[ ($HAVE_EPIX10K -ge 1) && ($WANT_ZYLA -eq 0) && ($WANT_OPAL -eq 0) && ($WANT_RAYONIX -eq 0) && ($WANT_UXI -eq 0) ]]; then
     echo "-------------------- START EPIX10K PEDESTALS at $(date +'%T') ----------------------------"
-    DETNAMES=$(grep Epix10ka /tmp/detnames_"$EXP"_"$CREATE_TIME" | awk  'BEGIN { FS = "|"}; {print $1}' | paste -d " " -s)
+    DETNAMES=$(grep Epix10ka /tmp/detnames_"$EXP"_"$CREATE_TIME" | awk 'BEGIN { FS = "|"}; {print $1}' | paste -d " " -s)
     if [[ $RUNLOCAL -ne 1 ]]; then
         JOBIDS=()
         NJOBS=0
@@ -868,8 +864,8 @@ if [[ ( $HAVE_EPIX10K -ge 1 ) && ( $WANT_ZYLA -eq 0 ) && ( $WANT_OPAL -eq 0 ) &&
                 check_for_submit_error
                 echo "$SUBMISSION"
                 THISJOBID=$(echo "$SUBMISSION" | awk '{print $4}')
-                JOBIDS+=( "$THISJOBID" )
-                NJOBS=$((NJOBS+1))
+                JOBIDS+=("$THISJOBID")
+                NJOBS=$((NJOBS + 1))
             else
                 echo "$CMD"
                 $CMD
@@ -888,14 +884,14 @@ if [[ ( $HAVE_EPIX10K -ge 1 ) && ( $WANT_ZYLA -eq 0 ) && ( $WANT_OPAL -eq 0 ) &&
         echo 'All jobs finished'
         # and now check that none of the jobs have existed with an error code:
         # currently, the epix10k jobs print DONE at the end.
-    # Second check necessary as jobs can fail without printing an exit code to the logfile
+        # Second check necessary as jobs can fail without printing an exit code to the logfile
         NFAILEDJOBS=0
         for JOBID in "${ALLJOBIDS[@]}"; do
             echo "Checking job $JOBID"
             if grep -q 'exit code' "$WORKDIR"/*"$JOBID".out; then
-                NFAILEDJOBS=$((NFAILEDJOBS+1))
+                NFAILEDJOBS=$((NFAILEDJOBS + 1))
             elif ! grep -q 'DONE' "$WORKDIR"/*"$JOBID".out; then
-                NFAILEDJOBS=$((NFAILEDJOBS+1))
+                NFAILEDJOBS=$((NFAILEDJOBS + 1))
             fi
         done
     fi
@@ -904,7 +900,7 @@ if [[ ( $HAVE_EPIX10K -ge 1 ) && ( $WANT_ZYLA -eq 0 ) && ( $WANT_OPAL -eq 0 ) &&
     if [[ $DEPLOY == 1 ]]; then
         if [[ $NFAILEDJOBS -gt 0 ]]; then
             read -r -p "$NFAILEDJOBS of the calibration tasks failed, do you want to continue anyways (y/n)?"
-            if [ "$REPLY" != "y" ];then
+            if [ "$REPLY" != "y" ]; then
                 exit 1
             fi
         fi
@@ -951,30 +947,30 @@ HAVE_OPAL=$(grep -c Opal /tmp/detnames_"$EXP"_"$CREATE_TIME")
 HAVE_RAYONIX=$(grep -c Rayonix /tmp/detnames_"$EXP"_"$CREATE_TIME")
 
 #not like this: calculation
-(( SPECIFIED_CUTS=MYNOISESIGMIN+MYNOISESIGMAX+MYADUMIN+MYADUMAX ))
+((SPECIFIED_CUTS = MYNOISESIGMIN + MYNOISESIGMAX + MYADUMIN + MYADUMAX))
 
 DETS=''
 #always make pedestals if detectors are present in data
-if [[ ( $HAVE_CSPAD -ge 1) ]]; then
+if [[ $HAVE_CSPAD -ge 1 ]]; then
     DETS="$DETS CSPAD,CSPAD2x2"
 
-    DETNAMES=$(grep Cspad /tmp/detnames_"$EXP"_"$CREATE_TIME" | awk  'BEGIN { FS = "|"}; {print $1}' | paste -d " " -s)
+    DETNAMES=$(grep Cspad /tmp/detnames_"$EXP"_"$CREATE_TIME" | awk 'BEGIN { FS = "|"}; {print $1}' | paste -d " " -s)
     for CSPAD in $DETNAMES; do
         deploy_geometry "$CSPAD"
     done
 fi
 
-if [[ ( $HAVE_EPIX -ge 1) ]]; then
+if [[ $HAVE_EPIX -ge 1 ]]; then
     DETS="$DETS Epix100a"
 
-    DETNAMES=$(grep Epix100a /tmp/detnames_"$EXP"_"$CREATE_TIME" | awk  'BEGIN { FS = "|"}; {print $1}' | paste -d " " -s)
+    DETNAMES=$(grep Epix100a /tmp/detnames_"$EXP"_"$CREATE_TIME" | awk 'BEGIN { FS = "|"}; {print $1}' | paste -d " " -s)
     for EPIX100 in $DETNAMES; do
         deploy_gain "$EPIX100"
     done
 fi
 
 #add Zyla only on request
-if [[ ( $HAVE_ZYLA -ge 1 ) && ( $WANT_ZYLA -ge 1 ) ]]; then
+if [[ ($HAVE_ZYLA -ge 1) && ($WANT_ZYLA -ge 1) ]]; then
     if [ $SPECIFIED_CUTS -eq -4 ]; then
         DETS="$DETS Zyla"
     else
@@ -982,7 +978,7 @@ if [[ ( $HAVE_ZYLA -ge 1 ) && ( $WANT_ZYLA -ge 1 ) ]]; then
     fi
 fi
 #add iStar only on request
-if [[ ( $HAVE_ISTAR -ge 1 ) && ( $WANT_ZYLA -ge 1 ) ]]; then
+if [[ ($HAVE_ISTAR -ge 1) && ($WANT_ZYLA -ge 1) ]]; then
     if [ $SPECIFIED_CUTS -eq -4 ]; then
         DETS="$DETS iStar"
     else
@@ -991,7 +987,7 @@ if [[ ( $HAVE_ISTAR -ge 1 ) && ( $WANT_ZYLA -ge 1 ) ]]; then
 fi
 
 #add Opal only on request
-if [[ ( $HAVE_OPAL -ge 1 ) && ( $WANT_OPAL -ge 1 ) ]]; then
+if [[ ($HAVE_OPAL -ge 1) && ($WANT_OPAL -ge 1) ]]; then
     if [ $SPECIFIED_CUTS -eq -4 ]; then
         DETS="$DETS Opal1000,Opal2000,Opal4000,Opal8000"
     else
@@ -1000,7 +996,7 @@ if [[ ( $HAVE_OPAL -ge 1 ) && ( $WANT_OPAL -ge 1 ) ]]; then
 fi
 
 #add uxi only on request
-if [[ ( $HAVE_UXI -ge 1 ) && ( $WANT_UXI -ge 1 ) ]]; then
+if [[ ($HAVE_UXI -ge 1) && ($WANT_UXI -ge 1) ]]; then
     if [ $SPECIFIED_CUTS -eq -4 ]; then
         DETS="$DETS uxi"
     else
@@ -1009,7 +1005,7 @@ if [[ ( $HAVE_UXI -ge 1 ) && ( $WANT_UXI -ge 1 ) ]]; then
 fi
 
 #add Rayonix only on request
-if [[ ( $HAVE_RAYONIX -ge 1 ) && ( $WANT_RAYONIX -ge 1 ) ]]; then
+if [[ ($HAVE_RAYONIX -ge 1) && ($WANT_RAYONIX -ge 1) ]]; then
     if [ $SPECIFIED_CUTS -eq -4 ]; then
         DETS="$DETS Rayonix"
     else
@@ -1017,17 +1013,17 @@ if [[ ( $HAVE_RAYONIX -ge 1 ) && ( $WANT_RAYONIX -ge 1 ) ]]; then
     fi
     ARG=$ARG' --zeropeds'
 
-    DETNAMES=$(grep Rayonix /tmp/detnames_"$EXP"_"$CREATE_TIME" | awk  'BEGIN { FS = "|"}; {print $1}' | paste -d " " -s)
+    DETNAMES=$(grep Rayonix /tmp/detnames_"$EXP"_"$CREATE_TIME" | awk 'BEGIN { FS = "|"}; {print $1}' | paste -d " " -s)
     for RAYONIX in $DETNAMES; do
         deploy_geometry "$RAYONIX"
     done
 fi
 
-if [[ ( $DETS == '' ) ]]; then
-    T2="$(($(date +%s%N)-T))"
-    S="$((T2/1000000000))"
-    MIN="$((S/60))"
-    SEC="$((S-MIN*60))"
+if [[ $DETS == '' ]]; then
+    T2="$(($(date +%s%N) - T))"
+    S="$((T2 / 1000000000))"
+    MIN="$((S / 60))"
+    SEC="$((S - MIN * 60))"
     echo "XXXX NO epix100/cspad/opal/... IN RUN $RUN - END MAKEPEDS at $(date +'%T') after  $MIN.$SEC XXXXXXXXXXXXXXXXX"
     exit
 fi
@@ -1043,7 +1039,7 @@ for MYDET in $DETS; do
 
     LOCARG=$ARG' --thr_int_min '$ADUMIN' --thr_int_max '$ADUMAX' --thr_rms_min '$NOISESIGMIN' --thr_rms_max '$NOISESIGMAX
     #this was likely to work with runs where the zyla rate was < readout rate....
-    if [[ ( $MYDET == 'Zyla') ]]; then
+    if [[ $MYDET == 'Zyla' ]]; then
         LOCARG=$LOCARG' -m 100'
     fi
 
@@ -1059,7 +1055,7 @@ for MYDET in $DETS; do
     echo "-------------------- END CALIBRUN at $(date +'%T') for detector $MYDET----------------------------"
 done
 rm /tmp/detnames_"$EXP"_"$CREATE_TIME"
-T2="$(($(date +%s%N)-T))"
-S="$((T2/1000000000))"
-M="$((T2/1000000))"
+T2="$(($(date +%s%N) - T))"
+S="$((T2 / 1000000000))"
+M="$((T2 / 1000000))"
 echo "xxxxxxxxxxxxxxxxxxxx END MAKEPEDS at $(date +'%T') after  $S.$M XXXXXXXXXXXXXXXXXXXXXXXXXXXX"

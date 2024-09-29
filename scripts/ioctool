@@ -1,121 +1,123 @@
 #!/bin/bash
 
-function iocfpv {
-   ioc=""
-   ioc=$(grep_pv "$1" | cut -d'/' -f5 -s)
-   if [ -z "$ioc" ]; then
-      echo "Did not find an ioc associated with this PV." >&2
-      exit 1
-   elif [[ $ioc = *[[:space:]]* ]]; then # multiple iocs found if space present
-      ioccount=$(echo "$ioc" | wc -w)
-      echo "$1 is found in $ioccount places"
-      echo "Which ioc do you care about here? (press enter to exit)"
-      printf '%s\n' "$ioc" >&2
-      read -r chosenioc
-      if [[ -z "$chosenioc" ]]; then
-         echo "No ioc chosen. Exiting..." >&2
-         exit 0
-      fi
-      ioc=$chosenioc
-   fi
+function iocfpv
+{
+    ioc=""
+    ioc=$(grep_pv "$1" | cut -d'/' -f5 -s)
+    if [ -z "$ioc" ]; then
+        echo "Did not find an ioc associated with this PV." >&2
+        exit 1
+    elif [[ $ioc == *[[:space:]]* ]]; then # multiple iocs found if space present
+        ioccount=$(echo "$ioc" | wc -w)
+        echo "$1 is found in $ioccount places"
+        echo "Which ioc do you care about here? (press enter to exit)"
+        printf '%s\n' "$ioc" >&2
+        read -r chosenioc
+        if [[ -z $chosenioc ]]; then
+            echo "No ioc chosen. Exiting..." >&2
+            exit 0
+        fi
+        ioc=$chosenioc
+    fi
 
 }
 
-function iocdir {
-   ioc=$1
-   iocpath=""
-   iocpath=$(grep_ioc "$ioc" all | grep "id:'$ioc'" | sed -n "s/^.*dir: '\(\S*\)'.*$/\1/p");
-   if [[ -z $iocpath ]]; then
-      echo "Did not find ${ioc} running anywhere. Exiting..." >&2
-      exit 1
-   fi
+function iocdir
+{
+    ioc=$1
+    iocpath=""
+    iocpath=$(grep_ioc "$ioc" all | grep "id:'$ioc'" | sed -n "s/^.*dir: '\(\S*\)'.*$/\1/p")
+    if [[ -z $iocpath ]]; then
+        echo "Did not find ${ioc} running anywhere. Exiting..." >&2
+        exit 1
+    fi
 
-   if [[ ! $iocpath =~ ^/.* ]]; then
-      iocpath=/reg/g/pcds/epics/"${iocpath}"
-   fi
-
-}
-
-function ioccfg {
-   iocdir "$1"
-   iocfile=$(find "${iocpath}" -name "$1.cfg")
-   if [ -z  "$iocfile" ]; then
-      iocfile=$(find "${iocpath}" -path "*$1/st.cmd")
-      if [ -z "$iocfile" ]; then
-         echo "No files found for ioc $1" >&2
-         exit 1
-      fi
-   fi
+    if [[ ! $iocpath =~ ^/.* ]]; then
+        iocpath=/reg/g/pcds/epics/"${iocpath}"
+    fi
 
 }
 
+function ioccfg
+{
+    iocdir "$1"
+    iocfile=$(find "${iocpath}" -name "$1.cfg")
+    if [ -z "$iocfile" ]; then
+        iocfile=$(find "${iocpath}" -path "*$1/st.cmd")
+        if [ -z "$iocfile" ]; then
+            echo "No files found for ioc $1" >&2
+            exit 1
+        fi
+    fi
 
-function camname_to_pv {
-   #A function that will loop through camviewer.cfg files throughout all hutches to find the name then use that to search for its PV
-   campv=""
-   hutch="$1"
-   if [ "$1" == "" ]; then
-      hutch=$(get_info --gethutch)
-      if [[ "$hutch" == unknown_hutch ]]; then
-         echo 'unknown hutch, specify using the -H/--hutch option'
-         usage
-         exit 1
-      fi
-   fi
-
-   VIEWERCFG=/reg/g/pcds/pyps/config/$hutch/camviewer.cfg
-   CAMNAME=$(echo "$2" | sed -e 's/-/ /g' -e 's/_/ /g' -e 's/ /[-_ ]/g')
-
-
-
-   # The story here:
-   # See how many matches we have in the hutch.
-   # If 0, try looking in all of the hutches.
-   # If 1, then we're done.
-   # Otherwise:
-   # Look for a complete match, anchored on both sides.
-   # Look for a match anchored at the end.
-   # If there is more than one, return "ambiguous"
-   #
-   # Make a temp file with just the PVs and camera names that match.
-   tmp=/tmp/cv.$$
-   grep -i "$CAMNAME" "$VIEWERCFG" | grep -v '#' | awk -F, '{ if (split($2,a,";")==1) n=$2; else n=a[2]; gsub(" ","",n); gsub(" ","",$4); printf "%s %s\n", n, $4; }' >$tmp
-   c=$(wc -l <$tmp)
-   if [ "$c" -eq 0 ]; then
-       VIEWERCFG="/reg/g/pcds/pyps/config/*/camviewer.cfg"
-       grep -i "$CAMNAME" "$VIEWERCFG" | grep -v '#' | awk -F, '{ if (split($2,a,";")==1) n=$2; else n=a[2]; gsub(" ","",n); gsub(" ","",$4); printf "%s %s\n", n, $4; }' >$tmp
-       c=$(wc -l <$tmp)
-       if [ "$c" -eq 0 ]; then
-           echo "No match for $2"
-           rm -f $tmp
-           exit
-       fi
-   fi
-   if [ "$c" -eq 1 ]; then
-      campv=$(awk '{print $1;}' <$tmp)
-      rm -f $tmp
-      return
-   fi
-   # OK, ambiguous.  Look for a complete match on the second word.
-   if [ "$(grep -E -i -c "$CAMNAME\$" < $tmp)" -eq 1 ]; then
-      campv=$(grep -E -i "$CAMNAME\$" < $tmp | awk '{print $1;}')
-      rm -f $tmp
-      return
-   fi
-   # What about just a match at the end? (That is, if we are searching
-   # for "yag1", prefer "mec_yag1" to "mec_yag11".)
-   if [ "$(grep -E -i -c "$CAMNAME\$" < $tmp)" -eq 1 ]; then
-      campv=$(grep -E -i "$CAMNAME\$" < $tmp | awk '{print $1;}')
-      rm -f $tmp
-      return
-   fi
-   echo '"'"$2"'" is ambiguous:'
-   rm -f $tmp
-   exit
 }
 
-usage(){
-cat << EOF
+function camname_to_pv
+{
+    #A function that will loop through camviewer.cfg files throughout all hutches to find the name then use that to search for its PV
+    campv=""
+    hutch="$1"
+    if [ "$1" == "" ]; then
+        hutch=$(get_info --gethutch)
+        if [[ $hutch == unknown_hutch ]]; then
+            echo 'unknown hutch, specify using the -H/--hutch option'
+            usage
+            exit 1
+        fi
+    fi
+
+    VIEWERCFG=/reg/g/pcds/pyps/config/$hutch/camviewer.cfg
+    CAMNAME=$(echo "$2" | sed -e 's/-/ /g' -e 's/_/ /g' -e 's/ /[-_ ]/g')
+
+    # The story here:
+    # See how many matches we have in the hutch.
+    # If 0, try looking in all of the hutches.
+    # If 1, then we're done.
+    # Otherwise:
+    # Look for a complete match, anchored on both sides.
+    # Look for a match anchored at the end.
+    # If there is more than one, return "ambiguous"
+    #
+    # Make a temp file with just the PVs and camera names that match.
+    tmp=/tmp/cv.$$
+    grep -i "$CAMNAME" "$VIEWERCFG" | grep -v '#' | awk -F, '{ if (split($2,a,";")==1) n=$2; else n=a[2]; gsub(" ","",n); gsub(" ","",$4); printf "%s %s\n", n, $4; }' > $tmp
+    c=$(wc -l < $tmp)
+    if [ "$c" -eq 0 ]; then
+        VIEWERCFG="/reg/g/pcds/pyps/config/*/camviewer.cfg"
+        grep -i "$CAMNAME" "$VIEWERCFG" | grep -v '#' | awk -F, '{ if (split($2,a,";")==1) n=$2; else n=a[2]; gsub(" ","",n); gsub(" ","",$4); printf "%s %s\n", n, $4; }' > $tmp
+        c=$(wc -l < $tmp)
+        if [ "$c" -eq 0 ]; then
+            echo "No match for $2"
+            rm -f $tmp
+            exit
+        fi
+    fi
+    if [ "$c" -eq 1 ]; then
+        campv=$(awk '{print $1;}' < $tmp)
+        rm -f $tmp
+        return
+    fi
+    # OK, ambiguous.  Look for a complete match on the second word.
+    if [ "$(grep -E -i -c "$CAMNAME\$" < $tmp)" -eq 1 ]; then
+        campv=$(grep -E -i "$CAMNAME\$" < $tmp | awk '{print $1;}')
+        rm -f $tmp
+        return
+    fi
+    # What about just a match at the end? (That is, if we are searching
+    # for "yag1", prefer "mec_yag1" to "mec_yag11".)
+    if [ "$(grep -E -i -c "$CAMNAME\$" < $tmp)" -eq 1 ]; then
+        campv=$(grep -E -i "$CAMNAME\$" < $tmp | awk '{print $1;}')
+        rm -f $tmp
+        return
+    fi
+    echo '"'"$2"'" is ambiguous:'
+    rm -f $tmp
+    exit
+}
+
+usage()
+{
+    cat << EOF
 usage: $0 <ioc>|<pv>|<camera name> [option]
 
 Script that returns information about an ioc given its name, PV, or camera name
@@ -137,45 +139,42 @@ pvs      : opens the IOC.pvlist file in less
 EOF
 }
 
-
 if [[ ($1 == "--help") || ($1 == "-h") ]]; then
-   usage
-   exit 0
+    usage
+    exit 0
 fi
 
 if OPTIONS=$(getopt -o H: --long hutch: -n \'"$0"\' -- "$@"); then
-   echo "Terminating..." >&2
-   exit 1
+    echo "Terminating..." >&2
+    exit 1
 fi
 
 eval set -- "$OPTIONS"
 
-while true
-do
-   case "$1" in
-      -H|--hutch)
-         hutch=$2
-         shift 2
-         ;;
-      ?)
-         break
-         ;;
-      --)
-         shift
-         break
-         ;;
-      *)
-         echo "Internal Error"
-         exit 1
-         ;;
-   esac
+while true; do
+    case "$1" in
+        -H | --hutch)
+            hutch=$2
+            shift 2
+            ;;
+        ?)
+            break
+            ;;
+        --)
+            shift
+            break
+            ;;
+        *)
+            echo "Internal Error"
+            exit 1
+            ;;
+    esac
 done
 
-
 if [ $# -lt 1 ]; then
-   echo 'need arguments: input ioc or pv name' >&2
-   usage
-   exit 1
+    echo 'need arguments: input ioc or pv name' >&2
+    usage
+    exit 1
 fi
 
 NAME=$1
@@ -184,9 +183,8 @@ CMD=$2
 #################################################################
 
 if [[ $NAME == *':'* ]]; then #we are assuming that PVs have a colon in them
-   iocfpv "$NAME"
-   NAME="$ioc"
-
+    iocfpv "$NAME"
+    NAME="$ioc"
 
 #This elif block applies to the variety of camera names(e.g. TMO-07, xcs_gige_5, or IM2K4)
 #1) Check to see if the name has an underscore, dash, or only numbers and letters. If it doesn't return "unmatched format"
@@ -194,124 +192,122 @@ if [[ $NAME == *':'* ]]; then #we are assuming that PVs have a colon in them
 #3) If that returns nothing, try converting the camera name to a PV and search for that
 #4) If neither of those produce results return "Did not find name anywhere"
 elif [[ $NAME == *'-'* || $NAME == *'_'* || $NAME =~ ^[[:alnum:]]+$ ]]; then
-   INFO=$(grep_ioc "$NAME" all | grep "id:'$NAME'")
-      if [ -z "$INFO" ]; then
-         #echo "Hutch = $hutch"
-         camname_to_pv "$hutch" "$NAME"
-         iocfpv "$campv"
-         NAME="$ioc"
+    INFO=$(grep_ioc "$NAME" all | grep "id:'$NAME'")
+    if [ -z "$INFO" ]; then
+        #echo "Hutch = $hutch"
+        camname_to_pv "$hutch" "$NAME"
+        iocfpv "$campv"
+        NAME="$ioc"
 
-      elif [[ -z "$NAME" ]]; then
-         echo "Did not find ${NAME} running anywhere. Exiting..." >&2
-         exit 1
-      fi
+    elif [[ -z $NAME ]]; then
+        echo "Did not find ${NAME} running anywhere. Exiting..." >&2
+        exit 1
+    fi
 
-elif [[ ! $NAME == *'-'* ]]; then #We are assuming that ioc names contain a dash in them
-   echo "${NAME} does not match the format for PVs or IOC names. Exiting..." >&2
-   exit 1
+elif [[ $NAME != *'-'* ]]; then #We are assuming that ioc names contain a dash in them
+    echo "${NAME} does not match the format for PVs or IOC names. Exiting..." >&2
+    exit 1
 fi
-
 
 #################################################################
 
 if [ "$CMD" == "name" ] || [ "$CMD" == "" ]; then
-   echo "$NAME"
+    echo "$NAME"
 
 #################################################################
 
-elif [ "$CMD" ==  "dir" ]; then
-   iocdir "$NAME"
-   echo "$iocpath"
+elif [ "$CMD" == "dir" ]; then
+    iocdir "$NAME"
+    echo "$iocpath"
 
 #################################################################
 
 elif [ "$CMD" == "cddir" ]; then
-   iocdir "$NAME"
-   if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
-      echo "Script is not being sourced. Start with 'source $0' before calling script with this option." >&2
-      exit 1
-   fi
-   cd "${iocpath}"
-
+    iocdir "$NAME"
+    if [[ ${BASH_SOURCE[0]} == "$0" ]]; then
+        echo "Script is not being sourced. Start with 'source $0' before calling script with this option." >&2
+        exit 1
+    fi
+    cd "${iocpath}"
 
 #################################################################
 
 elif [ "$CMD" == "cfg" ]; then
-   ioccfg "$NAME"
-   echo "$iocfile"
+    ioccfg "$NAME"
+    echo "$iocfile"
 
 #################################################################
 
 elif [ "$CMD" == "less" ]; then
-   ioccfg "$NAME"
-   less "$iocfile"
+    ioccfg "$NAME"
+    less "$iocfile"
 
 #################################################################
 
 elif [ "$CMD" == "cat" ]; then
-   ioccfg "$NAME"
-   cat "$iocfile"
+    ioccfg "$NAME"
+    cat "$iocfile"
 
 #################################################################
 
 elif [ "$CMD" == "data" ]; then
-   iocdatapath=/reg/d/iocData/"${NAME}"/iocInfo
-   if [ -d "$iocdatapath" ]; then
-      echo "${iocdatapath}"
-   else
-      echo "$iocdatapath could not be found. Exiting..." >&2
-   fi
+    iocdatapath=/reg/d/iocData/"${NAME}"/iocInfo
+    if [ -d "$iocdatapath" ]; then
+        echo "${iocdatapath}"
+    else
+        echo "$iocdatapath could not be found. Exiting..." >&2
+    fi
 
 #################################################################
 
 elif [ "$CMD" == "autosave" ]; then
-   autosavefile=/reg/d/iocData/"${NAME}"/autosave/${NAME}.sav
-   if [ -f "$autosavefile" ]; then
-      less "$autosavefile"
-   else
-      echo "Recent autosave file could not be found." >&2
-   fi
+    autosavefile=/reg/d/iocData/"${NAME}"/autosave/${NAME}.sav
+    if [ -f "$autosavefile" ]; then
+        less "$autosavefile"
+    else
+        echo "Recent autosave file could not be found." >&2
+    fi
 
 #################################################################
 
 elif [ "$CMD" == "archive" ]; then
-   archivefile=/reg/d/iocData/"${NAME}"/archive/${NAME}.archive
-   if [ -f "$archivefile" ]; then
-      less "$archivefile"
-   else
-      echo "Archive file could not be found." >&2
-   fi
+    archivefile=/reg/d/iocData/"${NAME}"/archive/${NAME}.archive
+    if [ -f "$archivefile" ]; then
+        less "$archivefile"
+    else
+        echo "Archive file could not be found." >&2
+    fi
 
 #################################################################
 
 elif [ "$CMD" == "log" ]; then
-   logfile=/reg/d/iocData/"${NAME}"/iocInfo/ioc.log
-   if [ -f "$logfile" ]; then
-      less "$logfile"
-   else
-      echo "Recent log file could not be found." >&2
-   fi
+    logfile=/reg/d/iocData/"${NAME}"/iocInfo/ioc.log
+    if [ -f "$logfile" ]; then
+        less "$logfile"
+    else
+        echo "Recent log file could not be found." >&2
+    fi
 
 #################################################################
 
 elif [ "$CMD" == "telnet" ]; then
-   INFO=$(grep_ioc "$NAME" all | grep "id:'$NAME'")
-   if [ -z "$INFO" ]; then
-      echo "$NAME could not be found. Exiting..." >&2
-      exit 1
-   fi
-   HOST=$(echo "$INFO" | sed -n "s/^.*host: '\(\S*\)'.*$/\1/p")
-   PORT=$(echo "$INFO" | sed -n "s/^.*port: \(\S*\),.*$/\1/p")
-   echo "$HOST":"$PORT"
-   telnet "$HOST" "$PORT"
+    INFO=$(grep_ioc "$NAME" all | grep "id:'$NAME'")
+    if [ -z "$INFO" ]; then
+        echo "$NAME could not be found. Exiting..." >&2
+        exit 1
+    fi
+    HOST=$(echo "$INFO" | sed -n "s/^.*host: '\(\S*\)'.*$/\1/p")
+    PORT=$(echo "$INFO" | sed -n "s/^.*port: \(\S*\),.*$/\1/p")
+    echo "$HOST":"$PORT"
+    telnet "$HOST" "$PORT"
 
 #################################################################
 
 elif [ "$CMD" == "pvs" ]; then
-   pvlistfile=/cds/data/iocData/"${NAME}"/iocInfo/IOC.pvlist
-   if [ -f "$pvlistfile" ]; then
-      less "$pvlistfile"
-   else
-      echo "$pvlistfile could not be found." >&2
-   fi
+    pvlistfile=/cds/data/iocData/"${NAME}"/iocInfo/IOC.pvlist
+    if [ -f "$pvlistfile" ]; then
+        less "$pvlistfile"
+    else
+        echo "$pvlistfile could not be found." >&2
+    fi
 fi
