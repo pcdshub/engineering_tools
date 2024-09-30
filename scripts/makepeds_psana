@@ -442,7 +442,7 @@ ARG=' -n '$NUMEVT' -Z 1000000 -U 1000000 -z 1000000 -u 1000000 '
 # look for xtc w/o in progress if not using live mode. TOBEIMPLEMENTED
 ###########
 RUNSTR=$(printf '%04d' "$RUN")
-RUNSTR="$EXP-r$RUNSTR*.xtcx"
+RUNSTR="$EXP-r$RUNSTR*.xtc"
 XTCDIR=/sdf/data/lcls/ds/"$HUTCH"/"$EXP"/xtc
 # If inprogress files use FFB location
 if compgen -G "$XTCDIR/$RUNSTR.inprogress" > /dev/null; then
