@@ -34,8 +34,8 @@ if [[ -z $HUTCH ]]; then
     echo "incorrect hutch name given.  Enter hutch name in lower case (example: xpp)"
 else
     if [[ $HUTCH == "all" ]]; then
-        grep -i "${1}" /reg/g/pcds/pyps/config/*/iocmanager.cfg
+        grep -i "${1}" /cds/group/pcds/pyps/config/*/iocmanager.cfg
     else
-        grep -i "${1}" /reg/g/pcds/pyps/config/"$HUTCH"/iocmanager.cfg
+        grep -i "${1}" /cds/group/pcds/pyps/config/"$HUTCH"/iocmanager.cfg
     fi
 fi

@@ -78,4 +78,4 @@ export QT_XKB_CONFIG_ROOT=/usr/share/X11/xkb
 export PSPKG_RELEASE=controls-0.1.9
 source "$PSPKG_ROOT"/etc/set_env.sh
 
-/reg/g/pcds/pyps/config/"${HUTCH,,}"/iocmanager/imgr.py "$@" --hutch "${HUTCH,,}"
+/cds/group/pcds/pyps/config/"${HUTCH,,}"/iocmanager/imgr.py "$@" --hutch "${HUTCH,,}"

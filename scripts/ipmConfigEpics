@@ -242,9 +242,9 @@ ipmGUI()
 {
     if caget "$BASE":SUM > /dev/null 2>&1; then
         if [ ${#WAVE8} -gt 0 ]; then
-            /reg/g/pcds/pyps/apps/wave8/latest/wave8 --base "$BASE" --evr "$EVR" --ioc "$IOC"
+            /cds/group/pcds/pyps/apps/wave8/latest/wave8 --base "$BASE" --evr "$EVR" --ioc "$IOC"
         else
-            /reg/g/pcds/controls/pycaqt/ipimb/ipimb --base "$BASE" --ioc "$IOC" --evr "$EVR"
+            /cds/group/pcds/controls/pycaqt/ipimb/ipimb --base "$BASE" --ioc "$IOC" --evr "$EVR"
         fi
     else
         echo "Could not connect to ${BASE}. Exiting..."

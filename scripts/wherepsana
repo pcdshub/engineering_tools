@@ -69,7 +69,7 @@ if [[ -z $CONFIG ]]; then
 fi
 
 #create a tempoprary file with the procStatus so we only call that once;
-/reg/g/pcds/dist/pds/"$HUTCH"/current/tools/procmgr/procmgr status /reg/g/pcds/dist/pds/"$HUTCH"/scripts/"$CONFIG" > /tmp/procServStatus.$$
+/cds/group/pcds/dist/pds/"$HUTCH"/current/tools/procmgr/procmgr status /cds/group/pcds/dist/pds/"$HUTCH"/scripts/"$CONFIG" > /tmp/procServStatus.$$
 
 mapfile -t PSANA_NODES < <(grep monreqsrvpsana /tmp/procServStatus.$$ | awk '{print $1}')
 if [[ -z $DETAIL ]]; then

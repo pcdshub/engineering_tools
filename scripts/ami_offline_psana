@@ -65,8 +65,8 @@ if [[ $HUTCH == 'cxi' ]]; then
 fi
 
 #get executable
-ami_base_path=$(grep ami_base_path /reg/g/pcds/dist/pds/"$HUTCH"/scripts/"$CNF" | grep -v '#' | grep -v 'ami_base_path+' | tail -n 1 | awk 'BEGIN { FS = "=" }; { print $2}' | sed s/\'//g)
-ami_path=$ami_base_path$(grep ami_path /reg/g/pcds/dist/pds/"$HUTCH"/scripts/"$CNF" | grep -v 'ami_path+' | grep -v '#' | awk 'BEGIN { FS = "= " }; { print $2}' | sed s/ami_base_path+//g | sed s/\'//g)
+ami_base_path=$(grep ami_base_path /cds/group/pcds/dist/pds/"$HUTCH"/scripts/"$CNF" | grep -v '#' | grep -v 'ami_base_path+' | tail -n 1 | awk 'BEGIN { FS = "=" }; { print $2}' | sed s/\'//g)
+ami_path=$ami_base_path$(grep ami_path /cds/group/pcds/dist/pds/"$HUTCH"/scripts/"$CNF" | grep -v 'ami_path+' | grep -v '#' | awk 'BEGIN { FS = "= " }; { print $2}' | sed s/ami_base_path+//g | sed s/\'//g)
 
 if [[ ! -f $ami_path/offline_ami ]]; then
     echo "could not find offline_ami executable in ""$ami_path"
@@ -74,21 +74,21 @@ if [[ ! -f $ami_path/offline_ami ]]; then
 fi
 
 #plugin_path & plugin string.
-pp=$(grep plugin_path /reg/g/pcds/dist/pds/"$HUTCH"/scripts/"$CNF" | grep ami_base | grep -v '#' | awk 'BEGIN { FS = "= " }; { print $2}' | sed s/ami_base_path+//g | sed s/\'//g)
+pp=$(grep plugin_path /cds/group/pcds/dist/pds/"$HUTCH"/scripts/"$CNF" | grep ami_base | grep -v '#' | awk 'BEGIN { FS = "= " }; { print $2}' | sed s/ami_base_path+//g | sed s/\'//g)
 plugin_path=$ami_base_path$pp
 plugin_str=$plugin_path'/libtimetooldbd.so'
 
 if [[ -z $NOPLUG ]]; then
     ARGSTR=$ARGSTR' -L '$plugin_str
 fi
-#ARGSTR=$ARGSTR -X /reg/neh/operator/$HUTCH\opr/experiments
+#ARGSTR=$ARGSTR -X /cds/home/opr/$HUTCH\opr/experiments
 
 #check hostname - different path for recorder node.
 if [ "${HOSTNAME:0:5}" == 'psana' ]; then
-    XTCDIR=/reg/d/psdm/$HUTCH/$EXP/xtc/
+    XTCDIR=/cds/data/psdm/$HUTCH/$EXP/xtc/
     HAVE_RUNS=$(find "$XTCDIR"/*r* | wc -l)
     if [ "$HAVE_RUNS" == 0 ]; then
-        echo 'did not find any xtc files in /reg/d/psdm/'"$HUTCH"'/'"$EXP"', will exit'
+        echo 'did not find any xtc files in /cds/data/psdm/'"$HUTCH"'/'"$EXP"', will exit'
         exit
     fi
 elif [ "${HOSTNAME:0:3}" == 'drp' ]; then
@@ -113,13 +113,13 @@ if [ ! -d /tmp/ami_offline_"$USER" ]; then
     mkdir /tmp/ami_offline_"$USER"
 fi
 
-ln -sf /reg/neh/operator/"$HUTCH"opr/.ami_favorites ~/.
+ln -sf /cds/home/opr/"$HUTCH"opr/.ami_favorites ~/.
 
 #not sure this is necessary either.
-source /reg/g/pcds/setup/pathmunge.sh
-ldpathmunge /reg/g/pcds/dist/pds/"$HUTCH"/ami-current/build/ami/lib/x86_64-linux-opt
+source /cds/group/pcds/setup/pathmunge.sh
+ldpathmunge /cds/group/pcds/dist/pds/"$HUTCH"/ami-current/build/ami/lib/x86_64-linux-opt
 
-LD_LIBRARY_PATH=/reg/g/pcds/dist/pds/"$HUTCH"/current/build/pds/lib/x86_64-linux/:/reg/g/pcds/dist/pds/xpp/current/build/pdsdata/lib/x86_64-linux/:/reg/g/pcds/dist/pds/xpp/current/build/pdsalg/lib/x86_64-linux/:/reg/g/pcds/dist/pds/xpp/current/build/pdsapp/lib/x86_64-linux/:$LD_LIBRARY_PATH
+LD_LIBRARY_PATH=/cds/group/pcds/dist/pds/"$HUTCH"/current/build/pds/lib/x86_64-linux/:/cds/group/pcds/dist/pds/xpp/current/build/pdsdata/lib/x86_64-linux/:/cds/group/pcds/dist/pds/xpp/current/build/pdsalg/lib/x86_64-linux/:/cds/group/pcds/dist/pds/xpp/current/build/pdsapp/lib/x86_64-linux/:$LD_LIBRARY_PATH
 
 #ARGSTR='-p '$XTCDIR $ARGSTR
 echo '----------------------------------------------'

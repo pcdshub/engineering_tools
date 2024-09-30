@@ -19,7 +19,7 @@ name_to_pv()
     fi
     CAMPVFULL=""
     hutch=$(echo "$2" | tr A-Z a-z)
-    VIEWERCFG=/reg/g/pcds/pyps/config/$hutch/camviewer.cfg
+    VIEWERCFG=/cds/group/pcds/pyps/config/$hutch/camviewer.cfg
     # Match "-" or "_" or " ".
     NAME=$(echo "$1" | sed -e 's/-/ /g' -e 's/_/ /g' -e 's/ /[-_ ]/g')
     #
@@ -37,7 +37,7 @@ name_to_pv()
     grep -i "$NAME" "$VIEWERCFG" | grep -v '#' | awk -F, '{ if (split($2,a,";")==1) n=$2; else n=a[2]; gsub(" ","",n); gsub(" ","",$4); printf "%s %s\n", n, $4; }' > $tmp
     c=$(wc -l < $tmp)
     if [ "$c" -eq 0 ]; then
-        VIEWERCFG="/reg/g/pcds/pyps/config/*/camviewer.cfg"
+        VIEWERCFG="/cds/group/pcds/pyps/config/*/camviewer.cfg"
         # shellcheck disable=SC2086
         grep -i "$NAME" $VIEWERCFG | grep -v '#' | awk -F, '{ if (split($2,a,";")==1) n=$2; else n=a[2]; gsub(" ","",n); gsub(" ","",$4); printf "%s %s\n", n, $4; }' > $tmp
         c=$(wc -l < $tmp)
@@ -78,7 +78,7 @@ gige_num_to_name()
     fi
     HUTCH=${1^^}
     hutch=${1,,}
-    VIEWERCFG=/reg/g/pcds/pyps/config/$hutch/camviewer.cfg
+    VIEWERCFG=/cds/group/pcds/pyps/config/$hutch/camviewer.cfg
     printf -v GIGENUM "%02d" "$2"
     GIGEBASE=$HUTCH:GIGE:$GIGENUM
 
@@ -105,12 +105,12 @@ list_cams()
     HUTCH=$(echo "$1" | tr a-z A-Z)
     hutch=$(echo "$1" | tr A-Z a-z)
 
-    ALLVIEWERCFG="/reg/g/pcds/pyps/config/*/camviewer.cfg"
+    ALLVIEWERCFG="/cds/group/pcds/pyps/config/*/camviewer.cfg"
     echo grep -v '#' "$ALLVIEWERCFG" | awk -F, '{ if (split($2,a,";")==1) n=$2; else n=a[2]; gsub(" ","",n); gsub(" ","",$4); printf "%s %s\n", n, $4; }'
 
-    VIEWERCFGLFE=/reg/g/pcds/pyps/config/lfe/camviewer.cfg
-    VIEWERCFGXRT=/reg/g/pcds/pyps/config/xrt/camviewer.cfg
-    VIEWERCFG=/reg/g/pcds/pyps/config/$hutch/camviewer.cfg
+    VIEWERCFGLFE=/cds/group/pcds/pyps/config/lfe/camviewer.cfg
+    VIEWERCFGXRT=/cds/group/pcds/pyps/config/xrt/camviewer.cfg
+    VIEWERCFG=/cds/group/pcds/pyps/config/$hutch/camviewer.cfg
     if [ "$hutch" != 'tmo' ] && [ "$hutch" != 'rix' ]; then
         grep -v '#' $VIEWERCFGLFE | awk -F, '{if ($4) print $4}' | sed 's/ //g'
         grep -v '#' $VIEWERCFGXRT | awk -F, '{if ($4) print $4}' | sed 's/ //g'
@@ -123,7 +123,7 @@ list_cams()
 
 iocfpv()
 {
-    grep_pv "$1" | sed -n 's/\/reg\/d\/iocData\/\(\S*\)\/iocInfo/\1/p'
+    grep_pv "$1" | sed -n 's/\/cds\/data\/iocData\/\(\S*\)\/iocInfo/\1/p'
 }
 
 iocinfo()
@@ -269,8 +269,8 @@ fi
 
 echo "Launching camViewer for $hutch."
 
-EXE="/reg/g/pcds/pyps/config/$hutch/camviewer/run_viewer.csh"
-PVLIST="/reg/g/pcds/pyps/config/$hutch/camviewer.cfg"
+EXE="/cds/group/pcds/pyps/config/$hutch/camviewer/run_viewer.csh"
+PVLIST="/cds/group/pcds/pyps/config/$hutch/camviewer.cfg"
 
 if [ $LIST -gt 0 ]; then
     list_cams "$hutch"

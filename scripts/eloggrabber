@@ -15,14 +15,14 @@ OPTIONS:
 EOF
 }
 
-source /reg/g/psdm/sw/conda2/manage/bin/psconda.sh ""
-export PYTHONPATH=/reg/g/psdm/web/ws/prod/apps/LogBookClient:${PYTHONPATH}
-export PATH=/reg/g/psdm/web/ws/prod/apps/LogBookClient/LogBookClient:${PATH}
+source /cds/group/psdm/sw/conda2/manage/bin/psconda.sh ""
+export PYTHONPATH=/cds/group/psdm/web/ws/prod/apps/LogBookClient:${PYTHONPATH}
+export PATH=/cds/group/psdm/web/ws/prod/apps/LogBookClient/LogBookClient:${PATH}
 
 grab()
 {
     if [[ $HUTCH == 'unknown_hutch' ]]; then
-        echo 'I cannot determine the current hutch and thus not the current experiment. Try another machine (control room/psusr) or different directory like /reg/d/psdm/<hutch>/..... Will quit.'
+        echo 'I cannot determine the current hutch and thus not the current experiment. Try another machine (control room/psusr) or different directory like /cds/data/psdm/<hutch>/..... Will quit.'
         exit
     fi
     LogBookGrabber_qt \
@@ -60,7 +60,7 @@ grab_user()
 grab_instrument()
 {
     if [[ $HUTCH == 'unknown_hutch' ]]; then
-        echo 'I cannot determine the current hutch and thus not the current experiment. Try another machine (control room/psusr) or different directory like /reg/d/psdm/<hutch>/..... Will quit.'
+        echo 'I cannot determine the current hutch and thus not the current experiment. Try another machine (control room/psusr) or different directory like /cds/data/psdm/<hutch>/..... Will quit.'
         exit
     fi
     EXPNAME="$HUTCH Instrument"

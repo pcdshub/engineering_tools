@@ -20,4 +20,4 @@ if [[ -n $1 && ! $1 =~ '--' ]]; then
 else
     HUTCH=$(get_hutch_name)
 fi
-/reg/g/pcds/pyps/config/"$HUTCH"/pmgr/pmgr --type ims_motor --hutch "$HUTCH" "$@" &
+/cds/group/pcds/pyps/config/"$HUTCH"/pmgr/pmgr --type ims_motor --hutch "$HUTCH" "$@" &

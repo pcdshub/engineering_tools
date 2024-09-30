@@ -4,7 +4,7 @@ usage()
     cat << EOF
 Usage: $0 <PV or PV keyword>
 
-Grep searches through IOC dirs in /reg/d/iocData/ for PVs that match keyword
+Grep searches through IOC dirs in /cds/data/iocData/ for PVs that match keyword
 EOF
 }
 
@@ -16,9 +16,9 @@ fi
 KEYWORD=$1
 
 if [[ -n $KEYWORD ]]; then
-    cd /reg/d/iocData/
+    cd /cds/data/iocData/
     for i in ioc-*; do
-        cd /reg/d/iocData/"$i"
+        cd /cds/data/iocData/"$i"
         if [ -e ./iocInfo/ ]; then
             cd iocInfo
             if [ -e ./IOC.pvlist ]; then

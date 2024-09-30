@@ -22,8 +22,8 @@ if [[ $RESCNT -eq 1 ]]; then
         read -rp "Do you really intend to stop the ami_client on $DAQHOST where the daq is running? (y/n)"
         if [ "$REPLY" == "y" ]; then
             echo "Restarting the ami_client..."
-            /reg/g/pcds/dist/pds/"$HUTCH"/current/tools/procmgr/procmgr stop \
-                /reg/g/pcds/dist/pds/"$HUTCH"/scripts/"$HUTCH".cnf ami_client
+            /cds/group/pcds/dist/pds/"$HUTCH"/current/tools/procmgr/procmgr stop \
+                /cds/group/pcds/dist/pds/"$HUTCH"/scripts/"$HUTCH".cnf ami_client
         fi
     fi
 fi

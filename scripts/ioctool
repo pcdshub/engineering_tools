@@ -33,7 +33,7 @@ function iocdir
     fi
 
     if [[ ! $iocpath =~ ^/.* ]]; then
-        iocpath=/reg/g/pcds/epics/"${iocpath}"
+        iocpath=/cds/group/pcds/epics/"${iocpath}"
     fi
 
 }
@@ -66,7 +66,7 @@ function camname_to_pv
         fi
     fi
 
-    VIEWERCFG=/reg/g/pcds/pyps/config/$hutch/camviewer.cfg
+    VIEWERCFG=/cds/group/pcds/pyps/config/$hutch/camviewer.cfg
     CAMNAME=$(echo "$2" | sed -e 's/-/ /g' -e 's/_/ /g' -e 's/ /[-_ ]/g')
 
     # The story here:
@@ -83,7 +83,7 @@ function camname_to_pv
     grep -i "$CAMNAME" "$VIEWERCFG" | grep -v '#' | awk -F, '{ if (split($2,a,";")==1) n=$2; else n=a[2]; gsub(" ","",n); gsub(" ","",$4); printf "%s %s\n", n, $4; }' > $tmp
     c=$(wc -l < $tmp)
     if [ "$c" -eq 0 ]; then
-        VIEWERCFG="/reg/g/pcds/pyps/config/*/camviewer.cfg"
+        VIEWERCFG="/cds/group/pcds/pyps/config/*/camviewer.cfg"
         grep -i "$CAMNAME" "$VIEWERCFG" | grep -v '#' | awk -F, '{ if (split($2,a,";")==1) n=$2; else n=a[2]; gsub(" ","",n); gsub(" ","",$4); printf "%s %s\n", n, $4; }' > $tmp
         c=$(wc -l < $tmp)
         if [ "$c" -eq 0 ]; then
@@ -251,7 +251,7 @@ elif [ "$CMD" == "cat" ]; then
 #################################################################
 
 elif [ "$CMD" == "data" ]; then
-    iocdatapath=/reg/d/iocData/"${NAME}"/iocInfo
+    iocdatapath=/cds/data/iocData/"${NAME}"/iocInfo
     if [ -d "$iocdatapath" ]; then
         echo "${iocdatapath}"
     else
@@ -261,7 +261,7 @@ elif [ "$CMD" == "data" ]; then
 #################################################################
 
 elif [ "$CMD" == "autosave" ]; then
-    autosavefile=/reg/d/iocData/"${NAME}"/autosave/${NAME}.sav
+    autosavefile=/cds/data/iocData/"${NAME}"/autosave/${NAME}.sav
     if [ -f "$autosavefile" ]; then
         less "$autosavefile"
     else
@@ -271,7 +271,7 @@ elif [ "$CMD" == "autosave" ]; then
 #################################################################
 
 elif [ "$CMD" == "archive" ]; then
-    archivefile=/reg/d/iocData/"${NAME}"/archive/${NAME}.archive
+    archivefile=/cds/data/iocData/"${NAME}"/archive/${NAME}.archive
     if [ -f "$archivefile" ]; then
         less "$archivefile"
     else
@@ -281,7 +281,7 @@ elif [ "$CMD" == "archive" ]; then
 #################################################################
 
 elif [ "$CMD" == "log" ]; then
-    logfile=/reg/d/iocData/"${NAME}"/iocInfo/ioc.log
+    logfile=/cds/data/iocData/"${NAME}"/iocInfo/ioc.log
     if [ -f "$logfile" ]; then
         less "$logfile"
     else

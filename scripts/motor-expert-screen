@@ -22,13 +22,13 @@ shift $((OPTIND - 1))
 PREFIX=$(echo "$1" | cut -d . -f 1)
 
 # Setup edm environment
-source /reg/g/pcds/setup/epicsenv-3.14.12.sh
-export PCDS_EDMS=/reg/g/pcds/package/epics/3.14/screens/edm
+source /cds/group/pcds/setup/epicsenv-3.14.12.sh
+export PCDS_EDMS=/cds/group/pcds/package/epics/3.14/screens/edm
 #export EDMDATAFILES=.:${PCDS_EDMS}/xps8:${PCDS_EDMS}/ims  # normal EDMDATAFILES line
-export EDMDATAFILES=.:${PCDS_EDMS}/xps8:/reg/g/pcds/package/epics/3.14/ioc/common/ims/R2.2.3/imsScreens:/cds/group/pcds/epics/ioc/common/smaract/R1.0.11/motorScreens:/cds/group/pcds/epics/ioc/common/mmc/R1.0.6/mmcScreens
+export EDMDATAFILES=.:${PCDS_EDMS}/xps8:/cds/group/pcds/package/epics/3.14/ioc/common/ims/R2.2.3/imsScreens:/cds/group/pcds/epics/ioc/common/smaract/R1.0.11/motorScreens:/cds/group/pcds/epics/ioc/common/mmc/R1.0.6/mmcScreens
 
 # this ldpathmunge gives access to xdotool for xpp-control, xpp-daq
-source /reg/g/pcds/setup/pathmunge.sh
+source /cds/group/pcds/setup/pathmunge.sh
 ldpathmunge /usr/local/lib
 
 # bool used to to deterime if a motor with .rtyp == 'motor' is a Beckhoff axis.
@@ -92,7 +92,7 @@ elif [ "${rtyp}" == 'mmca' ]; then # MMC-100 axis
     edm -x -eolc -m "MOTOR=$PREFIX" mmc_main.edl > /dev/null 2>&1 &
 elif [ "${rtyp}" == 'motor' ]; then
     if caget "$PREFIX:PN" > /dev/null 2>&1; then
-        /reg/g/pcds/package/epics/3.14//modules/pcds_motion/${OLD_VERSION}/launch-motor.sh "$PREFIX" > /dev/null 2>&1 &
+        /cds/group/pcds/package/epics/3.14//modules/pcds_motion/${OLD_VERSION}/launch-motor.sh "$PREFIX" > /dev/null 2>&1 &
     else
         # smaracts have "motor" rtyp, so we catch them with the PREFIX or with smaract specific pvs
         if [[ $PREFIX == *"MCS2"* || $(caget "$PREFIX:PTYPE_RBV" > /dev/null 2>&1) -eq 0 ]]; then
@@ -103,8 +103,7 @@ elif [ "${rtyp}" == 'motor' ]; then
                 edm -x -eolc -m "MOTOR=$PREFIX" mcs2_openloop.edl > /dev/null 2>&1 &
             fi
         else
-            cd /reg/neh/home/klg/epics/ioc/common/aerotech/current/motorScreens
-            #cd /reg/neh/home4/mcbrowne/trunk2/ioc/common/aerotech/current/motorScreens
+            cd /cds/home/k/klg/epics/ioc/common/aerotech/current/motorScreens
             edm -x -eolc -m "MOTOR=${PREFIX}" ens_main.edl >&/dev/null &
         fi
     fi

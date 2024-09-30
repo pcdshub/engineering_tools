@@ -1,4 +1,4 @@
-#!/reg/g/pcds/pyps/conda/py36/envs/pcds-1.2.5/bin/python
+#!/cds/group/pcds/pyps/conda/py36/envs/pcds-1.2.5/bin/python
 import argparse
 import json
 import sys

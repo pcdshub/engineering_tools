@@ -17,7 +17,7 @@ def take_images(camera, num_images, path, filename, output_gif=""):
     save them in an hdf5 file at the specified path with the
     as filename if it not empty; if it is empty, it will be saved
     {camera.name}-{timestamp}. Based on CamH5.collect from
-    /reg/g/pcds/pyps/apps/hutch-python/rix/rix/cam_to_file.py.
+    /cds/group/pcds/pyps/apps/hutch-python/rix/rix/cam_to_file.py.
 
     Parameters
     ----------
@@ -114,13 +114,13 @@ def load_camera(hutch, cam_name):
         member to take and save images.
     """
     # Get config for cam_name
-    with open(f'/reg/g/pcds/pyps/config/{hutch}/camviewer.cfg', 'r') as f:
+    with open(f'/cds/group/pcds/pyps/config/{hutch}/camviewer.cfg', 'r') as f:
         lines = f.readlines()
     # Get camera name
     cam_line = [line for line in lines if cam_name.upper() in line]
     if not cam_line:
         raise ValueError('Did not find camera in camera config file, '
-                         f'/reg/g/pcds/pyps/config/{hutch}/camviewer.cfg, '
+                         f'/cds/group/pcds/pyps/config/{hutch}/camviewer.cfg, '
                          'check spelling of camera argument.')
     # Make camera
     cam_info = interpret_lines(cam_line)
@@ -274,8 +274,8 @@ if __name__ == '__main__':
                         type=int)
     parser.add_argument("-p", "--path", required=True, default='.',
                         help="path to save images in hdf5 file, "
-                        "must be in /reg/d/iocData/ or /cds/data/iocData"
-                        ", recommend using /reg/d/iocData/{IOC}/hdf5")
+                        "must be in /cds/data/iocData/ or /cds/data/iocData"
+                        ", recommend using /cds/data/iocData/{IOC}/hdf5")
     parser.add_argument("-f", "--filename", required=False, default="",
                         help="prefix for name of hdf5 file to store "
                         "images in, camera name and timestamp will be "
@@ -292,7 +292,7 @@ if __name__ == '__main__':
     # Checking args
     if not os.path.isdir(args.path):
         raise ValueError("path is not directory; must provide a valid path in"
-                         " /reg/d/iocData/ or /cds/data/iocData/.")
+                         " /cds/data/iocData/ or /cds/data/iocData/.")
     if args.path[-1] != '/':
         args.path += '/'
     if args.num_images < 1:

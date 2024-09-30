@@ -1,4 +1,4 @@
-#!/reg/g/pcds/pyps/conda/py39/envs/pcds-5.7.2/bin/python
+#!/cds/group/pcds/pyps/conda/py39/envs/pcds-5.7.2/bin/python
 import subprocess
 from argparse import ArgumentParser as AP
 from sys import stdin

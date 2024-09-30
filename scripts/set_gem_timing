@@ -28,7 +28,7 @@ fi
 #get caget and caput
 source /cds/group/pcds/setup/epicsenv-cur.sh #Note: (josh) we should only source the actual executables we are using, this is heavy handed. shellcheck does not love this; however if this path doesnt exist we have bigger problems
 #get imgr
-IMGR_CMD_PATH="/reg/g/pcds/engineering_tools/latest-released/scripts/imgr"
+IMGR_CMD_PATH="/cds/group/pcds/engineering_tools/latest-released/scripts/imgr"
 
 # check current operational state
 OP_MODE=$(caget KFE:CAM:TPR:02:MODE | awk '{print $2}')

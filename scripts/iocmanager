@@ -31,12 +31,12 @@ fi
 if [ -x /etc/pathinit ]; then
     source /etc/pathinit
 else
-    export PSPKG_ROOT=/reg/g/pcds/pkg_mgr
-    export PYPS_ROOT=/reg/g/pcds/pyps
-    export IOC_ROOT=/reg/g/pcds/epics/ioc
-    export CAMRECORD_ROOT=/reg/g/pcds/controls/camrecord
-    export IOC_DATA=/reg/d/iocData
-    export IOC_COMMON=/reg/d/iocCommon
+    export PSPKG_ROOT=/cds/group/pcds/pkg_mgr
+    export PYPS_ROOT=/cds/group/pcds/pyps
+    export IOC_ROOT=/cds/group/pcds/epics/ioc
+    export CAMRECORD_ROOT=/cds/group/pcds/controls/camrecord
+    export IOC_DATA=/cds/data/iocData
+    export IOC_COMMON=/cds/data/iocCommon
 fi
 PSPKG_OS=$("$PSPKG_ROOT"/etc/pspkg_os.sh)
 export PSPKG_OS
@@ -49,7 +49,7 @@ export PSPKG_RELEASE=controls-0.1.9
 source "$PSPKG_ROOT"/etc/set_env.sh
 ulimit -c unlimited
 
-/reg/g/pcds/pyps/config/"${HUTCH,,}"/iocmanager/IocManager.py --hutch "${HUTCH,,}" > /dev/null &
+/cds/group/pcds/pyps/config/"${HUTCH,,}"/iocmanager/IocManager.py --hutch "${HUTCH,,}" > /dev/null &
 
 # Do some window cleanup for xpp
 if [ "$(whoami)" == "xppopr" ]; then

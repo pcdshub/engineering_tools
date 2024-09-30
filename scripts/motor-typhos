@@ -22,7 +22,7 @@ if [ -z "${PREFIX}" ]; then
 fi
 
 # Use the latest tagged environment
-source /reg/g/pcds/pyps/conda/pcds_conda
+source /cds/group/pcds/pyps/conda/pcds_conda
 
 if caget "${PREFIX}:PLC:nErrorId_RBV" > /dev/null 2>&1; then
     echo "* This looks like a Beckhoff axis."

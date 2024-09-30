@@ -150,9 +150,9 @@ fi
 #check if this is a DAQ device
 if [[ $ISSRV -lt 1 ]] && [[ $HUTCH != 'unknown_hutch' ]]; then
     if [[ $HUTCH == 'cxi' ]]; then # only supporting primary daq for now
-        CNF="/reg/g/pcds/dist/pds/${HUTCH}/scripts/${HUTCH}_0.cnf"
+        CNF="/cds/group/pcds/dist/pds/${HUTCH}/scripts/${HUTCH}_0.cnf"
     else
-        CNF="/reg/g/pcds/dist/pds/${HUTCH}/scripts/${HUTCH}.cnf"
+        CNF="/cds/group/pcds/dist/pds/${HUTCH}/scripts/${HUTCH}.cnf"
     fi
 
     if [[ $DEV =~ 'event' ]]; then
@@ -233,7 +233,7 @@ elif [[ $CMD == "expert" ]]; then
     echo -e " "
     if [[ $CDS_ONLINE == 1 ]]; then
         ssh -qT "$NAME" << EOF
-            source /reg/g/pcds/setup/pcds_shortcuts.sh
+            source /cds/group/pcds/setup/pcds_shortcuts.sh
             export PATH=\$PATH:/sbin/:/usr/sbin
             echo -e "Red Hat Version:"
             echo -e "-------------------------------------------------"
@@ -266,13 +266,13 @@ EOF
     fi
     echo -e ""
     echo -e "PCDS Drivers:"
-    IOCSTARTUP="/reg/g/pcds/dist/pds/boot/$NAME"
+    IOCSTARTUP="/cds/group/pcds/dist/pds/boot/$NAME"
     if [[ -e $IOCSTARTUP ]]; then
         echo "$IOCSTARTUP"
         echo -e "-------------------------------------------------"
         cat "$IOCSTARTUP"
     fi
-    DAQSTARTUP="/reg/d/iocCommon/hosts/$NAME/startup.cmd"
+    DAQSTARTUP="/cds/data/iocCommon/hosts/$NAME/startup.cmd"
     if [[ -e $DAQSTARTUP ]]; then
         echo -e "-------------------------------------------------"
         cat "$DAQSTARTUP"

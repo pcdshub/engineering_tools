@@ -79,17 +79,17 @@ unset PYTHONPATH
 unset LD_LIBRARY_PATH
 
 #go to hutches DAQ scripts directory (puts pid file in consistent location)
-cd /reg/g/pcds/dist/pds/"$HUTCH"/scripts/ || exit
+cd /cds/group/pcds/dist/pds/"$HUTCH"/scripts/ || exit
 
 DAQNETWORK='fez'
 LCLS2_HUTCHES="rix, tmo, ued, txi"
 if echo "$LCLS2_HUTCHES" | grep -iw "$HUTCH" > /dev/null; then
-    # shellcheck source=/reg/g/pcds/dist/pds/rix/scripts/setup_env.sh
-    source /reg/g/pcds/dist/pds/"$HUTCH"/scripts/setup_env.sh
+    # shellcheck source=/cds/group/pcds/dist/pds/rix/scripts/setup_env.sh
+    source /cds/group/pcds/dist/pds/"$HUTCH"/scripts/setup_env.sh
     PROCMGR='procmgr'
     DAQNETWORK='drp'
 else
-    PROCMGR="/reg/g/pcds/dist/pds/$HUTCH/current/tools/procmgr/procmgr"
+    PROCMGR="/cds/group/pcds/dist/pds/$HUTCH/current/tools/procmgr/procmgr"
 fi
 
 IS_DAQ_HOST=$(netconfig search "$AIMHOST"-$DAQNETWORK --brief | grep -c $DAQNETWORK)
@@ -113,14 +113,14 @@ else
     DAQHOST=$(wheredaq)
 fi
 
-PLATFORM=$(grep 'if not platform' /reg/g/pcds/dist/pds/"$HUTCH"/scripts/"$CNFFILE" | awk '{print $NF}' | sed s/\'//g)
+PLATFORM=$(grep 'if not platform' /cds/group/pcds/dist/pds/"$HUTCH"/scripts/"$CNFFILE" | awk '{print $NF}' | sed s/\'//g)
 if [[ $DAQHOST != *$NOTRUNNING* ]]; then
     echo stop the DAQ on "$DAQHOST" from "$HOSTNAME"
     T="$(date +%s%N)"
     $PROCMGR stop \
-        /reg/g/pcds/dist/pds/"$HUTCH"/scripts/"$CNFFILE"
+        /cds/group/pcds/dist/pds/"$HUTCH"/scripts/"$CNFFILE"
 
-    if [ -f /reg/g/pcds/dist/pds/"$HUTCH"/scripts/p"$PLATFORM"$CNFEXT.running ]; then
+    if [ -f /cds/group/pcds/dist/pds/"$HUTCH"/scripts/p"$PLATFORM"$CNFEXT.running ]; then
         echo 'the DAQ did not stop properly, exit now and try again or call Silke or the DAQ phone'
         exit
     fi
@@ -129,13 +129,13 @@ if [[ $DAQHOST != *$NOTRUNNING* ]]; then
     M="$((T2 / 1000000))"
     echo 'it took '$S'.'$M' for stopping the DAQ'
 else
-    if [ -f /reg/g/pcds/dist/pds/"$HUTCH"/scripts/p"$PLATFORM"$CNFEXT.running ]; then
+    if [ -f /cds/group/pcds/dist/pds/"$HUTCH"/scripts/p"$PLATFORM"$CNFEXT.running ]; then
         echo while DAQ reports to not run, will stop the DAQ on "$DAQHOST" from "$HOSTNAME" to clear the p"$PLATFORM"$CNFEXT.running file
         T="$(date +%s%N)"
         $PROCMGR stop \
-            /reg/g/pcds/dist/pds/"$HUTCH"/scripts/"$CNFFILE"
+            /cds/group/pcds/dist/pds/"$HUTCH"/scripts/"$CNFFILE"
 
-        if [ -f /reg/g/pcds/dist/pds/"$HUTCH"/scripts/p"$PLATFORM"$CNFEXT.running ]; then
+        if [ -f /cds/group/pcds/dist/pds/"$HUTCH"/scripts/p"$PLATFORM"$CNFEXT.running ]; then
             echo 'the DAQ did not stop properly, exit now and try again follow the escalation procedure'
             exit
         fi
@@ -150,7 +150,7 @@ T="$(date +%s%N)"
 echo start DAQ on "$AIMHOST"
 if [ "$HOSTNAME" == "$AIMHOST" ]; then
     $PROCMGR start \
-        /reg/g/pcds/dist/pds/"$HUTCH"/scripts/"$CNFFILE" -c $CORESIZE -o /reg/g/pcds/pds/"$HUTCH"/logfiles
+        /cds/group/pcds/dist/pds/"$HUTCH"/scripts/"$CNFFILE" -c $CORESIZE -o /cds/group/pcds/pds/"$HUTCH"/logfiles
 else
     ssh -Y "$AIMHOST" restartdaq
 fi
@@ -185,7 +185,7 @@ if [ ${#DOWIN} != 0 ] || [ ${#SELPART} != 0 ]; then
             SELPART=0
         fi
     fi
-    if [ -f /reg/neh/operator/"$HUTCH"opr/bin/"$HUTCH"_cleanup_windows_daq ]; then
+    if [ -f /cds/home/opr/"$HUTCH"opr/bin/"$HUTCH"_cleanup_windows_daq ]; then
         if [ ${#DOWIN} != 0 ]; then
             echo 'This instrument does not have standard locations for DAQ windows setup'
         fi
@@ -202,8 +202,8 @@ if [ ${#DOWIN} != 0 ]; then
     if [ "$HUTCH" == 'xcs' ]; then
         sleep 2
     fi
-    echo 'resorting the windows now using: /reg/neh/operator/'"$HUTCH"'opr/bin/'"$HUTCH"'_cleanup_windows_daq'
-    /reg/neh/operator/"$HUTCH"opr/bin/"$HUTCH"_cleanup_windows_daq
+    echo 'resorting the windows now using: /cds/home/opr/'"$HUTCH"'opr/bin/'"$HUTCH"'_cleanup_windows_daq'
+    /cds/home/opr/"$HUTCH"opr/bin/"$HUTCH"_cleanup_windows_daq
     Tdinter="$(($(date +%s%N) - T))"
     Sinter="$((Tdinter / 1000000000))"
     Minter="$((Tdinter / 1000000))"
@@ -225,7 +225,7 @@ if [ ${#SELPART} != 0 ]; then
 fi
 
 if [ "$SILENT" == 0 ]; then
-    /reg/g/pcds/dist/pds/scripts/txtjana.sh
+    /cds/group/pcds/dist/pds/scripts/txtjana.sh
     printf 'email jana that we restarted the DAQ\n'
 fi
 

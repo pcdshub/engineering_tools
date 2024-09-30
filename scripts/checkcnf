@@ -18,11 +18,11 @@ HUTCH=$(get_info --gethutch)
 
 LCLS2_HUTCHES="rix, tmo, ued"
 if echo "$LCLS2_HUTCHES" | grep -iw "$HUTCH" > /dev/null; then
-    # shellcheck source=/reg/g/pcds/dist/pds/rix/scripts/setup_env.sh
-    source /reg/g/pcds/dist/pds/"$HUTCH"/scripts/setup_env.sh
+    # shellcheck source=/cds/group/pcds/dist/pds/rix/scripts/setup_env.sh
+    source /cds/group/pcds/dist/pds/"$HUTCH"/scripts/setup_env.sh
     PROCMGR='procmgr'
 else
-    PROCMGR="/reg/g/pcds/dist/pds/$HUTCH/current/tools/procmgr/procmgr"
+    PROCMGR="/cds/group/pcds/dist/pds/$HUTCH/current/tools/procmgr/procmgr"
 fi
 
 CNFEXT=.cnf
@@ -35,7 +35,7 @@ elif [ "$HOSTNAME" == 'cxi-monitor' ]; then
     CNFFILE="$HUTCH"$PEXT$CNFEXT
 fi
 
-STATUS=$($PROCMGR status /reg/g/pcds/dist/pds/"$HUTCH"/scripts/"$CNFFILE" control_gui)
+STATUS=$($PROCMGR status /cds/group/pcds/dist/pds/"$HUTCH"/scripts/"$CNFFILE" control_gui)
 ISOK=$(echo "$STATUS" | grep -c platform)
 if [[ $ISOK == 0 ]]; then
     echo The cnf file for "$HUTCH" can be parsed

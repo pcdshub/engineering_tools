@@ -510,7 +510,7 @@ fi
 ###########
 if [[ $INTERACTIVE == 1 ]]; then
     echo 'now calling calibman (GUI) - switch to old release for now'
-    source /reg/g/psdm/etc/psconda.sh.old
+    source /cds/group/psdm/etc/psconda.sh.old
     calibman
     exit
 fi

@@ -53,15 +53,15 @@ HUTCH=${EXP:0:3}
 # get executable into variable.
 #
 
-opt_dir="/reg/g/pcds/dist/pds/$HUTCH/current/build/pdsapp/bin/x86_64-rhel7-opt"
+opt_dir="/cds/group/pcds/dist/pds/$HUTCH/current/build/pdsapp/bin/x86_64-rhel7-opt"
 eval find "$opt_dir"/configdb_readxtc
 ret_code=$?
 if [ $ret_code == 0 ]; then
-    EXE='/reg/g/pcds/dist/pds/'$HUTCH'/current/build/pdsapp/bin/x86_64-rhel7-opt/configdb_readxtc'
+    EXE='/cds/group/pcds/dist/pds/'$HUTCH'/current/build/pdsapp/bin/x86_64-rhel7-opt/configdb_readxtc'
 else
-    dir="/reg/g/pcds/dist/pds/xpp/current/build/pdsapp/bin/x86_64-rhel7"
+    dir="/cds/group/pcds/dist/pds/xpp/current/build/pdsapp/bin/x86_64-rhel7"
     if eval find $dir/configdb_readxtc; then
-        EXE='/reg/g/pcds/dist/pds/'$HUTCH'/current/build/pdsapp/bin/x86_64-rhel7/configdb_readxtc'
+        EXE='/cds/group/pcds/dist/pds/'$HUTCH'/current/build/pdsapp/bin/x86_64-rhel7/configdb_readxtc'
     else
         echo 'could not find configdb_readxtc executable'
         exit
@@ -72,10 +72,10 @@ fi
 # check hostname,only ssh if on control machine.
 #
 if [[ $HOSTNAME =~ "psana" ]]; then
-    $EXE /reg/d/psdm/"$HUTCH"/"$EXP"/xtc
+    $EXE /cds/data/psdm/"$HUTCH"/"$EXP"/xtc
 elif [[ $HOSTNAME =~ "psusr" ]]; then
-    ssh -Y "$USER"@psana "$EXE /reg/d/psdm/$HUTCH/$EXP/xtc"
+    ssh -Y "$USER"@psana "$EXE /cds/data/psdm/$HUTCH/$EXP/xtc"
 else
-    echo "$EXE /reg/d/psdm/$HUTCH/$EXP/xtc"
-    ssh -Y "$USER"@psdev ssh -Y psana "$EXE /reg/d/psdm/$HUTCH/$EXP/xtc"
+    echo "$EXE /cds/data/psdm/$HUTCH/$EXP/xtc"
+    ssh -Y "$USER"@psdev ssh -Y psana "$EXE /cds/data/psdm/$HUTCH/$EXP/xtc"
 fi
