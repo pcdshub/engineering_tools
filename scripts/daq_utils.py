@@ -26,11 +26,7 @@ def silentremove(filename):
             raise
 
 def call_subprocess(*args):
-    cc = subprocess.run(args, stdout=PIPE, stderr=PIPE)
-    output = None
-    if not cc.returncode:
-        output = str(cc.stdout.strip(), "utf-8")
-    return output
+    return subprocess.check_output(args, stderr=PIPE, universal_newlines=True)
 
 def call_sbatch(cmd, nodelist, scripts_dir):
     sb_script = "#!/bin/bash\n"
