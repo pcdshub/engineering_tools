@@ -28,7 +28,11 @@ def silentremove(filename):
 
 
 def call_subprocess(*args):
-    return subprocess.check_output(args, stderr=PIPE, universal_newlines=True)
+    cc = subprocess.run(args, stdout=PIPE, stderr=PIPE)
+    output = None
+    if not cc.returncode:
+        output = str(cc.stdout.strip(), "utf-8")
+    return output
 
 
 def call_sbatch(cmd, nodelist, scripts_dir):
