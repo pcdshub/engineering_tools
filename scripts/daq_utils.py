@@ -143,11 +143,10 @@ class DaqManager:
         try:
             exec(compile(open(configfilename).read(), configfilename, "exec"), {}, cc)
             if type(cc["platform"]) == type("") and cc["platform"].isdigit():
-                rv = int(cc["platform"])
-        except:
+                self.platform = int(cc["platform"])
+        except Exception:
             print("deduce_platform Error:", sys.exc_info()[1])
             raise
-        self.platform = rv
 
     def wheredaq(self, quiet=False):
         """Locate where the daq is running.
