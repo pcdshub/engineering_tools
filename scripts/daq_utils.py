@@ -10,12 +10,12 @@ import os, sys
 import getpass
 import time
 
-DAQBATCH_HUTCHES = ["tmo", "rix"]
+DAQMGR_HUTCHES = ["tmo", "rix"]
 LOCALHOST = socket.gethostname()
 SLURM_PARTITION = "drpq"
 SLURM_JOBNAME = "submit_daq"
-DAQBATCH_SCRIPT = "submit_daq.sh"
-DAQBATCH_OUTPUT = "slurm_daq.log"
+SLURM_SCRIPT = "submit_daq.sh"
+SLURM_OUTPUT = "slurm_daq.log"
 MAX_RETRIES = 10
 
 
@@ -28,9 +28,9 @@ def silentremove(filename):
 
 
 def call_subprocess(*args):
-    # FIXME: potentialy wanted to replace with 
+    # FIXME: potentialy wanted to replace with
     # return subprocess.check_output(args, stderr=PIPE, universal_newlines=True)
-    # current block: return values are not in expected format. 
+    # current block: return values are not in expected format.
     cc = subprocess.run(args, stdout=PIPE, stderr=PIPE)
     output = None
     if not cc.returncode:
@@ -43,17 +43,16 @@ def call_sbatch(cmd, nodelist, scripts_dir):
     sb_script += f"#SBATCH --partition={SLURM_PARTITION}" + "\n"
     sb_script += f"#SBATCH --job-name={SLURM_JOBNAME}" + "\n"
     sb_script += f"#SBATCH --nodelist={nodelist}" + "\n"
-    daqbatch_output = os.path.join(scripts_dir, DAQBATCH_OUTPUT)
-    sb_script += f"#SBATCH --output={daqbatch_output}" + "\n"
+    sb_script += f"#SBATCH --output={os.path.join(scripts_dir, SLURM_OUTPUT)}" + "\n"
     sb_script += f"#SBATCH --ntasks=1" + "\n"
     sb_script += f"unset PYTHONPATH" + "\n"
     sb_script += f"unset LD_LIBRARY_PATH" + "\n"
     sb_script += cmd
-    daqbatch_script = os.path.join(scripts_dir, DAQBATCH_SCRIPT)
-    with open(daqbatch_script, "w") as f:
+    slurm_script = os.path.join(scripts_dir, SLURM_SCRIPT)
+    with open(slurm_script, "w") as f:
         f.write(sb_script)
-    call_subprocess("sbatch", daqbatch_script)
-    silentremove(daqbatch_script)
+    call_subprocess("sbatch", slurm_script)
+    silentremove(slurm_script)
 
 
 class SbatchManager:
@@ -105,10 +104,10 @@ class DaqManager:
         self.user = self.hutch + "opr"
         self.sbman = SbatchManager(self.user)
         self.scripts_dir = f"/reg/g/pcds/dist/pds/{self.hutch}/scripts"
-        self.set_cnf_file_and_platform()
+        self.cnf_file = f"{self.hutch}.py"
 
-    def isdaqbatch(self, quiet=False):
-        if self.hutch in DAQBATCH_HUTCHES:
+    def isdaqmgr(self, quiet=False):
+        if self.hutch in DAQMGR_HUTCHES:
             if not quiet:
                 print("true")
             return True
@@ -124,35 +123,22 @@ class DaqManager:
         if subcmd == "stop":
             daq_host = self.wheredaq(quiet=True)
             if daq_host is not None:
-                if self.isdaqbatch(quiet=True):
+                if self.isdaqmgr(quiet=True):
                     for i_retry in range(MAX_RETRIES):
                         daq_host = self.wheredaq(quiet=True)
                         if daq_host is None:
                             break
-                        print(f"wait for daqbatch to stop #retry: {i_retry}")
+                        print(f"wait for the DAQ to stop #retry: {i_retry}")
                         time.sleep(1)
                 else:
                     print(
                         f"the DAQ did not stop properly (DAQ HOST: {daq_host}), exit now and try again or call your POC or the DAQ phone"
                     )
 
-    def set_cnf_file_and_platform(self):
-        self.cnf_file = f"{self.hutch}.py"
-
-        cc = {"platform": None}
-        configfilename = os.path.join(self.scripts_dir, self.cnf_file)
-        try:
-            exec(compile(open(configfilename).read(), configfilename, "exec"), {}, cc)
-            if type(cc["platform"]) == type("") and cc["platform"].isdigit():
-                self.platform = int(cc["platform"])
-        except Exception:
-            print("deduce_platform Error:", sys.exc_info()[1])
-            raise
-
     def wheredaq(self, quiet=False):
         """Locate where the daq is running.
 
-        For daqbatch, we use slurm to check if the hutch user is running control_gui.
+        We use slurm to check if the hutch user is running control_gui.
         """
         daq_host = None
         # Use control_gui job name to locate the running host for the daq
@@ -168,7 +154,7 @@ class DaqManager:
         return daq_host
 
     def calldaq(self, subcmd, daq_host=None):
-        prog = "daqbatch"
+        prog = "daqmgr"
         cmd = f"pushd {self.scripts_dir}" + " > /dev/null;"
         cmd += f'source {os.path.join(self.scripts_dir, "setup_env.sh")}' + ";"
         cmd += (
@@ -197,7 +183,7 @@ class DaqManager:
 
     def stopdaq(self):
         """Stop the running daq for the current user.
-        Note that daq host is determined by .running file or squeue (daqbatch).
+        Note that daq host is determined by querying slurm job status.
         """
         self.calldaq("stop")
 

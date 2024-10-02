@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Enforce more checks and controls for running daqbatch.
+Enforce more checks and controls for running the DAQ.
 """
 
 from daq_utils import DaqManager, LOCALHOST
@@ -19,8 +19,8 @@ def stopdaq(daqmgr, args):
     daqmgr.stopdaq()
 
 
-def isdaqbatch(daqmgr, args):
-    daqmgr.isdaqbatch()
+def isdaqmgr(daqmgr, args):
+    daqmgr.isdaqmgr()
 
 
 if __name__ == "__main__":
@@ -47,10 +47,10 @@ if __name__ == "__main__":
     )
     psr_stop.set_defaults(func=stopdaq)
 
-    psr_isdaqbatch = subparsers.add_parser(
-        "isdaqbatch", help="Determine if the current hutch uses daqbatch"
+    psr_isdaqmgr = subparsers.add_parser(
+        "isdaqmgr", help="Determine if the current hutch uses daqmgr"
     )
-    psr_isdaqbatch.set_defaults(func=isdaqbatch)
+    psr_isdaqmgr.set_defaults(func=isdaqmgr)
 
     args = parser.parse_args()
 
