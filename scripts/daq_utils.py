@@ -118,9 +118,7 @@ class DaqManager:
             return False
 
     def isvaliduser(self):
-        if getpass.getuser() == self.user:
-            return True
-        return False
+        return getpass.getuser() == self.user
 
     def waitfor(self, subcmd):
         if subcmd == "stop":
