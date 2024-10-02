@@ -6,7 +6,7 @@ ulimit -c unlimited
 hx2Ipm='hx2_ipm'
 um6Ipm='um6_ipm um6_dio'
 dg2Ipm='hfxdg2_ipm'
-xcsIpm='decmono ipmmono diomono pim3 pim3m ipm3 pim4 ipm4 snddio ipm5 pim5 ipmgonLD ipmlamLD'
+xcsIpm='decmono ipmmono diomono pim3 pim3m ipm3 pim4 ipm4 snddio ipm5 pim5 ipmgonLD ipmlamLD usrdio'
 xppIpm='diomono decmono ipm2 ipm3 pim3 diodeU'
 cxiIpm='pim3m dg2ipm dg3ipm usrdio'
 mfxIpm='dg1ipm dg2ipm usrdio'
@@ -102,6 +102,11 @@ if [ $hutch == 'xcs' ]; then
 	BASE='XCS:SB2:BMMON'
 	EVR='XCS:SB2:BMMON:EVR'
 	WAVE8='sb2bmmon'
+    elif [ $1 == 'usrdio' ]; then
+        IOC="IOC:XCS:USR:DIO"
+        BASE='XCS:USR:DIO'
+        EVR='XCS:USR:DIO:EVR'
+        WAVE8='usrdio'
     elif [ $1 == 'pim5' ]; then
 	BASE="XCS:SB2:IMB:02"
 	IOC="IOC:XCS:IPM"
