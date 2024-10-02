@@ -1,9 +1,9 @@
 import argparse
+import getpass
 import logging
 import os
 import socket
 import sys
-import getpass
 
 import requests
 
@@ -225,12 +225,12 @@ if args.files_for_run or args.nfiles_for_run:
                                  + "/files_for_live_mode").json()["value"]
         if args.files_for_run:
             for tfile in file_list:
-                print('/reg/d/psdm/' + tfile)
+                print('/cds/data/psdm/' + tfile)
         elif args.nfiles_for_run:
             #  look at files, remove stream 80, only first chunk, return number.
             nFiles = 0
             for tfile in file_list:
-                tfilename = '/reg/d/psdm/'+tfile
+                tfilename = '/cds/data/psdm/'+tfile
                 if tfilename.find('c00') >= 0 and tfilename.find('-s8') < 0:
                     nFiles = nFiles + 1
             print('%d %d' % (nFiles, len(file_list)))

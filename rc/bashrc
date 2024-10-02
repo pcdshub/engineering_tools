@@ -21,13 +21,13 @@ if [ -f "${HOME}/.pcds_setup.sh" ]; then
     source "${HOME}/.pcds_setup.sh"
 fi
 
-source /reg/g/pcds/setup/pcds_shortcuts.sh
+source /cds/group/pcds/setup/pcds_shortcuts.sh
 
-export PATH=$PATH:/reg/g/pcds/engineering_tools/latest-released/scripts/
+export PATH=$PATH:/cds/group/pcds/engineering_tools/latest-released/scripts/
 
 ########################################
 ### Specific PCDS environment logins ###
 ########################################
-alias epicsenv='. /reg/g/pcds/setup/epicsenv-cur.sh'
-alias ana_env='source /reg/g/psdm/psconda.sh'
-alias plc_env='. /reg/g/pcds/setup/plcenv.sh'
+alias epicsenv='. /cds/group/pcds/setup/epicsenv-cur.sh'
+alias ana_env='source /cds/group/psdm/psconda.sh'
+alias plc_env='. /cds/group/pcds/setup/plcenv.sh'

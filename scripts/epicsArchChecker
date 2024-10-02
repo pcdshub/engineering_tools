@@ -1,4 +1,4 @@
-#!/reg/g/pcds/pyps/conda/py36/envs/pcds-4.1.6/bin/python
+#!/cds/group/pcds/pyps/conda/py36/envs/pcds-4.1.6/bin/python
 """
 epicsArch Checker
 This script helps the engineers and scientists to verify
@@ -22,7 +22,7 @@ def main():
                                      ' missing files, and unconnected PVs.')
     parser.add_argument('filepath',
                         help='Path of the file to check'
-                        ' e.g /reg/g/pcds/dist/pds/xpp/misc/epicsArch.txt',
+                        ' e.g /cds/group/pcds/dist/pds/xpp/misc/epicsArch.txt',
                         type=str)
     parser.add_argument('-s', '--status', action='store_true',
                         help='Displays PVs not connected (default:False.)',

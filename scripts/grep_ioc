@@ -1,6 +1,7 @@
 #!/bin/bash
-usage() {
-cat << EOF
+usage()
+{
+    cat << EOF
 usage: $0 <keyword> [hutch]
 
 greps hutch iocmanager config files for keyword
@@ -11,8 +12,8 @@ EOF
 }
 
 if [[ ($1 == "--help") || ($1 == "-h") ]]; then
-	usage
-	exit 0
+    usage
+    exit 0
 fi
 
 if [[ -z $1 ]]; then
@@ -23,8 +24,8 @@ fi
 if [[ -z $2 ]]; then
     HUTCH="all"
 else
-    for hutchname in "xpp" "xcs" "cxi" "mfx" "mec" "tmo" "rix" "xrt" "aux" "det" "fee" "hpl" "icl" "las" "lfe" "kfe" "tst" "thz" "all"; do 
-        if [[ "${2}" == $hutchname ]]; then
+    for hutchname in "xpp" "xcs" "cxi" "mfx" "mec" "tmo" "rix" "xrt" "aux" "det" "fee" "hpl" "icl" "las" "lfe" "kfe" "tst" "thz" "all"; do
+        if [[ ${2} == "$hutchname" ]]; then
             HUTCH=$hutchname
         fi
     done
@@ -33,8 +34,8 @@ if [[ -z $HUTCH ]]; then
     echo "incorrect hutch name given.  Enter hutch name in lower case (example: xpp)"
 else
     if [[ $HUTCH == "all" ]]; then
-        grep -i "${1}" /reg/g/pcds/pyps/config/*/iocmanager.cfg
+        grep -i "${1}" /cds/group/pcds/pyps/config/*/iocmanager.cfg
     else
-        grep -i "${1}" /reg/g/pcds/pyps/config/${HUTCH}/iocmanager.cfg
+        grep -i "${1}" /cds/group/pcds/pyps/config/"$HUTCH"/iocmanager.cfg
     fi
 fi

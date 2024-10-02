@@ -3,7 +3,7 @@
 # Define usage here for faster return
 usage()
 {
-cat << EOF
+    cat << EOF
 usage: iocmanager [hutch]
 
 Control status of all IOCs running in a particular hutch in an interactive GUI.
@@ -11,8 +11,8 @@ Current hutch is used if not provided.
 EOF
 }
 if [[ ($1 == "--help") || ($1 == "-h") ]]; then
-	usage
-	exit 0
+    usage
+    exit 0
 fi
 
 # Check hutch
@@ -22,7 +22,7 @@ HUTCH=${1:-$(get_hutch_name)}
 
 # Exit if hutch is still unknown
 # TODO: Replace with check for actual hutch names
-if [[ "$HUTCH" == "unknown_hutch" ]]; then
+if [[ $HUTCH == "unknown_hutch" ]]; then
     echo "Unknown hutch, please specify e.g. 'iocmanager xrt'" >&2
     exit 1
 fi
@@ -31,14 +31,14 @@ fi
 if [ -x /etc/pathinit ]; then
     source /etc/pathinit
 else
-    export PSPKG_ROOT=/reg/g/pcds/pkg_mgr
-    export PYPS_ROOT=/reg/g/pcds/pyps
-    export IOC_ROOT=/reg/g/pcds/epics/ioc
-    export CAMRECORD_ROOT=/reg/g/pcds/controls/camrecord
-    export IOC_DATA=/reg/d/iocData
-    export IOC_COMMON=/reg/d/iocCommon
+    export PSPKG_ROOT=/cds/group/pcds/pkg_mgr
+    export PYPS_ROOT=/cds/group/pcds/pyps
+    export IOC_ROOT=/cds/group/pcds/epics/ioc
+    export CAMRECORD_ROOT=/cds/group/pcds/controls/camrecord
+    export IOC_DATA=/cds/data/iocData
+    export IOC_COMMON=/cds/data/iocCommon
 fi
-PSPKG_OS=$(${PSPKG_ROOT}/etc/pspkg_os.sh)
+PSPKG_OS=$("$PSPKG_ROOT"/etc/pspkg_os.sh)
 export PSPKG_OS
 if [ "$PSPKG_OS" == rhel5 ]; then
     echo "IocManager 2.0.0 and higher does not run on RHEL5!"
@@ -46,18 +46,18 @@ if [ "$PSPKG_OS" == rhel5 ]; then
 fi
 export QT_XKB_CONFIG_ROOT=/usr/share/X11/xkb
 export PSPKG_RELEASE=controls-0.1.9
-source $PSPKG_ROOT/etc/set_env.sh
+source "$PSPKG_ROOT"/etc/set_env.sh
 ulimit -c unlimited
 
-/reg/g/pcds/pyps/config/"${HUTCH,,}"/iocmanager/IocManager.py --hutch "${HUTCH,,}" > /dev/null &
+/cds/group/pcds/pyps/config/"${HUTCH,,}"/iocmanager/IocManager.py --hutch "${HUTCH,,}" > /dev/null &
 
 # Do some window cleanup for xpp
 if [ "$(whoami)" == "xppopr" ]; then
     window_id=$(xdotool search --sync --onlyvisible --name 'IocManager')
-    if [ "xpp-control"  == "$HOSTNAME" ]; then
-	wmctrl -v -i -r "$window_id" -e 0,3310,1100,530,1000
+    if [ "xpp-control" == "$HOSTNAME" ]; then
+        wmctrl -v -i -r "$window_id" -e 0,3310,1100,530,1000
     elif [ "xpp-daq" == "$HOSTNAME" ]; then
-	wmctrl -v -i -r "$window_id" -e 0,3310,1100,530,1000
+        wmctrl -v -i -r "$window_id" -e 0,3310,1100,530,1000
     fi
     wmctrl -v -i -r "$window_id" -b add,sticky
 fi

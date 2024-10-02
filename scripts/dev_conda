@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 usage()
 {
-cat << EOF
+    cat << EOF
 usage: source $0
 
 Source this to activate the latest version a pcds conda environment.
@@ -9,8 +9,8 @@ EOF
 }
 
 if [[ ($1 == "--help") || ($1 == "-h") ]]; then
-	usage
-	exit 0
+    usage
+    exit 0
 fi
 
 unset LD_LIBRARY_PATH
@@ -54,5 +54,5 @@ source "${TOKEN_DIR}/typhos.sh"
 # Revert to Software Raster when SSH to avoid issues with QtQuick.
 # The same was done with PyDM and this fixes Designer and friends.
 if [ -n "${SSH_CONNECTION}" ]; then
-  export QT_QUICK_BACKEND="software"
+    export QT_QUICK_BACKEND="software"
 fi

@@ -12,8 +12,8 @@ import argparse
 import os
 import subprocess
 
-CONDA_BASE = '/reg/g/pcds/pyps/conda/py36'
-APPS_BASE = '/reg/g/pcds/pyps/apps'
+CONDA_BASE = '/cds/group/pcds/pyps/conda/py36'
+APPS_BASE = '/cds/group/pcds/pyps/apps'
 
 # Some basic py2/py3 compat for this standalone script
 try:

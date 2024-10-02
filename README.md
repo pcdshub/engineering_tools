@@ -76,7 +76,7 @@ usage: archive-status [-h] PV <br/>
 <tr>
     <td>camViewer</td>
     <td>
-usage: /reg/g/pcds/engineering_tools/latest/scripts/camViewer options<br/>
+usage: /cds/group/pcds/engineering_tools/latest/scripts/camViewer options<br/>
     <br/>
     start the viewer for controls cameras<br/>
     <br/>
@@ -99,7 +99,7 @@ usage: /reg/g/pcds/engineering_tools/latest/scripts/camViewer options<br/>
 <tr>
     <td>check_host</td>
     <td>
-Usage:   /reg/g/pcds/engineering_tools/latest/scripts/check_host HOSTNAME<br/>
+Usage:   /cds/group/pcds/engineering_tools/latest/scripts/check_host HOSTNAME<br/>
     <br/>
     Display host info and run some checks.</br>
     </td>
@@ -178,7 +178,7 @@ Checks epicsArch files for mismatches of PVs and aliases, missing files, and unc
         <br/>
         <br/>
 positional arguments:<br/>
-  filepath        Full filepath of the file to check e.g /reg/g/pcds/dist/pds/xpp/misc/epicsArch.txt
+  filepath        Full filepath of the file to check e.g /cds/group/pcds/dist/pds/xpp/misc/epicsArch.txt
         <br/>
         <br/>
 optional arguments:<br/>
@@ -310,7 +310,7 @@ usage: grep_more_ioc [-h] [-d] patt hutch {print,search} <br/>
 <tr>
     <td>grep_pv</td>
     <td>
-     GREP SEARCHES THROUGH ALL IOCs IN /reg/d/iocData/<br/>
+     GREP SEARCHES THROUGH ALL IOCs IN /cds/data/iocData/<br/>
      FOR PVs THAT MATCH GIVEN KEYWORD/HANDLE.<br/>
      Ideally, find_pv should be used as it gives a lot more information (but can be slow sometimes)<br/>
     </td>
@@ -411,7 +411,7 @@ optional arguments:
 &nbsp;                       $EPICS_SITE_TOP/ioc, or /cds/group/pcds/epics/ioc if
 &nbsp;                       the environment variable is not set. With your current
 &nbsp;                       environment variables, this defaults to
-&nbsp;                       /reg/g/pcds/epics/ioc.
+&nbsp;                       /cds/group/pcds/epics/ioc.
 &nbsp; --path-override PATH_OVERRIDE, -p PATH_OVERRIDE
 &nbsp;                       If provided, ignore all normal path-selection rules in
 &nbsp;                       favor of the specific provided path. This will let you
@@ -456,7 +456,7 @@ optional arguments:
 &nbsp;                       $EPICS_SITE_TOP/ioc, or /cds/group/pcds/epics/ioc if
 &nbsp;                       the environment variable is not set. With your current
 &nbsp;                       environment variables, this defaults to
-&nbsp;                       /reg/g/pcds/epics/ioc.
+&nbsp;                       /cds/group/pcds/epics/ioc.
 &nbsp; --path-override PATH_OVERRIDE, -p PATH_OVERRIDE
 &nbsp;                       If provided, ignore all normal path-selection rules in
 &nbsp;                       favor of the specific provided path. This will let you

@@ -24,4 +24,3 @@ au FileType python
     \     autoindent
     \     fileformat=unix
     \     encoding=utf-8
-

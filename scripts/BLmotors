@@ -1,4 +1,4 @@
-#!/reg/g/pcds/pyps/conda/py36/envs/pcds-4.1.6/bin/python
+#!/cds/group/pcds/pyps/conda/py36/envs/pcds-4.1.6/bin/python
 
 
 """
@@ -144,7 +144,7 @@ def assign_full_path(ioc_names):
     """
     lists_path = []
     for name in range(len(ioc_names)):
-        lists_path.append('/reg/d/iocData/' + ioc_names[name] +
+        lists_path.append('/cds/data/iocData/' + ioc_names[name] +
                           '/iocInfo/IOC.pvlist')
     return lists_path
 

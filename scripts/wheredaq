@@ -1,7 +1,7 @@
 #!/bin/bash
 usage()
 {
-cat << EOF
+    cat << EOF
 usage: $0
 
 Discover what host is running the daq in the current hutch, if any.
@@ -9,8 +9,8 @@ EOF
 }
 
 if [[ ($1 == "--help") || ($1 == "-h") ]]; then
-	usage
-	exit 0
+    usage
+    exit 0
 fi
 
 HUTCH=$(get_info --gethutch)
@@ -27,17 +27,17 @@ else
     CNFFILE=$HUTCH$CNFEXT
 fi
 
-PLATFORM=$(grep 'if not platform' /reg/g/pcds/dist/pds/"$HUTCH"/scripts/"$CNFFILE" | awk '{print $NF}' | sed s/\'//g)
+PLATFORM=$(grep 'if not platform' /cds/group/pcds/dist/pds/"$HUTCH"/scripts/"$CNFFILE" | awk '{print $NF}' | sed s/\'//g)
 
-if [[ ! -f /reg/g/pcds/dist/pds/"$HUTCH"/scripts/p"$PLATFORM".cnf.running ]]; then
+if [[ ! -f /cds/group/pcds/dist/pds/"$HUTCH"/scripts/p"$PLATFORM".cnf.running ]]; then
     if [ "$HOSTNAME" == 'cxi-daq' ]; then
-	echo 'Main DAQ cxi_0 is not running on '"$HOSTNAME"
+        echo 'Main DAQ cxi_0 is not running on '"$HOSTNAME"
     elif [ "$HOSTNAME" == 'cxi-monitor' ]; then
-	echo 'Secondary DAQ cxi_1 is not running on '"$HOSTNAME"
+        echo 'Secondary DAQ cxi_1 is not running on '"$HOSTNAME"
     else
-	echo 'DAQ is not running in '"$HUTCH"
+        echo 'DAQ is not running in '"$HUTCH"
     fi
 else
-    DAQ_HOST=$(grep "'HOST'" /reg/g/pcds/dist/pds/"$HUTCH"/scripts/p"$PLATFORM".cnf.running | awk {'print $3'} | sed s/\'//g)
+    DAQ_HOST=$(grep "'HOST'" /cds/group/pcds/dist/pds/"$HUTCH"/scripts/p"$PLATFORM".cnf.running | awk '{print $3}' | sed s/\'//g)
     echo 'DAQ is running on '"$DAQ_HOST"
 fi

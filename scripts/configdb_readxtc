@@ -1,46 +1,45 @@
 #! /bin/bash
 usage()
 {
-cat << EOF
+    cat << EOF
 usage: $0 options
 
 We will run configdb_readxtc
 
 OPTIONS:
 -u user (needs to be able to log into the psananeh/feh)
--e expnumber 
+-e expnumber
 EOF
 }
 
 if [[ ($1 == "--help") || ($1 == "-h") ]]; then
-	usage
-	exit 0
+    usage
+    exit 0
 fi
 
-USER=`whoami`
-ARGSTR=''
+USER=$(whoami)
 
-while getopts "u:e:" OPTION
-do
+while getopts "u:e:" OPTION; do
     case $OPTION in
-	u)
-	    USER=$OPTARG
-	    ;;
-	e)
-	    EXP=$OPTARG
-	    ;;
-	?)
-	    usage
-	    exit
-	    ;;
-	esac
+        u)
+            USER=$OPTARG
+            ;;
+        e)
+            EXP=$OPTARG
+            ;;
+        ?)
+            usage
+            exit
+            ;;
+    esac
 done
 
 if [[ $USER =~ "opr" ]]; then
-    printf "Please enter user name (cannot run as xppopr): \n"; read USER
+    printf "Please enter user name (cannot run as xppopr): \n"
+    read -r USER
 fi
 
-: ${EXP:=`get_curr_exp`}
+: "${EXP:=$(get_curr_exp)}"
 HUTCH=${EXP:0:3}
 
 # check if experiment is passed, then use that
@@ -53,20 +52,18 @@ HUTCH=${EXP:0:3}
 # get executable into variable.
 #
 
-opt_dir="/reg/g/pcds/dist/pds/$HUTCH/current/build/pdsapp/bin/x86_64-rhel7-opt"
-eval find $opt_dir/configdb_readxtc
+opt_dir="/cds/group/pcds/dist/pds/$HUTCH/current/build/pdsapp/bin/x86_64-rhel7-opt"
+eval find "$opt_dir"/configdb_readxtc
 ret_code=$?
 if [ $ret_code == 0 ]; then
-    EXE='/reg/g/pcds/dist/pds/'$HUTCH'/current/build/pdsapp/bin/x86_64-rhel7-opt/configdb_readxtc'
+    EXE='/cds/group/pcds/dist/pds/'$HUTCH'/current/build/pdsapp/bin/x86_64-rhel7-opt/configdb_readxtc'
 else
-    dir="/reg/g/pcds/dist/pds/xpp/current/build/pdsapp/bin/x86_64-rhel7"
-    eval find $dir/configdb_readxtc
-    ret_code=$?
-    if [ $ret_code2 == 0 ]; then
-	EXE='/reg/g/pcds/dist/pds/'$HUTCH'/current/build/pdsapp/bin/x86_64-rhel7/configdb_readxtc'
+    dir="/cds/group/pcds/dist/pds/xpp/current/build/pdsapp/bin/x86_64-rhel7"
+    if eval find $dir/configdb_readxtc; then
+        EXE='/cds/group/pcds/dist/pds/'$HUTCH'/current/build/pdsapp/bin/x86_64-rhel7/configdb_readxtc'
     else
-	echo 'could not find configdb_readxtc executable'
-	exit
+        echo 'could not find configdb_readxtc executable'
+        exit
     fi
 fi
 
@@ -74,12 +71,10 @@ fi
 # check hostname,only ssh if on control machine.
 #
 if [[ $HOSTNAME =~ "psana" ]]; then
-    $EXE /reg/d/psdm/$HUTCH/$EXP/xtc
-elif  [[ $HOSTNAME =~ "psusr" ]]; then
-    ssh -Y $USER@psana "$EXE /reg/d/psdm/$HUTCH/$EXP/xtc"
+    $EXE /cds/data/psdm/"$HUTCH"/"$EXP"/xtc
+elif [[ $HOSTNAME =~ "psusr" ]]; then
+    ssh -Y "$USER"@psana "$EXE /cds/data/psdm/$HUTCH/$EXP/xtc"
 else
-    echo $EXE /reg/d/psdm/$HUTCH/$EXP/xtc
-    ssh -Y $USER@psdev ssh -Y psana "$EXE /reg/d/psdm/$HUTCH/$EXP/xtc"
+    echo "$EXE /cds/data/psdm/$HUTCH/$EXP/xtc"
+    ssh -Y "$USER"@psdev ssh -Y psana "$EXE /cds/data/psdm/$HUTCH/$EXP/xtc"
 fi
- 
-   
