@@ -31,7 +31,6 @@ if [[ -z $FOUNDHUTCH ]]; then
     echo 'could not determine hutch or hutch not implemented, quit'
     exit
 fi
-export NOTRUNNING='Not running'
 
 while getopts "c:d" OPTION; do
     case "$OPTION" in

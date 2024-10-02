@@ -27,10 +27,12 @@ while getopts "f:s:e:" OPTION; do
             PVFIELDS=${OPTARG//,/}
             ;;
         s)
-            export STARTTIME=$OPTARG
+            # shellcheck disable=SC2034
+            STARTTIME=$OPTARG
             ;;
         e)
-            export ENDTIME=$OPTARG
+            # shellcheck disable=SC2034
+            ENDTIME=$OPTARG
             ;;
         *)
             echo "Invalid option \"$OPTION\" provided"

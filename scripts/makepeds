@@ -164,7 +164,8 @@ INTERACTIVE=${INTERACTIVE:=0}
 SDFQUEUES=('milano' 'roma' 'xxx')
 for SDFQUEUE in "${SDFQUEUES[@]}"; do
     if [[ $QUEUE == "$SDFQUEUE" ]]; then
-        export S3DF=1
+        # shellcheck disable=SC2034
+        S3DF=1
     fi
 done
 
