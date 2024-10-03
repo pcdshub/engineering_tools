@@ -17,6 +17,8 @@ OPTIONS:
                runnumber for pedestal
         -e|--experiment <expname> 
                in case you do not want pedestals for the ongoing experiment
+        -q|--queue <queue>
+               queue for batch submisson
         -O|--opal         
                make pedestals for Opals (default only cspad/EPIX detectors)
         -Z|--zyla         
@@ -27,8 +29,10 @@ OPTIONS:
                make pedestals for Uxi detectors
         -j|--jungfrau3     
                make pedestals for Jungfrau - 3 run version(default only cspad/EPIX detectors)
-        -q|--queue <queue>
-               queue for batch submisson
+        -A|--alvium         
+               make pedestals for Alvium (default only cspad/EPIX detectors)
+        -r|--reservation <reservation>
+               reservation for batch submisson
         -D|--xtcav_dark
                 dark run for XTCAV
         -L|--xtcav_lasingoff
@@ -122,7 +126,7 @@ xtcav_dark()
        printf '#!/bin/bash\nsource $SIT_ENV_DIR/manage/bin/psconda.sh\n' > "$tmpScript"
        CMD="xtcavDark $EXP $RUN"
        printf '%s\n' "${CMD}" >> "$tmpScript"
-       xtcavCmd="sbatch --exclusive  --account lcls:$EXP -p $QUEUE -o $WORKDIR/xtcav_${EXP}_Run${RUN}_%J.out $tmpScript"
+       xtcavCmd="sbatch --account lcls:$EXP -p $QUEUE -o $WORKDIR/xtcav_${EXP}_Run${RUN}_%J.out $tmpScript"
        echo "run in queue: $xtcavCmd"
        SUBMISSION=$($xtcavCmd)
        check_for_submit_error
@@ -132,7 +136,7 @@ xtcav_dark()
        NJOBS=$((NJOBS+1))
 
        sleep 10
-       echo Running $NJOBS jobs are PIDS: "${JOBIDS[@]}"
+       echo Running "$NJOBS" jobs are PIDS: "${JOBIDS[@]}"
        until check_running_jobs; do
            echo 'Checking again in 10s'
            sleep 10
@@ -157,7 +161,7 @@ xtcav_lasOff()
        printf '#!/bin/bash\nsource $SIT_ENV_DIR/manage/bin/psconda.sh\n' > "$tmpScript"
        CMD="xtcavLasingOff $EXP $RUN"
        printf '%s\n' "${CMD}" >> "$tmpScript"
-       xtcavCmd="sbatch --exclusive  --account lcls:$EXP -p $QUEUE -o $WORKDIR/xtcav_${EXP}_Run${RUN}_%J.out $tmpScript"
+       xtcavCmd="sbatch --account lcls:$EXP -p $QUEUE -o $WORKDIR/xtcav_${EXP}_Run${RUN}_%J.out $tmpScript"
        echo "run in queue: $xtcavCmd"
        SUBMISSION=$($xtcavCmd)
        check_for_submit_error
@@ -266,6 +270,10 @@ do
             XTCAV=2
             shift
             ;;
+        -A|--alvium)
+            WANT_ALVIUM=1
+            shift
+            ;;
         -Z|--zyla)
             WANT_ZYLA=1
             shift
@@ -309,6 +317,11 @@ do
             ;;
         -q|--queue)
             QUEUE=("$2")
+            shift
+            shift
+            ;;
+        -r|--reservation)
+            RESERVATION=("$2")
             shift
             shift
             ;;
@@ -374,13 +387,11 @@ echo "XXXXXXXXXXXXXXXXX START MAKEPEDS at $(date +'%T') on $HOSTNAME XXXXXXXXXXX
 
 RUN=${RUN:=0}
 EXP=${EXP:='xxx'}
-QUEUE=${QUEUE:='xxx'}
 NUMEVT=${NUMEVT:=1000}
 XTCAV=${XTCAV:=0}
 INTERACTIVE=${INTERACTIVE:=0}
 CALIBCODE=${CALIBCODE:=0}
 VALSTR=${VALSTR:='xxx'}
-CALIBDIR=${CALIBDIR:='xxx'}
 DEPLOY=${DEPLOY:=1}
 MYNOISESIGMIN=${MYNOISESIGMIN:=-1}
 MYNOISESIGMAX=${MYNOISESIGMAX:=-1}
@@ -388,7 +399,6 @@ MYADUMIN=${MYADUMIN:=-1}
 MYADUMAX=${MYADUMAX:=-1}
 NUMBUNCH=${NUMBUNCH:=1}
 #one setting to run each process on an own server (currently faster) or not (if we had to use reservations)
-EXCLUSIVE=0
 
 if [ $RUN == 0 ]; then
     if [ $INTERACTIVE -ne 1 ]; then
@@ -431,7 +441,22 @@ fi
 source $SIT_ENV_DIR/manage/bin/psconda.sh
 
 #if you don't pass the queue, it'll run interactively 
-if [[ $QUEUE == 'xxx' ]]; then
+if [ -v QUEUE ]; then
+    USER=`whoami`
+    SBATCH_ARGS="-p $QUEUE --account lcls:$EXP"
+    if sacctmgr show asso account=lcls:${EXP} partition=${QUEUE} -n | grep -q ${USER} ; then
+	if [ -v RESERVATION ]; then
+	    if scontrol show rese -o $RESERVATION | grep -q $EXP; then
+		SBATCH_ARGS="$SBATCH_ARGS --reservation $RESERVATION"
+	    else
+		echo 'Experiment ${EXP} is not not in the reservation ${RESERVATION}, will submit without'
+	    fi
+	fi
+    else
+	echo '`whoami` is not part of account lcls:${EXP}, run interactively'
+	RUNLOCAL=1
+    fi
+else
     RUNLOCAL=1
 fi
 
@@ -455,11 +480,10 @@ fi
 
 echo "Use XTC files from  $XTCDIR."
 
-
 ###########
 # deduce calibdir.
 ###########
-if [ $CALIBDIR != 'xxx' ]; then
+if [ -v CALIBDIR ]; then
     ARG=$ARG' -c '$CALIBDIR
     JFARG=' -C '$CALIBDIR
 else
@@ -490,7 +514,7 @@ if [ ! -w "$WORKDIR" ]; then
     echo 'Typical directory to store calib logfiles & results is not writeable, will attempt to work from /tmp, but things may fail'
     WORKDIR='/tmp'
 fi 
-cd "$WORKDIR"
+cd "$WORKDIR" || exit
 
 ######################
 # work on the XTCAV
@@ -530,7 +554,7 @@ fi
 #    ARG=$ARG' -q '$QUEUE
 #fi
 
-if [ $DEPLOY == 1 ]; then
+if [ "$DEPLOY" == 1 ]; then
     ARG=$ARG' -D '
 fi
 
@@ -538,9 +562,31 @@ fi
 CREATE_TIME=$(date '+%m_%d_%Y_%H:%M:%S')
 printf -v RUNSTR "%04g" "$RUN"
 
+echo Check for data files:
+
+MINWAIT=0
+HAVEFILES=0
+while [[ $MINWAIT -lt 5 ]]; do
+    NFILES=`ls -ltr "$XTCDIR"/*r"$RUNSTR"*s*xtc* | wc -l`
+    echo $NFILES
+    if [ $NFILES -eq 0 ]; then
+	echo 'Files are not present yet, wait a minute'
+	sleep 60
+	MINWAIT=$((MINWAIT+1))
+    else 
+	HAVEFILES=1
+	MINWAIT=6
+    fi
+done
+if [[ $HAVEFILES == 0 ]]; then
+   echo 'After 5 minutes, files were not present: quit! '
+   exit
+fi
+	
+ls -ltr "$XTCDIR"/*r"$RUNSTR"*s*xtc*
+
 echo Check detectors: 
 
-ls -ltr "$XTCDIR"/*r"$RUNSTR"*s*xtc*
 if [[ $LCLS2 -gt 0 ]]; then
     detnames -r exp="${EXP}",run="${RUN}",dir="${XTCDIR}" > /tmp/detnames_"$EXP"_"$CREATE_TIME"
 else
@@ -604,11 +650,8 @@ if [[ $LCLS2 -gt 0 ]]; then
                         printf '#!/bin/bash\n' > "$tmpScript"
                         printf 'source %s/manage/bin/psconda.sh\n' "${SIT_ENV_DIR}" >> "$tmpScript"
                         printf '%s\n' "${CMD}" >> "$tmpScript"
-                        if [[ $EXCLUSIVE == 1 ]]; then
-                            ep10kaCmd="sbatch --exclusive  --account lcls:$EXP -p $QUEUE -o $WORKDIR/${EPIX10K}_${EXP}_Run${RUN}_cycle${calibcycle}_%J.out $tmpScript"
-                        else
-                            ep10kaCmd="sbatch --mem 8GB --cpus-per-task 5  --account lcls:$EXP -p $QUEUE -o $WORKDIR/${EPIX10K}_${EXP}_Run${RUN}_cycle${calibcycle}_%J.out $tmpScript"
-                        fi
+                        ep10kaCmd="sbatch ${SBATCH_ARGS} --mem 8GB --cpus-per-task 5 -o $WORKDIR/${EPIX10K}_${EXP}_Run${RUN}_cycle${calibcycle}_%J.out $tmpScript"
+
                         echo "run in queue: $ep10kaCmd"
                         SUBMISSION=$($ep10kaCmd)
                         check_for_submit_error
@@ -648,7 +691,7 @@ if [[ $LCLS2 -gt 0 ]]; then
             fi
 
             echo "---------------EPIX10K PEDESTALS CALCULATED NOW DEPLOY     --------------------"
-            if [ $DEPLOY == 1 ]; then
+            if [ "$DEPLOY" == 1 ]; then
                 if [ $NFAILEDJOBS -gt 0 ]; then
                     read -r -p "$NFAILEDJOBS of the calibration tasks failed, do you want to continue anyways (y/n)?"
                     if [ "$REPLY" != "y" ];then
@@ -658,8 +701,8 @@ if [[ $LCLS2 -gt 0 ]]; then
  
                 for EPIX10K in $DETNAMES; do
                     CMD="epix10ka_deploy_constants -D -d $EPIX10K -e $EXP -r $RUN -L INFO -x :dir=$XTCDIR"
-                    echo 'setting validity....' $VALSTR
-                    if [ $VALSTR != 'xxx' ]; then
+                    echo 'setting validity....$VALSTR'
+                    if [ "$VALSTR" != 'xxx' ]; then
                         CMD=$CMD' -t '$VALSTR
                     fi
                     echo "$cmd"
@@ -696,7 +739,7 @@ fi
 ###
 #check if jungfrau detectors are present
 HAVE_JUNGFRAU=$(grep -c Jungfrau /tmp/detnames_"$EXP"_"$CREATE_TIME")
-if [[ ( $HAVE_JUNGFRAU -ge 1 ) && ( $WANT_ZYLA -eq 0 ) && ( $WANT_OPAL -eq 0 ) && ( $WANT_RAYONIX -eq 0 )  && ( $WANT_UXI -eq 0 ) ]]; then
+if [[ ( $HAVE_JUNGFRAU -ge 1 ) && ( $WANT_ZYLA -eq 0 ) && ( $WANT_OPAL -eq 0 ) && ( $WANT_RAYONIX -eq 0 )  && ( $WANT_UXI -eq 0 ) && ( $WANT_ALVIUM -eq 0 ) ]]; then
     
     DETNAMES=$(grep Jungfrau /tmp/detnames_"$EXP"_"$CREATE_TIME" | awk  'BEGIN { FS = "|"}; {print $1}' | paste -d " " -s)
 
@@ -744,18 +787,14 @@ if [[ ( $HAVE_JUNGFRAU -ge 1 ) && ( $WANT_ZYLA -eq 0 ) && ( $WANT_OPAL -eq 0 ) &
                 CMDC=$CMD
             fi
             if [[ $RUNLOCAL != 1 ]]; then
-                tmpScript=$(mktemp -p $WORKDIR jungfrau_multi_tmpXXXXX.sh)
+                tmpScript=$(mktemp -p "$WORKDIR" jungfrau_multi_tmpXXXXX.sh)
                 #trap "rm -f $tmpScript" EXIT
                 chmod u+x "$tmpScript"
                 printf '#!/bin/bash\n' > "$tmpScript"
                 printf 'source %s/manage/bin/psconda.sh\n' "${SIT_ENV_DIR}" >> "$tmpScript"
                 printf 'echo $HOSTNAME\n' >> "$tmpScript"
                 printf '%s\n' "${CMDC}" >> "$tmpScript"
-                if [[ $EXCLUSIVE == 1 ]]; then
-                    jfCmd="sbatch --exclusive --account lcls:$EXP -p $QUEUE -o $WORKDIR/jungfrau_${EXP}_RUN${RUN}_%J.out $tmpScript"
-                else
-                    jfCmd="sbatch --mem 8GB --cpus-per-task 1 --account lcls:$EXP -p $QUEUE -o $WORKDIR/jungfrau_${EXP}_RUN${RUN}_%J.out $tmpScript"
-                fi
+                jfCmd="sbatch ${SBATCH_ARGS} --mem 8GB --cpus-per-task 1 -o $WORKDIR/jungfrau_${EXP}_RUN${RUN}_%J.out $tmpScript"
                 echo "run in queue: $jfCmd"        
                 SUBMISSION=$($jfCmd)
                 check_for_submit_error
@@ -781,7 +820,7 @@ if [[ ( $HAVE_JUNGFRAU -ge 1 ) && ( $WANT_ZYLA -eq 0 ) && ( $WANT_OPAL -eq 0 ) &
     if [[ $RUNLOCAL != 1 ]]; then
         echo 'Wait for 1/2 minutes before checking jobs:'
         sleep 30
-        echo Running $NJOBS jobs are PIDS: "${JOBIDS[@]}"
+        echo Running "$NJOBS" jobs are PIDS: "${JOBIDS[@]}"
         until check_running_jobs; do
                 echo 'Checking again in 10s'
                 sleep 10
@@ -800,7 +839,7 @@ if [[ ( $HAVE_JUNGFRAU -ge 1 ) && ( $WANT_ZYLA -eq 0 ) && ( $WANT_OPAL -eq 0 ) &
 
     #Now deploy.
     if [ $DEPLOY == 1 ]; then
-        if [ $NFAILEDJOBS -gt 0 ]; then
+        if [ "$NFAILEDJOBS" -gt 0 ]; then
             read -r -p "$NFAILEDJOBS of the calibration tasks failed, do you want to continue (y/n)?"
             if [ "$REPLY" != "y" ];then
                 exit 1
@@ -832,7 +871,7 @@ fi
 ###
 #check if epix10k detectors are present
 HAVE_EPIX10K=$(grep -c Epix10ka /tmp/detnames_"$EXP"_"$CREATE_TIME")
-if [[ ( $HAVE_EPIX10K -ge 1 ) && ( $WANT_ZYLA -eq 0 ) && ( $WANT_OPAL -eq 0 ) && ( $WANT_RAYONIX -eq 0 ) && ( $WANT_UXI -eq 0 ) ]]; then
+if [[ ( $HAVE_EPIX10K -ge 1 ) && ( $WANT_ZYLA -eq 0 ) && ( $WANT_OPAL -eq 0 ) && ( $WANT_RAYONIX -eq 0 ) && ( $WANT_UXI -eq 0 ) && ( $WANT_ALVIUM -eq 0 ) ]]; then
     echo "-------------------- START EPIX10K PEDESTALS at $(date +'%T') ----------------------------"
     DETNAMES=$(grep Epix10ka /tmp/detnames_"$EXP"_"$CREATE_TIME" | awk  'BEGIN { FS = "|"}; {print $1}' | paste -d " " -s)
     if [[ $RUNLOCAL -ne 1 ]]; then
@@ -856,11 +895,7 @@ if [[ ( $HAVE_EPIX10K -ge 1 ) && ( $WANT_ZYLA -eq 0 ) && ( $WANT_OPAL -eq 0 ) &&
                 printf '#!/bin/bash\n' > "$tmpScript"
                 printf 'source %s/manage/bin/psconda.sh\n' "${SIT_ENV_DIR}" >> "$tmpScript"
                 printf '%s\n' "${CMD}" >> "$tmpScript"
-                if [[ $EXCLUSIVE == 1 ]]; then
-                    ep10kaCmd="sbatch --exclusive --account lcls:$EXP -p $QUEUE -o $WORKDIR/${EPIX10K}_${EXP}_Run${RUN}_cycle${calibcycle}_%J.out $tmpScript"
-                else
-                    ep10kaCmd="sbatch --mem 8GB --cpus-per-task 5 --account lcls:$EXP -p $QUEUE -o $WORKDIR/${EPIX10K}_${EXP}_Run${RUN}_cycle${calibcycle}_%J.out $tmpScript"
-                fi
+                ep10kaCmd="sbatch ${SBATCH_ARGS} --mem 8GB --cpus-per-task 5 -o $WORKDIR/${EPIX10K}_${EXP}_Run${RUN}_cycle${calibcycle}_%J.out $tmpScript"
                 echo "run in queue: $ep10kaCmd"
                 SUBMISSION=$($ep10kaCmd)
                 check_for_submit_error
@@ -910,7 +945,7 @@ if [[ ( $HAVE_EPIX10K -ge 1 ) && ( $WANT_ZYLA -eq 0 ) && ( $WANT_OPAL -eq 0 ) &&
         for EPIX10K in $DETNAMES; do
             CMD="epix10ka_deploy_constants -D -d $EPIX10K -e $EXP -r $RUN -L INFO -x :dir=$XTCDIR:stream=0-79"
             if [ $VALSTR != 'xxx' ]; then
-                echo 'setting validity....' $VALSTR
+                echo 'setting validity to $VALSTR'
                 CMD=$CMD' -t '$VALSTR
             fi
             echo "$CMD"
@@ -932,6 +967,7 @@ if [[ ( $HAVE_EPIX10K -ge 1 ) && ( $WANT_ZYLA -eq 0 ) && ( $WANT_OPAL -eq 0 ) &&
     for EPIX10K in $DETNAMES; do
         deploy_geometry "$EPIX10K"
     done
+
     echo "-------------------- END EPIX10K PEDESTALS at $(date +'%T') ----------------------------"
 fi
 
@@ -947,6 +983,7 @@ HAVE_UXI=$(grep -c -i Uxi /tmp/detnames_"$EXP"_"$CREATE_TIME")
 HAVE_ISTAR=$(grep -c iStar /tmp/detnames_"$EXP"_"$CREATE_TIME")
 HAVE_OPAL=$(grep -c Opal /tmp/detnames_"$EXP"_"$CREATE_TIME")
 HAVE_RAYONIX=$(grep -c Rayonix /tmp/detnames_"$EXP"_"$CREATE_TIME")
+HAVE_ALVIUM=$(grep -c Alvium /tmp/detnames_"$EXP"_"$CREATE_TIME")
 
 #not like this: calculation
 (( SPECIFIED_CUTS=MYNOISESIGMIN+MYNOISESIGMAX+MYADUMIN+MYADUMAX ))
@@ -1006,6 +1043,15 @@ if [[ ( $HAVE_UXI -ge 1 ) && ( $WANT_UXI -ge 1 ) ]]; then
     fi
 fi
 
+#add alvium only on request
+if [[ ( $HAVE_ALVIUM -ge 1 ) && ( $WANT_ALVIUM -ge 1 ) ]]; then
+    if [ $SPECIFIED_CUTS -eq -4 ]; then
+        DETS="$DETS Alvium"
+    else
+        DETS='Alvium'
+    fi
+fi
+
 #add Rayonix only on request
 if [[ ( $HAVE_RAYONIX -ge 1 ) && ( $WANT_RAYONIX -ge 1 ) ]]; then
     if [ $SPECIFIED_CUTS -eq -4 ]; then
@@ -1037,7 +1083,7 @@ echo "for the following detectors: $DETS"
 for MYDET in $DETS; do
     #set thresholds for the detector in question
     #ADU minimum, maximum
-    get_config $MYDET
+    get_config "$MYDET"
 
     LOCARG=$ARG' --thr_int_min '$ADUMIN' --thr_int_max '$ADUMAX' --thr_rms_min '$NOISESIGMIN' --thr_rms_max '$NOISESIGMAX
     #this was likely to work with runs where the zyla rate was < readout rate....
