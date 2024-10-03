@@ -21,6 +21,10 @@ OPTIONS:
                runnumber for pedestal
         -e|--experiment <expname> 
                in case you do not want pedestals for the ongoing experiment
+        -q|--queue <queue>
+               queue for batch submisson
+        -A|--alvium         
+               make pedestals for Alvium (default only cspad/EPIX detectors)
         -O|--opal         
                make pedestals for Opals (default only cspad/EPIX detectors)
         -Z|--zyla         
@@ -31,8 +35,8 @@ OPTIONS:
                make pedestals for Uxi/Icarus detector
         -j|--jungfrau3     
                make pedestals for Jungfrau - 3 run version(default only cspad/EPIX detectors)
-        -q|--queue <queue>
-               queue for batch submisson
+        -r|--reservation <reservation>
+               reservation for batch submisson
         -D|--xtcav_dark
                 dark run for XTCAV
         -L|--xtcav_lasingoff
@@ -103,6 +107,11 @@ do
             elogMessage="DARK for Zyla"
             shift
             ;;
+        -A|--alvium)
+            POSITIONAL+=("$1")
+            elogMessage="DARK for Alvium"
+            shift
+            ;;
         -O|--opal)
             POSITIONAL+=("$1")
             elogMessage="DARK for opal"
@@ -138,6 +147,11 @@ do
         -q|--queue)
             QUEUE="$2"
             POSITIONAL+=("--queue $2")
+            shift
+            shift
+            ;;
+        -r|--reservation)
+            POSITIONAL+=("--reservation $2")
             shift
             shift
             ;;
