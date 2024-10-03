@@ -174,15 +174,6 @@ EXP=${EXP:='xxx'}
 QUEUE=${QUEUE:='xxx'}
 INTERACTIVE=${INTERACTIVE:=0}
 
-# also put 'xxx' (default q name) as S3DF so that even if no queue is given,
-# it goes to S3DF
-SDFQUEUES=('milano' 'roma' 'xxx')
-for SDFQUEUE in ${SDFQUEUES[@]}; do
-    if [[ $QUEUE == $SDFQUEUE ]]; then 
-	S3DF=1
-    fi
-done
-
 if [[ $RUN == 0 ]]; then
     if [[ $INTERACTIVE == 0 ]]; then
         printf "Please enter a run number: \n"; read RUN
@@ -191,8 +182,8 @@ if [[ $RUN == 0 ]]; then
 fi
 
 if [[ $EXP == 'xxx' ]]; then
-    HUTCH=`get_info --gethutch`
-    EXP=`get_info --exp --hutch $HUTCH`
+    HUTCH=$(get_info --gethutch)
+    EXP=$(get_info --exp --hutch $HUTCH)
     set -- "$@" '--experiment ' $EXP
 else
     HUTCH=${EXP:0:3}
@@ -212,8 +203,8 @@ else
     else
         DIR=`echo $DIR | sed 's/\/cds\/group\/pcds/\/sdf\/group\/lcls\/ds\/tools/g' | sed 's/\/reg\/g\/pcds/\/sdf\/group\/lcls\/ds\/tools/g'`
     fi
-    echo ssh -Y $USER@s3dflogin ssh -Y psana "$DIR/makepeds_psana $@"
-    ssh -Y $USER@s3dflogin ssh -Y psana "$DIR/makepeds_psana $@"
+    echo ssh -Y "$USER"@s3dflogin ssh -Y psana "$DIR/makepeds_psana $@"
+    ssh -Y "$USER"@s3dflogin ssh -Y psana "$DIR/makepeds_psana $@"
 fi
 
 if [[ $HOSTNAME =~ "sdf" ]]; then
@@ -222,11 +213,11 @@ else
     source pcds_conda
 fi
 
-elog_par_post --file pedestal -e "$EXP" -r $RUN
+elog_par_post --file pedestal -e "$EXP" -r "$RUN"
 
 #if this is a default pedestal run, then do not post as this is handled in takepeds
 if [[ $elogMessage == 'DARK' ]] && [[ $ELOGTXT == '' ]] ; then
-    echo ---- Done processing pedestals for Run $RUN -----
+    echo ---- Done processing pedestals for Run "$RUN" -----
     exit 0
 fi
 
@@ -237,21 +228,21 @@ fi
 
 PYCMD=LogBookPost.py
 echo -- Now posting special message to elog --
-echo -- $elogMessage --
+echo -- "$elogMessage" --
 
 elogMessage+=$ELOGTEXT
-if [[ `whoami` =~ "opr" ]]; then
-    echo $BINPATH $PYCMD -i "${HUTCH^^}" -u `whoami` -e "$EXP"  -t DARK  -r $RUN -m "$elogMessage"
+if [[ $(whoami) =~ "opr" ]]; then
+    echo "$BINPATH" $PYCMD -i "${HUTCH^^}" -u $(whoami) -e "$EXP"  -t DARK  -r "$RUN" -m "$elogMessage"
     if [[ $HOSTNAME == 'cxi-monitor' ]]; then
-        $BINPATH $PYCMD -i "${HUTCH^^}" -u `whoami` -p pcds -e "$EXP"  -t DARK  -r $RUN -m "$elogMessage" -s 1&
+        $BINPATH $PYCMD -i "${HUTCH^^}" -u $(whoami) -p pcds -e "$EXP"  -t DARK  -r "$RUN" -m "$elogMessage" -s 1&
     else
-        $BINPATH $PYCMD -i "${HUTCH^^}" -u `whoami` -p pcds -e "$EXP"  -t DARK  -r $RUN -m "$elogMessage"&
+        $BINPATH $PYCMD -i "${HUTCH^^}" -u $(whoami) -p pcds -e "$EXP"  -t DARK  -r "$RUN" -m "$elogMessage"&
     fi
 else
-    echo $BINPATH $PYCMD -i "${HUTCH^^}" -e "$EXP"  -t DARK -r $RUN -m "$elogMessage"
+    echo $BINPATH $PYCMD -i "${HUTCH^^}" -e "$EXP"  -t DARK -r "$RUN" -m "$elogMessage"
     if [[ $HOSTNAME == 'cxi-monitor' ]]; then
-        $BINPATH $PYCMD -i "${HUTCH^^}" -e "$EXP" -t DARK -r $RUN -m "$elogMessage" -s 1&
+        $BINPATH $PYCMD -i "${HUTCH^^}" -e "$EXP" -t DARK -r "$RUN" -m "$elogMessage" -s 1&
     else
-        $BINPATH $PYCMD -i "${HUTCH^^}" -e "$EXP" -t DARK -r $RUN -m "$elogMessage"&
+        $BINPATH $PYCMD -i "${HUTCH^^}" -e "$EXP" -t DARK -r "$RUN" -m "$elogMessage"&
     fi
 fi
