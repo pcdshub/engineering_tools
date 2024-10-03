@@ -3,12 +3,13 @@
 #
 # Do not use non-standard python.
 ####################################################
-import subprocess
-from subprocess import PIPE
-import socket
-import os, sys
+import errno
 import getpass
+import os
+import socket
+import subprocess
 import time
+from subprocess import PIPE
 
 DAQMGR_HUTCHES = ["tmo", "rix"]
 LOCALHOST = socket.gethostname()
@@ -37,9 +38,9 @@ def call_sbatch(cmd, nodelist, scripts_dir):
     sb_script += f"#SBATCH --job-name={SLURM_JOBNAME}" + "\n"
     sb_script += f"#SBATCH --nodelist={nodelist}" + "\n"
     sb_script += f"#SBATCH --output={os.path.join(scripts_dir, SLURM_OUTPUT)}" + "\n"
-    sb_script += f"#SBATCH --ntasks=1" + "\n"
-    sb_script += f"unset PYTHONPATH" + "\n"
-    sb_script += f"unset LD_LIBRARY_PATH" + "\n"
+    sb_script += "#SBATCH --ntasks=1\n"
+    sb_script += "unset PYTHONPATH\n"
+    sb_script += "unset LD_LIBRARY_PATH\n"
     sb_script += cmd
     slurm_script = os.path.join(scripts_dir, SLURM_SCRIPT)
     with open(slurm_script, "w") as f:
@@ -154,7 +155,7 @@ class DaqManager:
             f"WHEREPROG=$(which {prog}); set -x; $WHEREPROG {subcmd} {os.path.join(self.scripts_dir,self.cnf_file)}"
             + "; { set +x; } 2>/dev/null;"
         )
-        cmd += f"popd" + " > /dev/null;"
+        cmd += "popd > /dev/null;"
 
         if subcmd == "restart":
             query_daq_host = self.wheredaq()
@@ -182,7 +183,7 @@ class DaqManager:
 
     def restartdaq(self, daq_host):
         if not self.isvaliduser():
-            print(f"Please run the DAQ from the operator account!")
+            print("Please run the DAQ from the operator account!")
             return
 
         st = time.monotonic()

@@ -3,6 +3,5 @@
 
 # Go to source directory to make python import works
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
-cd $SCRIPT_DIR
-python3 run_daq_utils.py $@
-
+cd "$SCRIPT_DIR" || exit
+python3 run_daq_utils.py "$@"

@@ -3,8 +3,9 @@
 Enforce more checks and controls for running the DAQ.
 """
 
-from daq_utils import DaqManager, LOCALHOST
 import argparse
+
+from daq_utils import LOCALHOST, DaqManager
 
 
 def restartdaq(daqmgr, args):
