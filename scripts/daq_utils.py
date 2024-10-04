@@ -29,7 +29,7 @@ def silentremove(filename):
 
 
 def call_subprocess(*args):
-    return str(subprocess.check_output(args, stderr=PIPE), "utf-8")
+    return str(subprocess.check_output(args, stderr=PIPE).strip(), "utf-8")
 
 
 def call_sbatch(cmd, nodelist, scripts_dir):
@@ -95,6 +95,9 @@ class DaqManager:
     def __init__(self, verbose=False):
         self.verbose = verbose
         self.hutch = call_subprocess("get_info", "--gethutch")
+        if len(self.hutch) != 3:
+            raise ValueError(f"Invalid hutch name found (hutch: '{self.hutch}')")
+
         self.user = self.hutch + "opr"
         self.sbman = SbatchManager(self.user)
         self.scripts_dir = f"/reg/g/pcds/dist/pds/{self.hutch}/scripts"
