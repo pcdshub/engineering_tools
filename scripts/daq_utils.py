@@ -95,6 +95,9 @@ class DaqManager:
     def __init__(self, verbose=False):
         self.verbose = verbose
         self.hutch = call_subprocess("get_info", "--gethutch")
+        if len(self.hutch) != 3:
+            raise ValueError(f"Invalid hutch name found (hutch: '{self.hutch}')")
+
         self.user = self.hutch + "opr"
         self.sbman = SbatchManager(self.user)
         self.scripts_dir = f"/reg/g/pcds/dist/pds/{self.hutch}/scripts"
