@@ -7,19 +7,21 @@ usage()
 cat << EOF
 usage: $0 <motor_pv_basename>
 
-Start an EDM for the specified motor.
+Decides if the specified motor is a Beckhoff motor or not.
+If it is a Beckhoff motor, calls the motor-typhos utility.
+If not a Beckhoff motor, start an EDM for the specified motor.
 Attempts to choose the correct type.
 EOF
 }
 
-if [[ ($1 == "--help") || ($1 == "-h") || (-z $1) ]]; then
+if [[ ("$1" == "--help") || ("$1" == "-h") || (-z "$1") ]]; then
 	usage
 	exit 0
 fi
 
-shift $(($OPTIND - 1))
+shift $(( OPTIND - 1 ))
 
-PREFIX=`echo $1 | cut -d . -f 1`
+PREFIX=$(echo "$1" | cut -d . -f 1)
 
 # Setup edm environment
 source /reg/g/pcds/setup/epicsenv-3.14.12.sh
@@ -36,7 +38,7 @@ isbeckhoff=false
 
 # Choose title so we can move the right window.
 # If this script hangs later, titles probably changed.
-rtyp=`caget -t $PREFIX.RTYP` > /dev/null 2>&1
+rtyp=$(caget -t "$PREFIX.RTYP") > /dev/null 2>&1
 if [ "${rtyp}" == 'xps8p' ]; then
     title='Newport XPS Positioner'
 elif [ "${rtyp}" == 'ims' ]; then
@@ -45,16 +47,14 @@ elif [ "${rtyp}" == 'motor' ]; then
     # Check to see if this is a Beckhoff axis
     #   caget will return exit code 0 if :PLC:nErrorId_RBV exists,
     #   we set isbeckhoff based on this.
-    caget "${PREFIX}:PLC:nErrorId_RBV" > /dev/null 2>&1
-    if [ $? -eq 0 ]; then
+    if caget "${PREFIX}:PLC:nErrorId_RBV" > /dev/null 2>&1; then
         title="Typhos Suite - ${PREFIX}"
         isbeckhoff=true;
     else
         title='Aerotech motor'
     fi
 else
-    caget "$PREFIX.PN" > /dev/null 2>&1
-    if [ $? -eq 0 ]; then
+    if caget "$PREFIX.PN" > /dev/null 2>&1; then
         title='IMS Motor Control -- Main'
     else
         title='IMS Motor Control'
@@ -65,16 +65,20 @@ fi
 # if xdotool is not installed, the move window commands will skip
 
 # Check already open windows
-oldwins=`xdotool search --onlyvisible --maxdepth 2 --all --name "$title" 2> /dev/null`
+oldwins=$(xdotool search --onlyvisible --maxdepth 2 --all --name "$title" 2> /dev/null)
+
+# For debugging
+#echo "Old Windows: "
+#echo "${oldwins[@]}"
 
 # Open new window
 if [ ${isbeckhoff} == true ]; then
-    motor-typhos ${PREFIX} > /dev/null 2>&1 &
+    motor-typhos "${PREFIX}" > /dev/null 2>&1 &
 elif [ "${rtyp}" == 'xps8p' ]; then
     # If we have a Newport motor, we need to parse the PV to get the macro
     # substitutions for the edm screen
-    base=`echo $PREFIX | cut -d':' -f 1,2,3`
-    num=`echo $PREFIX | cut -d':' -f 4`
+    base=$(echo "$PREFIX" | cut -d':' -f 1,2,3)
+    num=$(echo "$PREFIX" | cut -d':' -f 4)
     if [ "$num" -ge 1 ] && [ "$num" -le 8 ]; then
         ext=0108
     elif [ "$num" -ge 9 ] && [ "$num" -le 16 ]; then
@@ -83,7 +87,7 @@ elif [ "${rtyp}" == 'xps8p' ]; then
         ext=1724
     elif [ "$num" -ge 25 ] && [ "$num" -le 32 ]; then
         ext=2532
-    elif [ "$num" -ge 33 ] && [ "$num" -le 40]; then
+    elif [ "$num" -ge 33 ] && [ "$num" -le 40 ]; then
         ext=3340
     else
         # If something went wrong we'll be missing some boring things
@@ -93,21 +97,23 @@ elif [ "${rtyp}" == 'xps8p' ]; then
 elif [ "${rtyp}" == 'mmca' ]; then # MMC-100 axis
     edm -x -eolc -m "MOTOR=$PREFIX" mmc_main.edl > /dev/null 2>&1 &
 elif [ "${rtyp}" == 'motor' ]; then
-    caget "$PREFIX:PN" > /dev/null 2>&1
-    if [ $? -eq 0 ]; then
+    if caget "$PREFIX:PN" > /dev/null 2>&1; then
         /reg/g/pcds/package/epics/3.14//modules/pcds_motion/${OLD_VERSION}/launch-motor.sh "$PREFIX" > /dev/null 2>&1 &
     else
 	# smaracts have "motor" rtyp, so we catch them with the PREFIX or with smaract specific pvs
 	if [[ $PREFIX == *"MCS2"* || $(caget "$PREFIX:PTYPE_RBV" > /dev/null 2>&1) -eq 0 ]]; then
-            enc=$(caget $PREFIX.UEIP)
+            enc=$(caget "$PREFIX".UEIP)
             if [[ $enc == *"Yes"* ]]; then
 		edm -x -eolc -m "MOTOR=$PREFIX" mcs2_main.edl > /dev/null 2>&1 &
             else
 		edm -x -eolc -m "MOTOR=$PREFIX" mcs2_openloop.edl > /dev/null 2>&1 &
             fi
 	else
-            cd /reg/neh/home/klg/epics/ioc/common/aerotech/current/motorScreens
-            #cd /reg/neh/home4/mcbrowne/trunk2/ioc/common/aerotech/current/motorScreens
+            if ! cd /reg/neh/home/klg/epics/ioc/common/aerotech/current/motorScreens; then
+                echo "Unable to cd to /reg/neh/home/klg/epics/ioc/common/aerotech/current/motorScreens."
+                exit
+            fi
+
             edm -x -eolc -m "MOTOR=${PREFIX}" ens_main.edl >& /dev/null &
 	fi
     fi
@@ -119,47 +125,72 @@ fi
 #exit
 
 # Accumulate all windows
-sleep 2 # Crudely give the new window enough time to load
-newwins=`xdotool search --onlyvisible --maxdepth 2 --all --sync --name "$title" 2> /dev/null`
+id=-1
+for attempt in {1..5} # 5 attempts
+do
+    newwins=$(xdotool search --onlyvisible --maxdepth 2 --all --sync --name "$title" 2> /dev/null)
 
-# Find the id of the new window
-for new in $newwins; do
-    foundMatch=0
-    for old in $oldwins; do
-        if [ $new == $old ]; then
-            foundMatch=1
+    # For debugging
+    #echo "New Windows: "
+    #echo "${newwins[@]}"
+
+    # Find the id of the new window
+    for new in $newwins; do
+        foundMatch=0
+        for old in $oldwins; do
+            if [ "$new" == "$old" ]; then
+                foundMatch=1
+                break
+            fi
+        done
+        if [ $foundMatch == 0 ]; then
+            id=$new
             break
         fi
     done
-    if [ $foundMatch == 0 ]; then
-        id=$new
+
+    # For debugging
+    #echo "ID: ${id}"
+
+    if [ "$attempt" == 5 ] && [ "$id" == -1 ]; then
+        # Give up
+        echo "New window is taking a long time to open. Giving up on aligning the window to your cursor. Window may still open eventually."
+        exit
+    elif [ "$id" -ne -1 ]; then
+        # Get window location, dimensions
+        geom=$(xdotool getwindowgeometry "$id" 2> /dev/null)
+        locxy=${geom#*Position: }
+        locxy=${locxy%% *}
+        winx=${locxy%,*}
+        winy=${locxy#*,}
+        sizexy=${geom#*Geometry: }
+        sizexy=${sizexy%% *}
+        xwidth=${sizexy%x*}
+        ywidth=${sizexy#*x}
+
+        # Get mouse position
+        read -r x y s w <<<"$(xdotool getmouselocation 2> /dev/null)"
+        echo "$s" > /dev/null # just to make shellcheck happy
+        echo "$w" > /dev/null # just to make shellcheck happy
+        xpos=$(echo "$x" | cut -d':' -f 2)
+        ypos=$(echo "$y" | cut -d':' -f 2)
+
+        if [ -z "$xpos" ]; then
+            exit
+        # Check if mouse is already on the window. In this case, we wouldn't move it.
+        elif [ "$xpos" -lt "$winx" ] || [ "$xpos" -gt $(( winx + xwidth  )) ] || [ "$ypos" -lt "$winy" ] || [ "$ypos" -gt $(( winy + ywidth )) ]; then
+            # Adjust xpos and ypos so center of window aligns with cursor.
+            xpos=$(( xpos - ( xwidth / 2 ) ))
+            ypos=$(( ypos - ( ywidth / 2 ) ))
+            # Finally, move the window to our cursor.
+            xdotool windowmove "$id" $xpos $ypos 2> /dev/null
+        fi
+
+        # Exit looping becuase new window was successfully found
         break
+    else
+        # Wait 1 second between attempts to check for the new window.
+        sleep 1
     fi
+
 done
-
-# Get window location, dimensions
-geom=`xdotool getwindowgeometry $id 2> /dev/null` 
-locxy=${geom#*Position: }
-locxy=${locxy%% *}
-winx=${locxy%,*}
-winy=${locxy#*,}
-sizexy=${geom#*Geometry: }
-sizexy=${sizexy%% *}
-xwidth=${sizexy%x*}
-ywidth=${sizexy#*x}
-
-# Get mouse position
-read x y s w <<<$(xdotool getmouselocation 2> /dev/null)
-xpos=`echo $x | cut -d':' -f 2`
-ypos=`echo $y | cut -d':' -f 2`
-
-if [ -z $xpos ]; then
-  exit
-# Check if mouse is already on the window. In this case, we wouldn't move it.
-elif [ "$xpos" -lt "$winx" ] || [ "$xpos" -gt $(( ${winx} + ${xwidth}  )) ] || [ "$ypos" -lt "$winy" ] || [ "$ypos" -gt $(( ${winy} + ${ywidth} )) ]; then
-    # Adjust xpos and ypos so center of window aligns with cursor.
-    xpos=$(( ${xpos} - ( ${xwidth} / 2 ) ))
-    ypos=$(( ${ypos} - ( ${ywidth} / 2 ) ))
-    # Finally, move the window to our cursor.
-    xdotool windowmove $id $xpos $ypos 2> /dev/null
-fi
