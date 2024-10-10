@@ -390,6 +390,7 @@ EXP=${EXP:='xxx'}
 NUMEVT=${NUMEVT:=1000}
 XTCAV=${XTCAV:=0}
 INTERACTIVE=${INTERACTIVE:=0}
+RUNLOCAL=${RUNLOCAL:=0}
 CALIBCODE=${CALIBCODE:=0}
 VALSTR=${VALSTR:='xxx'}
 DEPLOY=${DEPLOY:=1}
@@ -444,16 +445,16 @@ source $SIT_ENV_DIR/manage/bin/psconda.sh
 if [ -v QUEUE ]; then
     USER=`whoami`
     SBATCH_ARGS="-p $QUEUE --account lcls:$EXP"
-    if sacctmgr show asso account=lcls:${EXP} partition=${QUEUE} -n | grep -q ${USER} ; then
+    if sacctmgr show asso account=lcls:${EXP}@${QUEUE} -n | grep -q ${USER} ; then
 	if [ -v RESERVATION ]; then
 	    if scontrol show rese -o $RESERVATION | grep -q $EXP; then
 		SBATCH_ARGS="$SBATCH_ARGS --reservation $RESERVATION"
 	    else
-		echo 'Experiment ${EXP} is not not in the reservation ${RESERVATION}, will submit without'
+		echo Experiment ${EXP} is not not in the reservation ${RESERVATION}, will submit without
 	    fi
 	fi
     else
-	echo '`whoami` is not part of account lcls:${EXP}, run interactively'
+	echo ${USER} is not part of account lcls:${EXP}, run interactively
 	RUNLOCAL=1
     fi
 else
