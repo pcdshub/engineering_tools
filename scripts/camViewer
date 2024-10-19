@@ -18,7 +18,7 @@ name_to_pv()
         exit
     fi
     CAMPVFULL=""
-    hutch=$(echo "$2" | tr A-Z a-z)
+    hutch=$(echo "$2" | tr '[:upper:]' '[:lower:]')
     VIEWERCFG=/cds/group/pcds/pyps/config/$hutch/camviewer.cfg
     # Match "-" or "_" or " ".
     NAME=$(echo "$1" | sed -e 's/-/ /g' -e 's/_/ /g' -e 's/ /[-_ ]/g')
@@ -102,8 +102,8 @@ list_cams()
     if [ $# -lt 1 ]; then
         echo 'need one arguments: hutch '
     fi
-    HUTCH=$(echo "$1" | tr a-z A-Z)
-    hutch=$(echo "$1" | tr A-Z a-z)
+    HUTCH=$(echo "$1" | tr '[:lower:]' '[:upper:]')
+    hutch=$(echo "$1" | tr '[:upper:]' '[:lower:]')
 
     ALLVIEWERCFG="/cds/group/pcds/pyps/config/*/camviewer.cfg"
     echo grep -v '#' "$ALLVIEWERCFG" | awk -F, '{ if (split($2,a,";")==1) n=$2; else n=a[2]; gsub(" ","",n); gsub(" ","",$4); printf "%s %s\n", n, $4; }'
