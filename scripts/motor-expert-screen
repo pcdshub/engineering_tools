@@ -103,6 +103,7 @@ elif [ "${rtyp}" == 'motor' ]; then
                 edm -x -eolc -m "MOTOR=$PREFIX" mcs2_openloop.edl > /dev/null 2>&1 &
             fi
         else
+            # shellcheck disable=SC2164
             cd /cds/home/k/klg/epics/ioc/common/aerotech/current/motorScreens
             edm -x -eolc -m "MOTOR=${PREFIX}" ens_main.edl >&/dev/null &
         fi

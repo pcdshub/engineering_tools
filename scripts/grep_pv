@@ -16,10 +16,13 @@ fi
 KEYWORD=$1
 
 if [[ -n $KEYWORD ]]; then
+    # shellcheck disable=SC2164
     cd /cds/data/iocData/
     for i in ioc-*; do
+        # shellcheck disable=SC2164
         cd /cds/data/iocData/"$i"
         if [ -e ./iocInfo/ ]; then
+            # shellcheck disable=SC2164
             cd iocInfo
             if [ -e ./IOC.pvlist ]; then
                 if grep -q "$KEYWORD" IOC.pvlist; then

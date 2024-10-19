@@ -228,6 +228,7 @@ elif [ "$CMD" == "cddir" ]; then
         echo "Script is not being sourced. Start with 'source $0' before calling script with this option." >&2
         exit 1
     fi
+    # shellcheck disable=SC2164
     cd "${iocpath}"
 
 #################################################################

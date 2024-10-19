@@ -1,4 +1,5 @@
 #!/bin/bash
 source pcds_conda
-cd "$ENG_TOOL_SCRIPTS"
+# shellcheck disable=SC2164
+cd "$ENG_TOOLS_SCRIPTS"
 python xpp_update_happi_line.py "$@"

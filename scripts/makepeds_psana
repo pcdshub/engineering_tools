@@ -488,6 +488,7 @@ if [ ! -w "$WORKDIR" ]; then
     echo 'Typical directory to store calib logfiles & results is not writeable, will attempt to work from /tmp, but things may fail'
     WORKDIR='/tmp'
 fi
+# shellcheck disable=SC2164
 cd "$WORKDIR"
 
 ######################
