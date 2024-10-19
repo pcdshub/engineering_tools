@@ -50,7 +50,7 @@ if [ $AskLive -eq 1 ]; then
     else
         CURR_EXP=$(get_info --run --live)
         if [[ $CURR_EXP == *'xxx'* ]]; then
-            echo 'For which hutch would you like to get this information? '
+            echo 'For which hutch would you like to get this information?'
             read -r hutch
             CURR_EXP=$(get_info --hutch "$hutch" --run --live)
         fi
@@ -61,7 +61,7 @@ elif [ $Ended -eq 1 ]; then
     else
         CURR_EXP=$(get_info --run --ended)
         if [[ $CURR_EXP == *'xxx'* ]]; then
-            echo 'For which hutch would you like to get this information? '
+            echo 'For which hutch would you like to get this information?'
             read -r hutch
             CURR_EXP=$(get_info --hutch "$hutch" --run --ended)
         fi
