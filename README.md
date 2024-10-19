@@ -1,26 +1,18 @@
 # engineering_tools
-A repository of scripts, configuration useful for the PCDS team
+A repository of scripts and configurations useful for the PCDS team
 
-## Push updates
-```
-git push -u origin master
-```
-
-## Add Tag
-```
-git tag -a R{tag} -m '{comment}'
-
-git push -u origin R{tag}
-```
+## Contribution guidelines
+Before making changes to this repository, please read the [contribution guidelines](https://github.com/pcdshub/engineering_tools/blob/docs_update/.github/CONTRIBUTING.md).
 
 ## Creating a new release
+Navigate to https://github.com/pcdshub/engineering_tools/releases/new and create a new tag according to [semantic versioning](https://semver.org) conventions. You can use this same tag for the "Release title" or make up something more creative. For the description the "Auto-generate release notes" button works quite well but feel free to add additional comments at the top if you feel so inclined. Click the green button to publish the release then proceed to deploy this release on the LCLS servers:
 ```
-# Clone the source code into a new folder
-git clone https://github.com/pcdshub/engineering_tools.git R{tag}
-# Enter repository
-cd R{Tag}
-# checkout tag number
-git checkout tags/R{tag}
+# Navigate to the main engineering_tools directory
+cd /cds/group/pcds/engineering_tools
+# Deploy using the pkg_release script 
+pkg_release engineering_tools R{tag}
+# Repoint the latest-released link to your new release
+ln -nsf R{tag} latest-released
 ```
 
 ## Updating latest
