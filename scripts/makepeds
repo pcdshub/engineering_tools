@@ -198,7 +198,7 @@ else
     if [ -v SDFDIR ]; then
         DIR=$SDFDIR
     else
-        DIR=$(echo "$DIR" | sed 's/\/cds\/group\/pcds/\/sdf\/group\/lcls\/ds\/tools/g' | sed 's/\/cds\/group\/pcds/\/sdf\/group\/lcls\/ds\/tools/g')
+        DIR=$(echo "$DIR" | sed 's/\/cds\/group\/pcds/\/sdf\/group\/lcls\/ds\/tools/g' | sed 's/\/reg\/g\/pcds/\/sdf\/group\/lcls\/ds\/tools/g')
     fi
     echo ssh -Y "$USER"@s3dflogin ssh -Y psana "$DIR/makepeds_psana" "$@"
     ssh -Y "$USER"@s3dflogin ssh -Y psana "$DIR/makepeds_psana" "$@"
