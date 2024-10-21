@@ -53,9 +53,7 @@ HUTCH=${EXP:0:3}
 #
 
 opt_dir="/cds/group/pcds/dist/pds/$HUTCH/current/build/pdsapp/bin/x86_64-rhel7-opt"
-eval find "$opt_dir"/configdb_readxtc
-ret_code=$?
-if [ $ret_code == 0 ]; then
+if eval find "$opt_dir"/configdb_readxtc; then
     EXE='/cds/group/pcds/dist/pds/'$HUTCH'/current/build/pdsapp/bin/x86_64-rhel7-opt/configdb_readxtc'
 else
     dir="/cds/group/pcds/dist/pds/xpp/current/build/pdsapp/bin/x86_64-rhel7"
