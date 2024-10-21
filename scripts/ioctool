@@ -144,7 +144,7 @@ if [[ ($1 == "--help") || ($1 == "-h") ]]; then
     exit 0
 fi
 
-if OPTIONS=$(getopt -o H: --long hutch: -n \'"$0"\' -- "$@"); then
+if ! OPTIONS=$(getopt -o H: --long hutch: -n \'"$0"\' -- "$@"); then
     echo "Terminating..." >&2
     exit 1
 fi

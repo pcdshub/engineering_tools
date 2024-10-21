@@ -214,7 +214,7 @@ deploy_geometry()
         fi
 
         echo calling "$CMD"
-        if $CMD; then
+        if ! $CMD; then
             echo Error: Geometry not deployed!
         else
             echo Geometry now deployed.
@@ -239,7 +239,7 @@ deploy_gain()
         CMD=$CMD' -x :dir='$XTCDIR'/:stream=0-79'
 
         echo calling "$CMD"
-        if $CMD; then
+        if ! $CMD; then
             echo Error: Gain file not deployed!
         else
             echo Gain file deployed.
@@ -420,7 +420,6 @@ fi
 LCLS2_HUTCHES="rix, tmo, ued"
 if echo "$LCLS2_HUTCHES" | grep -iw "$HUTCH" > /dev/null; then
     echo "This is a LCLS-II experiment"
-
     SIT_ENV_DIR=$SIT_ENV_DIR'/conda2/'
     LCLS2=1
 else
