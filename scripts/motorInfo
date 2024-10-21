@@ -24,7 +24,7 @@ fi
 while getopts "f:s:e:" OPTION; do
     case $OPTION in
         f)
-            PVFIELDS=${OPTARG//,/}
+            PVFIELDS=${OPTARG//,/ }
             ;;
         s)
             # shellcheck disable=SC2034
@@ -108,7 +108,7 @@ elif [[ $2 == *pmgr* ]]; then
     elif [[ $ACTION == 'save' ]]; then
         echo "Differences of $MOTOR_PV to saved config:"
         /cds/group/pcds/config/"$hutch"/pmgr/pmgrUtils.sh diff "$MOTOR_PV"
-        echo 'Save current config (yes/no)? '
+        echo 'Save current config (yes/no)?'
         read -r ANSWER
         if [[ $ANSWER == 'yes' ]]; then
             echo 'Save now...'

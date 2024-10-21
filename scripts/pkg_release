@@ -61,7 +61,7 @@ echo "Checking out tag..."
 pushd "${TEMP}"
 git tag -l | grep "${TAG}" > /dev/null
 if [ "${?}" == "1" ]; then
-    echo "Error: could not find tag \"${TAG}\". Aborting."
+    echo "Error: could not find tag ${TAG}. Aborting."
     echo "Available tags:"
     git tag -l
     exit
@@ -69,7 +69,7 @@ fi
 set -e # Catch error in git checkout
 git checkout "${TAG}"
 popd
-echo "Renaming \"${TEMP}\" directory to ${TAG}"
+echo "Renaming ${TEMP} directory to ${TAG}"
 mv "${TEMP}" "${TAG}"
 echo "Write-protecting directory..."
 chmod -R a-w "${TAG}"
