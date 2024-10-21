@@ -314,7 +314,7 @@ if [ $MAINSCREEN -gt 0 ]; then
     tmp=/tmp/cv.$$
     list_cams "$hutch" > $tmp
 
-    c=$(wc $tmp | grep "$CAMNAME" $tmp | awk '{print $1}') # not sure what is happening here
+    c=$(wc $tmp | grep "$CAMNAME" $tmp | awk '{print $1}')
     if [ "$c" == '' ]; then
         echo "Camera name not found in hutch. To see which cameras you can access from your current machine use the '-l/--list' option."
         sleep 3
