@@ -28,7 +28,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(prog="run_daq_utils", description=__doc__)
 
     parser.add_argument("-v", "--verbose", action="store_false")
-
+    parser.add_argument("--cnf", default=None)
     subparsers = parser.add_subparsers()
     psr_restart = subparsers.add_parser(
         "restartdaq",
@@ -55,5 +55,5 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    daqmgr = DaqManager(args.verbose)
+    daqmgr = DaqManager(args.verbose, args.cnf)
     args.func(daqmgr, args)

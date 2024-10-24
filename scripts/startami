@@ -17,7 +17,6 @@ if [[ ($1 == "--help") || ($1 == "-h") ]]; then
 	exit 0
 fi
 
-STOP_AMI=0
 while getopts "sc:" OPTION
 do
     case "$OPTION" in
@@ -33,23 +32,28 @@ do
 	    ;;
 	esac
 done
-shift "$(($OPTIND-1))"
+shift "$((OPTIND-1))"
 
-if [[ `whoami` != *'opr'* ]]; then
+if [[ $(whoami) != *'opr'* ]]; then
     echo "Please run ami from the operator account!"
     exit
 fi
 
-HUTCH=`get_hutch_name`
-EXPNAME=`get_curr_exp`
+HUTCH=$(get_hutch_name)
+if [ "$(daqutils isdaqmgr)" = "true" ]; then
+    daqutils --cnf "${HUTCH}"_ami.py restartdaq "$@"
+    exit 0
+fi
+
+EXPNAME=$(get_curr_exp)
 CNFEXT=.cnf
 
-if [[ $HUTCH == 'cxi' ]]; then
-    if [[ $HOSTNAME == 'cxi-daq' ]]; then
+if [[ "$HUTCH" == 'cxi' ]]; then
+    if [[ "$HOSTNAME" == 'cxi-daq' ]]; then
         CNFEXT=_0.cnf
-    elif [[ $HOSTNAME == 'cxi-monitor' ]]; then
+    elif [[ "$HOSTNAME" == 'cxi-monitor' ]]; then
         CNFEXT=_1.cnf
-    elif [[ -z $CONFIG ]]; then
+    elif [[ -z "$CONFIG" ]]; then
         echo 'You must provide cxi config file (-c) if not on daq machine'
         exit 1
     fi
@@ -61,46 +65,46 @@ if [[ -z $CONFIG ]]; then
 fi
 
 #
-# this is XPP specific. Don't think we should have local plugins anyways, 
-# only release ones. 
+# this is XPP specific. Don't think we should have local plugins anyways,
+# only release ones.
 #
 source /reg/g/pcds/setup/pathmunge.sh
-if [ $HUTCH == 'xpp' ]; then
+if [ "$HUTCH" == 'xpp' ]; then
     ldpathmunge /reg/neh/operator/xppopr/ami_plugins
-elif [ $HUTCH == 'xcs' ]; then
+elif [ "$HUTCH" == 'xcs' ]; then
     ldpathmunge /reg/neh/operator/xcsopr/online/ami_plugins
 fi
 
 
-DAQHOST=`wheredaq`
-ami_base_path=`grep ami_base_path /reg/g/pcds/dist/pds/$HUTCH/scripts/$CONFIG | grep -v '#' | grep -v 'ami_base_path+'  | awk 'BEGIN { FS = "=" }; { print $2}' | sed s/\'//g`
-ami_path=$ami_base_path`grep ami_path /reg/g/pcds/dist/pds/$HUTCH/scripts/$CONFIG | grep -v 'ami_path+' | grep -v '#' | awk 'BEGIN { FS = "= " }; { print $2}' | sed s/ami_base_path+// | sed s/\'//g`
+DAQHOST=$(wheredaq)
+ami_base_path=$(grep ami_base_path /reg/g/pcds/dist/pds/"$HUTCH"/scripts/"$CONFIG" | grep -v '#' | grep -v 'ami_base_path+'  | awk 'BEGIN { FS = "=" }; { print $2}' | sed s/\'//g)
+ami_path=$ami_base_path$(grep ami_path /reg/g/pcds/dist/pds/"$HUTCH"/scripts/"$CONFIG" | grep -v 'ami_path+' | grep -v '#' | awk 'BEGIN { FS = "= " }; { print $2}' | sed s/ami_base_path+// | sed s/\'//g)
 
-proxy_cds=`/reg/g/pcds/dist/pds/$HUTCH/current/tools/procmgr/procmgr status /reg/g/pcds/dist/pds/$HUTCH/scripts/$CONFIG | grep ami_proxy | awk {'print $1'} | sed s/'-fez'/''/g`
+proxy_cds=$(/reg/g/pcds/dist/pds/"$HUTCH"/current/tools/procmgr/procmgr status /reg/g/pcds/dist/pds/"$HUTCH"/scripts/"$CONFIG" | grep ami_proxy | awk '{print $1}' | sed s/'-fez'/''/g)
 
-amicmd=`grep ami_client /reg/g/pcds/dist/pds/$HUTCH/scripts/$CONFIG | grep -v '#' |  awk 'BEGIN { FS = ":" }; { print $4}' | sed s/ami_path//g | sed s/\'+proxy_cds/$proxy_cds/g | sed  s:\'+expname:$EXPNAME/:g | sed s/+\'//g | sed s/\'\}\)//g` 
+amicmd=$(grep ami_client /reg/g/pcds/dist/pds/"$HUTCH"/scripts/"$CONFIG" | grep -v '#' |  awk 'BEGIN { FS = ":" }; { print $4}' | sed s/ami_path//g | sed s/\'+proxy_cds/"$proxy_cds"/g | sed  s:\'+expname:"$EXPNAME"/:g | sed s/+\'//g | sed s/\'\}\)//g)
 
 if [[ "$DAQHOST" == *"$HOSTNAME" ]]; then  # Check host and daq host line share host name...
     #running on the DAQ host, this will restart the ami_client!
-    read -p "Do you really intend to restart the ami_client on $DAQHOST? (y/n)"
+    read -r -p "Do you really intend to restart the ami_client on $DAQHOST? (y/n)"
     if [ "$REPLY" == "y" ];then
 	echo "Restarting the ami_client...";
-	/reg/g/pcds/dist/pds/$HUTCH/current/tools/procmgr/procmgr stop \
-	    /reg/g/pcds/dist/pds/$HUTCH/scripts/$CONFIG ami_client 
-	/reg/g/pcds/dist/pds/$HUTCH/current/tools/procmgr/procmgr start \
- 	    /reg/g/pcds/dist/pds/$HUTCH/scripts/$CONFIG -c 2000000000 -o /reg/g/pcds/pds/$HUTCH/logfiles ami_client 
+	/reg/g/pcds/dist/pds/"$HUTCH"/current/tools/procmgr/procmgr stop \
+	    /reg/g/pcds/dist/pds/"$HUTCH"/scripts/"$CONFIG" ami_client
+	/reg/g/pcds/dist/pds/"$HUTCH"/current/tools/procmgr/procmgr start \
+ 	    /reg/g/pcds/dist/pds/"$HUTCH"/scripts/"$CONFIG" -c 2000000000 -o /reg/g/pcds/pds/"$HUTCH"/logfiles ami_client
 	exit
     else
-	read -p "Do you want to start a second client on the DAQ host $DAQHOST? (y/n)"
+	read -r -p "Do you want to start a second client on the DAQ host $DAQHOST? (y/n)"
 	if [ "$REPLY" == "n" ];then
 	    exit
 	else
-	    echo "Starting another ami_client on "$DAQHOST , calling:
+	    echo "Starting another ami_client on ""$DAQHOST" , calling:
 	fi
     fi
 else
-    echo --- connect to proxy on: $proxy_cds, calling:
-fi    
+    echo --- connect to proxy on: "$proxy_cds", calling:
+fi
 
-echo $ami_path$amicmd
-exec $ami_path$amicmd&
+echo "$ami_path""$amicmd"
+exec "$ami_path""$amicmd"&
