@@ -41,6 +41,11 @@ if [[ `whoami` != *'opr'* ]]; then
 fi
 
 HUTCH=`get_hutch_name`
+if [ "$(daqutils isdaqmgr)" = "true" ]; then
+    daqutils --cnf ${HUTCH}_ami.py restartdaq $@
+    exit 0
+fi
+
 EXPNAME=`get_curr_exp`
 CNFEXT=.cnf
 

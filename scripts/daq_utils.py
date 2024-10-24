@@ -92,7 +92,7 @@ class SbatchManager:
 
 
 class DaqManager:
-    def __init__(self, verbose=False):
+    def __init__(self, verbose=False, cnf=None):
         self.verbose = verbose
         self.hutch = call_subprocess("get_info", "--gethutch")
         if len(self.hutch) != 3:
@@ -101,7 +101,10 @@ class DaqManager:
         self.user = self.hutch + "opr"
         self.sbman = SbatchManager(self.user)
         self.scripts_dir = f"/reg/g/pcds/dist/pds/{self.hutch}/scripts"
-        self.cnf_file = f"{self.hutch}.py"
+        if cnf is None:
+            self.cnf_file = f"{self.hutch}.py"
+        else:
+            self.cnf_file = cnf
 
     def isdaqmgr(self, quiet=False):
         if self.hutch in DAQMGR_HUTCHES:
