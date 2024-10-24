@@ -11,7 +11,7 @@ import subprocess
 import time
 from subprocess import PIPE
 
-DAQMGR_HUTCHES = ["tmo", "rix"]
+DAQMGR_HUTCHES = ["tmo", "rix", "txi"]
 LOCALHOST = socket.gethostname()
 SLURM_PARTITION = "drpq"
 SLURM_JOBNAME = "submit_daq"
@@ -155,8 +155,10 @@ class DaqManager:
         cmd = f"pushd {self.scripts_dir}" + " > /dev/null;"
         cmd += f'source {os.path.join(self.scripts_dir, "setup_env.sh")}' + ";"
         cmd += (
-            f"WHEREPROG=$(which {prog}); set -x; $WHEREPROG {subcmd} {os.path.join(self.scripts_dir,self.cnf_file)}"
-            + "; { set +x; } 2>/dev/null;"
+            f"WHEREPROG=$(which {prog})"
+            "; set -x; "
+            f"$WHEREPROG {subcmd} {os.path.join(self.scripts_dir, self.cnf_file)}"
+            "; { set +x; } 2>/dev/null;"
         )
         cmd += "popd > /dev/null;"
 
@@ -192,4 +194,4 @@ class DaqManager:
         st = time.monotonic()
         self.calldaq("restart", daq_host=daq_host)
         en = time.monotonic()
-        print(f"took {en-st:.4f}s. for starting the DAQ")
+        print(f"took {en-st:.4f}s. for starting the DAQ")  # noqa: E231
