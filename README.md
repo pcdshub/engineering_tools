@@ -748,7 +748,8 @@ usage: restartdaq options<br/>
     OPTIONS:<br/>
     -w sort windows after start<br/>
     -p select partition (same as used last)<br/>
-    -s silent (do not email jana)
+    -s silent (do not email jana)<br/>
+    -C [cnf] : <b>(FOR LCLS2 Hutches)</b> Specify a CNF to run. E.g. qrix.py or crix.py
     </td>
 </tr>
 
