@@ -748,7 +748,8 @@ usage: restartdaq options<br/>
     OPTIONS:<br/>
     -w sort windows after start<br/>
     -p select partition (same as used last)<br/>
-    -s silent (do not email jana)
+    -s silent (do not email jana)<br/>
+    -C [cnf] : <b>(FOR LCLS2 Hutches)</b> Specify a CNF to run. E.g. qrix.py or crix.py
     </td>
 </tr>
 
@@ -792,6 +793,7 @@ Sourcing this script lets ssh-agent set the proper environment variables it need
 usage: startami options<br/>
         <br/>
     we are starting another ami session here<br/>
+    <b>This script restarts AMI1 in LCLS1 hutches and AMI2 in LCLS2 hutches</b><br/>
     <br/>
     OPTIONS:<br/>
     -s: stop the ami client current running on this machine<br/>
@@ -802,7 +804,8 @@ usage: startami options<br/>
 <tr>
     <td>stopami</td>
     <td>
-Kill an AMI process running in the current hutch.
+Kill an AMI process running in the current hutch.<br/>
+<b>This script stops AMI1 in LCLS1 hutches and AMI2 in LCLS2 hutches</b>
     </td>
 </tr>
 

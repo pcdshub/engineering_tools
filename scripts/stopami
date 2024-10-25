@@ -13,37 +13,41 @@ if [[ ($1 == "--help") || ($1 == "-h") ]]; then
 	exit 0
 fi
 
-HUTCH=`get_hutch_name`
-DAQHOST=`wheredaq`
-RESCNT=`echo $DAQHOST |wc| awk {'print $2'}`
-if [ $RESCNT -eq 1 ]; then
-    if [ $HOSTNAME == $DAQHOST ]; then
+HUTCH=$(get_hutch_name)
+if [ "$(daqutils isdaqmgr)" = "true" ]; then
+    daqutils --cnf "${HUTCH}"_ami.py stopdaq "$@"
+    exit 0
+fi
+DAQHOST=$(wheredaq)
+RESCNT=$(echo "$DAQHOST" |wc| awk '{print $2}')
+if [ "$RESCNT" -eq 1 ]; then
+    if [ "$HOSTNAME" == "$DAQHOST" ]; then
         #running on the DAQ host, this will restart the ami_client!
-	read -p "Do you really intend to stop the ami_client on $DAQHOST where the daq is running? (y/n)"
+	read -r -p "Do you really intend to stop the ami_client on $DAQHOST where the daq is running? (y/n)"
 	if [ "$REPLY" == "y" ];then
 	    echo "Restarting the ami_client...";
-	    /reg/g/pcds/dist/pds/$HUTCH/current/tools/procmgr/procmgr stop \
-		/reg/g/pcds/dist/pds/$HUTCH/scripts/$HUTCH.cnf ami_client 
+	    /reg/g/pcds/dist/pds/"$HUTCH"/current/tools/procmgr/procmgr stop \
+		/reg/g/pcds/dist/pds/"$HUTCH"/scripts/"$HUTCH".cnf ami_client
 	fi
     fi
 fi
 
-AMI_PROCID=`ps -ef | grep online_ami | grep current | awk {'print $2'}`
-HAVE_ID=`echo $AMI_PROCID | wc | awk {'print $2'}`
-if [ $HAVE_ID -gt 0 ]; then
+AMI_PROCID=$(pgrep online_ami | awk '{print $1}')
+HAVE_ID=$(echo "$AMI_PROCID" | wc | awk '{print $2}')
+if [ "$HAVE_ID" -gt 0 ]; then
     for id in $AMI_PROCID; do
-	echo 'killing ' $id
-	kill $id
+	echo 'killing ' "$id"
+	kill "$id"
     done
 fi
 
 sleep 2
 
-AMI_PROCID=`ps -ef | grep online_ami | grep current | awk {'print $2'}`
-HAVE_ID=`echo $AMI_PROCID | wc | awk {'print $2'}`
-if [ $HAVE_ID -gt 0 ]; then
+AMI_PROCID=$(pgrep online_ami | awk '{print $1}')
+HAVE_ID=$(echo "$AMI_PROCID" | wc | awk '{print $2}')
+if [ "$HAVE_ID" -gt 0 ]; then
     for id in $AMI_PROCID; do
-	echo 'kill -9 ' $id
-	kill -9 $id
+	echo 'kill -9 ' "$id"
+	kill -9 "$id"
     done
 fi
