@@ -792,6 +792,7 @@ Sourcing this script lets ssh-agent set the proper environment variables it need
 usage: startami options<br/>
         <br/>
     we are starting another ami session here<br/>
+    <b>This script restarts AMI1 in LCLS1 hutches and AMI2 in LCLS2 hutches</b><br/>
     <br/>
     OPTIONS:<br/>
     -s: stop the ami client current running on this machine<br/>
@@ -802,7 +803,8 @@ usage: startami options<br/>
 <tr>
     <td>stopami</td>
     <td>
-Kill an AMI process running in the current hutch.
+Kill an AMI process running in the current hutch.<br/>
+<b>This script stops AMI1 in LCLS1 hutches and AMI2 in LCLS2 hutches</b>
     </td>
 </tr>
 
