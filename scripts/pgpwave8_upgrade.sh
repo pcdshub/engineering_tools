@@ -117,6 +117,7 @@ fi
 RELEASE=$(grep "^RELEASE.*" "$CFGPATH" | tail -1 | tr -d '[:space:]')
 PARENT=${RELEASE#*=}
 
+# shellcheck disable=SC2016
 if [[ $PARENT == '$$UP(PATH)' ]]; then
     PARENT=$(dirname "$(dirname "$CFGPATH")")
 elif [[ ! -d $PARENT ]]; then
