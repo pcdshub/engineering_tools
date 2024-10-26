@@ -3,7 +3,17 @@
 
 usage()
 {
-    echo "put usage here"
+    cat <<EOF
+usage $0 -i IOCNAME [-d DEVICE] [-r] [-p FIRMWARE_PATH]
+
+Read or upgrade the firmware version of a pgpwave8 given its ioc.
+
+-i The ioc whose pgpwave8's firmware should be upgraded
+-d The path to the device, defaulting to /dev/datadev_0
+-r Print the firmware version only. Cannot be used with -p
+-p The path to the mcs file containing the new firmware.
+Cannot be used with -r.
+EOF
 }
 
 remote()
@@ -26,6 +36,7 @@ remote()
         exit 1
     fi
 
+    # change this to a common path later
     WAVE8_REPO=/cds/home/t/tjohnson/trunk/workarea/wave8
     if [[ $READ_VERSION -eq 1 ]]; then
         if [[ $status == "RUNNING" ]]; then
@@ -33,7 +44,9 @@ remote()
             caget "$pv" -0x
         else
             export PYTHONPATH=$WAVE8_REPO/software/scripts
-            python /cds/home/k/kaushikm/w8script/version.py -l "$LANE" --dev "$DEVICE"
+	    # shellcheck disable=SC2164
+	    cd "$(dirname "$0")"
+            python pgpwave8_version.py -l "$LANE" --dev "$DEVICE"
         fi
         exit 0
     fi
@@ -42,7 +55,6 @@ remote()
         echo "Unable to disable ioc $IOCNAME. Exiting."
         exit 1
     fi
-    #change this to a common path later
     if ! python $WAVE8_REPO/software/scripts/wave8LoadFpga.py --l "$LANE" --dev "$DEVICE" --mcs "$FWPATH"; then
         echo "Firmware update failed."
         exit 1
@@ -154,4 +166,4 @@ echo "Rogue version is $ROGUE_VERSION."
 echo "Host is $HOST."
 
 # shellcheck disable=SC2029
-ssh "$HOST" "$(typeset -f remote); ROGUE_VERSION=$ROGUE_VERSION DEVICE=$DEVICE IOCNAME=$IOCNAME WAVE8_REPO=$WAVE8_REPO LANE=$LANE FWPATH=$FWPATH READ_VERSION=$READ_VERSION remote"
+ssh "$HOST" "$(typeset -f remote); ROGUE_VERSION=$ROGUE_VERSION DEVICE=$DEVICE IOCNAME=$IOCNAME LANE=$LANE FWPATH=$FWPATH READ_VERSION=$READ_VERSION remote"
