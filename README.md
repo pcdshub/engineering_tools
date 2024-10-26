@@ -653,6 +653,15 @@ usage: motorInfo MOTOR_PV (motor_pv_2/autosave/archive/pmgr_diff/pmgr_save) OPT<
 </tr>
 
 <tr>
+    <td>pgpwave8_upgrade</td>
+    <td>
+ Reads the version or upgrade the firmware on a pgpwave8.<br/>
+     The ioc name must be provided and the device defaults to /dev/datadev_0.<br/>
+     Use -r to read the version or -p [MCS_FILE_PATH] to upgrade.
+    </td>
+</tr>
+
+<tr>
     <td>pkg_release</td>
     <td>
  Checks out a package from the pcdshub github at a particular tag.<br/>

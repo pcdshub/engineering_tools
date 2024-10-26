@@ -1,5 +1,4 @@
 #!/bin/bash
-#mention this path to mcs files in usage - /cds/group/pcds/package/wave8/images
 
 usage()
 {
@@ -12,7 +11,8 @@ Read or upgrade the firmware version of a pgpwave8 given its ioc.
 -d The path to the device, defaulting to /dev/datadev_0
 -r Print the firmware version only. Cannot be used with -p
 -p The path to the mcs file containing the new firmware.
-Cannot be used with -r.
+Cannot be used with -r. Some firmware images can be found
+in /cds/group/pcds/package/wave8/images.
 EOF
 }
 
@@ -43,7 +43,6 @@ remote()
             pv=$(/cds/group/pcds/engineering_tools/latest-released/scripts/ioctool "$IOCNAME" pvs | grep FpgaVersion_RBV | awk '{print substr($1,1,length($1)-1)}')
             caget "$pv" -0x
         else
-            export PYTHONPATH=$WAVE8_REPO/software/scripts
 	    # shellcheck disable=SC2164
 	    cd "$(dirname "$0")"
             python pgpwave8_version.py -l "$LANE" --dev "$DEVICE"
