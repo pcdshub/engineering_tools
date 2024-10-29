@@ -7,9 +7,9 @@ usage $0 -i IOCNAME [-d DEVICE] [-r] [-p FIRMWARE_PATH]
 
 Read or upgrade the firmware version of a pgpwave8 given its ioc.
 
--i The ioc whose pgpwave8's firmware should be upgraded
--d The path to the device, defaulting to /dev/datadev_0
--r Print the firmware version only. Cannot be used with -p
+-i The ioc whose pgpwave8's firmware should be upgraded.
+-d The path to the device, defaulting to /dev/datadev_0.
+-r Print the firmware version only. Cannot be used with -p.
 -p The path to the mcs file containing the new firmware.
 Cannot be used with -r. Some firmware images can be found
 in /cds/group/pcds/package/wave8/images.
@@ -23,21 +23,20 @@ remote()
     source /cds/group/pcds/pyps/conda/rogue/etc/profile.d/conda.sh
     if ! conda activate rogue_"$ROGUE_VERSION"; then
         echo "A rogue environment for this version is not available."
-        exit 1
+        return 1
     fi
     if [[ ! -e $DEVICE ]]; then
         echo "The device $DEVICE does not exist."
-        exit 1
+        return 1
     fi
     export PATH=/cds/group/pcds/engineering_tools/latest-released/scripts/:$PATH
     # shellcheck disable=SC2034
     if ! status=$(/cds/group/pcds/engineering_tools/latest-released/scripts/imgr "$IOCNAME" --status); then
-        echo "Unable to get the status of $IOCNAME. Exiting."
-        exit 1
+        echo "Unable to get the status of $IOCNAME."
+        return 1
     fi
 
-    # change this to a common path later
-    WAVE8_REPO=/cds/home/t/tjohnson/trunk/workarea/wave8
+    WAVE8_REPO=/cds/group/pcds/package/wave8/wave8/v2.8.0
     if [[ $READ_VERSION -eq 1 ]]; then
         if [[ $status == "RUNNING" ]]; then
             pv=$(/cds/group/pcds/engineering_tools/latest-released/scripts/ioctool "$IOCNAME" pvs | grep FpgaVersion_RBV | awk '{print substr($1,1,length($1)-1)}')
@@ -47,22 +46,25 @@ remote()
 	    cd "$(dirname "$0")"
             python pgpwave8_version.py -l "$LANE" --dev "$DEVICE"
         fi
-        exit 0
+        return 0
     fi
 
     if [[ $status == "RUNNING" ]] && ! /cds/group/pcds/engineering_tools/latest-released/scripts/imgr "$IOCNAME" --disable; then
-        echo "Unable to disable ioc $IOCNAME. Exiting."
-        exit 1
+        echo "Unable to disable ioc $IOCNAME."
+        return 1
     fi
     if ! python $WAVE8_REPO/software/scripts/wave8LoadFpga.py --l "$LANE" --dev "$DEVICE" --mcs "$FWPATH"; then
         echo "Firmware update failed."
-        exit 1
+        return 1
     fi
     if [[ $status == "RUNNING" ]] && ! /cds/group/pcds/engineering_tools/latest-released/scripts/imgr "$IOCNAME" --enable; then
         echo "Unable to enable ioc $IOCNAME."
-        exit 1
+        return 1
     fi
-    echo "CHECK THAT THE WAVE8 IOC IS WORKING."
+    echo "Firmware upgrade complete."
+    if [[ $status == "RUNNING" ]]; then
+	echo "Please check that $IOCNAME is running properly."
+    fi
 }
 
 # shellcheck disable=SC2034
