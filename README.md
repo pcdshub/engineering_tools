@@ -664,8 +664,11 @@ usage: motorInfo MOTOR_PV (motor_pv_2/autosave/archive/pmgr_diff/pmgr_save) OPT<
     -d The path to the device, defaulting to /dev/datadev_0.<br/>
     -r Print the firmware version only. Cannot be used with -p.<br/>
     -p The path to the mcs file containing the new firmware.<br/>
-    Cannot be used with -r. Some firmware images can be found
-    in /cds/group/pcds/package/wave8/images.
+    Cannot be used with -r. Some firmware images can be found<br/>
+    in /cds/group/pcds/package/wave8/images. If -r and -p are not provided,<br/>
+    user will be prompted if they want to use<br/>
+    /cds/group/pcds/package/wave8/images/latest as the new firmware.
+
 EOF
     </td>
 </tr>

@@ -12,7 +12,9 @@ Read or upgrade the firmware version of a pgpwave8 given its ioc.
 -r Print the firmware version only. Cannot be used with -p.
 -p The path to the mcs file containing the new firmware.
 Cannot be used with -r. Some firmware images can be found
-in /cds/group/pcds/package/wave8/images.
+in /cds/group/pcds/package/wave8/images. If -r and -p are not provided,
+user will be prompted if they want to use
+/cds/group/pcds/package/wave8/images/latest as the new firmware.
 EOF
 }
 
@@ -97,9 +99,15 @@ fi
 
 if [[ $READ_VERSION -ne 1 ]]; then
     if [[ -z $FWPATH ]]; then
-        echo "The firmware path must be provided with the -p flag if not using the -r flag to read the version."
-        usage
-        exit 1
+	echo "No firmware path was provided with the -p flag."
+        latest=/cds/group/pcds/package/wave8/images/latest
+        read -r -p "Would you like to use $(basename "$(realpath $latest)")?" answer
+        answer=${answer,,}
+        if [[ $answer == "y" ]] || [[ $answer == "yes" ]]; then
+            FWPATH=/cds/group/pcds/package/wave8/images/latest
+        else
+            exit
+        fi
     elif [[ ! -f $FWPATH ]]; then
         echo "The firmware file provided with the -p flag does not exist."
         usage
