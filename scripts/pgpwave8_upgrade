@@ -31,9 +31,9 @@ remote()
         echo "The device $DEVICE does not exist."
         return 1
     fi
-    export PATH=/cds/group/pcds/engineering_tools/latest-released/scripts/:$PATH
+    PATH=$PATH:$ET_DIR
     # shellcheck disable=SC2034
-    if ! status=$(/cds/group/pcds/engineering_tools/latest-released/scripts/imgr "$IOCNAME" --status); then
+    if ! status=$(imgr "$IOCNAME" --status); then
         echo "Unable to get the status of $IOCNAME."
         return 1
     fi
@@ -41,7 +41,7 @@ remote()
     WAVE8_REPO=/cds/group/pcds/package/wave8/wave8/v2.8.0
     if [[ $READ_VERSION -eq 1 ]]; then
         if [[ $status == "RUNNING" ]]; then
-            pv=$(/cds/group/pcds/engineering_tools/latest-released/scripts/ioctool "$IOCNAME" pvs | grep FpgaVersion_RBV | awk '{print substr($1,1,length($1)-1)}')
+            pv=$(ioctool "$IOCNAME" pvs | grep FpgaVersion_RBV | awk '{print substr($1,1,length($1)-1)}')
             caget "$pv" -0x
         else
 	    # shellcheck disable=SC2164
@@ -51,7 +51,7 @@ remote()
         return 0
     fi
 
-    if [[ $status == "RUNNING" ]] && ! /cds/group/pcds/engineering_tools/latest-released/scripts/imgr "$IOCNAME" --disable; then
+    if [[ $status == "RUNNING" ]] && ! imgr "$IOCNAME" --disable; then
         echo "Unable to disable ioc $IOCNAME."
         return 1
     fi
@@ -59,7 +59,7 @@ remote()
         echo "Firmware update failed."
         return 1
     fi
-    if [[ $status == "RUNNING" ]] && ! /cds/group/pcds/engineering_tools/latest-released/scripts/imgr "$IOCNAME" --enable; then
+    if [[ $status == "RUNNING" ]] && ! imgr "$IOCNAME" --enable; then
         echo "Unable to enable ioc $IOCNAME."
         return 1
     fi
@@ -130,7 +130,10 @@ if [[ -z $DEVICE ]]; then
     echo "Device flag -d was not provided, assuming the path is $DEVICE."
 fi
 
-if ! CFGPATH=$(/cds/group/pcds/engineering_tools/latest-released/scripts/ioctool "$IOCNAME" cfg); then
+ET_DIR=$(readlink -f "$(dirname "${BASH_SOURCE[0]}")")
+PATH=$PATH:$ET_DIR
+
+if ! CFGPATH=$(ioctool "$IOCNAME" cfg); then
     echo "The ioc could not be found. Check that the correct name was provided with the -i flag."
     usage
     exit 1
@@ -175,4 +178,4 @@ echo "Rogue version is $ROGUE_VERSION."
 echo "Host is $HOST."
 
 # shellcheck disable=SC2029
-ssh "$HOST" "$(typeset -f remote); ROGUE_VERSION=$ROGUE_VERSION DEVICE=$DEVICE IOCNAME=$IOCNAME LANE=$LANE FWPATH=$FWPATH READ_VERSION=$READ_VERSION remote"
+ssh "$HOST" "$(typeset -f remote); ET_DIR=$ET_DIR ROGUE_VERSION=$ROGUE_VERSION DEVICE=$DEVICE IOCNAME=$IOCNAME LANE=$LANE FWPATH=$FWPATH READ_VERSION=$READ_VERSION remote"
