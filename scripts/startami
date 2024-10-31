@@ -107,4 +107,5 @@ else
 fi
 
 echo "$ami_path""$amicmd"
-exec "$ami_path""$amicmd"&
+# shellcheck disable=SC2086
+$ami_path$amicmd &
