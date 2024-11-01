@@ -38,15 +38,14 @@ remote()
         return 1
     fi
 
-    WAVE8_REPO=/cds/group/pcds/package/wave8/wave8/v2.8.0
+    WAVE8_REPO=/cds/group/pcds/package/wave8/wave8/v2.6.0
     if [[ $READ_VERSION -eq 1 ]]; then
         if [[ $status == "RUNNING" ]]; then
             pv=$(ioctool "$IOCNAME" pvs | grep FpgaVersion_RBV | awk '{print substr($1,1,length($1)-1)}')
             caget "$pv" -0x
         else
-	    # shellcheck disable=SC2164
-	    cd "$(dirname "$0")"
-            python pgpwave8_version.py -l "$LANE" --dev "$DEVICE"
+	    export PYTHONPATH=$WAVE8_REPO/software/scripts
+            python "$ET_DIR/pgpwave8_version.py" -l "$LANE" --dev "$DEVICE"
         fi
         return 0
     fi
@@ -104,7 +103,7 @@ if [[ $READ_VERSION -ne 1 ]]; then
         read -r -p "Would you like to use $(basename "$(realpath $latest)")?" answer
         answer=${answer,,}
         if [[ $answer == "y" ]] || [[ $answer == "yes" ]]; then
-            FWPATH=/cds/group/pcds/package/wave8/images/latest
+            FWPATH=$(realpath /cds/group/pcds/package/wave8/images/latest)
         else
             exit
         fi
