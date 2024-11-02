@@ -653,6 +653,27 @@ usage: motorInfo MOTOR_PV (motor_pv_2/autosave/archive/pmgr_diff/pmgr_save) OPT<
 </tr>
 
 <tr>
+    <td>pgpwave8_upgrade</td>
+    <td>
+
+     usage $0 -i IOCNAME [-d DEVICE] [-r] [-p FIRMWARE_PATH]<br/>
+     <br/>
+     Read or upgrade the firmware version of a pgpwave8 given its ioc.<br/>
+     <br/>
+    -i The ioc whose pgpwave8's firmware should be upgraded.<br/>
+    -d The path to the device, defaulting to /dev/datadev_0.<br/>
+    -r Print the firmware version only. Cannot be used with -p.<br/>
+    -p The path to the mcs file containing the new firmware.<br/>
+    Cannot be used with -r. Some firmware images can be found<br/>
+    in /cds/group/pcds/package/wave8/images. If -r and -p are not provided,<br/>
+    user will be prompted if they want to use<br/>
+    /cds/group/pcds/package/wave8/images/latest as the new firmware.
+
+EOF
+    </td>
+</tr>
+
+<tr>
     <td>pkg_release</td>
     <td>
  Checks out a package from the pcdshub github at a particular tag.<br/>
