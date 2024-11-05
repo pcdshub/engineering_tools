@@ -107,4 +107,4 @@ else
 fi
 
 echo "$ami_path""$amicmd"
-exec "$ami_path""$amicmd"&
+eval "$ami_path$amicmd &"
