@@ -2,17 +2,16 @@
 
 # ----------- Functions -----------
 get_status(){
-  grep ami2_ $STATUS_FILE | awk {'print $1"\t"$2"\t"$3'}
+  grep "ami2_ $STATUS_FILE" | awk '{print $1"\t"$2"\t"$3}'
 }
-echo
 
 
 start_new_client(){
   # Just start a client to connect to an existing manager
-  MGR_STATUS=(`grep ami2_manager $STATUS_FILE | awk {'print $3'}`)
-  if [[ $MGR_STATUS == RUNNING ]]; then 
+  MGR_STATUS=$(grep ami2_manager "$STATUS_FILE" | awk '{print $3}')
+  if [[ $MGR_STATUS == RUNNING ]]; then
     echo "Manager running on $AMI2_MGR_HOST."
-    
+
     echo "Starting AMI2 client on $(hostname)."
 
     # These exports are needed (as they are in the cnf file, see ami2_env)
@@ -23,8 +22,8 @@ start_new_client(){
     export SIT_PSDM_DATA=/cds/data/psdm
     export SIT_DATA=/cds/sw/ds/ana/conda1/inst/envs/ana-4.0.62-py3/data:/cds/group/psdm/data/
 
-    ami-client -H $AMI2_MGR_HOST
-  
+    ami-client -H "$AMI2_MGR_HOST"
+
   else
     echo "Manager not in running state. Can't start a client."
     echo "Manager: $MGR_STATUS"
@@ -33,22 +32,24 @@ start_new_client(){
 
 
 restart_all(){
+  # Restart all the AMI2-related proc-servers
   for i in "${!AMI2_PROC[@]}"
   do
-    echo ${AMI2_PROC[i]}
-    echo ${AMI2_HOST[i]}
-    echo ${AMI2_STATUS[i]}
-    $PROCMGR restart $CNF ${AMI2_PROC[i]}
+    echo "${AMI2_PROC[i]}"
+    echo "${AMI2_HOST[i]}"
+    echo "${AMI2_STATUS[i]}"
+    $PROCMGR restart "$CNF" "${AMI2_PROC[i]}"
   done
 }
 
 stop_all(){
+  # Stops all the AMI2-related proc-servers
   for i in "${!AMI2_PROC[@]}"
   do
-    echo ${AMI2_PROC[i]}
-    echo ${AMI2_HOST[i]}
-    echo ${AMI2_STATUS[i]}
-    $PROCMGR stop $CNF ${AMI2_PROC[i]}
+    echo "${AMI2_PROC[i]}"
+    echo "${AMI2_HOST[i]}"
+    echo "${AMI2_STATUS[i]}"
+    $PROCMGR stop "$CNF" "${AMI2_PROC[i]}"
   done
 }
 
@@ -65,10 +66,11 @@ fi
 if [[ $# -lt 2 ]]; then
   HUTCH=${HOSTNAME:0:3}
   HUTCHES=("xpp" "xcs" "mfx" "cxi" "mec")
-  if [[ ${HUTCHES[@]} =~ $HUTCH ]]; then
+  if [[ ${HUTCHES[*]} =~ $HUTCH ]]; then
     echo "Valid hutch found: $HUTCH"
   else
     echo "Invalid hutch: $HUTCH"
+    echo "Valid hutches are '${HUTCHES[*]}'. This is a LCLS-I only tool."
     exit 1
   fi
 else
@@ -79,12 +81,12 @@ PROCMGR="/cds/group/pcds/dist/pds/$HUTCH/current/tools/procmgr/procmgr"
 CNF="/reg/g/pcds/dist/pds/$HUTCH/scripts/$HUTCH.cnf"
 STATUS_FILE="/tmp/ami2_procmgr_status_$USER"
 
-$PROCMGR status /cds/group/pcds/dist/pds/$HUTCH/scripts/$HUTCH.cnf > $STATUS_FILE
+$PROCMGR status /cds/group/pcds/dist/pds/"$HUTCH"/scripts/"$HUTCH".cnf > "$STATUS_FILE"
 
-AMI2_MGR_HOST=(`grep ami2_manager $STATUS_FILE | awk {'print $1'}`)
-AMI2_PROC=(`grep ami2_ $STATUS_FILE | awk {'print $2'}`)
-AMI2_HOST=(`grep ami2_ $STATUS_FILE | awk {'print $1'}`)
-AMI2_STATUS=(`grep ami2_ $STATUS_FILE | awk {'print $3'}`)
+AMI2_MGR_HOST=$(grep ami2_manager "$STATUS_FILE" | awk '{print $1}')
+AMI2_PROC=$(grep ami2_ "$STATUS_FILE" | awk '{print $2}')
+AMI2_HOST=$(grep ami2_ "$STATUS_FILE" | awk '{print $1}')
+AMI2_STATUS=$(grep ami2_ "$STATUS_FILE" | awk '{print $3}')
 
 if [[ $CMD == "status" ]]; then
   get_status
@@ -96,6 +98,4 @@ elif [[ $CMD == "stop" ]]; then
   stop_all
 fi
 
-rm $STATUS_FILE
-
-
+rm "$STATUS_FILE"
