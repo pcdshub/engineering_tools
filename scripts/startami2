@@ -2,26 +2,34 @@
 
 # ----------- Functions -----------
 get_status(){
-  grep "ami2_ $STATUS_FILE" | awk '{print $1"\t"$2"\t"$3}'
+  echo "STATUS:"
+  grep "ami2_" "$STATUS_FILE" | awk '{print $2"\t"$1"\t"$3}'
 }
 
 
 start_new_client(){
   # Just start a client to connect to an existing manager
   MGR_STATUS=$(grep ami2_manager "$STATUS_FILE" | awk '{print $3}')
+  rm "$STATUS_FILE"
   if [[ $MGR_STATUS == RUNNING ]]; then
     echo "Manager running on $AMI2_MGR_HOST."
 
     echo "Starting AMI2 client on $(hostname)."
 
+
     # These exports are needed (as they are in the cnf file, see ami2_env)
-    export PATH=/reg/g/pcds/dist/pds/$HUTCH/ami2-current/install-lcls1/bin:/reg/g/pcds/dist/pds/$HUTCH/ami2-current/install-lcls1/condadir/bin
-    export MYPYPATH=/reg/g/pcds/dist/pds/$HUTCH/ami2-current/install-lcls1/lib/python3.9/site-packages
-    export PYTHONPATH=/reg/g/pcds/dist/pds/$HUTCH/ami2-current/install-lcls1/lib/python3.9/site-packages
+    #export PATH=/reg/g/pcds/dist/pds/$HUTCH/ami2-current/install-lcls1/bin:/reg/g/pcds/dist/pds/$HUTCH/ami2-current/install-lcls1/condadir/bin:/usr/bin:/usr/local/bin
+    export PATH=/cds/group/pcds/epics-dev/espov/packages/ami2/install-lcls1/bin:/cds/group/pcds/epics-dev/espov/packages/ami2/install-lcls1/condadir/bin:/usr/bin:/usr/local/bin
+    #export MYPYPATH=/reg/g/pcds/dist/pds/$HUTCH/ami2-current/install-lcls1/lib/python3.9/site-packages
+    export MYPYPATH=/cds/group/pcds/epics-dev/espov/packages/ami2/install-lcls1/lib/python3.9/site-packages
+    #export PYTHONPATH=/reg/g/pcds/dist/pds/$HUTCH/ami2-current/install-lcls1/lib/python3.9/site-packages
+    export PYTHONPATH=/cds/group/pcds/epics-dev/espov/packages/ami2/install-lcls1/lib/python3.9/site-packages
     export SIT_ROOT=/cds/data/psdm
     export SIT_PSDM_DATA=/cds/data/psdm
     export SIT_DATA=/cds/sw/ds/ana/conda1/inst/envs/ana-4.0.62-py3/data:/cds/group/psdm/data/
 
+    GRAPH_NAME="graph_$(tr -dc A-Za-z0-9 </dev/urandom | head -c 4;)"
+    echo "Command: $(which ami-client) -H $AMI2_MGR_HOST -g $GRAPH_NAME"
     ami-client -H "$AMI2_MGR_HOST"
 
   else
