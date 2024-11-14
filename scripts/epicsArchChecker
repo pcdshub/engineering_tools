@@ -8,6 +8,9 @@ of reports:
 2. PVs with no alias and Aliases with no PVS.
 3. PVs no connected.
 4. Files that do not exist.
+
+The script will also run epicsArchVerify if the path to
+the epicsArch file contains an LCLS2 hutch.
 """
 import argparse
 import os
@@ -40,8 +43,8 @@ def main():
     indKeys, indPVs = find_index(myKeys, myPVs, myFiles)
     report_duplicates(indKeys, indPVs, myKeys, myPVs, myFiles, lineNumbers)
     report_warnings(extraKeys, noKeyPVs)
-    hutch = subprocess.getoutput(os.path.realpath(os.path.dirname(__file__)) + '/get_hutch_name')
-    if hutch in ["rix", "tmo", "ued", "txi"]:
+    LCLS2_HUTCHES = ["rix", "tmo", "ued", "txi"]
+    if any(hutch in str.lower(fullpath) for hutch in LCLS2_HUTCHES):
         subprocess.run([f'bash -c "source /cds/sw/ds/ana/conda2/manage/bin/psconda.sh; epicsArchVerify {fullpath}"', fullpath], shell=True)
     if args.status:
         report_statusPV(myKeys, myPVs, myFiles)
