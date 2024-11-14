@@ -11,6 +11,7 @@ of reports:
 """
 import argparse
 import os
+import subprocess
 
 import ophyd.signal
 from prettytable import PrettyTable
@@ -39,6 +40,9 @@ def main():
     indKeys, indPVs = find_index(myKeys, myPVs, myFiles)
     report_duplicates(indKeys, indPVs, myKeys, myPVs, myFiles, lineNumbers)
     report_warnings(extraKeys, noKeyPVs)
+    hutch = subprocess.getoutput(os.path.realpath(os.path.dirname(__file__)) + '/get_hutch_name')
+    if hutch in ["rix", "tmo", "ued", "txi"]:
+        subprocess.run([f'bash -c "source /cds/sw/ds/ana/conda2/manage/bin/psconda.sh; epicsArchVerify {fullpath}"', fullpath], shell=True)
     if args.status:
         report_statusPV(myKeys, myPVs, myFiles)
 
