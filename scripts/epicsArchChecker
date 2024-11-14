@@ -31,6 +31,9 @@ def main():
     parser.add_argument('-s', '--status', action='store_true',
                         help='Displays PVs not connected (default:False.)',
                         default=False)
+    parser.add_argument('-v', '--verify', action='store_true',
+                        help='Runs epicsArchVerify.',
+                        default=False)
     args = parser.parse_args()
 
     fullpath = os.path.abspath(args.filepath)
@@ -44,7 +47,7 @@ def main():
     report_duplicates(indKeys, indPVs, myKeys, myPVs, myFiles, lineNumbers)
     report_warnings(extraKeys, noKeyPVs)
     LCLS2_HUTCHES = ["rix", "tmo", "ued", "txi"]
-    if any(hutch in str.lower(fullpath) for hutch in LCLS2_HUTCHES):
+    if args.verify or any(hutch in str.lower(fullpath) for hutch in LCLS2_HUTCHES):
         subprocess.run([f'bash -c "source /cds/sw/ds/ana/conda2/manage/bin/psconda.sh; epicsArchVerify {fullpath}"', fullpath], shell=True)
     if args.status:
         report_statusPV(myKeys, myPVs, myFiles)
