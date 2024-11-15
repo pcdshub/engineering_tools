@@ -417,9 +417,16 @@ def build_parser():
     search.add_argument('-q', '--quiet', action='store_true', default=False,
                         help='Surpresses file warning for paths that do not'
                         + ' exist.')
-    search.add_argument('-o', '--only_search', action='store_true',
+    search.add_argument('-s', '--only_search', action='store_true',
                         default=False,
                         help="Don't print the dataframe, just search results.")
+    search.add_argument('-o', '--only_results', action='store_true',
+                        default=False,
+                        help="Only print the results of the regex match. Like"
+                        " 'grep -o'.")
+    search.add_argument('-n', '--no-color', action='store_true',
+                        default=False,
+                        help="Don't wrap the search results with a color")
     return parser
 
 ###############################################################################
