@@ -193,12 +193,12 @@ def fix_json(raw_data: str, keys: list[str] = None) -> list[str]:
         valid_keys = re.compile(r'|'.join([key + r'(?=\s?:\s?)'
                                            for key in DEF_IMGR_KEYS]))
         # additional expression for correctly catcing unquoted digits
-        valid_digits = re.compile(r'|'.join([r'(?<=\"' + key + r'\":)\s?\d+'
+        valid_digits = re.compile(r'|'.join([r'(?<=\"' + key + r'\":\s)\d+'
                                             for key in DEF_IMGR_KEYS]))
     else:
         valid_keys = re.compile(r'|'.join([key + r'(?=\s?:\s?)'
                                            for key in keys]))
-        valid_digits = re.compile(r'|'.join([r'(?<=\"' + key + r'\":)\s?\d+'
+        valid_digits = re.compile(r'|'.join([r'(?<=\"' + key + r'\":\s)\d+'
                                             for key in keys]))
     # clean empty rows and white space
     _temp = raw_data.replace(' ', '').strip()
