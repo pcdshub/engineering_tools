@@ -9,8 +9,7 @@ of reports:
 3. PVs no connected.
 4. Files that do not exist.
 
-The script will also run epicsArchVerify if the path to
-the epicsArch file contains an LCLS2 hutch.
+The script also runs epicsArchVerify for LCLS2 hutches.
 """
 import argparse
 import os
@@ -18,6 +17,19 @@ import subprocess
 
 import ophyd.signal
 from prettytable import PrettyTable
+
+LCLS2_HUTCHES = ["rix", "tmo", "ued", "txi"]
+LCLS1_HUTCHES = ["xpp", "xcs", "mfx", "cxi", "mec"]
+
+
+def is_lcls2(path):
+    path = str.lower(path)
+    if any(hutch in path for hutch in LCLS2_HUTCHES):
+        return True
+    elif any(hutch in path for hutch in LCLS1_HUTCHES):
+        return False
+    else:
+        return None
 
 
 def main():
@@ -31,12 +43,15 @@ def main():
     parser.add_argument('-s', '--status', action='store_true',
                         help='Displays PVs not connected (default:False.)',
                         default=False)
-    parser.add_argument('-v', '--verify', action='store_true',
-                        help='Runs epicsArchVerify.',
-                        default=False)
     args = parser.parse_args()
 
     fullpath = os.path.abspath(args.filepath)
+
+    if (verify := is_lcls2(fullpath)) is None:
+        hutch = input("Provide the hutch this epicsArch file is for: ")
+        while (verify := is_lcls2(hutch)) is None:
+            hutch = input(f"Invalid hutch name. Provide one of the following hutch names: {LCLS2_HUTCHES + LCLS1_HUTCHES}: ")
+
     dirpath = os.path.dirname(fullpath)
     filename = os.path.basename(fullpath)
     os.chdir(dirpath)
@@ -46,11 +61,11 @@ def main():
     indKeys, indPVs = find_index(myKeys, myPVs, myFiles)
     report_duplicates(indKeys, indPVs, myKeys, myPVs, myFiles, lineNumbers)
     report_warnings(extraKeys, noKeyPVs)
-    LCLS2_HUTCHES = ["rix", "tmo", "ued", "txi"]
-    if args.verify or any(hutch in str.lower(fullpath) for hutch in LCLS2_HUTCHES):
-        subprocess.run([f'bash -c "source /cds/sw/ds/ana/conda2/manage/bin/psconda.sh; epicsArchVerify {fullpath}"', fullpath], shell=True)
     if args.status:
         report_statusPV(myKeys, myPVs, myFiles)
+
+    if verify:
+        subprocess.run([f'bash -c "source /cds/sw/ds/ana/conda2/manage/bin/psconda.sh; epicsArchVerify {fullpath}"', fullpath], shell=True)
 
 
 def read_file(filename):

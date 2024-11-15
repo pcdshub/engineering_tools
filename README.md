@@ -185,7 +185,6 @@ optional arguments:<br/>
   -h, --help      show this help message and exit<br/>
   -w, --warnings  Displays: -Pvs and Aliases duplicated. -Pvs with no alias and aliases no Pvs.<br/>
   -s, --status    Displays Pvs not connected.<br/>
-  -v, --verify    Runs epicsArchVerify (done by default for lcls2 hutches).<br/>
     </td>
 </tr>
 <tr>
