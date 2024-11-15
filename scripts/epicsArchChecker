@@ -14,6 +14,7 @@ The script also runs epicsArchVerify for LCLS2 hutches.
 import argparse
 import os
 import subprocess
+from pathlib import Path
 
 import ophyd.signal
 from prettytable import PrettyTable
@@ -23,10 +24,10 @@ LCLS1_HUTCHES = ["xpp", "xcs", "mfx", "cxi", "mec"]
 
 
 def is_lcls2(path):
-    path = str.lower(path)
-    if any(hutch in path for hutch in LCLS2_HUTCHES):
+    path = Path(str.lower(path))
+    if any(hutch in path.parts for hutch in LCLS2_HUTCHES):
         return True
-    elif any(hutch in path for hutch in LCLS1_HUTCHES):
+    elif any(hutch in path.parts for hutch in LCLS1_HUTCHES):
         return False
     else:
         return None
