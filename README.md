@@ -174,7 +174,7 @@ usage: eloggrabber options<br/>
     <td>
 usage: epicsArchChecker [-h] [-w] [-s] filepath <br/>
         <br/>
-Checks epicsArch files for mismatches of PVs and aliases, missing files, and unconnected PVs.
+Checks epicsArch files for mismatches of PVs and aliases, missing files, and unconnected PVs. Also runs epicsArchVerify for LCLS2 hutches.
         <br/>
         <br/>
 positional arguments:<br/>
