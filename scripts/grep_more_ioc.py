@@ -162,6 +162,17 @@ def clean_ansi(text: str = None) -> str:
     return ansi_escape.sub('', text)
 
 
+def try_json_loads(text: str = None) -> object:
+    """
+    Try/except wrapper for debugging bad pseudo-json strings.
+    """
+    try:
+        return json.loads(text)
+    except Exception as e:
+        print(f'JSON Error:\t {e}\n'
+              + 'Cannot decode the following string:\n' + text)
+
+
 def fix_json(raw_data: str, keys: list[str] = None) -> list[str]:
     """
     Fixes JSON format of find_ioc/grep_ioc output.
@@ -178,7 +189,17 @@ def fix_json(raw_data: str, keys: list[str] = None) -> list[str]:
         The list of str ready for JSON loading
     """
     if keys is None:
-        valid_keys = re.compile(r'(?=\s?:\s?)|'.join(DEF_IMGR_KEYS))
+        # default regex for catching iocmanager keys
+        valid_keys = re.compile(r'|'.join([key + r'(?=\s?:\s?)'
+                                           for key in DEF_IMGR_KEYS]))
+        # additional expression for correctly catcing unquoted digits
+        valid_digits = re.compile(r'|'.join([r'(?<=\"' + key + r'\":)\s?\d+'
+                                            for key in DEF_IMGR_KEYS]))
+    else:
+        valid_keys = re.compile(r'|'.join([key + r'(?=\s?:\s?)'
+                                           for key in keys]))
+        valid_digits = re.compile(r'|'.join([r'(?<=\"' + key + r'\":)\s?\d+'
+                                            for key in keys]))
     # clean empty rows and white space
     _temp = raw_data.replace(' ', '').strip()
     # capture and fix the keys not properly formatted to str
@@ -186,8 +207,9 @@ def fix_json(raw_data: str, keys: list[str] = None) -> list[str]:
     # capture boolean tokens and fix them for json format
     _temp = re.sub("True", "true", _temp)
     _temp = re.sub("False", "false", _temp)
-    # then capture and fix digits not formatted to str
-    _temp = re.sub(r"(?<=:)\d+", r"'\g<0>'", _temp)
+    # then capture and fix digits not formatted to str, but only
+    # if they are the value to a valid key
+    _temp = re.sub(valid_digits, r"'\g<0>'", _temp)
     # then properly convert to list of json obj
     result = (_temp
               .replace('\'', '\"')
@@ -265,7 +287,7 @@ def find_ioc(hutch: str = None, patt: str = None,
     # strip the file information
     _temp = re.sub(r'.*cfg\:', '', _temp)
     # now convert back to json and load
-    output = [json.loads(s) for s in fix_json(_temp)]
+    output = [try_json_loads(s) for s in fix_json(_temp)]
     # and add the hutches back into the dicts if searching across all cfgs
     if hutch == 'all':
         for _i, _d in enumerate(output):
