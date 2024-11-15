@@ -8,12 +8,29 @@ of reports:
 2. PVs with no alias and Aliases with no PVS.
 3. PVs no connected.
 4. Files that do not exist.
+
+The script also runs epicsArchVerify for LCLS2 hutches.
 """
 import argparse
 import os
+import subprocess
+from pathlib import Path
 
 import ophyd.signal
 from prettytable import PrettyTable
+
+LCLS2_HUTCHES = ["rix", "tmo", "ued", "txi"]
+LCLS1_HUTCHES = ["xpp", "xcs", "mfx", "cxi", "mec"]
+
+
+def is_lcls2(path):
+    path = Path(str.lower(path))
+    if any(hutch in path.parts for hutch in LCLS2_HUTCHES):
+        return True
+    elif any(hutch in path.parts for hutch in LCLS1_HUTCHES):
+        return False
+    else:
+        return None
 
 
 def main():
@@ -30,6 +47,12 @@ def main():
     args = parser.parse_args()
 
     fullpath = os.path.abspath(args.filepath)
+
+    if (verify := is_lcls2(fullpath)) is None:
+        hutch = input("Provide the hutch this epicsArch file is for: ")
+        while (verify := is_lcls2(hutch)) is None:
+            hutch = input(f"Invalid hutch name. Provide one of the following hutch names: {LCLS2_HUTCHES + LCLS1_HUTCHES}: ")
+
     dirpath = os.path.dirname(fullpath)
     filename = os.path.basename(fullpath)
     os.chdir(dirpath)
@@ -41,6 +64,9 @@ def main():
     report_warnings(extraKeys, noKeyPVs)
     if args.status:
         report_statusPV(myKeys, myPVs, myFiles)
+
+    if verify:
+        subprocess.run([f'bash -c "source /cds/sw/ds/ana/conda2/manage/bin/psconda.sh; epicsArchVerify {fullpath}"', fullpath], shell=True)
 
 
 def read_file(filename):
