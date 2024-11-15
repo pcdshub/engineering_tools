@@ -459,14 +459,14 @@ def main():
     if 'disable' not in df.columns:
         df['disable'] = df.index.size*[False]
     if 'disable' in df.columns:
-        df.disable.fillna(False, inplace=True)
+        df['disable'] = df['disable'].fillna(False).astype(bool)
 
     # Fill the NaN with empty strings for rarely used keys
     for _col in df.columns:
         if _col not in ['delay']:
-            df[_col].fillna('', inplace=True)
+            df[_col] = df[_col].fillna('')
         else:
-            df[_col].fillna(0, inplace=True)
+            df[_col] = df[_col].fillna(0)
 
     # check for the ignore_disabled flag
     if args.ignore_disabled is True:
