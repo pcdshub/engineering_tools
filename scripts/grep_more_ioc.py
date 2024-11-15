@@ -559,13 +559,16 @@ def main():
         if not args.only_search:
             print_frame2term(df)
         check_search = []
+        _color = Fore.LIGHTRED_EX
+        if args.no_color:
+            _color = None
         for ioc, d in df.loc[:, ['id', 'dir']].values:
             target_dir = fix_dir(d)
             # Search for pattern after moving into the directory
             if args.search is not None:
                 search_result = (search_file(file=f'{target_dir}{ioc}.cfg',
                                              patt=args.search,
-                                             color_wrap=Fore.LIGHTRED_EX,
+                                             color_wrap=_color,
                                              quiet=args.quiet)
                                  .strip()
                                  )
