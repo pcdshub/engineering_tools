@@ -33,6 +33,7 @@ pd.set_option("display.max_rows", 1000)
 
 def search_file(*, file: str, output: list = None,
                 patt: str = None, prefix: str = '',
+                result_only: bool = False,
                 quiet: bool = False, color_wrap: Fore = None) -> str:
     """
     Searches file for regex match and appends the result to a list,
@@ -48,6 +49,9 @@ def search_file(*, file: str, output: list = None,
         The regex pattern to search for. The default is None.
     prefix: str, optional
         A str prefix to add to each line. The default is ''.
+    result_only: str, optional
+        Whether to returnsonly the re.findall result instead of
+        the whole line. The default is False.
     color_wrap: Fore, optional
         Color wrapping using Colorama.Fore. The default is None.
     quiet: bool, optional
@@ -73,7 +77,14 @@ def search_file(*, file: str, output: list = None,
     with open(file, 'r', encoding='utf-8') as _f:
         for line in _f.readlines():
             if re.search(patt, line):
-                output.append(re.sub(patt, color + r'\g<0>' + reset, line))
+                if result_only:
+                    # only output the matches with colors wrapped
+                    # make sure to reformat into a single str
+                    _temp = ' '.join([color + match + reset
+                                     for match in re.findall(patt, line)])
+                    output.append(_temp+'\n')
+                else:
+                    output.append(re.sub(patt, color + r'\g<0>' + reset, line))
         return prefix + prefix.join(output)
 
 
@@ -590,6 +601,7 @@ def main():
             if args.search is not None:
                 search_result = (search_file(file=f'{target_dir}{ioc}.cfg',
                                              patt=args.search,
+                                             result_only=args.only_results,
                                              color_wrap=_color,
                                              quiet=args.quiet)
                                  .strip()
