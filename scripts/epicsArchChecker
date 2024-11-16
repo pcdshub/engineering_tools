@@ -122,6 +122,8 @@ def read_file(filename):
                     else:
                         entries.append((key, pv, filename, lineNum))
                         key = ''
+            if key != '':
+                extraKeys.append((key, filename, keyline))
     except FileNotFoundError as errorDetail:
         print(filename, ' File not found!')
         print(errorDetail)
