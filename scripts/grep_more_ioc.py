@@ -457,7 +457,7 @@ def build_parser():
                         default=False,
                         help="Only print the results of the regex match. Like"
                         " 'grep -o'.")
-    search.add_argument('-n', '--no-color', action='store_true',
+    search.add_argument('-n', '--no_color', action='store_true',
                         default=False,
                         help="Don't wrap the search results with a color")
     return parser
