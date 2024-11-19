@@ -13,6 +13,7 @@ import os.path
 import re
 import sys
 from shutil import get_terminal_size
+from typing import Optional
 
 import pandas as pd
 from colorama import Fore, Style
