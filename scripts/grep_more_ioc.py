@@ -51,7 +51,7 @@ def search_file(*, file: str, output: list = None,
     prefix: str, optional
         A str prefix to add to each line. The default is ''.
     result_only: str, optional
-        Whether to returnsonly the re.findall result instead of
+        Whether to return only the re.findall result instead of
         the whole line. The default is False.
     color_wrap: Fore, optional
         Color wrapping using Colorama.Fore. The default is None.
