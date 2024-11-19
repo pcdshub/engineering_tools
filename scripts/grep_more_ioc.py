@@ -173,7 +173,7 @@ def clean_ansi(text: str = None) -> str:
     return ansi_escape.sub('', text)
 
 
-def try_json_loads(text: str = None) -> object:
+def try_json_loads(text: Optional[str] = None) -> Optional[str]:
     """
     Try/except wrapper for debugging bad pseudo-json strings.
     """
