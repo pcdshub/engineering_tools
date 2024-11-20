@@ -1,7 +1,5 @@
 #!/bin/bash
 
-OLD_VERSION='R2.5.0'
-
 usage()
 {
 cat << EOF
@@ -22,10 +20,10 @@ shift $(($OPTIND - 1))
 PREFIX=`echo $1 | cut -d . -f 1`
 
 # Setup edm environment
-source /reg/g/pcds/setup/epicsenv-3.14.12.sh
+source /reg/g/pcds/setup/epicsenv-7.0.3.1-2.0.sh
 export PCDS_EDMS=/reg/g/pcds/package/epics/3.14/screens/edm
 #export EDMDATAFILES=.:${PCDS_EDMS}/xps8:${PCDS_EDMS}/ims  # normal EDMDATAFILES line
-export EDMDATAFILES=.:${PCDS_EDMS}/xps8:/reg/g/pcds/package/epics/3.14/ioc/common/ims/R2.2.3/imsScreens:/cds/group/pcds/epics/ioc/common/smaract/R1.0.11/motorScreens:/cds/group/pcds/epics/ioc/common/mmc/R1.0.6/mmcScreens
+export EDMDATAFILES=.:${PCDS_EDMS}/xps8:/reg/g/pcds/package/epics/3.14/ioc/common/ims/R2.2.3/imsScreens:/cds/group/pcds/epics/ioc/common/smaract/R1.0.11/motorScreens:/cds/group/pcds/epics/ioc/common/mmc/R1.0.6/mmcScreens:/cds/group/pcds/epics/R7.0.3.1-2.0/modules/pcds_motion/R2.6.3
 
 # this ldpathmunge gives access to xdotool for xpp-control, xpp-daq
 source /reg/g/pcds/setup/pathmunge.sh
@@ -95,7 +93,7 @@ elif [ "${rtyp}" == 'mmca' ]; then # MMC-100 axis
 elif [ "${rtyp}" == 'motor' ]; then
     caget "$PREFIX:PN" > /dev/null 2>&1
     if [ $? -eq 0 ]; then
-        /reg/g/pcds/package/epics/3.14//modules/pcds_motion/${OLD_VERSION}/launch-motor.sh "$PREFIX" > /dev/null 2>&1 &
+	edm -x -eolc -m "MOTOR=$PREFIX" pcds_motionScreens/motor-control.edl &
     else
 	# smaracts have "motor" rtyp, so we catch them with the PREFIX or with smaract specific pvs
 	if [[ $PREFIX == *"MCS2"* || $(caget "$PREFIX:PTYPE_RBV" > /dev/null 2>&1) -eq 0 ]]; then
@@ -138,7 +136,7 @@ for new in $newwins; do
 done
 
 # Get window location, dimensions
-geom=`xdotool getwindowgeometry $id 2> /dev/null` 
+geom=`xdotool getwindowgeometry $id 2> /dev/null`
 locxy=${geom#*Position: }
 locxy=${locxy%% *}
 winx=${locxy%,*}
