@@ -303,7 +303,9 @@ usage: grep_more_ioc [-h] [-d] patt hutch {print,search} <br/>
              PATT                    | The regex str to use in the search<br/>
              -h, --help              | Show help message and exit<br/>
              -q, --quiet             | Surpresses file warning for paths that do not exist<br/>
-             -o, --only_search       | Skip printing dataframe, only print search results<br/>
+             -s, --only_search       | Skip printing dataframe, only print search results<br/>
+             -o, --only_results      | Only print the results of the regex match. Like 'grep -o'<br/>
+             -n, --no_color          | Do not wrap search results with ANSI color codes<br/>
     </td>
 </tr>
 

@@ -13,6 +13,7 @@ import os.path
 import re
 import sys
 from shutil import get_terminal_size
+from typing import Optional
 
 import pandas as pd
 from colorama import Fore, Style
@@ -33,6 +34,7 @@ pd.set_option("display.max_rows", 1000)
 
 def search_file(*, file: str, output: list = None,
                 patt: str = None, prefix: str = '',
+                result_only: bool = False,
                 quiet: bool = False, color_wrap: Fore = None) -> str:
     """
     Searches file for regex match and appends the result to a list,
@@ -48,6 +50,9 @@ def search_file(*, file: str, output: list = None,
         The regex pattern to search for. The default is None.
     prefix: str, optional
         A str prefix to add to each line. The default is ''.
+    result_only: str, optional
+        Whether to return only the re.findall result instead of
+        the whole line. The default is False.
     color_wrap: Fore, optional
         Color wrapping using Colorama.Fore. The default is None.
     quiet: bool, optional
@@ -73,7 +78,14 @@ def search_file(*, file: str, output: list = None,
     with open(file, 'r', encoding='utf-8') as _f:
         for line in _f.readlines():
             if re.search(patt, line):
-                output.append(re.sub(patt, color + r'\g<0>' + reset, line))
+                if result_only:
+                    # only output the matches with colors wrapped
+                    # make sure to reformat into a single str
+                    _temp = ' '.join([color + match + reset
+                                     for match in re.findall(patt, line)])
+                    output.append(_temp+'\n')
+                else:
+                    output.append(re.sub(patt, color + r'\g<0>' + reset, line))
         return prefix + prefix.join(output)
 
 
@@ -162,6 +174,17 @@ def clean_ansi(text: str = None) -> str:
     return ansi_escape.sub('', text)
 
 
+def try_json_loads(text: Optional[str] = None) -> Optional[str]:
+    """
+    Try/except wrapper for debugging bad pseudo-json strings.
+    """
+    try:
+        return json.loads(text)
+    except Exception as e:
+        print(f'JSON Error:\t {e}\n'
+              + 'Cannot decode the following string:\n' + text)
+
+
 def fix_json(raw_data: str, keys: list[str] = None) -> list[str]:
     """
     Fixes JSON format of find_ioc/grep_ioc output.
@@ -178,7 +201,17 @@ def fix_json(raw_data: str, keys: list[str] = None) -> list[str]:
         The list of str ready for JSON loading
     """
     if keys is None:
-        valid_keys = re.compile(r'(?=\s?:\s?)|'.join(DEF_IMGR_KEYS))
+        # default regex for catching iocmanager keys
+        valid_keys = re.compile(r'|'.join([key + r'(?=\s?:\s?)'
+                                           for key in DEF_IMGR_KEYS]))
+        # additional expression for correctly catcing unquoted digits
+        valid_digits = re.compile(r'|'.join([r'(?<=\"' + key + r'\":\s)\d+'
+                                            for key in DEF_IMGR_KEYS]))
+    else:
+        valid_keys = re.compile(r'|'.join([key + r'(?=\s?:\s?)'
+                                           for key in keys]))
+        valid_digits = re.compile(r'|'.join([r'(?<=\"' + key + r'\":\s)\d+'
+                                            for key in keys]))
     # clean empty rows and white space
     _temp = raw_data.replace(' ', '').strip()
     # capture and fix the keys not properly formatted to str
@@ -186,8 +219,9 @@ def fix_json(raw_data: str, keys: list[str] = None) -> list[str]:
     # capture boolean tokens and fix them for json format
     _temp = re.sub("True", "true", _temp)
     _temp = re.sub("False", "false", _temp)
-    # then capture and fix digits not formatted to str
-    _temp = re.sub(r"(?<=:)\d+", r"'\g<0>'", _temp)
+    # then capture and fix digits not formatted to str, but only
+    # if they are the value to a valid key
+    _temp = re.sub(valid_digits, r"'\g<0>'", _temp)
     # then properly convert to list of json obj
     result = (_temp
               .replace('\'', '\"')
@@ -265,7 +299,7 @@ def find_ioc(hutch: str = None, patt: str = None,
     # strip the file information
     _temp = re.sub(r'.*cfg\:', '', _temp)
     # now convert back to json and load
-    output = [json.loads(s) for s in fix_json(_temp)]
+    output = [try_json_loads(s) for s in fix_json(_temp)]
     # and add the hutches back into the dicts if searching across all cfgs
     if hutch == 'all':
         for _i, _d in enumerate(output):
@@ -417,9 +451,16 @@ def build_parser():
     search.add_argument('-q', '--quiet', action='store_true', default=False,
                         help='Surpresses file warning for paths that do not'
                         + ' exist.')
-    search.add_argument('-o', '--only_search', action='store_true',
+    search.add_argument('-s', '--only_search', action='store_true',
                         default=False,
                         help="Don't print the dataframe, just search results.")
+    search.add_argument('-o', '--only_results', action='store_true',
+                        default=False,
+                        help="Only print the results of the regex match. Like"
+                        " 'grep -o'.")
+    search.add_argument('-n', '--no_color', action='store_true',
+                        default=False,
+                        help="Don't wrap the search results with a color")
     return parser
 
 ###############################################################################
@@ -452,14 +493,14 @@ def main():
     if 'disable' not in df.columns:
         df['disable'] = df.index.size*[False]
     if 'disable' in df.columns:
-        df.disable.fillna(False, inplace=True)
+        df['disable'] = df['disable'].fillna(False).astype(bool)
 
     # Fill the NaN with empty strings for rarely used keys
     for _col in df.columns:
         if _col not in ['delay']:
-            df[_col].fillna('', inplace=True)
+            df[_col] = df[_col].fillna('')
         else:
-            df[_col].fillna(0, inplace=True)
+            df[_col] = df[_col].fillna(0)
 
     # check for the ignore_disabled flag
     if args.ignore_disabled is True:
@@ -552,13 +593,17 @@ def main():
         if not args.only_search:
             print_frame2term(df)
         check_search = []
+        _color = Fore.LIGHTRED_EX
+        if args.no_color:
+            _color = None
         for ioc, d in df.loc[:, ['id', 'dir']].values:
             target_dir = fix_dir(d)
             # Search for pattern after moving into the directory
             if args.search is not None:
                 search_result = (search_file(file=f'{target_dir}{ioc}.cfg',
                                              patt=args.search,
-                                             color_wrap=Fore.LIGHTRED_EX,
+                                             result_only=args.only_results,
+                                             color_wrap=_color,
                                              quiet=args.quiet)
                                  .strip()
                                  )
