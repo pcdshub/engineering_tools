@@ -23,7 +23,7 @@ PREFIX=`echo $1 | cut -d . -f 1`
 source /reg/g/pcds/setup/epicsenv-7.0.3.1-2.0.sh
 export PCDS_EDMS=/reg/g/pcds/package/epics/3.14/screens/edm
 #export EDMDATAFILES=.:${PCDS_EDMS}/xps8:${PCDS_EDMS}/ims  # normal EDMDATAFILES line
-export EDMDATAFILES=.:${PCDS_EDMS}/xps8:/reg/g/pcds/package/epics/3.14/ioc/common/ims/R2.2.3/imsScreens:/cds/group/pcds/epics/ioc/common/smaract/R1.0.11/motorScreens:/cds/group/pcds/epics/ioc/common/mmc/R1.0.6/mmcScreens:/cds/group/pcds/epics/R7.0.3.1-2.0/modules/pcds_motion/R2.6.3
+export EDMDATAFILES=.:${PCDS_EDMS}/xps8:/reg/g/pcds/package/epics/3.14/ioc/common/ims/R2.2.3/imsScreens:/cds/group/pcds/epics/ioc/common/smaract/R1.0.11/motorScreens:/cds/group/pcds/epics/ioc/common/mmc/R1.0.6/mmcScreens:/cds/group/pcds/epics/R3.14.12-0.4.0/modules/pcds_motion/R2.5.0
 
 # this ldpathmunge gives access to xdotool for xpp-control, xpp-daq
 source /reg/g/pcds/setup/pathmunge.sh
