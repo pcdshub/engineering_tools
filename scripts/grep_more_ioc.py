@@ -492,15 +492,19 @@ def main():
     # pad the disable column based on the grep_ioc output
     if 'disable' not in df.columns:
         df['disable'] = df.index.size*[False]
-    if 'disable' in df.columns:
-        df['disable'] = df['disable'].fillna(False).astype(bool)
+    # handle stupid pandas 3.0 future warnings early
+    with pd.option_context('future.no_silent_downcasting', True):
+        if 'disable' in df.columns:
+            df['disable'] = (df['disable'].infer_objects().fillna(False))
 
     # Fill the NaN with empty strings for rarely used keys
-    for _col in df.columns:
-        if _col not in ['delay']:
-            df[_col] = df[_col].fillna('')
-        else:
-            df[_col] = df[_col].fillna(0)
+    # handle stupid pandas 3.0 future warnings early
+    with pd.option_context('future.no_silent_downcasting', True):
+        for _col in df.columns:
+            if _col not in ['delay']:
+                df[_col] = df[_col].infer_objects().fillna('')
+            else:
+                df[_col] = df[_col].infer_objects().fillna(0)
 
     # check for the ignore_disabled flag
     if args.ignore_disabled is True:
