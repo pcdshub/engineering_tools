@@ -124,7 +124,13 @@ else
     PROCMGR="/reg/g/pcds/dist/pds/$HUTCH/current/tools/procmgr/procmgr"
 fi
 
-IS_DAQ_HOST=$(netconfig search "$AIMHOST"-$DAQNETWORK --brief | grep -c $DAQNETWORK)
+# If UED machine; bypass drp node requirement, else; check for drp node
+if [ "$HUTCH" == "ued" ]; then
+    IS_DAQ_HOST=1
+else
+    IS_DAQ_HOST=$(netconfig search "$AIMHOST"-$DAQNETWORK --brief | grep -c $DAQNETWORK)
+fi
+
 if [ "$IS_DAQ_HOST" == 0 ]; then
     HOSTS=$(netconfig search "$HUTCH"-*-$DAQNETWORK --brief | sed s/-$DAQNETWORK//g)
     WORKINGHOSTS=''
