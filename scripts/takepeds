@@ -15,20 +15,43 @@ if [[($1 == "--help") || ($1 == "-h")]]; then
         exit 0
 fi
 
-DAQ_RELEASE=/cds/group/pcds/dist/pds/current
-
-# -R: for norecord , -r forces recording
-station=$(get_info --getstation)
-$DAQ_RELEASE/tools/scanning/take_pedestals -p $station -r
-
-elogMessage="DARK"
-source pcds_conda
-PYCMD=LogBookPost
-
 EXP=`get_curr_exp`
-RUN=`get_lastRun`
 HUTCH=${EXP:0:3}
-echo $PYCMD -i "${HUTCH^^}" -u `whoami` -e "$EXP"  -t DARK  -r $RUN -m "$elogMessage"
-$PYCMD -i "${HUTCH^^}" -u `whoami` -p pcds -e "$EXP"  -t DARK  -r $RUN -m "$elogMessage"&
 
-echo 'Please call: makepeds -q milano -r '`get_lastRun`' -u <userID>'
+#SIT_ENV_DIR="/sdf/group/lcls/ds/ana/sw"
+SIT_ENV_DIR="/cds/group/psdm/sw"
+
+LCLS2_HUTCHES="rix, tmo, ued"
+HUTCH=$(get_info --gethutch)
+if echo "$LCLS2_HUTCHES" | grep -iw "$HUTCH" > /dev/null; then
+    echo "This is a LCLS-II experiment"
+    
+    SIT_ENV_DIR=$SIT_ENV_DIR'/conda2/'
+    LCLS2=1
+    if [[ ${HUTCH} =~ 'ued' ]]; then
+        source $SIT_ENV_DIR/manage/bin/psconda.sh
+        epixquad_pedestal_scan --record 1 --hutch ued
+    fi
+else
+    echo "This is a LCLS-I experiment"
+    SIT_ENV_DIR=$SIT_ENV_DIR'/conda1/'
+    DAQ_RELEASE=/cds/group/pcds/dist/pds/current
+
+    # -R: for norecord , -r forces recording
+    station=$(get_info --getstation)
+    $DAQ_RELEASE/tools/scanning/take_pedestals -p $station -r
+fi
+
+if [ $? -eq 0 ]; then
+    elogMessage="DARK"
+    source pcds_conda
+    PYCMD=LogBookPost
+
+    RUN=`get_lastRun`
+    echo $PYCMD -i "${HUTCH^^}" -u `whoami` -e "$EXP"  -t DARK  -r $RUN -m "$elogMessage"
+    $PYCMD -i "${HUTCH^^}" -u `whoami` -p pcds -e "$EXP"  -t DARK  -r $RUN -m "$elogMessage"&
+
+    echo 'Please call: makepeds -q milano -r '`get_lastRun`' -u <userID>'
+else
+    echo 'takepeds failed, make sure the DAQ is setup appropriately!'
+fi
