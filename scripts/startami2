@@ -27,7 +27,7 @@ start_new_client(){
 
     GRAPH_NAME="graph_$(tr -dc A-Za-z0-9 </dev/urandom | head -c 4;)"
     echo "Command: $(which ami-client) -H $AMI2_MGR_HOST -g $GRAPH_NAME"
-    ami-client -H "$AMI2_MGR_HOST"
+    ami-client -H "$AMI2_MGR_HOST" -g "$GRAPH_NAME"
 
   else
     echo "Manager not in running state. Can't start a client."
