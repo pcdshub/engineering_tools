@@ -799,6 +799,21 @@ usage: startami options<br/>
     </td>
 </tr>
 
+<tr>>
+    <td>startami2</td>
+    <td>
+usage: startami2 <command><br/>
+        <br/>
+    AMI2 commands for LCLS-I<br/>
+    <br/>
+    COMMANDS:<br/>
+    status: print the status of AMI processes<br/>
+    restart: restart all AMI processes<br/>
+    stop: stop all AMI processes<br/>
+    client: start a second AMI client, connecting to the existing manager
+    </td>
+</tr>
+
 <tr>
     <td>stopami</td>
     <td>
