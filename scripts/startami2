@@ -40,6 +40,9 @@ restart_all(){
   # Restart all the AMI2-related proc-servers
   echo "Restarting all AMI2 processes"
   for i in "${!AMI2_PROC[@]}"; do
+    if [[ ${AMI2_PROC[i]} =~ "monreqsrv" ]]; then
+      continue  # skip monreq processes that might have ami2 in their name
+    fi
     echo "${AMI2_PROC[i]}"
     echo "${AMI2_HOST[i]}"
     echo "${AMI2_STATUS[i]}"
@@ -50,8 +53,10 @@ restart_all(){
 stop_all(){
   # Stops all the AMI2-related proc-servers
   echo "Stopping all AMI2 processes"
-  for i in "${!AMI2_PROC[@]}"
-  do
+  for i in "${!AMI2_PROC[@]}"; do
+    if [[ ${AMI2_PROC[i]} =~ "monreqsrv" ]]; then
+      continue  # skip monreq processes that might have ami2 in their name
+    fi
     echo "${AMI2_PROC[i]}"
     echo "${AMI2_HOST[i]}"
     echo "${AMI2_STATUS[i]}"
@@ -84,10 +89,14 @@ else
 fi
 
 PROCMGR="/cds/group/pcds/dist/pds/$HUTCH/current/tools/procmgr/procmgr"
-CNF="/reg/g/pcds/dist/pds/$HUTCH/scripts/$HUTCH.cnf"
+if [[ $HUTCH == "cxi" ]]; then
+  CNF="/reg/g/pcds/dist/pds/$HUTCH/scripts/cxi_0.cnf"  # special CXI case...
+else
+  CNF="/reg/g/pcds/dist/pds/$HUTCH/scripts/$HUTCH.cnf"
+fi
 STATUS_FILE="/tmp/ami2_procmgr_status_$USER"
 
-$PROCMGR status /cds/group/pcds/dist/pds/"$HUTCH"/scripts/"$HUTCH".cnf > "$STATUS_FILE"
+$PROCMGR status "$CNF" > "$STATUS_FILE"
 
 AMI2_MGR_HOST=$(grep ami2_manager "$STATUS_FILE" | awk '{print $1}')
 # shellcheck disable=SC2207
