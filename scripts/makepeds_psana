@@ -435,9 +435,11 @@ if echo "$LCLS2_HUTCHES" | grep -iw "$HUTCH" > /dev/null; then
     
     SIT_ENV_DIR=$SIT_ENV_DIR'/conda2/'
     LCLS2=1
+    XTCEXT='xtc2'
 else
     #echo "This is a LCLS-I experiment"
     SIT_ENV_DIR=$SIT_ENV_DIR'/conda1/'
+    XTCEXT='xtc'
 fi
 source $SIT_ENV_DIR/manage/bin/psconda.sh
 
@@ -469,7 +471,7 @@ ARG=' -n '$NUMEVT' -Z 1000000 -U 1000000 -z 1000000 -u 1000000 '
 # look for xtc w/o in progress if not using live mode. TOBEIMPLEMENTED
 ###########
 RUNSTR=$(printf '%04d' $RUN)
-RUNSTR=$EXP-r$RUNSTR*.xtc
+RUNSTR=$EXP-r$RUNSTR*.$XTCEXT
 XTCDIR=/sdf/data/lcls/ds/"$HUTCH"/"$EXP"/xtc
 # If inprogress files use FFB location
 if compgen -G "$XTCDIR/$RUNSTR.inprogress" > /dev/null; then
@@ -618,7 +620,7 @@ if [[ $LCLS2 -gt 0 ]]; then
             echo "$MYDETTYPE" "$MYDET"
             if [ "$MYDETTYPE" = 'epix100' ]; then
                 echo 'now calibrate...'
-                cmd="det_dark_proc -r $RUN -d $MYDET -D -e $EXP $LOCARG"
+                cmd="det_dark_proc -k exp=$EXP,run=$RUN -d $MYDET -D $LOCARG"
                 echo "$cmd"
                 $cmd
             fi
@@ -634,15 +636,15 @@ if [[ $LCLS2 -gt 0 ]]; then
         for i in "${!DETNAMES[@]}"; do
             LOCARG='' #optional cuts, I suspect this will not be developed for LV17.
             EPIX10K="${DETNAMES[i]// /}"
-            MYDETTYPE=${DETTYPES[i]}
-            if [ "$MYDETTYPE" = 'epix10ka' ]; then
+	    MYDETTYPE="${DETTYPES[i]// /}"
+            if [[ ( $MYDETTYPE == 'epix10ka' ) ]]; then
                 echo "Epix10ka name for $EXP is: $EPIX10K"
                 #run all at once - do not use
                 #Do not use workdir as you'd need to run the full charge injection run there for this to work
                 #revisit when we run into permission problems.
                 for calibcycle in {0..4}; do
                     nextcycle=$(( calibcycle + 1 ))
-                    CMD="epix10ka_pedestals_calibration -d $EPIX10K -e $EXP -r $RUN --stepnum $calibcycle --stepmax $nextcycle -L INFO -x dir=$XTCDIR"
+                    CMD="epix10ka_pedestals_calibration -d $EPIX10K -k exp=$EXP,run=$RUN,dir=$XTCDIR --stepnum $calibcycle --stepmax $nextcycle -L INFO"
                     echo "---------------EPIX10K PEDESTALS FOR CYCLE $calibcycle --------------------"
                     if [[ $RUNLOCAL != 1 ]]; then
                         tmpScript=$(mktemp -p $WORKDIR epix10ka_pedestals_tmpXXXXX.sh)
@@ -661,7 +663,7 @@ if [[ $LCLS2 -gt 0 ]]; then
                         JOBIDS+=( "$THISJOBID" )
                         NJOBS=$((NJOBS+1))
                     else            
-                        echo "$cmd"
+                        echo "$CMD"
                         $CMD
                     fi
                 done
@@ -701,12 +703,12 @@ if [[ $LCLS2 -gt 0 ]]; then
                 fi
  
                 for EPIX10K in $DETNAMES; do
-                    CMD="epix10ka_deploy_constants -D -d $EPIX10K -e $EXP -r $RUN -L INFO -x :dir=$XTCDIR"
-                    echo 'setting validity....$VALSTR'
+                    CMD="epix10ka_deploy_constants -D -d $EPIX10K -k exp=$EXP,run=$RUN,dir=$XTCDIR -L INFO"
                     if [ "$VALSTR" != 'xxx' ]; then
+                        echo 'setting validity....$VALSTR'
                         CMD=$CMD' -t '$VALSTR
                     fi
-                    echo "$cmd"
+                    echo "$CMD"
                     $CMD
                 done
                 if [[ $RUNLOCAL != 1 ]]; then
