@@ -269,7 +269,7 @@ optional arguments:<br/>
     <td>
 usage: grep_ioc KEYWORD [hutch]<br/>
         hutch can be any of:<br/>
-    xpp, xcs, cxi, mfx, mec, xrt, aux, det, fee, hpl, icl, las, lfe, tst, thz, all<br/>
+    xpp, xcs, cxi, mfx, mec, xrt, aux, det, fee, hpl, icl, las, lfe, tst, thz, txi, all<br/>
     If no hutch is specified, all hutches will be searched
     </td>
 </tr>
