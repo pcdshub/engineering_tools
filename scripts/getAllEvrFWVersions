@@ -15,6 +15,6 @@ fi
 
 for i in $(grep_ioc evr all | grep -v disable | awk '/id:/ { print $2 }' | grep evr | cut -d\' -f2); do
 pv=$(cat /cds/data/iocData/$i/iocInfo/IOC.pvlist | grep CTRL | grep \"er\" | cut -d, -f1)
-val=$(caget -0x $pv.FPGV)
-echo $i : $val
+val="$(caget -0x $pv.FPGV)"
+echo $i : "$val"
 done

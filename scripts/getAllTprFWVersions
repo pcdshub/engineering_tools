@@ -15,6 +15,6 @@ fi
 
 for i in $(grep_ioc tpr all | grep -v disable | awk '/id:/ { print $2 }' | grep tpr | cut -d\' -f2); do
 pv=$(cat /cds/data/iocData/$i/iocInfo/IOC.pvlist | grep FPGAVER  | cut -d, -f1)
-val=$(caget -0x $pv)
-echo $i : $val
+val="$(caget -0x $pv)"
+echo $i : "$val"
 done
