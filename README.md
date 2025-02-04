@@ -190,20 +190,22 @@ optional arguments:<br/>
 <tr>
     <td>getAllEvrFWVersions</td>
     <td>
-usage: getAllEvrFWVersions options<br/>
+usage: getAllEvrFWVersions [-h]<br/>
         <br/>
 Look through all active EVR IOCs in all IOC managers and attempt to query the FW version PV.
+        <br/>
         <br/>
     OPTIONS:<br/>
     -h, --help   show the help message and exit
     </td>
 </tr>
 <tr>
-    <td>getAllTprFWVersions</td>
+    <td>getAllTprFWVersions [-h]</td>
     <td>
 usage: getAllTprFWVersions options<br/>
         <br/>
 Look through all active TPR IOCs in all IOC managers and attempt to query the FW version PV.
+        <br/>
         <br/>
     OPTIONS:<br/>
     -h, --help   show the help message and exit
