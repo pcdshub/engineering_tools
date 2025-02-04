@@ -200,9 +200,9 @@ Look through all active EVR IOCs in all IOC managers and attempt to query the FW
     </td>
 </tr>
 <tr>
-    <td>getAllTprFWVersions [-h]</td>
+    <td>getAllTprFWVersions</td>
     <td>
-usage: getAllTprFWVersions options<br/>
+usage: getAllTprFWVersions [-h]<br/>
         <br/>
 Look through all active TPR IOCs in all IOC managers and attempt to query the FW version PV.
         <br/>
