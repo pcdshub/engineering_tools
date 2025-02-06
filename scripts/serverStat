@@ -79,7 +79,7 @@ done
 
 
 HOST_HAS_FEZ=$(netconfig search "$HOSTNAME"-fez --brief | wc -l)
-let HOST_HAS_FEZ-=1
+
 
 if [[ $# -lt 2 ]]; then
     if [[ $# -lt 1 ]]; then
