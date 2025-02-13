@@ -188,6 +188,30 @@ optional arguments:<br/>
     </td>
 </tr>
 <tr>
+    <td>getAllEvrFWVersions</td>
+    <td>
+usage: getAllEvrFWVersions [-h]<br/>
+        <br/>
+Look through all active EVR IOCs in all IOC managers and attempt to query the FW version PV.
+        <br/>
+        <br/>
+    OPTIONS:<br/>
+    -h, --help   show the help message and exit
+    </td>
+</tr>
+<tr>
+    <td>getAllTprFWVersions</td>
+    <td>
+usage: getAllTprFWVersions [-h]<br/>
+        <br/>
+Look through all active TPR IOCs in all IOC managers and attempt to query the FW version PV.
+        <br/>
+        <br/>
+    OPTIONS:<br/>
+    -h, --help   show the help message and exit
+    </td>
+</tr>
+<tr>
     <td>get_curr_exp</td>
     <td>
 usage: get_curr_exp options<br/>
