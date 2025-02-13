@@ -106,17 +106,34 @@ hutch=$(echo "$1" | tr A-Z a-z)
 ALLVIEWERCFG=/reg/g/pcds/pyps/config/*/camviewer.cfg
 echo cat $ALLVIEWERCFG | grep -v '#' | awk -F, '{ if (split($2,a,";")==1) n=$2; else n=a[2]; gsub(" ","",n); gsub(" ","",$4); printf "%s %s\n", n, $4; }' 
 
+VIEWERCFGKFE=/reg/g/pcds/pyps/config/kfe/camviewer.cfg
 VIEWERCFGLFE=/reg/g/pcds/pyps/config/lfe/camviewer.cfg
 VIEWERCFG=/reg/g/pcds/pyps/config/$hutch/camviewer.cfg
 VIEWERCFGXRT=/reg/g/pcds/pyps/config/xrt/camviewer.cfg
 
-if  [ "$hutch" != 'tmo' ] && [ "$hutch" != 'rix' ]; then
+IS_K=0
+K_HUTCHES="rix, tmo, txi"
+IS_L=0
+L_HUTCHES="xpp, xcs, mfx, cxi, mec"
+if echo "$K_HUTCHES" | grep -iw "$HUTCH" > /dev/null; then
+    echo "This is a K beamline"
+    IS_K=1
+elif echo "$L_HUTCHES" | grep -iw "$HUTCH" > /dev/null; then
+    echo "This is an L beamline"
+    IS_L=1
+fi
+
+if  [ $IS_L -gt 0 ]; then
     for gige_cam in $(grep -v '#' $VIEWERCFGLFE | awk -F, '{print $4 "\n"} '); do
         echo "$gige_cam"
     done
 
     for gige_cam in $(grep -v '#' $VIEWERCFGXRT | awk -F, '{print $4 "\n" }'); do
 	echo "$gige_cam"
+    done
+elif  [ $IS_K -gt 0 ]; then
+    for gige_cam in $(grep -v '#' $VIEWERCFGKFE | awk -F, '{print $4 "\n"} '); do
+        echo "$gige_cam"
     done
 fi
 
@@ -153,7 +170,6 @@ OPTIONS:
 -m|--main           : bring up the edm screen
 -r|--reboot         : reboot the IOC
 -l|--list           : print list of cameras
--w|--wait <#>       : wait for # hours to ask to renew, default 2 (12 for GIGEs)
 -u|--rate <#>       : update rate limit in Hz (default 5)
 -H|--hutch <hutch>  : use a specific hutches camviewer config file
 -e|--enable         : enable camera ioc
@@ -175,7 +191,6 @@ fi
 LIST=0
 CAMNUM=0
 CAM=0
-WAIT=0
 RATE=-1
 REBOOT=0
 ENABLE=0
@@ -185,7 +200,7 @@ ACQUIRE=0
 STOP=0
 NUDGE=0
 
-OPTIONS=$(getopt -o lmredasnc:w:u:H: --long list,main,reboot,enable,disable,acquire,stop,nudge,cam:,wait:,rate:,hutch: -n \'$0\' -- "$@")
+OPTIONS=$(getopt -o lmredasnc:w:u:H: --long list,main,reboot,enable,disable,acquire,stop,nudge,cam:,rate:,hutch: -n \'$0\' -- "$@")
 
 if [ $? != 0 ] ; then echo "Terminating..." >&2 ; exit 1 ; fi
 
@@ -204,9 +219,6 @@ do
             ;;
         -c|--cam)
             CAM=$2
-            shift 2 ;;
-        -w|--wait)
-            WAIT=$2
             shift 2 ;;
         -u|--rate)
             RATE=$2
@@ -299,6 +311,8 @@ if [ "$CAMNUM" -eq 0 ]; then
 	CAMNAME=IM1K1
     elif [ "$hutch" = "xpp" ]; then
 	CAMNAME=hx2_sb1_yag
+    elif [ "$hutch" = "xcs" ]; then
+	CAMNAME=xcs_yag2
     elif [ "$hutch" = "mfx" ]; then
         CAMNAME=mfx_dg1_yag
     elif [ "$hutch" = "cxi" ]; then
@@ -308,7 +322,7 @@ if [ "$CAMNUM" -eq 0 ]; then
     elif [ "$hutch" = "ued" ]; then
         CAMNAME=ued-gige-01
     else
-	CAMNAME=xcs_yag2
+	CAMNAME=xtcav
     fi
 
 fi
@@ -325,7 +339,7 @@ if [ $MAINSCREEN -gt 0 ]; then
         echo "Camera name not found in hutch. To see which cameras you can access from your current machine use the '-l/--list' option."
         sleep 3
     elif [ "$c" == "$CAMNAME" ] && [ "$hutch" != "$(get_info --gethutch)" ] ; then
-        echo "To use camera controls, you must be on the same hutch machine as your camera." 
+        echo "To use camera controls, you must be on the same hutch network as your camera." 
         echo "Opening read-only main screen..."
         sleep 3
     
@@ -392,20 +406,10 @@ else
     echo 'cannot check Acquiring PV, try to open camera viewer anyways....'
 fi
 
-if [ "$WAIT" -gt 0 ]; then
-    if [ "$RATE" -gt 0 ]; then
-	echo "$EXE" --camerapv "$CAMPVFULL" --instrument "$hutch" --pvlist "$PVLIST" --idle "$WAIT" --rate "$RATE"&
-	"$EXE" --camerapv "$CAMPVFULL" --instrument "$hutch" --pvlist "$PVLIST" --idle "$WAIT" --rate "$RATE"&
-    else
-	echo "$EXE" --camerapv "$CAMPVFULL" --instrument "$hutch" --pvlist "$PVLIST" --idle "$WAIT"&
-	"$EXE" --camerapv "$CAMPVFULL" --instrument  "$hutch" --pvlist "$PVLIST" --idle "$WAIT"&
-    fi
-else
-    if [ "$RATE" -gt 0 ]; then
+if [ "$RATE" -gt 0 ]; then
 	echo "$EXE" --camerapv "$CAMPVFULL" --instrument "$hutch" --pvlist "$PVLIST" --rate "$RATE"&
 	"$EXE" --camerapv "$CAMPVFULL" --instrument  "$hutch" --pvlist "$PVLIST" --rate "$RATE"&
-    else
+else
 	echo "$EXE" --camerapv "$CAMPVFULL" --instrument "$hutch" --pvlist "$PVLIST" &
 	"$EXE" --camerapv "$CAMPVFULL" --instrument  "$hutch" --pvlist "$PVLIST" &
-    fi
 fi
