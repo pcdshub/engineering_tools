@@ -136,14 +136,16 @@ xtcav_dark()
        NJOBS=$((NJOBS+1))
 
        sleep 10
+       CALIBTIME=10
        echo Running "$NJOBS" jobs are PIDS: "${JOBIDS[@]}"
        until check_running_jobs; do
-           echo 'Checking again in 10s'
+           echo $CALIBTIME' sec have elapsed, checking again in 10 sec'
+           let "CALIBTIME+=10"
            sleep 10
        done
        echo 'All jobs finished'
    fi
-   exit
+   exit 0
 }
 
 xtcav_lasOff()
@@ -171,14 +173,16 @@ xtcav_lasOff()
        NJOBS=$((NJOBS+1))
 
        sleep 20
-       echo Running $NJOBS jobs are PIDS: "${JOBIDS[@]}"
+       CALIBTIME=20
+       echo Running "$NJOBS" jobs are PIDS: "${JOBIDS[@]}"
        until check_running_jobs; do
-           echo 'Checking again in 10s'
+           echo $CALIBTIME' sec have elapsed, checking again in 10 sec'
+           let "CALIBTIME+=10"
            sleep 10
        done
        echo 'All jobs finished'
    fi
-   exit
+   exit 0
 }
 
 # Arg: DETECTOR class.  This could be a comma-separated list, but we're 
@@ -384,7 +388,6 @@ set -- "${POSITIONAL[@]}"
 T="$(date +%s%N)"
 echo "XXXXXXXXXXXXXXXXX START MAKEPEDS at $(date +'%T') on $HOSTNAME XXXXXXXXXXXXXXXXXXXXXXXXXXXX"
 
-
 RUN=${RUN:=0}
 EXP=${EXP:='xxx'}
 NUMEVT=${NUMEVT:=1000}
@@ -429,18 +432,7 @@ fi
 
 # set the umask so all the files create are group writeable
 #umask 002
-LCLS2_HUTCHES="rix, tmo, ued"
-if echo "$LCLS2_HUTCHES" | grep -iw "$HUTCH" > /dev/null; then
-    echo "This is a LCLS-II experiment"
-    
-    SIT_ENV_DIR=$SIT_ENV_DIR'/conda2/'
-    LCLS2=1
-    XTCEXT='xtc2'
-else
-    #echo "This is a LCLS-I experiment"
-    SIT_ENV_DIR=$SIT_ENV_DIR'/conda1/'
-    XTCEXT='xtc'
-fi
+SIT_ENV_DIR=$SIT_ENV_DIR'/conda1/'
 source $SIT_ENV_DIR/manage/bin/psconda.sh
 
 #if you don't pass the queue, it'll run interactively 
@@ -471,7 +463,7 @@ ARG=' -n '$NUMEVT' -Z 1000000 -U 1000000 -z 1000000 -u 1000000 '
 # look for xtc w/o in progress if not using live mode. TOBEIMPLEMENTED
 ###########
 RUNSTR=$(printf '%04d' $RUN)
-RUNSTR=$EXP-r$RUNSTR*.$XTCEXT
+RUNSTR=$EXP-r$RUNSTR*.xtc
 XTCDIR=/sdf/data/lcls/ds/"$HUTCH"/"$EXP"/xtc
 # If inprogress files use FFB location
 if compgen -G "$XTCDIR/$RUNSTR.inprogress" > /dev/null; then
@@ -492,9 +484,6 @@ if [ -v CALIBDIR ]; then
 else
     JFARG=''
     CALIBDIR=/sdf/data/lcls/ds/${HUTCH}/$EXP/calib/
-    if [[ $LCLS2 -gt 0 ]]; then
-        CALIBDIR=${CALIBDIR/calib/scratch}
-    fi
 fi
 
 ###########
@@ -510,7 +499,7 @@ if [ ! -d "$WORKDIR" ]; then
         fi
     else
         echo "experiments directory $DIR does not exist, quit"
-        exit
+        exit 2
     fi
 fi
 if [ ! -w "$WORKDIR" ]; then
@@ -583,159 +572,19 @@ while [[ $MINWAIT -lt 5 ]]; do
 done
 if [[ $HAVEFILES == 0 ]]; then
    echo 'After 5 minutes, files were not present: quit! '
-   exit
+   exit 3
 fi
 	
 ls -ltr "$XTCDIR"/*r"$RUNSTR"*s*xtc*
 
 echo Check detectors: 
 
-if [[ $LCLS2 -gt 0 ]]; then
-    detnames -r exp="${EXP}",run="${RUN}",dir="${XTCDIR}" > /tmp/detnames_"$EXP"_"$CREATE_TIME"
-else
-    detnames exp="${EXP}":run="${RUN}":dir="${XTCDIR}":stream=0-79 > /tmp/detnames_"$EXP"_"$CREATE_TIME"
-fi
+detnames exp="${EXP}":run="${RUN}":dir="${XTCDIR}":stream=0-79 > /tmp/detnames_"$EXP"_"$CREATE_TIME"
 #running local
 echo "-----------------------"
 echo 'XTC files contain:'
 cat /tmp/detnames_"$EXP"_"$CREATE_TIME"
 echo "-----------------------"
-
-#### 
-# Section for LCLS2 detectors.
-####
-if [[ $LCLS2 -gt 0 ]]; then
-    ####
-    # epix100 in LCLS2 related stuff. 
-    ####
-    #check if epix100 detectors are present
-    HAVE_EPIX100=$(grep -c epix100 /tmp/detnames_"$EXP"_"$CREATE_TIME")
-    if [[ $HAVE_EPIX100 -ge 1 ]]; then
-        DETNAMES=$(grep epix100 /tmp/detnames_"$EXP"_"$CREATE_TIME" | grep raw | awk  'BEGIN { FS = "|"}; {print $1}' | paste -d " " -s)
-        DETTYPES=$(grep epix100 /tmp/detnames_"$EXP"_"$CREATE_TIME" | grep raw | awk  'BEGIN { FS = "|"}; {print $2}' | paste -d " " -s)
-        for i in "${!DETNAMES[@]}"; do
-            LOCARG='' #optional cuts, I suspect this will not be developed for LV17.
-            MYDET=${DETNAMES[i]}
-            MYDETTYPE=${DETTYPES[i]}
-            echo "$MYDETTYPE" "$MYDET"
-            if [ "$MYDETTYPE" = 'epix100' ]; then
-                echo 'now calibrate...'
-                cmd="det_dark_proc -k exp=$EXP,run=$RUN -d $MYDET -D $LOCARG"
-                echo "$cmd"
-                $cmd
-            fi
-        done
-    fi
-    ####
-    # epixquad for UED
-    ####
-    HAVE_EPIX10K=$(grep -c epix10ka /tmp/detnames_"$EXP"_"$CREATE_TIME")
-    if [[ $HAVE_EPIX10K -ge 1 ]]; then
-        DETNAMES=$(grep epix10ka /tmp/detnames_"$EXP"_"$CREATE_TIME" | grep raw | awk  'BEGIN { FS = "|"}; {print $1}' | paste -d " " -s)
-        DETTYPES=$(grep epix10ka /tmp/detnames_"$EXP"_"$CREATE_TIME" | grep raw | awk  'BEGIN { FS = "|"}; {print $2}' | paste -d " " -s)
-        for i in "${!DETNAMES[@]}"; do
-            LOCARG='' #optional cuts, I suspect this will not be developed for LV17.
-            EPIX10K="${DETNAMES[i]// /}"
-	    MYDETTYPE="${DETTYPES[i]// /}"
-            if [[ ( $MYDETTYPE == 'epix10ka' ) ]]; then
-                echo "Epix10ka name for $EXP is: $EPIX10K"
-                #run all at once - do not use
-                #Do not use workdir as you'd need to run the full charge injection run there for this to work
-                #revisit when we run into permission problems.
-                for calibcycle in {0..4}; do
-                    nextcycle=$(( calibcycle + 1 ))
-                    CMD="epix10ka_pedestals_calibration -d $EPIX10K -k exp=$EXP,run=$RUN,dir=$XTCDIR --stepnum $calibcycle --stepmax $nextcycle -L INFO"
-                    echo "---------------EPIX10K PEDESTALS FOR CYCLE $calibcycle --------------------"
-                    if [[ $RUNLOCAL != 1 ]]; then
-                        tmpScript=$(mktemp -p $WORKDIR epix10ka_pedestals_tmpXXXXX.sh)
-                        #trap "rm -f $tmpScript" EXIT
-                        chmod u+x "$tmpScript"
-                        printf '#!/bin/bash\n' > "$tmpScript"
-                        printf 'source %s/manage/bin/psconda.sh\n' "${SIT_ENV_DIR}" >> "$tmpScript"
-                        printf '%s\n' "${CMD}" >> "$tmpScript"
-                        ep10kaCmd="sbatch ${SBATCH_ARGS} --mem 8GB --cpus-per-task 5 -o $WORKDIR/${EPIX10K}_${EXP}_Run${RUN}_cycle${calibcycle}_%J.out $tmpScript"
-
-                        echo "run in queue: $ep10kaCmd"
-                        SUBMISSION=$($ep10kaCmd)
-                        check_for_submit_error
-                        echo "$SUBMISSION"
-                        THISJOBID=$(echo "$SUBMISSION" | awk '{print $4}')
-                        JOBIDS+=( "$THISJOBID" )
-                        NJOBS=$((NJOBS+1))
-                    else            
-                        echo "$CMD"
-                        $CMD
-                    fi
-                done
-                ALLJOBIDS=("${JOBIDS[@]}")
-            fi
-            NFAILEDJOBS=0
-            if [[ $RUNLOCAL != 1 ]]; then
-                echo 'Wait for 1/2 minute before checking jobs:'
-                sleep 30
-                echo Running "$NJOBS" jobs are PIDS: "${JOBIDS[@]}"
-                until check_running_jobs; do
-                    echo 'Checking again in 10s'
-                    sleep 10
-                done
-                echo 'All jobs finished'
-                # and now check that none of the jobs have existed with an error code:
-                # currently, the epix10k jobs print DONE at the end. 
-                # Second check necessary as jobs can fail without printing an exit code to the logfile
-                for JOBID in "${ALLJOBIDS[@]}"; do
-                    echo "Checking job $JOBID"
-                    if grep -q 'exit code' "$WORKDIR"/*"$JOBID".out; then
-                        NFAILEDJOBS=$((NFAILEDJOBS+1))
-                    elif ! grep -q 'DONE' "$WORKDIR"/*"$JOBID".out; then
-                        NFAILEDJOBS=$((NFAILEDJOBS+1))
-                    fi
-                done
-    
-            fi
-
-            echo "---------------EPIX10K PEDESTALS CALCULATED NOW DEPLOY     --------------------"
-            if [ "$DEPLOY" == 1 ]; then
-                if [ $NFAILEDJOBS -gt 0 ]; then
-                    read -r -p "$NFAILEDJOBS of the calibration tasks failed, do you want to continue anyways (y/n)?"
-                    if [ "$REPLY" != "y" ];then
-                        exit 1
-                    fi
-                fi
- 
-                for EPIX10K in $DETNAMES; do
-                    CMD="epix10ka_deploy_constants -D -d $EPIX10K -k exp=$EXP,run=$RUN,dir=$XTCDIR -L INFO"
-                    if [ "$VALSTR" != 'xxx' ]; then
-                        echo 'setting validity....$VALSTR'
-                        CMD=$CMD' -t '$VALSTR
-                    fi
-                    echo "$CMD"
-                    $CMD
-                done
-                if [[ $RUNLOCAL != 1 ]]; then
-                    echo 'Print Information about batch jobs'
-                JOBIDSTR=''
-                    for JOBID in "${ALLJOBIDS[@]}"; do
-                if [[ $JOBIDSTR != '' ]]; then 
-                     JOBIDSTR=$JOBIDSTR','
-                fi
-                JOBIDSTR=$JOBIDSTR$JOBID
-                done
-                sacct -j "$JOBIDSTR" --format=JobID,AveCPU,AveVMSize,CPUTime,Start,End,Elapsed
-                fi
-            fi
-        done
-        echo "-------------------- STOP EPIX10K PEDESTALS at $(date +'%T') ----------------------------"
-    fi
-
-    rm /tmp/detnames_"$EXP"_"$CREATE_TIME"
-    T2="$(($(date +%s%N)-T))"
-    S="$((T2/1000000000))"
-    M="$((T2/1000000))"
-    echo "xxxxxxxxxxxxxxxxx END LCLS2 MAKEPEDS at $(date +'%T') after  $S.$M XXXXXXXXXXXXXXXXXXXXXXX"
-    exit
-fi
-
-
 
 ####
 # Jungfrau related stuff. Different executable w/ different options. Ack.
@@ -822,14 +671,16 @@ if [[ ( $HAVE_JUNGFRAU -ge 1 ) && ( $WANT_ZYLA -eq 0 ) && ( $WANT_OPAL -eq 0 ) &
     NFAILEDJOBS=0
     if [[ $RUNLOCAL != 1 ]]; then
         echo 'Wait for 1/2 minutes before checking jobs:'
-        sleep 30
+        sleep 10
+        CALIBTIME=10
         echo Running "$NJOBS" jobs are PIDS: "${JOBIDS[@]}"
         until check_running_jobs; do
-                echo 'Checking again in 10s'
-                sleep 10
+           echo $CALIBTIME' sec have elapsed, checking again in 10 sec'
+           let "CALIBTIME+=10"
+           sleep 10
         done
         echo 'All jobs finished'
-        # and now check that none of the jobs have existed with an error code:
+        # and now check that none of the jobs have exited with an error code:
         for JOBID in "${ALLJOBIDS[@]}"; do
             echo "Checking job $JOBID"
             if grep -q 'exit code' "$WORKDIR"/*"$JOBID".out; then
@@ -916,9 +767,11 @@ if [[ ( $HAVE_EPIX10K -ge 1 ) && ( $WANT_ZYLA -eq 0 ) && ( $WANT_OPAL -eq 0 ) &&
     if [[ $RUNLOCAL != 1 ]]; then
         echo 'Wait for 1/2 minute before checking jobs:'
         sleep 30
+        CALIBTIME=30
         echo Running $NJOBS jobs are PIDS: "${JOBIDS[@]}"
         until check_running_jobs; do
-            echo 'Checking again in 10s'
+            echo $CALIBTIME' sec have elapsed, checking again in 10 sec'
+            let "CALIBTIME+=10"
             sleep 10
         done
         echo 'All jobs finished'
