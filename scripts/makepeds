@@ -61,6 +61,8 @@ OPTIONS:
                 give path for alternative calibdir
         -b|--nbunch
                 number of bunches for the laseroff XTCAV calculations
+        --lcls2
+                force lcls2 (to be used for MFX)
         --sdfdir
                 Directory where engineering tool in on S3DF. For development work only.
 EOF
@@ -73,7 +75,7 @@ while [[ $# -gt 0 ]]
 do
     key="$1"
     case $key in
-        -h|--help)x
+        -h|--help)
             usage
             exit
             ;;
@@ -155,9 +157,18 @@ do
             shift
             shift
             ;;
+	--nstage1)
+	    POSITIONAL+=("--nstage1 $2")
+            shift
+            shift
+            ;;
         --sdfdir)
             SDFDIR="$2"
             shift
+            shift
+            ;;
+        --lcls2)
+            LCLS2=True
             shift
             ;;
         *)
@@ -189,22 +200,59 @@ else
     HUTCH=${EXP:0:3}
 fi
 
+LCLS2_HUTCHES="rix, tmo, txi, ued"
+if [ -v LCLS2 ]; then
+    MAKEPEDSEXE=makepeds_psana2
+elif echo "$LCLS2_HUTCHES" | grep -iw "$HUTCH" > /dev/null; then
+    echo "This is a LCLS-II experiment"
+    MAKEPEDSEXE=makepeds_psana2
+    LCLS2=1
+else
+    echo "This is a LCLS-I experiment"
+    MAKEPEDSEXE=makepeds_psana
+fi
+
 if [[ $HOSTNAME =~ "sdf" ]]; then
-    #echo $DIR/makepeds_psana $@
-    $DIR/makepeds_psana $@
+    echo $DIR/$MAKEPEDSEXE $@
+    $DIR/$MAKEPEDSEXE $@
+    chk="$?"
+
 else
     if [[ $USER =~ "opr" ]]; then
         printf "Please enter user name (cannot run as from operator account): \n"; read USER
     fi
-    echo calling on SDF system: makepeds_psana $@
+    echo calling on SDF system: $MAKEPEDSEXE $@
     # We need to change paths here as the S3DF filesytem is completely independent
     if [ -v SDFDIR  ]; then
         DIR=$SDFDIR
     else
         DIR=`echo $DIR | sed 's/\/cds\/group\/pcds/\/sdf\/group\/lcls\/ds\/tools/g' | sed 's/\/reg\/g\/pcds/\/sdf\/group\/lcls\/ds\/tools/g'`
+        #this line was needed for testing from personal checkouts
+        DIR=`echo $DIR | sed 's/cds/sdf/g'`
     fi
-    echo ssh -Y "$USER"@s3dflogin ssh -Y psana "$DIR/makepeds_psana $@"
-    ssh -Y "$USER"@s3dflogin ssh -Y psana "$DIR/makepeds_psana $@"
+
+    echo ssh -Y "$USER"@s3dflogin ssh -Y psana "$DIR/$MAKEPEDSEXE $@"
+    ssh -Y "$USER"@s3dflogin ssh -Y psana "$DIR/$MAKEPEDSEXE $@"
+    chk="$?"
+fi
+
+if [ $chk -gt 0 ]; then
+    if [ $chk -eq 255 ]; then
+        echo User $USER has no access to the psana pool on S3DF, will exit
+    elif [ $chk -eq 130 ]; then
+	echo makepeds was aborted w/ crtl-c
+    elif [ $chk -eq 2 ]; then
+	echo makepeds could not make its work directory
+    elif [ $chk -eq 3 ]; then
+	echo After waiting for 5 minutes, XTC files were still not present
+    elif [ $chk -eq 4 ]; then
+	echo $USER has no valid kerberos token - needed for LCLS2 deployment of calibration constants
+    elif [ $chk -eq 1 ]; then
+	echo makepeds calibration jobs failed, exited as requested.
+    else
+	echo something else went wrong, received error code $sshchk, will exit
+    fi
+    exit 1
 fi
 
 if [[ $HOSTNAME =~ "sdf" ]]; then
