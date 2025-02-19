@@ -100,43 +100,8 @@ list_cams()
 if [ $# -lt 1 ]; then
     echo 'need one arguments: hutch '
 fi
-HUTCH=$(echo "$1" | tr a-z A-Z)
 hutch=$(echo "$1" | tr A-Z a-z)
-
-ALLVIEWERCFG=/reg/g/pcds/pyps/config/*/camviewer.cfg
-echo cat $ALLVIEWERCFG | grep -v '#' | awk -F, '{ if (split($2,a,";")==1) n=$2; else n=a[2]; gsub(" ","",n); gsub(" ","",$4); printf "%s %s\n", n, $4; }' 
-
-VIEWERCFGKFE=/reg/g/pcds/pyps/config/kfe/camviewer.cfg
-VIEWERCFGLFE=/reg/g/pcds/pyps/config/lfe/camviewer.cfg
 VIEWERCFG=/reg/g/pcds/pyps/config/$hutch/camviewer.cfg
-VIEWERCFGXRT=/reg/g/pcds/pyps/config/xrt/camviewer.cfg
-
-IS_K=0
-K_HUTCHES="rix, tmo, txi"
-IS_L=0
-L_HUTCHES="xpp, xcs, mfx, cxi, mec"
-if echo "$K_HUTCHES" | grep -iw "$HUTCH" > /dev/null; then
-    echo "This is a K beamline"
-    IS_K=1
-elif echo "$L_HUTCHES" | grep -iw "$HUTCH" > /dev/null; then
-    echo "This is an L beamline"
-    IS_L=1
-fi
-
-if  [ $IS_L -gt 0 ]; then
-    for gige_cam in $(grep -v '#' $VIEWERCFGLFE | awk -F, '{print $4 "\n"} '); do
-        echo "$gige_cam"
-    done
-
-    for gige_cam in $(grep -v '#' $VIEWERCFGXRT | awk -F, '{print $4 "\n" }'); do
-	echo "$gige_cam"
-    done
-elif  [ $IS_K -gt 0 ]; then
-    for gige_cam in $(grep -v '#' $VIEWERCFGKFE | awk -F, '{print $4 "\n"} '); do
-        echo "$gige_cam"
-    done
-fi
-
 for gige_cam in $(grep -v '#' "$VIEWERCFG" | awk -F, '{print $4 "\n" }'); do
     echo "$gige_cam"
 done
