@@ -23,7 +23,7 @@ VIEWERCFG=/reg/g/pcds/pyps/config/$hutch/camviewer.cfg
 # Match "-" or "_" or " ".
 NAME=$(echo "$1" | sed -e 's/-/ /g' -e 's/_/ /g' -e 's/ /[-_ ]/g')
 #
-# The story here: 
+# The story here:
 # See how many matches we have in the hutch.
 # If 0, try looking in all of the hutches.
 # If 1, then we're done.
@@ -120,7 +120,7 @@ iocinfo() {
             iochutch=$(echo "$INFO" | cut -d'/' -f7)
         fi
     done
-}    
+}
 
 usage()
 {
@@ -178,7 +178,7 @@ eval set -- "$OPTIONS"
 while [ : ]
 do
     case "$1" in
-        -l|--list)  
+        -l|--list)
             LIST=1
             shift
             ;;
@@ -223,9 +223,9 @@ do
             usage
             break
             ;;
-        --) 
-            shift 
-            break 
+        --)
+            shift
+            break
             ;;
         *)
             echo "Internal Error"
@@ -304,12 +304,12 @@ if [ $MAINSCREEN -gt 0 ]; then
         echo "Camera name not found in hutch. To see which cameras you can access from your current machine use the '-l/--list' option."
         sleep 3
     elif [ "$c" == "$CAMNAME" ] && [ "$hutch" != "$(get_info --gethutch)" ] ; then
-        echo "To use camera controls, you must be on the same hutch network as your camera." 
+        echo "To use camera controls, you must be on the same hutch network as your camera."
         echo "Opening read-only main screen..."
         sleep 3
-    
+
     rm -f $tmp
-    fi    
+    fi
     echo 'try to get the main screen for: ' "$CAMNAME"
     echo 'start the main screen for camera base PV: ' "$CAMPVFULL"
     cmdName=$(caget -St "$CAMPVFULL":LAUNCH_EDM)
