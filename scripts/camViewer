@@ -181,8 +181,8 @@ EOF
 }
 
 if [[ ($1 == "--help") || ($1 == "-h") ]]; then
-	usage
-	exit 0
+        usage
+        exit 0
 fi
 
 
@@ -202,30 +202,39 @@ NUDGE=0
 
 OPTIONS=$(getopt -o lmredasnc:w:u:H: --long list,main,reboot,enable,disable,acquire,stop,nudge,cam:,rate:,hutch: -n \'$0\' -- "$@")
 
-if [ $? != 0 ] ; then echo "Terminating..." >&2 ; exit 1 ; fi
-
-
+if [ $? != 0 ]; then echo "Terminating..." >&2 ; exit 1 ; fi
 
 eval set -- "$OPTIONS"
-
-
 
 while [ : ]
 do
     case "$1" in
-        -l|--list)  
+        -l|--list)
             LIST=1
             shift
             ;;
         -c|--cam)
             CAM=$2
-            shift 2 ;;
+            shift 2
+            ;;
         -u|--rate)
             RATE=$2
-            shift 2 ;;
+            shift 2
+            ;;
         -H|--hutch)
             hutch=$2
-            shift 2 ;;
+            echo "HUTCH: $hutch" >&2
+            #  If *not* already running in an SSH session, SSH to kfe-console
+            if [[ -z "$IS_REMOTE_SSH" ]] && [ "$hutch" == "kfe" ]; then
+                echo "Not in SSH, connecting to kfe-console..." >&2
+                # Pass all arguments *before* IS_REMOTE_SSH=1
+                ssh -t kfe-console "IS_REMOTE_SSH=1 $DIR/$(basename "$0") \"$@\" ; bash"
+                exit_status=$?
+                echo "SSH exit status: $exit_status" >&2
+                exit 0
+            fi
+            shift 2
+            ;;
         -m|--main)
             MAINSCREEN=1
             shift
@@ -258,9 +267,9 @@ do
             usage
             break
             ;;
-        --) 
-            shift 
-            break 
+        --)
+            shift
+            break
             ;;
         *)
             echo "Internal Error"
@@ -269,6 +278,20 @@ do
     esac
 
 done
+
+# Skip verify-hutch if this is the remote SSH session
+if [ -n "$IS_REMOTE_SSH" ]; then
+   echo "Skipping verify-hutch in remote SSH session" >&2
+else
+    if ! verify-hutch "$hutch"; then
+        hutch=$(get_info --gethutch)
+        if [ "$hutch" == unknown_hutch ]; then
+            echo 'Unknown hutch, specify using -H option with a valid hutch name.'
+            usage
+            exit 1
+        fi
+    fi
+fi
 
 if [ $# -ge 1 ]; then
     echo "Positional arguments unsupported: $@" >&2
@@ -309,6 +332,8 @@ if [ "$CAMNUM" -eq 0 ]; then
         CAMNAME=IM2K0
     elif [ "$hutch" = "rix" ]; then
 	CAMNAME=IM1K1
+    elif [ "$hutch" = "kfe" ]; then
+        CAMNAME=IM1K0
     elif [ "$hutch" = "xpp" ]; then
 	CAMNAME=hx2_sb1_yag
     elif [ "$hutch" = "xcs" ]; then
