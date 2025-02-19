@@ -37,16 +37,10 @@ tmp=/tmp/cv.$$
 cat "$VIEWERCFG" | grep -i "$NAME" | grep -v '#' | awk -F, '{ if (split($2,a,";")==1) n=$2; else n=a[2]; gsub(" ","",n); gsub(" ","",$4); printf "%s %s\n", n, $4; }' >$tmp
 c=$(wc -l <$tmp)
 if [ "$c" -eq 0 ]; then
-    VIEWERCFG=/reg/g/pcds/pyps/config/*/camviewer.cfg
-    cat $VIEWERCFG | grep -i "$NAME" | grep -v '#' | awk -F, '{ if (split($2,a,";")==1) n=$2; else n=a[2]; gsub(" ","",n); gsub(" ","",$4); printf "%s %s\n", n, $4; }' >$tmp
-    c=$(wc -l <$tmp)
-    if [ "$c" -eq 0 ]; then
-	echo "No match for $1"
-	rm -f $tmp
-	exit
-    fi
-fi
-if [ "$c" -eq 1 ]; then
+    echo "No match for $1 in $VIEWERCFG."
+    rm -f $tmp
+    exit
+elif [ "$c" -eq 1 ]; then
     CAMPVFULL=$(awk '{print $1;}' <$tmp)
     rm -f $tmp
     return
