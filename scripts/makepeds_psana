@@ -140,7 +140,7 @@ xtcav_dark()
        echo Running "$NJOBS" jobs are PIDS: "${JOBIDS[@]}"
        until check_running_jobs; do
            echo $CALIBTIME' sec have elapsed, checking again in 10 sec'
-           let "CALIBTIME+=10"
+	   CALIBTIME=$((CALIBTIME+10))
            sleep 10
        done
        echo 'All jobs finished'
@@ -224,6 +224,7 @@ deploy_geometry()
         $CMD
         if [ "$?" != "0" ]; then
             echo Error: Geometry not deployed!
+	    return 5
         else
             echo Geometry now deployed.
         fi
@@ -231,6 +232,10 @@ deploy_geometry()
             echo Running additional command:
             echo "$2"
             $2
+            if [ "$?" != "0" ]; then
+                echo Error: Additional command failed!
+	        return 7
+            fi
             echo Command complete.
         fi
     fi
@@ -250,6 +255,7 @@ deploy_gain()
         $CMD
         if [ "$?" != "0" ]; then
             echo Error: Gain file not deployed!
+	    return 6
         else
             echo Gain file deployed.
         fi
@@ -532,7 +538,7 @@ if [ $INTERACTIVE == 1 ]; then
     exit
 fi
 
-if [ $CALIBCODE -ne 0 ]; then
+if [ "$CALIBCODE" -ne 0 ]; then
     if [ $NUMEVT -le 1000 ]; then
         NUMEVT=1000000
     fi
@@ -560,8 +566,8 @@ MINWAIT=0
 HAVEFILES=0
 while [[ $MINWAIT -lt 5 ]]; do
     NFILES=`ls -ltr "$XTCDIR"/*r"$RUNSTR"*s*xtc* | wc -l`
-    echo $NFILES
-    if [ $NFILES -eq 0 ]; then
+    echo "$NFILES"
+    if [ "$NFILES" -eq 0 ]; then
 	echo 'Files are not present yet, wait a minute'
 	sleep 60
 	MINWAIT=$((MINWAIT+1))
@@ -606,11 +612,11 @@ if [[ ( $HAVE_JUNGFRAU -ge 1 ) && ( $WANT_ZYLA -eq 0 ) && ( $WANT_OPAL -eq 0 ) &
 
     #default arguments.
     JFARG=$JFARG' -d '$DSNAME
-    if [ $CALIBCODE -ne 0 ]; then
+    if [ "$CALIBCODE" -ne 0 ]; then
         JFARG=$JFARG' -c '$CALIBCODE' --evstep '$NUMEVT
     fi
     JFARG=$JFARG' --events '$NUMEVT
-    if [[ $DEPLOY == 1 ]]; then
+    if [[ "$DEPLOY" == 1 ]]; then
         JFARG=$JFARG' --upload '
     fi
 
@@ -633,7 +639,7 @@ if [[ ( $HAVE_JUNGFRAU -ge 1 ) && ( $WANT_ZYLA -eq 0 ) && ( $WANT_OPAL -eq 0 ) &
         for calibcycle in {0..2}; do
             if [ -v OLD_JUNGFRAU ]; then
                 CMDC=$CMD
-            elif  [ $CALIBCODE -eq 0 ]; then
+            elif  [ "$CALIBCODE" -eq 0 ]; then
                 CMDC=$CMD' --stepnum '$calibcycle
             else
                 CMDC=$CMD
@@ -661,7 +667,7 @@ if [[ ( $HAVE_JUNGFRAU -ge 1 ) && ( $WANT_ZYLA -eq 0 ) && ( $WANT_OPAL -eq 0 ) &
             if [ -v OLD_JUNGFRAU ]; then
                 break
             fi
-            if [ $CALIBCODE -ne 0 ]; then
+            if [ "$CALIBCODE" -ne 0 ]; then
                 break
             fi
         done
@@ -671,12 +677,12 @@ if [[ ( $HAVE_JUNGFRAU -ge 1 ) && ( $WANT_ZYLA -eq 0 ) && ( $WANT_OPAL -eq 0 ) &
     NFAILEDJOBS=0
     if [[ $RUNLOCAL != 1 ]]; then
         echo 'Wait for 1/2 minutes before checking jobs:'
-        sleep 10
-        CALIBTIME=10
+        sleep 30
+        CALIBTIME=30
         echo Running "$NJOBS" jobs are PIDS: "${JOBIDS[@]}"
         until check_running_jobs; do
            echo $CALIBTIME' sec have elapsed, checking again in 10 sec'
-           let "CALIBTIME+=10"
+	   CALIBTIME=$((CALIBTIME+10))
            sleep 10
         done
         echo 'All jobs finished'
@@ -692,7 +698,7 @@ if [[ ( $HAVE_JUNGFRAU -ge 1 ) && ( $WANT_ZYLA -eq 0 ) && ( $WANT_OPAL -eq 0 ) &
     fi
 
     #Now deploy.
-    if [ $DEPLOY == 1 ]; then
+    if [ "$DEPLOY" == 1 ]; then
         if [ "$NFAILEDJOBS" -gt 0 ]; then
             read -r -p "$NFAILEDJOBS of the calibration tasks failed, do you want to continue (y/n)?"
             if [ "$REPLY" != "y" ];then
@@ -702,7 +708,7 @@ if [[ ( $HAVE_JUNGFRAU -ge 1 ) && ( $WANT_ZYLA -eq 0 ) && ( $WANT_OPAL -eq 0 ) &
         for JUNGFRAU in $DETNAMES; do
             #this is also where -t should be used, just as for the validity range
             CMD="jungfrau_deploy_constants -D -d $JUNGFRAU -e $EXP -r $RUN -x :dir=$XTCDIR"
-            if [ $VALSTR != 'xxx' ]; then
+            if [ "$VALSTR" != 'xxx' ]; then
                 # this does not work before ana-.....    
                 #CMD=$CMD' -t '$VALSTR'-end'
                 CMD=$CMD' -t '$VALSTR
@@ -771,7 +777,7 @@ if [[ ( $HAVE_EPIX10K -ge 1 ) && ( $WANT_ZYLA -eq 0 ) && ( $WANT_OPAL -eq 0 ) &&
         echo Running $NJOBS jobs are PIDS: "${JOBIDS[@]}"
         until check_running_jobs; do
             echo $CALIBTIME' sec have elapsed, checking again in 10 sec'
-            let "CALIBTIME+=10"
+	    CALIBTIME=$((CALIBTIME+10))
             sleep 10
         done
         echo 'All jobs finished'
@@ -791,7 +797,7 @@ if [[ ( $HAVE_EPIX10K -ge 1 ) && ( $WANT_ZYLA -eq 0 ) && ( $WANT_OPAL -eq 0 ) &&
 
     echo "---------------EPIX10K PEDESTALS CALCULATED NOW DEPLOY     --------------------"
     if [ $DEPLOY == 1 ]; then
-        if [ $NFAILEDJOBS -gt 0 ]; then
+        if [ "$NFAILEDJOBS" -gt 0 ]; then
             read -r -p "$NFAILEDJOBS of the calibration tasks failed, do you want to continue anyways (y/n)?"
             if [ "$REPLY" != "y" ];then
                 exit 1
@@ -800,8 +806,8 @@ if [[ ( $HAVE_EPIX10K -ge 1 ) && ( $WANT_ZYLA -eq 0 ) && ( $WANT_OPAL -eq 0 ) &&
 
         for EPIX10K in $DETNAMES; do
             CMD="epix10ka_deploy_constants -D -d $EPIX10K -e $EXP -r $RUN -L INFO -x :dir=$XTCDIR:stream=0-79"
-            if [ $VALSTR != 'xxx' ]; then
-                echo 'setting validity to $VALSTR'
+            if [ "$VALSTR" != 'xxx' ]; then
+                echo "setting validity to $VALSTR"
                 CMD=$CMD' -t '$VALSTR
             fi
             echo "$CMD"
@@ -947,7 +953,7 @@ for MYDET in $DETS; do
         LOCARG=$LOCARG' -m 100'
     fi
 
-    if [ $VALSTR != 'xxx' ]; then
+    if [ "$VALSTR" != 'xxx' ]; then
         LOCARG=$LOCARG' -v '$VALSTR'-end'
     fi
 
