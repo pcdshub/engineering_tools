@@ -189,7 +189,7 @@ fi
 LIST=0
 CAMNUM=0
 CAM=0
-RATE=-1
+RATE=5
 REBOOT=0
 ENABLE=0
 DISABLE=0
@@ -268,20 +268,6 @@ do
     esac
 
 done
-
-# Skip verify-hutch if this is the remote SSH session
-if [ -n "$IS_REMOTE_SSH" ]; then
-   echo "Skipping verify-hutch in remote SSH session" >&2
-else
-    if ! verify-hutch "$hutch"; then
-        hutch=$(get_info --gethutch)
-        if [ "$hutch" == unknown_hutch ]; then
-            echo 'Unknown hutch, specify using -H option with a valid hutch name.'
-            usage
-            exit 1
-        fi
-    fi
-fi
 
 if [ $# -ge 1 ]; then
     echo "Positional arguments unsupported: $@" >&2
