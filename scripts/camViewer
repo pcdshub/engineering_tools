@@ -23,7 +23,7 @@ VIEWERCFG=/reg/g/pcds/pyps/config/$hutch/camviewer.cfg
 # Match "-" or "_" or " ".
 NAME=$(echo "$1" | sed -e 's/-/ /g' -e 's/_/ /g' -e 's/ /[-_ ]/g')
 #
-# The story here: 
+# The story here:
 # See how many matches we have in the hutch.
 # If 0, try looking in all of the hutches.
 # If 1, then we're done.
@@ -37,16 +37,10 @@ tmp=/tmp/cv.$$
 cat "$VIEWERCFG" | grep -i "$NAME" | grep -v '#' | awk -F, '{ if (split($2,a,";")==1) n=$2; else n=a[2]; gsub(" ","",n); gsub(" ","",$4); printf "%s %s\n", n, $4; }' >$tmp
 c=$(wc -l <$tmp)
 if [ "$c" -eq 0 ]; then
-    VIEWERCFG=/reg/g/pcds/pyps/config/*/camviewer.cfg
-    cat $VIEWERCFG | grep -i "$NAME" | grep -v '#' | awk -F, '{ if (split($2,a,";")==1) n=$2; else n=a[2]; gsub(" ","",n); gsub(" ","",$4); printf "%s %s\n", n, $4; }' >$tmp
-    c=$(wc -l <$tmp)
-    if [ "$c" -eq 0 ]; then
-	echo "No match for $1"
-	rm -f $tmp
-	exit
-    fi
-fi
-if [ "$c" -eq 1 ]; then
+    echo "No match for $1 in $VIEWERCFG."
+    rm -f $tmp
+    exit
+elif [ "$c" -eq 1 ]; then
     CAMPVFULL=$(awk '{print $1;}' <$tmp)
     rm -f $tmp
     return
@@ -100,43 +94,8 @@ list_cams()
 if [ $# -lt 1 ]; then
     echo 'need one arguments: hutch '
 fi
-HUTCH=$(echo "$1" | tr a-z A-Z)
 hutch=$(echo "$1" | tr A-Z a-z)
-
-ALLVIEWERCFG=/reg/g/pcds/pyps/config/*/camviewer.cfg
-echo cat $ALLVIEWERCFG | grep -v '#' | awk -F, '{ if (split($2,a,";")==1) n=$2; else n=a[2]; gsub(" ","",n); gsub(" ","",$4); printf "%s %s\n", n, $4; }' 
-
-VIEWERCFGKFE=/reg/g/pcds/pyps/config/kfe/camviewer.cfg
-VIEWERCFGLFE=/reg/g/pcds/pyps/config/lfe/camviewer.cfg
 VIEWERCFG=/reg/g/pcds/pyps/config/$hutch/camviewer.cfg
-VIEWERCFGXRT=/reg/g/pcds/pyps/config/xrt/camviewer.cfg
-
-IS_K=0
-K_HUTCHES="rix, tmo, txi"
-IS_L=0
-L_HUTCHES="xpp, xcs, mfx, cxi, mec"
-if echo "$K_HUTCHES" | grep -iw "$HUTCH" > /dev/null; then
-    echo "This is a K beamline"
-    IS_K=1
-elif echo "$L_HUTCHES" | grep -iw "$HUTCH" > /dev/null; then
-    echo "This is an L beamline"
-    IS_L=1
-fi
-
-if  [ $IS_L -gt 0 ]; then
-    for gige_cam in $(grep -v '#' $VIEWERCFGLFE | awk -F, '{print $4 "\n"} '); do
-        echo "$gige_cam"
-    done
-
-    for gige_cam in $(grep -v '#' $VIEWERCFGXRT | awk -F, '{print $4 "\n" }'); do
-	echo "$gige_cam"
-    done
-elif  [ $IS_K -gt 0 ]; then
-    for gige_cam in $(grep -v '#' $VIEWERCFGKFE | awk -F, '{print $4 "\n"} '); do
-        echo "$gige_cam"
-    done
-fi
-
 for gige_cam in $(grep -v '#' "$VIEWERCFG" | awk -F, '{print $4 "\n" }'); do
     echo "$gige_cam"
 done
@@ -155,7 +114,7 @@ iocinfo() {
             iochutch=$(echo "$INFO" | cut -d'/' -f7)
         fi
     done
-}    
+}
 
 usage()
 {
@@ -213,7 +172,7 @@ eval set -- "$OPTIONS"
 while [ : ]
 do
     case "$1" in
-        -l|--list)  
+        -l|--list)
             LIST=1
             shift
             ;;
@@ -258,9 +217,9 @@ do
             usage
             break
             ;;
-        --) 
-            shift 
-            break 
+        --)
+            shift
+            break
             ;;
         *)
             echo "Internal Error"
@@ -339,12 +298,12 @@ if [ $MAINSCREEN -gt 0 ]; then
         echo "Camera name not found in hutch. To see which cameras you can access from your current machine use the '-l/--list' option."
         sleep 3
     elif [ "$c" == "$CAMNAME" ] && [ "$hutch" != "$(get_info --gethutch)" ] ; then
-        echo "To use camera controls, you must be on the same hutch network as your camera." 
+        echo "To use camera controls, you must be on the same hutch network as your camera."
         echo "Opening read-only main screen..."
         sleep 3
-    
+
     rm -f $tmp
-    fi    
+    fi
     echo 'try to get the main screen for: ' "$CAMNAME"
     echo 'start the main screen for camera base PV: ' "$CAMPVFULL"
     cmdName=$(caget -St "$CAMPVFULL":LAUNCH_EDM)
