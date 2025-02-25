@@ -42,7 +42,7 @@ else
     CURR_EXP=$(get_info --exp)
     if [ $CURR_EXP == 'unknown_hutch' ]; then
 	echo 'Cannot autodetermine hutch, for which hutch would you like to get this information? '
-	read -t 5 hutch
+	read -rt 5 hutch
 	if [ $hutch == '' ]; then
 	    echo 'no response, will quit'
 	    exit 1
