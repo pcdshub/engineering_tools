@@ -17,7 +17,7 @@ if [[ $# -lt 1 ]]; then
     echo 'Need the config file path as input.'
     exit
 elif [[ ! -f $1 ]]; then
-    echo "$VIEWERCFG is not file. You must provide a configuration file as input."
+    echo "$VIEWERCFG is not a file. You must provide a configuration file as input."
 else
     INCLUDED_CFGS=$(grep include "$1" | grep -v '#' | awk '{print $2}')
 fi
@@ -26,12 +26,11 @@ fi
 name_to_pv()
 {
 if [ $# -lt 2 ]; then
-    echo 'need a name as input to return camera basePV and hutch'
+    echo 'need a name as input to return camera basePV and config file'
     exit
 fi
 CAMPVFULL=""
-hutch=$(echo "$2" | tr A-Z a-z)
-VIEWERCFG=/reg/g/pcds/pyps/config/$hutch/camviewer.cfg
+VIEWERCFG="$2"
 # Match "-" or "_" or " ".
 NAME=$(echo "$1" | sed -e 's/-/ /g' -e 's/_/ /g' -e 's/ /[-_ ]/g')
 #
@@ -50,30 +49,32 @@ cat "$VIEWERCFG" | grep -i "$NAME" | grep -v '#' | awk -F, '{ if (split($2,a,";"
 c=$(wc -l <$tmp)
 if [ "$c" -eq 0 ]; then
     echo "No match for $1 in $VIEWERCFG."
-    rm -f $tmp
-    exit
 elif [ "$c" -eq 1 ]; then
     CAMPVFULL=$(awk '{print $1;}' <$tmp)
-    rm -f $tmp
-    return
+elif [[ $c -gt 1 ]]; then
+    # OK, ambiguous.  Look for a complete match on the second word.
+    if [ "$(grep -E -i " $NAME\$" < $tmp | wc -l)" -eq 1 ]; then
+	CAMPVFULL=$(grep -E -i " $NAME\$" < $tmp | awk '{print $1;}')
+    # What about just a match at the end? (That is, if we are searching
+    # for "yag1", prefer "mec_yag1" to "mec_yag11".)
+    elif [ "$(grep -E -i "$NAME\$" < $tmp | wc -l)" -eq 1 ]; then
+	CAMPVFULL=$(grep -E -i "$NAME\$" < $tmp | awk '{print $1;}')
+    else
+	echo '"'"$1"'" is ambiguous:'
+	awk '{print $2;}' <$tmp
+    fi
 fi
-# OK, ambiguous.  Look for a complete match on the second word.
-if [ "$(grep -E -i " $NAME\$" < $tmp | wc -l)" -eq 1 ]; then
-    CAMPVFULL=$(grep -E -i " $NAME\$" < $tmp | awk '{print $1;}')
-    rm -f $tmp
-    return
+rm -f tmp
+if [[ -z $CAMPVFULL ]]; then
+    get_included_configs "$VIEWERCFG"
+    for CFG in ${INCLUDED_CFGS[@]}; do
+	name_to_pv "$NAME" "$CFG"
+	if [[ -n $CAMPVFULL ]]; then
+	    return
+	fi
+    done
 fi
-# What about just a match at the end? (That is, if we are searching
-# for "yag1", prefer "mec_yag1" to "mec_yag11".)
-if [ "$(grep -E -i "$NAME\$" < $tmp | wc -l)" -eq 1 ]; then
-    CAMPVFULL=$(grep -E -i "$NAME\$" < $tmp | awk '{print $1;}')
-    rm -f $tmp
-    return
-fi
-echo '"'"$1"'" is ambiguous:'
-awk '{print $2;}' <$tmp
-rm -f $tmp
-exit
+
 }
 
 gige_num_to_name()
@@ -108,7 +109,7 @@ if [ $# -lt 1 ]; then
 fi
 get_included_configs "$1"
 for CFG in ${INCLUDED_CFGS[@]}; do
-    list_cams $CFG
+    list_cams "$CFG"
 done
 for gige_cam in $(grep -v '#' "$1" | awk -F, '{print $4 "\n" }'); do
     echo "$gige_cam"
@@ -305,7 +306,7 @@ fi
 export EPICS_CA_MAX_ARRAY_BYTES=24000000
 echo working with camera of name: "$CAMNAME"
 
-name_to_pv "$CAMNAME" "$hutch"
+name_to_pv "$CAMNAME" "$PVLIST"
 
 if [ $MAINSCREEN -gt 0 ]; then
     tmp=/tmp/cv.$$
