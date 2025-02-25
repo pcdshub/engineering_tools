@@ -19,10 +19,10 @@ fi
 while getopts "H:i:le" OPTION
 do
     case $OPTION in
-	i) 
+	i)
 	    INSTRUMENT=$OPTARG
 	    ;;
-	H) 
+	H)
 	    INSTRUMENT=$OPTARG
 	    ;;
 	?)
@@ -32,23 +32,23 @@ do
 	esac
 done
 
-DIRTMP=`dirname  "${BASH_SOURCE[0]}"`
+DIRTMP=$(dirname  "${BASH_SOURCE[0]}")
 DIR="$( cd $DIRTMP && pwd -P )"
 PATH=$PATH:$DIR
 
 if [ $INSTRUMENT != 'xxx' ]; then
-    CURR_EXP=`get_info --hutch ${INSTRUMENT^^} --exp`
+    CURR_EXP=$(get_info --hutch ${INSTRUMENT^^} --exp)
 else
-    CURR_EXP=`get_info --exp`
+    CURR_EXP=$(get_info --exp)
     if [ $CURR_EXP == 'unknown_hutch' ]; then
 	echo 'Cannot autodetermine hutch, for which hutch would you like to get this information? '
 	read -t 5 hutch
-	if [ $hutch == '' ]; then 
+	if [ $hutch == '' ]; then
 	    echo 'no response, will quit'
 	    exit 1
 	fi
-	CURR_EXP=`get_info --hutch ${hutch^^} --exp`
+	CURR_EXP=$(get_info --hutch ${hutch^^} --exp)
     fi
 fi
- 
+
 echo $CURR_EXP
