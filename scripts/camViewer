@@ -11,6 +11,18 @@ PATH=$DIR:$PATH
 #
 CAMPVFULL=""
 
+get_included_configs()
+{
+if [[ $# -lt 1 ]]; then
+    echo 'Need the config file path as input.'
+    exit
+elif [[ ! -f $VIEWERCFG ]]; then
+    echo "$VIEWERCFG is not file. You must provide a configuration file as input."
+else
+    INCLUDED_CFGS=$(grep include "$1" | grep -v '#' | awk '{print $2}')
+fi
+}
+
 name_to_pv()
 {
 if [ $# -lt 2 ]; then
@@ -96,8 +108,12 @@ if [ $# -lt 1 ]; then
 fi
 hutch=$(echo "$1" | tr A-Z a-z)
 VIEWERCFG=/reg/g/pcds/pyps/config/$hutch/camviewer.cfg
-for gige_cam in $(grep -v '#' "$VIEWERCFG" | awk -F, '{print $4 "\n" }'); do
-    echo "$gige_cam"
+get_included_configs "$VIEWERCFG"
+ALL_CFGS=("${INCLUDED_CFGS[@]} $VIEWERCFG")
+for CFG in ${ALL_CFGS[@]}; do
+    for gige_cam in $(grep -v '#' "$CFG" | awk -F, '{print $4 "\n" }'); do
+	echo "$gige_cam"
+    done
 done
 
 }
