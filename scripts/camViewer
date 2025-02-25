@@ -64,7 +64,7 @@ elif [[ $c -gt 1 ]]; then
 	awk '{print $2;}' <$tmp
     fi
 fi
-rm -f tmp
+rm -f $tmp
 if [[ -z $CAMPVFULL ]]; then
     get_included_configs "$VIEWERCFG"
     for CFG in ${INCLUDED_CFGS[@]}; do
