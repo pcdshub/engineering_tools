@@ -20,7 +20,7 @@ Ended=0
 INSTRUMENT='xxx'
 
 DIRTMP=$(dirname  "${BASH_SOURCE[0]}")
-DIR="$( cd $DIRTMP && pwd -P )"
+DIR="$( cd "$DIRTMP" && pwd -P )"
 PATH=$PATH:$DIR
 
 while getopts "H:i:le" OPTION
@@ -46,40 +46,40 @@ do
 done
 
 if [ $AskLive -eq 1 ]; then
-    if [ $INSTRUMENT != 'xxx' ]; then
-	CURR_EXP=$(get_info --hutch $INSTRUMENT --run --live)
+    if [[ $INSTRUMENT != 'xxx' ]]; then
+	CURR_EXP=$(get_info --hutch "$INSTRUMENT" --run --live)
     else
 	CURR_EXP=$(get_info --run --live)
 	if [[ $CURR_EXP == *'xxx'* ]]; then
 	    echo 'For which hutch would you like to get this information? '
 	    read hutch
-	    CURR_EXP=$(get_info --hutch $hutch --run --live)
+	    CURR_EXP=$(get_info --hutch "$hutch" --run --live)
 	fi
     fi
 elif [ $Ended -eq 1 ]; then
-    if [ $INSTRUMENT != 'xxx' ]; then
-	CURR_EXP=$(get_info --hutch $INSTRUMENT --run --ended)
+    if [[ $INSTRUMENT != 'xxx' ]]; then
+	CURR_EXP=$(get_info --hutch "$INSTRUMENT" --run --ended)
     else
 	CURR_EXP=$(get_info --run --ended)
 	if [[ $CURR_EXP == *'xxx'* ]]; then
 	    echo 'For which hutch would you like to get this information? '
 	    read hutch
-	    CURR_EXP=$(get_info --hutch $hutch --run --ended)
+	    CURR_EXP=$(get_info --hutch "$hutch" --run --ended)
 	fi
     fi
 else
-    if [ $INSTRUMENT != 'xxx' ]; then
-	CURR_EXP=$(get_info --hutch $INSTRUMENT --run)
+    if [[ $INSTRUMENT != 'xxx' ]]; then
+	CURR_EXP=$(get_info --hutch "$INSTRUMENT" --run)
     else
 	CURR_EXP=$(get_info --run)
     fi
-    NUM_RET_WORD=$(echo $CURR_EXP | wc | awk {'print $2'})
-    if [ $NUM_RET_WORD == 1 ]; then
-	if [ $CURR_EXP == 'xxx' ]; then
+    NUM_RET_WORD=$(echo "$CURR_EXP" | wc | awk {'print $2'})
+    if [[ $NUM_RET_WORD == 1 ]]; then
+	if [[ $CURR_EXP == 'xxx' ]]; then
 	    echo 'For which hutch would you like to get this information? '
 	    read hutch
-	    CURR_EXP=$(get_info --hutch $hutch --run)
+	    CURR_EXP=$(get_info --hutch "$hutch" --run)
 	fi
     fi
 fi
-echo $CURR_EXP
+echo "$CURR_EXP"
