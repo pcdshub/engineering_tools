@@ -16,7 +16,7 @@ get_included_configs()
 if [[ $# -lt 1 ]]; then
     echo 'Need the config file path as input.'
     exit
-elif [[ ! -f $VIEWERCFG ]]; then
+elif [[ ! -f $1 ]]; then
     echo "$VIEWERCFG is not file. You must provide a configuration file as input."
 else
     INCLUDED_CFGS=$(grep include "$1" | grep -v '#' | awk '{print $2}')
@@ -104,16 +104,14 @@ esac
 list_cams()
 {
 if [ $# -lt 1 ]; then
-    echo 'need one arguments: hutch '
+    echo 'need one argument: config file'
 fi
-hutch=$(echo "$1" | tr A-Z a-z)
-VIEWERCFG=/reg/g/pcds/pyps/config/$hutch/camviewer.cfg
-get_included_configs "$VIEWERCFG"
-ALL_CFGS=("${INCLUDED_CFGS[@]} $VIEWERCFG")
-for CFG in ${ALL_CFGS[@]}; do
-    for gige_cam in $(grep -v '#' "$CFG" | awk -F, '{print $4 "\n" }'); do
-	echo "$gige_cam"
-    done
+get_included_configs "$1"
+for CFG in ${INCLUDED_CFGS[@]}; do
+    list_cams $CFG
+done
+for gige_cam in $(grep -v '#' "$1" | awk -F, '{print $4 "\n" }'); do
+    echo "$gige_cam"
 done
 
 }
@@ -265,7 +263,7 @@ EXE="/reg/g/pcds/pyps/config/$hutch/camviewer/run_viewer.csh"
 PVLIST="/reg/g/pcds/pyps/config/$hutch/camviewer.cfg"
 
 if [ $LIST -gt 0 ]; then
-    list_cams "$hutch"
+    list_cams "$PVLIST"
     exit 1
 fi
 
@@ -311,7 +309,7 @@ name_to_pv "$CAMNAME" "$hutch"
 
 if [ $MAINSCREEN -gt 0 ]; then
     tmp=/tmp/cv.$$
-    list_cams "$hutch" >$tmp
+    list_cams "$PVLIST" >$tmp
     c=$(wc <$tmp | grep "$CAMNAME" $tmp | awk '{print $1}')
     if [ "$c" == '' ]; then
         echo "Camera name not found in hutch. To see which cameras you can access from your current machine use the '-l/--list' option."
