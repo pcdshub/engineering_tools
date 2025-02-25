@@ -17,7 +17,7 @@ if [[ $# -lt 1 ]]; then
     echo 'Need the config file path as input.'
     exit
 elif [[ ! -f $1 ]]; then
-    echo "$VIEWERCFG is not a file. You must provide a configuration file as input."
+    echo "$1 is not a file. You must provide a configuration file as input."
 else
     INCLUDED_CFGS=$(grep include "$1" | grep -v '#' | awk '{print $2}')
 fi
