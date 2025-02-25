@@ -34,7 +34,7 @@ NAME=$(echo "$1" | sed -e 's/-/ /g' -e 's/_/ /g' -e 's/ /[-_ ]/g')
 #
 # Make a temp file with just the PVs and camera names that match.
 tmp=/tmp/cv.$$
-cat "$VIEWERCFG" | grep -i "$NAME" | grep -v '#' | awk -F, '{ if (split($2,a,";")==1) n=$2; else n=a[2]; gsub(" ","",n); gsub(" ","",$4); printf "%s %s\n", n, $4; }' >$tmp
+cat "$VIEWERCFG" | grep -i "$NAME" | grep -v '#' | awk -F, '{ if (split($2,a,";")==1) n=$2; else n=a[2]; gsub(" ","",n); gsub(" "," ",$4); printf "%s %s\n", n, $4; }' >$tmp
 c=$(wc -l <$tmp)
 if [ "$c" -eq 0 ]; then
     echo "No match for $1 in $VIEWERCFG."
@@ -140,17 +140,15 @@ EOF
 }
 
 if [[ ($1 == "--help") || ($1 == "-h") ]]; then
-	usage
-	exit 0
+        usage
+        exit 0
 fi
-
-
 
 
 LIST=0
 CAMNUM=0
 CAM=0
-RATE=-1
+RATE=5
 REBOOT=0
 ENABLE=0
 DISABLE=0
@@ -158,16 +156,13 @@ MAINSCREEN=0
 ACQUIRE=0
 STOP=0
 NUDGE=0
+hutch="" # Initialize hutch
 
 OPTIONS=$(getopt -o lmredasnc:w:u:H: --long list,main,reboot,enable,disable,acquire,stop,nudge,cam:,rate:,hutch: -n \'$0\' -- "$@")
 
-if [ $? != 0 ] ; then echo "Terminating..." >&2 ; exit 1 ; fi
-
-
+if [ $? != 0 ]; then echo "Terminating..." >&2 ; exit 1 ; fi
 
 eval set -- "$OPTIONS"
-
-
 
 while [ : ]
 do
@@ -178,13 +173,17 @@ do
             ;;
         -c|--cam)
             CAM=$2
-            shift 2 ;;
+            shift 2
+            ;;
         -u|--rate)
             RATE=$2
-            shift 2 ;;
+            shift 2
+            ;;
         -H|--hutch)
             hutch=$2
-            shift 2 ;;
+            echo "HUTCH: $hutch" >&2
+            shift 2
+            ;;
         -m|--main)
             MAINSCREEN=1
             shift
@@ -267,21 +266,25 @@ if [ "$CAMNUM" -eq 0 ]; then
     if [ "$hutch" = "tmo" ]; then
         CAMNAME=IM2K0
     elif [ "$hutch" = "rix" ]; then
-	CAMNAME=IM1K1
+        CAMNAME=IM1K1
+    elif [ "$hutch" = "kfe" ]; then
+        CAMNAME=IM1K0
     elif [ "$hutch" = "xpp" ]; then
-	CAMNAME=hx2_sb1_yag
+        CAMNAME=hx2_sb1_yag
     elif [ "$hutch" = "xcs" ]; then
-	CAMNAME=xcs_yag2
+        CAMNAME=xcs_yag2
     elif [ "$hutch" = "mfx" ]; then
         CAMNAME=mfx_dg1_yag
     elif [ "$hutch" = "cxi" ]; then
         CAMNAME=cxi_dg1_yag
     elif [ "$hutch" = "mec" ]; then
         CAMNAME=GigE_Questar1
+    elif [ "$hutch" = "lfe" ]; then
+        CAMNAME=xrt_spec
     elif [ "$hutch" = "ued" ]; then
         CAMNAME=ued-gige-01
     else
-	CAMNAME=xtcav
+        CAMNAME=xtcav
     fi
 
 fi
@@ -358,17 +361,35 @@ fi
 IS_ACQUIRING=$(caget -t -n "$CAMPVFULL":Acquire_RBV)
 if isNum "$IS_ACQUIRING"; then
     if [ "$IS_ACQUIRING" -eq 0 ]; then
-	echo 'start acquiring for camera ' "$CAMNAME"
-	caput -n "$CAMPVFULL":Acquire 1
+        echo 'start acquiring for camera ' "$CAMNAME"
+        caput -n "$CAMPVFULL":Acquire 1
     fi
 else
     echo 'cannot check Acquiring PV, try to open camera viewer anyways....'
 fi
 
+if [[ -z "$IS_REMOTE_SSH" ]]; then
+    if [ "$hutch" == "kfe" ]; then
+        echo "Not in SSH, connecting to kfe-console..." >&2
+        ssh -t kfe-console "IS_REMOTE_SSH=1 $EXE --camerapv '$CAMPVFULL' --instrument '$hutch' --pvlist '$PVLIST' --rate '$RATE' ; bash"
+        exit_status=$?
+        echo "SSH exit status: $exit_status" >&2
+        exit $exit_status
+    elif [ "$hutch" == "lfe" ]; then
+        echo "Not in SSH, connecting to lfe-console..." >&2
+        ssh -t lfe-console "IS_REMOTE_SSH=1 $EXE --camerapv '$CAMPVFULL' --instrument '$hutch' --pvlist '$PVLIST' --rate '$RATE' ; bash"
+        exit_status=$?
+        echo "SSH exit status: $exit_status" >&2
+        exit $exit_status
+    fi
+fi
+
+# If we reach this point, we're either in an SSH session, or we don't need to SSH.
+# Now, execute the camviewer.
 if [ "$RATE" -gt 0 ]; then
-	echo "$EXE" --camerapv "$CAMPVFULL" --instrument "$hutch" --pvlist "$PVLIST" --rate "$RATE"&
-	"$EXE" --camerapv "$CAMPVFULL" --instrument  "$hutch" --pvlist "$PVLIST" --rate "$RATE"&
+    echo "$EXE" --camerapv "$CAMPVFULL" --instrument "$hutch" --pvlist "$PVLIST" --rate "$RATE"&
+    "$EXE" --camerapv "$CAMPVFULL" --instrument  "$hutch" --pvlist "$PVLIST" --rate "$RATE"&
 else
-	echo "$EXE" --camerapv "$CAMPVFULL" --instrument "$hutch" --pvlist "$PVLIST" &
-	"$EXE" --camerapv "$CAMPVFULL" --instrument  "$hutch" --pvlist "$PVLIST" &
+    echo "$EXE" --camerapv "$CAMPVFULL" --instrument "$hutch" --pvlist "$PVLIST" &
+    "$EXE" --camerapv "$CAMPVFULL" --instrument  "$hutch" --pvlist "$PVLIST" &
 fi

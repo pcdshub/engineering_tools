@@ -237,6 +237,7 @@ else
 fi
 
 if [ $chk -gt 0 ]; then
+    echo !!! Something went wrong !!!
     if [ $chk -eq 255 ]; then
         echo User $USER has no access to the psana pool on S3DF, will exit
     elif [ $chk -eq 130 ]; then
@@ -247,6 +248,12 @@ if [ $chk -gt 0 ]; then
 	echo After waiting for 5 minutes, XTC files were still not present
     elif [ $chk -eq 4 ]; then
 	echo $USER has no valid kerberos token - needed for LCLS2 deployment of calibration constants
+    elif [ $chk -eq 5 ]; then
+	echo Deployment of geometry failed
+    elif [ $chk -eq 6 ]; then
+	echo Deployment of gain constants
+    elif [ $chk -eq 7 ]; then
+	echo Additional command failed -- jungfrau constants
     elif [ $chk -eq 1 ]; then
 	echo makepeds calibration jobs failed, exited as requested.
     else
