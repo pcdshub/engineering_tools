@@ -73,7 +73,7 @@ else
     else
 	CURR_EXP=$(get_info --run)
     fi
-    NUM_RET_WORD=$(echo "$CURR_EXP" | wc | awk {'print $2'})
+    NUM_RET_WORD=$(echo "$CURR_EXP" | wc | awk '{print $2}')
     if [[ $NUM_RET_WORD == 1 ]]; then
 	if [[ $CURR_EXP == 'xxx' ]]; then
 	    echo 'For which hutch would you like to get this information? '
