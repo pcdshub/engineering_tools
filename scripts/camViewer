@@ -33,6 +33,7 @@ CAMPVFULL=""
 VIEWERCFG="$2"
 # Match "-" or "_" or " ".
 NAME=$(echo "$1" | sed -e 's/-/ /g' -e 's/_/ /g' -e 's/ /[-_ ]/g')
+hutch=$(basename "$(dirname "$VIEWERCFG")")
 #
 # The story here:
 # See how many matches we have in the hutch.
@@ -45,7 +46,7 @@ NAME=$(echo "$1" | sed -e 's/-/ /g' -e 's/_/ /g' -e 's/ /[-_ ]/g')
 #
 # Make a temp file with just the PVs and camera names that match.
 tmp=/tmp/cv.$$
-cat "$VIEWERCFG" | grep -i "$NAME" | grep -v '#' | awk -F, '{ if (split($2,a,";")==1) n=$2; else n=a[2]; gsub(" ","",n); gsub(" "," ",$4); printf "%s %s\n", n, $4; }' >$tmp
+cat "$VIEWERCFG" | grep -i "$NAME" | grep -v '#' | awk -F, '{ if (split($hutch,a,";")==1) n=$hutch; else n=a[2]; gsub(" ","",n); gsub(" "," ",$4); printf "%s %s\n", n, $4; }' >$tmp
 c=$(wc -l <$tmp)
 if [ "$c" -eq 0 ]; then
     echo "No match for $1 in $VIEWERCFG."
@@ -68,7 +69,7 @@ rm -f $tmp
 if [[ -z $CAMPVFULL ]]; then
     get_included_configs "$VIEWERCFG"
     for CFG in ${INCLUDED_CFGS[@]}; do
-	name_to_pv "$NAME" "$CFG"
+	name_to_pv "$1" "$CFG"
 	if [[ -n $CAMPVFULL ]]; then
 	    return
 	fi
