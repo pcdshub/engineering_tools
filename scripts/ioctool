@@ -95,14 +95,14 @@ function camname_to_pv {
       return
    fi
    # OK, ambiguous.  Look for a complete match on the second word.
-   if [ "$(grep -E -i "$CAMNAME\$" < $tmp | wc -l)" -eq 1 ]; then
+   if [ "$(grep -E -i -c "$CAMNAME\$" < $tmp)" -eq 1 ]; then
       campv=$(grep -E -i "$CAMNAME\$" < $tmp | awk '{print $1;}')
       rm -f $tmp
       return
    fi
    # What about just a match at the end? (That is, if we are searching
    # for "yag1", prefer "mec_yag1" to "mec_yag11".)
-   if [ "$(grep -E -i "$CAMNAME\$" < $tmp | wc -l)" -eq 1 ]; then
+   if [ "$(grep -E -i -c "$CAMNAME\$" < $tmp)" -eq 1 ]; then
       campv=$(grep -E -i "$CAMNAME\$" < $tmp | awk '{print $1;}')
       rm -f $tmp
       return
