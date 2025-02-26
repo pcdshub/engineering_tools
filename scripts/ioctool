@@ -63,7 +63,6 @@ function camname_to_pv {
       fi
    fi
          
-   VIEWERCFG=/reg/g/pcds/pyps/config/$hutch/camviewer.cfg
    CAMNAME=$(echo "$2" | sed -e 's/-/ /g' -e 's/_/ /g' -e 's/ /[-_ ]/g')
    
    
@@ -79,11 +78,10 @@ function camname_to_pv {
    #
    # Make a temp file with just the PVs and camera names that match.
    tmp=/tmp/cv.$$
-   cat "$VIEWERCFG" | grep -i "$CAMNAME" | grep -v '#' | awk -F, '{ if (split($2,a,";")==1) n=$2; else n=a[2]; gsub(" ","",n); gsub(" ","",$4); printf "%s %s\n", n, $4; }' >$tmp
+   grep -i "$CAMNAME" "/reg/g/pcds/pyps/config/$hutch/camviewer.cfg" | grep -v '#' | awk -F, '{ if (split($2,a,";")==1) n=$2; else n=a[2]; gsub(" ","",n); gsub(" ","",$4); printf "%s %s\n", n, $4; }' >$tmp
    c=$(wc -l <$tmp)
    if [ "$c" -eq 0 ]; then 
-      VIEWERCFG=/reg/g/pcds/pyps/config/*/camviewer.cfg
-      cat "$VIEWERCFG" | grep -i "$CAMNAME" | grep -v '#' | awk -F, '{ if (split($2,a,";")==1) n=$2; else n=a[2]; gsub(" ","",n); gsub(" ","",$4); printf "%s %s\n", n, $4; }' >$tmp
+      grep -i "$CAMNAME" /reg/g/pcds/pyps/config/*/camviewer.cfg | grep -v '#' | awk -F, '{ if (split($2,a,";")==1) n=$2; else n=a[2]; gsub(" ","",n); gsub(" ","",$4); printf "%s %s\n", n, $4; }' >$tmp
       c=$(wc -l <$tmp)
       if [ "$c" -eq 0 ]; then
          echo "No match for $2"
