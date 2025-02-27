@@ -29,7 +29,7 @@ OPTIONS:
                make pedestals for Uxi detectors
         -A|--alvium         
                make pedestals for Alvium (default only cspad/EPIX detectors)
-        -r|--reservation <reservation>
+        --reservation <reservation>
                reservation for batch submisson
         -v|--validity_start <val_run>
                validity range (set to <val_run>-end)
@@ -193,7 +193,7 @@ do
             shift
             shift
             ;;
-        -r|--reservation)
+        --reservation)
             RESERVATION=("$2")
             shift
             shift
@@ -304,18 +304,18 @@ source $SIT_ENV_DIR/manage/bin/psconda.sh
 
 #if you don't pass the queue, it'll run interactively 
 if [ -v QUEUE ]; then
-    USER=`whoami`
+    USER=$(whoami)
     SBATCH_ARGS="-p $QUEUE --account lcls:$EXP"
     if sacctmgr show asso account=lcls:${EXP}@${QUEUE} -n | grep -q ${USER} ; then
 	if [ -v RESERVATION ]; then
-	    if scontrol show rese -o $RESERVATION | grep -q $EXP; then
+	    if scontrol show rese -o "$RESERVATION" | grep -q "$EXP"; then
 		SBATCH_ARGS="$SBATCH_ARGS --reservation $RESERVATION"
 	    else
-		echo Experiment ${EXP} is not not in the reservation ${RESERVATION}, will submit without
+		echo Experiment "${EXP}" is not not in the reservation "${RESERVATION}", will submit without
 	    fi
 	fi
     else
-	echo ${USER} is not part of account lcls:${EXP}, run interactively
+	echo "${USER}" is not part of account lcls:"${EXP}", run interactively
 	RUNLOCAL=1
     fi
 else
@@ -351,7 +351,7 @@ if compgen -G "$XTCDIR/$RUNSTR.inprogress" > /dev/null; then
 elif ! compgen -G "$XTCDIR/$RUNSTR" > /dev/null; then
     XTCDIR=/sdf/data/lcls/drpsrcf/ffb/"$HUTCH"/"$EXP"/xtc
 fi
-echo "Use XTC files from  $XTCDIR."
+echo "Use XTC files from $XTCDIR."
 
 ###########
 # setup work directory - always!
@@ -374,12 +374,12 @@ if [ ! -w "$WORKDIR" ]; then
     WORKDIR='/tmp'
 fi 
 cd "$WORKDIR" || exit
-echo We will work from directory $WORKDIR
+echo We will work from directory "$WORKDIR"
 
 ###########
 # few generic parameters
 ###########
-if [ $GUI == 1 ]; then
+if [ "$GUI" == 1 ]; then
     echo 'now calling calibman (GUI)'
     calibman
     exit
@@ -393,9 +393,9 @@ echo Check for data files:
 MINWAIT=0
 HAVEFILES=0
 while [[ $MINWAIT -lt 5 ]]; do
-    NFILES=`ls -ltr "$XTCDIR"/*r"$RUNSTR"*s*xtc* | wc -l`
-    echo $NFILES
-    if [ $NFILES -eq 0 ]; then
+    NFILES=$(ls -ltr "$XTCDIR"/*r"$RUNSTR"*s*xtc* | wc -l)
+    echo "$NFILES"
+    if [ "$NFILES" -eq 0 ]; then
 	echo 'Files are not present yet, wait a minute'
 	sleep 60
 	MINWAIT=$((MINWAIT+1))
@@ -467,16 +467,15 @@ if [[ $HAVE_ARCHON -ge 1 ]]; then
         if [[ -v NRECS1 ]]; then
             LOCARG=$LOCARG' --nrecs1 '$NRECS1
         fi
-        for i in "${!DETNAMES[@]}"; do
-            MYDET="${DETNAMES[i]// /}"
-	    MYDETTYPE="${DETTYPES[i]// /}"
-            if [ "$MYDETTYPE" = 'archon' ]; then
-                echo 'now calibrate...'
-                CMD="det_dark_proc -d $MYDET -k exp=$EXP,run=$RUN,dir=$XTCDIR -L INFO $LOCARG"
-                echo "$CMD"
-                $CMD
-            fi
-        done
+
+        MYDET="${DETNAMES[i]// /}"
+	MYDETTYPE="${DETTYPES[i]// /}"
+        if [ "$MYDETTYPE" = 'archon' ]; then
+            echo 'now calibrate...'
+            CMD="det_dark_proc -d $MYDET -k exp=$EXP,run=$RUN,dir=$XTCDIR -L INFO $LOCARG"
+            echo "$CMD"
+            $CMD
+        fi
     done
 fi
 
@@ -488,36 +487,49 @@ if [[ $HAVE_EPIX10K -ge 1 ]]; then
     DETNAMES=$(grep epix10ka /tmp/detnames_"$EXP"_"$CREATE_TIME" | grep raw | awk  'BEGIN { FS = "|"}; {print $1}' | paste -d " " -s)
     DETTYPES=$(grep epix10ka /tmp/detnames_"$EXP"_"$CREATE_TIME" | grep raw | awk  'BEGIN { FS = "|"}; {print $2}' | paste -d " " -s)
     for i in "${!DETNAMES[@]}"; do
-        LOCARG='' #optional cuts, I suspect this will not be developed for LV17.
+        LOCARG=' -o '$CALIBDIR
         EPIX10K="${DETNAMES[i]// /}"
 	MYDETTYPE="${DETTYPES[i]// /}"
         if [ "$MYDETTYPE" = 'epix10ka' ]; then
             echo "Epix10ka name for "$EXP" is: "$EPIX10K
-            #run all at once - do not use
-            #Do not use workdir as you'd need to run the full charge injection run there for this to work
-            #revisit when we run into permission problems.
+	    NSEG=99
+            if [[ $EPIX10K =~ "2M" ]]; then
+	        NSEG=16; 
+            elif [[ $EPIX10K =~ "uad" ]]; then
+	        NSEG=4; 
+	    fi
             for calibcycle in {0..4}; do
                 nextcycle=$(( calibcycle + 1 ))
-                CMD="epix10ka_pedestals_calibration -d $EPIX10K -k exp=$EXP,run=$RUN,dir=$XTCDIR --stepnum $calibcycle --stepmax $nextcycle -L INFO"
+                CMD="epix10ka_pedestals_calibration $LOCARG -d $EPIX10K -k exp=$EXP,run=$RUN,dir=$XTCDIR --stepnum $calibcycle --stepmax $nextcycle -L INFO"
                 echo "---------------EPIX10K PEDESTALS FOR CYCLE $calibcycle --------------------"
                 if [[ $RUNLOCAL != 1 ]]; then
-                    tmpScript=$(mktemp -p $WORKDIR epix10ka_pedestals_tmpXXXXX.sh)
-                    #trap "rm -f $tmpScript" EXIT
-                    chmod u+x "$tmpScript"
-                    printf '#!/bin/bash\n' > "$tmpScript"
-                    printf 'source %s/manage/bin/psconda.sh\n' "${SIT_ENV_DIR}" >> "$tmpScript"
-                    printf '%s\n' "${CMD}" >> "$tmpScript"
-                    ep10kaCmd="sbatch ${SBATCH_ARGS} --mem 8GB --cpus-per-task 5 -o $WORKDIR/${EPIX10K}_${EXP}_Run${RUN}_cycle${calibcycle}_%J.out $tmpScript"
+                    for ((segment=0; segment<$NSEG; segment++)); do
+		        if [ $NSEG -lt 99 ]; then
+		            CMDS=$CMD' --idx '$segment
+		        else
+			    CMDS=$CMD
+			fi
+                        tmpScript=$(mktemp -p $WORKDIR epix10ka_pedestals_tmpXXXXX.sh)
+                        #trap "rm -f $tmpScript" EXIT
+                        chmod u+x "$tmpScript"
+                        printf '#!/bin/bash\n' > "$tmpScript"
+                        printf 'source %s/manage/bin/psconda.sh\n' "${SIT_ENV_DIR}" >> "$tmpScript"
+                        printf '%s\n' "${CMDS}" >> "$tmpScript"
+                        ep10kaCmd="sbatch ${SBATCH_ARGS} --mem 8GB --cpus-per-task 5 -o $WORKDIR/${EPIX10K}_${EXP}_Run${RUN}_cycle${calibcycle}_%J.out $tmpScript"
 
-                    echo "run in queue: $ep10kaCmd"
-                    SUBMISSION=$($ep10kaCmd)
-                    check_for_submit_error
-                    echo "$SUBMISSION"
-                    THISJOBID=$(echo "$SUBMISSION" | awk '{print $4}')
-                    JOBIDS+=( "$THISJOBID" )
-                    NJOBS=$((NJOBS+1))
+                        echo "run in queue: $ep10kaCmd"
+                        SUBMISSION=$($ep10kaCmd)
+                        check_for_submit_error
+                        echo "$SUBMISSION"
+                        THISJOBID=$(echo "$SUBMISSION" | awk '{print $4}')
+                        JOBIDS+=( "$THISJOBID" )
+                        NJOBS=$((NJOBS+1))
+			if [ "$NSEG" -eq 99 ]; then
+			    break
+	                fi
+		    done
                 else            
-                    echo "$cmd"
+                    echo "$CMD"
                     $CMD
                 fi
             done
@@ -531,7 +543,7 @@ if [[ $HAVE_EPIX10K -ge 1 ]]; then
             echo Running "$NJOBS" jobs are PIDS: "${JOBIDS[@]}"
             until check_running_jobs; do
                 echo $CALIBTIME' sec have elapsed, checking again in 10 sec'
-                let "CALIBTIME+=10"
+		CALIBTIME=$((CALIBTIME+10))
                 sleep 10
             done
             echo 'All jobs finished'
@@ -549,8 +561,8 @@ if [[ $HAVE_EPIX10K -ge 1 ]]; then
 
         fi
 
-        echo "---------------EPIX10K PEDESTALS CALCULATED NOW DEPLOY     --------------------"
         if [ "$DEPLOY" == 1 ]; then
+	    echo "---------------EPIX10K PEDESTALS CALCULATED NOW DEPLOY     --------------------"
             if [ $NFAILEDJOBS -gt 0 ]; then
                 read -r -p "$NFAILEDJOBS of the calibration tasks failed, do you want to continue anyways (y/n)?"
                 if [ "$REPLY" != "y" ];then
@@ -558,29 +570,35 @@ if [[ $HAVE_EPIX10K -ge 1 ]]; then
                 fi
             fi
 
-            for EPIX10K in $DETNAMES; do
+            for i in "${!DETNAMES[@]}"; do
+                EPIX10K="${DETNAMES[i]// /}"
+                #for EPIX10K in $DETNAMES; do
                 CMD="epix10ka_deploy_constants -D -d $EPIX10K -k exp=$EXP,run=$RUN,dir=$XTCDIR -L INFO"
                 if [ -v "$VALSTR" ]; then
-                    echo 'setting validity....'$VALSTR
+                    echo 'setting validity....'"$VALSTR"
                     CMD=$CMD' -t '$VALSTR
                 fi
-                echo "$CMD"
-		#DEBUG
-                #$CMD
-		exit
+		echo "$CMD"
+		if ! $CMD; then
+		    echo 'deployment failed'
+		    return 1
+		fi
             done
+	    
             if [[ $RUNLOCAL != 1 ]]; then
                 echo 'Print Information about batch jobs'
-            JOBIDSTR=''
+                JOBIDSTR=''
                 for JOBID in "${ALLJOBIDS[@]}"; do
-            if [[ $JOBIDSTR != '' ]]; then 
-                 JOBIDSTR=$JOBIDSTR','
+                    if [[ $JOBIDSTR != '' ]]; then 
+			JOBIDSTR=$JOBIDSTR','
+		    fi
+                JOBIDSTR=$JOBIDSTR$JOBID
+                done
+                sacct -j "$JOBIDSTR" --format=JobID,AveCPU,AveVMSize,CPUTime,Start,End,Elapsed
             fi
-            JOBIDSTR=$JOBIDSTR$JOBID
-            done
-            sacct -j "$JOBIDSTR" --format=JobID,AveCPU,AveVMSize,CPUTime,Start,End,Elapsed
-            fi
-        fi
+	else
+	    echo "---------------EPIX10K PEDESTALS CALCULATED     --------------------"
+        fi	
     done
     echo "-------------------- STOP EPIX10K PEDESTALS at $(date +'%T') ----------------------------"
 fi
