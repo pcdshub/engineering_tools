@@ -11,15 +11,26 @@ PATH=$DIR:$PATH
 #
 CAMPVFULL=""
 
+get_included_configs()
+{
+if [[ $# -lt 1 ]]; then
+    echo 'Need the config file path as input.'
+    exit
+elif [[ ! -f $1 ]]; then
+    echo "$1 is not a file. You must provide a configuration file as input."
+else
+    INCLUDED_CFGS=$(grep include "$1" | grep -v '#' | awk '{print $2}')
+fi
+}
+
 name_to_pv()
 {
 if [ $# -lt 2 ]; then
-    echo 'need a name as input to return camera basePV and hutch'
+    echo 'need a name as input to return camera basePV and config file'
     exit
 fi
 CAMPVFULL=""
-hutch=$(echo "$2" | tr A-Z a-z)
-VIEWERCFG=/reg/g/pcds/pyps/config/$hutch/camviewer.cfg
+VIEWERCFG="$2"
 # Match "-" or "_" or " ".
 NAME=$(echo "$1" | sed -e 's/-/ /g' -e 's/_/ /g' -e 's/ /[-_ ]/g')
 #
@@ -37,37 +48,33 @@ tmp=/tmp/cv.$$
 cat "$VIEWERCFG" | grep -i "$NAME" | grep -v '#' | awk -F, '{ if (split($2,a,";")==1) n=$2; else n=a[2]; gsub(" ","",n); gsub(" "," ",$4); printf "%s %s\n", n, $4; }' >$tmp
 c=$(wc -l <$tmp)
 if [ "$c" -eq 0 ]; then
-    VIEWERCFG=/reg/g/pcds/pyps/config/*/camviewer.cfg
-    cat $VIEWERCFG | grep -i "$NAME" | grep -v '#' | awk -F, '{ if (split($2,a,";")==1) n=$2; else n=a[2]; gsub(" ","",n); gsub(" "," ",$4); printf "%s %s\n", n, $4; }' >$tmp
-    c=$(wc -l <$tmp)
-    if [ "$c" -eq 0 ]; then
-        echo "No match for $1"
-        rm -f $tmp
-        exit
+    echo "No match for $1 in $VIEWERCFG."
+elif [ "$c" -eq 1 ]; then
+    CAMPVFULL=$(awk '{print $1;}' <$tmp)
+elif [[ $c -gt 1 ]]; then
+    # OK, ambiguous.  Look for a complete match on the second word.
+    if [ "$(grep -E -i " $NAME\$" < $tmp | wc -l)" -eq 1 ]; then
+	CAMPVFULL=$(grep -E -i " $NAME\$" < $tmp | awk '{print $1;}')
+    # What about just a match at the end? (That is, if we are searching
+    # for "yag1", prefer "mec_yag1" to "mec_yag11".)
+    elif [ "$(grep -E -i "$NAME\$" < $tmp | wc -l)" -eq 1 ]; then
+	CAMPVFULL=$(grep -E -i "$NAME\$" < $tmp | awk '{print $1;}')
+    else
+	echo '"'"$1"'" is ambiguous:'
+	awk '{print $2;}' <$tmp
     fi
 fi
-if [ "$c" -eq 1 ]; then
-    CAMPVFULL=$(awk '{print $1;}' <$tmp)
-    rm -f $tmp
-    return
-fi
-# OK, ambiguous.  Look for a complete match on the second word.
-if [ "$(grep -E -i " $NAME\$" < $tmp | wc -l)" -eq 1 ]; then
-    CAMPVFULL=$(grep -E -i " $NAME\$" < $tmp | awk '{print $1;}')
-    rm -f $tmp
-    return
-fi
-# What about just a match at the end? (That is, if we are searching
-# for "yag1", prefer "mec_yag1" to "mec_yag11".)
-if [ "$(grep -E -i "$NAME\$" < $tmp | wc -l)" -eq 1 ]; then
-    CAMPVFULL=$(grep -E -i "$NAME\$" < $tmp | awk '{print $1;}')
-    rm -f $tmp
-    return
-fi
-echo '"'"$1"'" is ambiguous:'
-awk '{print $2;}' <$tmp
 rm -f $tmp
-exit
+if [[ -z $CAMPVFULL ]]; then
+    get_included_configs "$VIEWERCFG"
+    for CFG in ${INCLUDED_CFGS[@]}; do
+	name_to_pv "$1" "$CFG"
+	if [[ -n $CAMPVFULL ]]; then
+	    return
+	fi
+    done
+fi
+
 }
 
 gige_num_to_name()
@@ -98,46 +105,13 @@ esac
 list_cams()
 {
 if [ $# -lt 1 ]; then
-    echo 'need one arguments: hutch '
+    echo 'need one argument: config file'
 fi
-HUTCH=$(echo "$1" | tr a-z A-Z)
-hutch=$(echo "$1" | tr A-Z a-z)
-
-ALLVIEWERCFG=/reg/g/pcds/pyps/config/*/camviewer.cfg
-echo cat $ALLVIEWERCFG | grep -v '#' | awk -F, '{ if (split($2,a,";")==1) n=$2; else n=a[2]; gsub(" ","",n); gsub(" ","",$4); printf "%s %s\n", n, $4; }'
-
-VIEWERCFGKFE=/reg/g/pcds/pyps/config/kfe/camviewer.cfg
-VIEWERCFGLFE=/reg/g/pcds/pyps/config/lfe/camviewer.cfg
-VIEWERCFG=/reg/g/pcds/pyps/config/$hutch/camviewer.cfg
-VIEWERCFGXRT=/reg/g/pcds/pyps/config/xrt/camviewer.cfg
-
-IS_K=0
-K_HUTCHES="rix, tmo, txi"
-IS_L=0
-L_HUTCHES="xpp, xcs, mfx, cxi, mec"
-if echo "$K_HUTCHES" | grep -iw "$HUTCH" > /dev/null; then
-    echo "This is a K beamline"
-    IS_K=1
-elif echo "$L_HUTCHES" | grep -iw "$HUTCH" > /dev/null; then
-    echo "This is an L beamline"
-    IS_L=1
-fi
-
-if  [ $IS_L -gt 0 ]; then
-    for gige_cam in $(grep -v '#' $VIEWERCFGLFE | awk -F, '{print $4 "\n"} '); do
-        echo "$gige_cam"
-    done
-
-    for gige_cam in $(grep -v '#' $VIEWERCFGXRT | awk -F, '{print $4 "\n" }'); do
-        echo "$gige_cam"
-    done
-elif  [ $IS_K -gt 0 ]; then
-    for gige_cam in $(grep -v '#' $VIEWERCFGKFE | awk -F, '{print $4 "\n"} '); do
-        echo "$gige_cam"
-    done
-fi
-
-for gige_cam in $(grep -v '#' "$VIEWERCFG" | awk -F, '{print $4 "\n" }'); do
+get_included_configs "$1"
+for CFG in ${INCLUDED_CFGS[@]}; do
+    list_cams "$CFG"
+done
+for gige_cam in $(grep -v '#' "$1" | awk -F, '{print $4 "\n" }'); do
     echo "$gige_cam"
 done
 
@@ -290,7 +264,7 @@ EXE="/reg/g/pcds/pyps/config/$hutch/camviewer/run_viewer.csh"
 PVLIST="/reg/g/pcds/pyps/config/$hutch/camviewer.cfg"
 
 if [ $LIST -gt 0 ]; then
-    list_cams "$hutch"
+    list_cams "$PVLIST"
     exit 1
 fi
 
@@ -332,11 +306,11 @@ fi
 export EPICS_CA_MAX_ARRAY_BYTES=24000000
 echo working with camera of name: "$CAMNAME"
 
-name_to_pv "$CAMNAME" "$hutch"
+name_to_pv "$CAMNAME" "$PVLIST"
 
 if [ $MAINSCREEN -gt 0 ]; then
     tmp=/tmp/cv.$$
-    list_cams "$hutch" >$tmp
+    list_cams "$PVLIST" >$tmp
     c=$(wc <$tmp | grep "$CAMNAME" $tmp | awk '{print $1}')
     if [ "$c" == '' ]; then
         echo "Camera name not found in hutch. To see which cameras you can access from your current machine use the '-l/--list' option."
