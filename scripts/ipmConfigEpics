@@ -259,7 +259,7 @@ ipmGUI(){
 # Get hutch name, if not given, using get_info
 get_hutch(){
     if [ -z "$HUTCH" ]; then
-        hutch=`get_info --gethutch`
+        hutch=$(get_info --gethutch)
         if [ $hutch = unknown_hutch ]; then
 	    echo 'unknown hutch, cannot use ipmConfigEpics script'
 	    exit 1
@@ -292,7 +292,7 @@ helpBld(){
         # Attempt to caput values
         caput HFX:DG3:CVV:01:Stats2:EnableCallbacks 0
         caput XCS:DG3:CVV:02:Stats2:EnableCallbacks 0
-        # Check if actually set      
+        # Check if actually set
         if [[ $(caget -nt HFX:DG3:CVV:01:Stats2:EnableCallbacks 2> /dev/null) == 0 ]] && [[ $(caget -nt XCS:DG3:CVV:02:Stats2:EnableCallbacks 2> /dev/null) == 0 ]]; then
             echo 'Turned off statsPlugin for XCS ipm3 and dio3'
         else
@@ -339,7 +339,7 @@ done
 get_hutch
 if [ ${#BOXNAME} == 0 ]; then
     ipmList
-    printf 'Enter box name from above list:\n'; read BOXNAME
+    printf 'Enter box name from above list:\n'; read -r BOXNAME
 fi
 
 ipmSetEnvPars $BOXNAME
