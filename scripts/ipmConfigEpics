@@ -17,17 +17,17 @@ ipmList()
 {
 printf 'Possible boxes:\n'
 if [[ $hutch == 'xcs' ]]; then
-   for box in $hx2Ipm $um6Ipm $dg2Ipm $xcsIpm; do echo $box; done
+   for box in $hx2Ipm $um6Ipm $dg2Ipm $xcsIpm; do echo "$box"; done
 elif [[ $hutch == 'xpp' ]]; then
-   for box in $hx2Ipm $xppIpm; do echo $box; done
+   for box in $hx2Ipm $xppIpm; do echo "$box"; done
 elif [[ $hutch == 'cxi' ]]; then
-   for box in $hx2Ipm $um6Ipm $dg2Ipm $cxiIpm; do echo $box; done
+   for box in $hx2Ipm $um6Ipm $dg2Ipm $cxiIpm; do echo "$box"; done
 elif [[ $hutch == 'mfx' ]]; then
-   for box in $hx2Ipm $um6Ipm $mfxIpm; do echo $box; done
+   for box in $hx2Ipm $um6Ipm $mfxIpm; do echo "$box"; done
 elif [[ $hutch == 'mec' ]]; then
-   for box in $hx2Ipm $um6Ipm $mecIpm; do echo $box; done
+   for box in $hx2Ipm $um6Ipm $mecIpm; do echo "$box"; done
 elif [[ $hutch == 'lfe' ]]; then
-   for box in $lfeIpm; do echo $box; done
+   for box in $lfeIpm; do echo "$box"; done
 else
     echo 'hutch cannot be determined, quit'
     exit
@@ -245,11 +245,11 @@ fi
 
 # Attempt to read the :SUM PV and open a GUI if successful and exits if not. Uses wave8 or ipimb accordingly
 ipmGUI(){
-    if caget ${BASE}:SUM > /dev/null 2>&1; then
+    if caget "${BASE}":SUM > /dev/null 2>&1; then
         if [ ${#WAVE8} -gt 0 ]; then
-            /reg/g/pcds/pyps/apps/wave8/latest/wave8 --base $BASE --evr $EVR --ioc $IOC
+            /reg/g/pcds/pyps/apps/wave8/latest/wave8 --base "$BASE" --evr "$EVR" --ioc "$IOC"
         else
-            /reg/g/pcds/controls/pycaqt/ipimb/ipimb --base $BASE --ioc $IOC --evr $EVR
+            /reg/g/pcds/controls/pycaqt/ipimb/ipimb --base "$BASE" --ioc "$IOC" --evr "$EVR"
         fi
     else
         echo "Could not connect to ${BASE}. Exiting..."
@@ -342,7 +342,7 @@ if [ ${#BOXNAME} == 0 ]; then
     printf 'Enter box name from above list:\n'; read -r BOXNAME
 fi
 
-ipmSetEnvPars $BOXNAME
+ipmSetEnvPars "$BOXNAME"
 if [ $HELPDAQBLD -gt 0 ]; then
     helpBld
 else
