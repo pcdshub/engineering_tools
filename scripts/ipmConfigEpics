@@ -16,17 +16,17 @@ lfeIpm='um6_ipm hfxdg2_ipm pim3m'
 ipmList()
 {
 printf 'Possible boxes:\n'
-if [ $hutch == 'xcs' ]; then
+if [[ $hutch == 'xcs' ]]; then
    for box in $hx2Ipm $um6Ipm $dg2Ipm $xcsIpm; do echo $box; done
-elif [ $hutch == 'xpp' ]; then
+elif [[ $hutch == 'xpp' ]]; then
    for box in $hx2Ipm $xppIpm; do echo $box; done
-elif [ $hutch == 'cxi' ]; then
+elif [[ $hutch == 'cxi' ]]; then
    for box in $hx2Ipm $um6Ipm $dg2Ipm $cxiIpm; do echo $box; done
-elif [ $hutch == 'mfx' ]; then
+elif [[ $hutch == 'mfx' ]]; then
    for box in $hx2Ipm $um6Ipm $mfxIpm; do echo $box; done
-elif [ $hutch == 'mec' ]; then
+elif [[ $hutch == 'mec' ]]; then
    for box in $hx2Ipm $um6Ipm $mecIpm; do echo $box; done
-elif [ $hutch == 'lfe' ]; then
+elif [[ $hutch == 'lfe' ]]; then
    for box in $lfeIpm; do echo $box; done
 else
     echo 'hutch cannot be determined, quit'
@@ -67,7 +67,7 @@ elif [ $1 == 'pim3m' ]; then
 fi
 
 # Hutch-specific IPMs
-if [ $hutch == 'xcs' ]; then
+if [[ $hutch == 'xcs' ]]; then
     if [ $1 == 'decmono' ]; then
 	BASE="HFX:MON:IMB:03"
 	IOC="XCS:R38:IOC:43"
@@ -125,7 +125,7 @@ if [ $hutch == 'xcs' ]; then
 	EVR='XCS:SND:DIO:EVR'
 	WAVE8='snddio'
     fi
-elif [ $hutch == 'cxi' ]; then
+elif [[ $hutch == 'cxi' ]]; then
     if [ $1 == 'dg2ipm' ]; then
 	IOC="IOC:CXI:DG2:BMMON"
 	BASE='CXI:DG2:BMMON'
@@ -142,7 +142,7 @@ elif [ $hutch == 'cxi' ]; then
         EVR='CXI:USR:DIO:EVR'
         WAVE8='usrdio'
     fi
-elif [ $hutch == 'mfx' ]; then
+elif [[ $hutch == 'mfx' ]]; then
     if [ $1 == 'dg1ipm' ]; then
 	IOC="IOC:MFX:DG1:BMMON"
 	BASE='MFX:DG1:BMMON'
@@ -159,7 +159,7 @@ elif [ $hutch == 'mfx' ]; then
         EVR='MFX:USR:DIO:EVR'
         WAVE8='usrdio'
     fi
-elif [ $hutch == 'xpp' ]; then
+elif [[ $hutch == 'xpp' ]]; then
     if [ $1 == 'diomono' ]; then
 	IOC="IOC:XPP:IPM"
 	BASE='XPP:MON:IPM:02'
@@ -187,7 +187,7 @@ elif [ $hutch == 'xpp' ]; then
 	BASE='XPP:USR:IPM:01'
 	EVR='XPP:IPM:EVR'
     fi
-elif [ $hutch == 'mec' ]; then
+elif [[ $hutch == 'mec' ]]; then
     if [ $1 == 'ipm1' ]; then
 	IOC="XRT:R33:IOC:39"
 	BASE='MEC:HXM:IPM:01'
@@ -260,7 +260,7 @@ ipmGUI(){
 get_hutch(){
     if [ -z "$HUTCH" ]; then
         hutch=$(get_info --gethutch)
-        if [ $hutch = unknown_hutch ]; then
+        if [[ $hutch = unknown_hutch ]]; then
 	    echo 'unknown hutch, cannot use ipmConfigEpics script'
 	    exit 1
         fi
