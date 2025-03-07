@@ -31,7 +31,7 @@ OPTIONS:
                make pedestals for Jungfrau - 3 run version(default only cspad/EPIX detectors)
         -A|--alvium         
                make pedestals for Alvium (default only cspad/EPIX detectors)
-        -r|--reservation <reservation>
+        --reservation <reservation>
                reservation for batch submisson
         -D|--xtcav_dark
                 dark run for XTCAV
@@ -177,7 +177,7 @@ xtcav_lasOff()
        echo Running "$NJOBS" jobs are PIDS: "${JOBIDS[@]}"
        until check_running_jobs; do
            echo $CALIBTIME' sec have elapsed, checking again in 10 sec'
-           let "CALIBTIME+=10"
+	   CALIBTIME=$((CALIBTIME+10))
            sleep 10
        done
        echo 'All jobs finished'
@@ -221,8 +221,7 @@ deploy_geometry()
         fi
 
         echo calling "$CMD"
-        $CMD
-        if [ "$?" != "0" ]; then
+        if ! $CMD; then
             echo Error: Geometry not deployed!
 	    return 5
         else
@@ -231,8 +230,7 @@ deploy_geometry()
         if [ "$2" != "" ]; then
             echo Running additional command:
             echo "$2"
-            $2
-            if [ "$?" != "0" ]; then
+            if ! $2; then
                 echo Error: Additional command failed!
 	        return 7
             fi
@@ -252,8 +250,7 @@ deploy_gain()
         CMD=$CMD' -x :dir='$XTCDIR'/:stream=0-79'
 
         echo calling "$CMD"
-        $CMD
-        if [ "$?" != "0" ]; then
+        if ! $CMD; then
             echo Error: Gain file not deployed!
 	    return 6
         else
@@ -330,7 +327,7 @@ do
             shift
             shift
             ;;
-        -r|--reservation)
+        --reservation)
             RESERVATION=("$2")
             shift
             shift
@@ -410,8 +407,8 @@ MYADUMAX=${MYADUMAX:=-1}
 NUMBUNCH=${NUMBUNCH:=1}
 #one setting to run each process on an own server (currently faster) or not (if we had to use reservations)
 
-if [ $RUN == 0 ]; then
-    if [ $INTERACTIVE -ne 1 ]; then
+if [ "$RUN" == 0 ]; then
+    if [ "$INTERACTIVE" -ne 1 ]; then
         printf "Please enter a run number HERE: \n"; read -r RUN
     fi
 fi
@@ -419,7 +416,7 @@ fi
 PCDSDIR='/sdf/group/lcls/ds/tools/'
 SIT_ENV_DIR="/sdf/group/lcls/ds/ana/sw"
 
-if [ $EXP == 'xxx' ]; then
+if [ "$EXP" == 'xxx' ]; then
     echo 'no experiment passed!!!'
     HUTCH=$($PCDSDIR/engineering_tools/latest-released/scripts/get_info --gethutch)
     echo HUTCH "$HUTCH"
@@ -443,18 +440,18 @@ source $SIT_ENV_DIR/manage/bin/psconda.sh
 
 #if you don't pass the queue, it'll run interactively 
 if [ -v QUEUE ]; then
-    USER=`whoami`
+    USER=$(whoami)
     SBATCH_ARGS="-p $QUEUE --account lcls:$EXP"
-    if sacctmgr show asso account=lcls:${EXP}@${QUEUE} -n | grep -q ${USER} ; then
+    if sacctmgr show asso account=lcls:"${EXP}"@"${QUEUE}" -n | grep -q ${USER} ; then
 	if [ -v RESERVATION ]; then
-	    if scontrol show rese -o $RESERVATION | grep -q $EXP; then
+	    if scontrol show rese -o "$RESERVATION" | grep -q "$EXP"; then
 		SBATCH_ARGS="$SBATCH_ARGS --reservation $RESERVATION"
 	    else
-		echo Experiment ${EXP} is not not in the reservation ${RESERVATION}, will submit without
+		echo Experiment "${EXP}" is not not in the reservation "${RESERVATION}", will submit without
 	    fi
 	fi
     else
-	echo ${USER} is not part of account lcls:${EXP}, run interactively
+	echo ${USER} is not part of account lcls:"${EXP}", run interactively
 	RUNLOCAL=1
     fi
 else
@@ -468,9 +465,11 @@ ARG=' -n '$NUMEVT' -Z 1000000 -U 1000000 -z 1000000 -u 1000000 '
 # find xtc directory
 # look for xtc w/o in progress if not using live mode. TOBEIMPLEMENTED
 ###########
-RUNSTR=$(printf '%04d' $RUN)
+RUNSTR=$(printf '%04d' "$RUN")
 RUNSTR=$EXP-r$RUNSTR*.xtc
 XTCDIR=/sdf/data/lcls/ds/"$HUTCH"/"$EXP"/xtc
+# the moves will produce ,inprogress files
+# for LCLS2, only UED(&ASC) will make inprogress files on the FFB
 # If inprogress files use FFB location
 if compgen -G "$XTCDIR/$RUNSTR.inprogress" > /dev/null; then
     XTCDIR=/sdf/data/lcls/drpsrcf/ffb/"$HUTCH"/"$EXP"/xtc
@@ -518,10 +517,10 @@ cd "$WORKDIR" || exit
 # work on the XTCAV
 ######################
 
-if [ $XTCAV == 1 ]; then
+if [ "$XTCAV" == 1 ]; then
     xtcav_dark
 fi
-if [ $XTCAV == 2 ]; then
+if [ "$XTCAV" == 2 ]; then
     xtcav_lasOff
 fi
 ######################
@@ -531,7 +530,7 @@ fi
 ###########
 # few generic parameters
 ###########
-if [ $INTERACTIVE == 1 ]; then
+if [ "$INTERACTIVE" == 1 ]; then
     echo 'now calling calibman (GUI) - switch to old release for now'
     source /reg/g/psdm/etc/psconda.sh.old
     calibman
@@ -539,7 +538,7 @@ if [ $INTERACTIVE == 1 ]; then
 fi
 
 if [ "$CALIBCODE" -ne 0 ]; then
-    if [ $NUMEVT -le 1000 ]; then
+    if [ "$NUMEVT" -le 1000 ]; then
         NUMEVT=1000000
     fi
     ARG=$ARG' -f '$CALIBCODE
@@ -565,7 +564,7 @@ echo Check for data files:
 MINWAIT=0
 HAVEFILES=0
 while [[ $MINWAIT -lt 5 ]]; do
-    NFILES=`ls -ltr "$XTCDIR"/*r"$RUNSTR"*s*xtc* | wc -l`
+    NFILES=$(ls -ltr "$XTCDIR"/*r"$RUNSTR"*s*xtc* | wc -l)
     echo "$NFILES"
     if [ "$NFILES" -eq 0 ]; then
 	echo 'Files are not present yet, wait a minute'
@@ -600,7 +599,8 @@ HAVE_JUNGFRAU=$(grep -c Jungfrau /tmp/detnames_"$EXP"_"$CREATE_TIME")
 if [[ ( $HAVE_JUNGFRAU -ge 1 ) && ( $WANT_ZYLA -eq 0 ) && ( $WANT_OPAL -eq 0 ) && ( $WANT_RAYONIX -eq 0 )  && ( $WANT_UXI -eq 0 ) && ( $WANT_ALVIUM -eq 0 ) ]]; then
     
     DETNAMES=$(grep Jungfrau /tmp/detnames_"$EXP"_"$CREATE_TIME" | awk  'BEGIN { FS = "|"}; {print $1}' | paste -d " " -s)
-
+    ALIASES=$(grep Jungfrau /tmp/detnames_"$EXP"_"$CREATE_TIME" | awk  'BEGIN { FS = "|"}; {print $2}' | paste -d " " -s)
+    
     DSNAME='exp='$EXP':run='$RUN':smd:stream=0-79'
     if [ -v OLD_JUNGFRAU ]; then # Do we need to keep the old JF stuff?
         #get the dataset name
@@ -632,44 +632,62 @@ if [[ ( $HAVE_JUNGFRAU -ge 1 ) && ( $WANT_ZYLA -eq 0 ) && ( $WANT_OPAL -eq 0 ) &
         NJOBS=0
     fi
  
-    for JUNGFRAU in $DETNAMES; do
-        echo "jungfrau loop $JUNGFRAU  -- $RUNLOCAL"
+    for i in "${!DETNAMES[@]}"; do
+        JUNGFRAU="${DETNAMES[i]// /}"
+        ALIAS="${ALIASES[i]// /}"
+        echo "jungfrau loop $JUNGFRAU with alias $ALIAS -- $RUNLOCAL"
+        NSEG=99
+        if [[ $ALIAS =~ "5" ]]; then
+	    NSEG=1; 
+        elif [[ $ALIAS =~ "1M" ]]; then
+	    NSEG=2; 
+	elif [[ $ALIAS =~ "4M" ]]; then
+	    NSEG=8;
+	fi
         CMD="jungfrau_dark_proc $JFARG -s $JUNGFRAU"
         #now finally call the command
         for calibcycle in {0..2}; do
             if [ -v OLD_JUNGFRAU ]; then
                 CMDC=$CMD
-            elif  [ "$CALIBCODE" -eq 0 ]; then
+            elif [ "$CALIBCODE" -eq 0 ]; then
                 CMDC=$CMD' --stepnum '$calibcycle
             else
                 CMDC=$CMD
             fi
             if [[ $RUNLOCAL != 1 ]]; then
-                tmpScript=$(mktemp -p "$WORKDIR" jungfrau_multi_tmpXXXXX.sh)
-                #trap "rm -f $tmpScript" EXIT
-                chmod u+x "$tmpScript"
-                printf '#!/bin/bash\n' > "$tmpScript"
-                printf 'source %s/manage/bin/psconda.sh\n' "${SIT_ENV_DIR}" >> "$tmpScript"
-                printf 'echo $HOSTNAME\n' >> "$tmpScript"
-                printf '%s\n' "${CMDC}" >> "$tmpScript"
-                jfCmd="sbatch ${SBATCH_ARGS} --mem 8GB --cpus-per-task 1 -o $WORKDIR/jungfrau_${EXP}_RUN${RUN}_%J.out $tmpScript"
-                echo "run in queue: $jfCmd"        
-                SUBMISSION=$($jfCmd)
-                check_for_submit_error
-                echo "$SUBMISSION"
-                THISJOBID=$(echo "$SUBMISSION" | awk '{print $4}')
-                JOBIDS+=( "$THISJOBID" )
-                NJOBS=$((NJOBS+1))
+                for ((segment=0; segment<$NSEG; segment++)); do
+		    if [ $NSEG -lt 99 ]; then
+		        CMDC=$CMDC' --segind '$segment
+		    fi
+                    tmpScript=$(mktemp -p "$WORKDIR" jungfrau_multi_tmpXXXXX.sh)
+                    #trap "rm -f $tmpScript" EXIT
+                    chmod u+x "$tmpScript"
+                    printf '#!/bin/bash\n' > "$tmpScript"
+                    printf 'source %s/manage/bin/psconda.sh\n' "${SIT_ENV_DIR}" >> "$tmpScript"
+                    printf 'echo $HOSTNAME\n' >> "$tmpScript"
+                    printf '%s\n' "${CMDC}" >> "$tmpScript"
+                    jfCmd="sbatch ${SBATCH_ARGS} --mem 8GB --cpus-per-task 1 -o $WORKDIR/jungfrau_${EXP}_RUN${RUN}_%J.out $tmpScript"
+                    echo "run in queue: $jfCmd"        
+                    SUBMISSION=$($jfCmd)
+                    #check_for_submit_error
+                    echo "$SUBMISSION"
+                    THISJOBID=$(echo "$SUBMISSION" | awk '{print $4}')
+                    JOBIDS+=( "$THISJOBID" )
+                    NJOBS=$((NJOBS+1))
+		    if [ "$NSEG" -eq 99 ]; then
+			break
+	            fi
+		done
             else
                 echo "$CMDC"
                 $CMDC
             fi
-            if [ -v OLD_JUNGFRAU ]; then
+	    if [ -v OLD_JUNGFRAU ]; then
                 break
             fi
             if [ "$CALIBCODE" -ne 0 ]; then
                 break
-            fi
+	    fi
         done
     ALLJOBIDS=("${JOBIDS[@]}")
     done
@@ -734,13 +752,23 @@ HAVE_EPIX10K=$(grep -c Epix10ka /tmp/detnames_"$EXP"_"$CREATE_TIME")
 if [[ ( $HAVE_EPIX10K -ge 1 ) && ( $WANT_ZYLA -eq 0 ) && ( $WANT_OPAL -eq 0 ) && ( $WANT_RAYONIX -eq 0 ) && ( $WANT_UXI -eq 0 ) && ( $WANT_ALVIUM -eq 0 ) ]]; then
     echo "-------------------- START EPIX10K PEDESTALS at $(date +'%T') ----------------------------"
     DETNAMES=$(grep Epix10ka /tmp/detnames_"$EXP"_"$CREATE_TIME" | awk  'BEGIN { FS = "|"}; {print $1}' | paste -d " " -s)
+    ALIASES=$(grep Epix10ka /tmp/detnames_"$EXP"_"$CREATE_TIME" | awk  'BEGIN { FS = "|"}; {print $2}' | paste -d " " -s)
+
     if [[ $RUNLOCAL -ne 1 ]]; then
         JOBIDS=()
         NJOBS=0
     fi
     
-    for EPIX10K in $DETNAMES; do
-        echo "Epix10ka name for $EXP is: $EPIX10K"
+    for i in "${!DETNAMES[@]}"; do
+        EPIX10K="${DETNAMES[i]// /}"
+        ALIAS="${ALIASES[i]// /}"
+        echo "Epix10ka name for $EXP is: ${EPIX10K} with alias ${ALIAS}"
+        NSEG=99
+        if [[ $ALIAS =~ "2M" ]]; then
+	    NSEG=16; 
+        elif [[ $ALIAS =~ "uad" ]]; then
+	    NSEG=4; 
+	fi
         ##run all at once - do not use
         #Do not use workdir as you'd need to run the full charge injection run there for this to work
         #revisit when we run into permission problems.
@@ -749,20 +777,28 @@ if [[ ( $HAVE_EPIX10K -ge 1 ) && ( $WANT_ZYLA -eq 0 ) && ( $WANT_OPAL -eq 0 ) &&
             CMD="epix10ka_pedestals_calibration -d $EPIX10K -e $EXP -r $RUN -c $calibcycle -x :dir=$XTCDIR:live:stream=0-79 -L INFO"
             echo "---------------EPIX10K PEDESTALS FOR CYCLE $calibcycle --------------------"
             if [[ $RUNLOCAL != 1 ]]; then
-                tmpScript=$(mktemp -p $WORKDIR epix10ka_pedestals_tmpXXXXX.sh)
-                #trap "rm -f $tmpScript" EXIT
-                chmod u+x "$tmpScript"
-                printf '#!/bin/bash\n' > "$tmpScript"
-                printf 'source %s/manage/bin/psconda.sh\n' "${SIT_ENV_DIR}" >> "$tmpScript"
-                printf '%s\n' "${CMD}" >> "$tmpScript"
-                ep10kaCmd="sbatch ${SBATCH_ARGS} --mem 8GB --cpus-per-task 5 -o $WORKDIR/${EPIX10K}_${EXP}_Run${RUN}_cycle${calibcycle}_%J.out $tmpScript"
-                echo "run in queue: $ep10kaCmd"
-                SUBMISSION=$($ep10kaCmd)
-                check_for_submit_error
-                echo "$SUBMISSION"
-                THISJOBID=$(echo "$SUBMISSION" | awk '{print $4}')
-                JOBIDS+=( "$THISJOBID" )
-                NJOBS=$((NJOBS+1))
+                for ((segment=0; segment<$NSEG; segment++)); do
+		    if [[ $NSEG -lt 99 ]]; then
+		        CMDC=$CMDC' --segind '$segment
+		    fi
+                    tmpScript=$(mktemp -p "$WORKDIR" epix10ka_pedestals_tmpXXXXX.sh)
+                    #trap "rm -f $tmpScript" EXIT
+                    chmod u+x "$tmpScript"
+                    printf '#!/bin/bash\n' > "$tmpScript"
+                    printf 'source %s/manage/bin/psconda.sh\n' "${SIT_ENV_DIR}" >> "$tmpScript"
+                    printf '%s\n' "${CMD}" >> "$tmpScript"
+                    ep10kaCmd="sbatch ${SBATCH_ARGS} --mem 8GB --cpus-per-task 5 -o $WORKDIR/${EPIX10K}_${EXP}_Run${RUN}_cycle${calibcycle}_%J.out $tmpScript"
+                    echo "run in queue: $ep10kaCmd"
+                    SUBMISSION=$($ep10kaCmd)
+                    check_for_submit_error
+                    echo "$SUBMISSION"
+                    THISJOBID=$(echo "$SUBMISSION" | awk '{print $4}')
+                    JOBIDS+=( "$THISJOBID" )
+                    NJOBS=$((NJOBS+1))
+		    if [ "$NSEG" -eq 99 ]; then
+			break
+	            fi
+		done
             else            
                 echo "$CMD"
                 $CMD
@@ -774,9 +810,9 @@ if [[ ( $HAVE_EPIX10K -ge 1 ) && ( $WANT_ZYLA -eq 0 ) && ( $WANT_OPAL -eq 0 ) &&
         echo 'Wait for 1/2 minute before checking jobs:'
         sleep 30
         CALIBTIME=30
-        echo Running $NJOBS jobs are PIDS: "${JOBIDS[@]}"
+        echo Running "$NJOBS" jobs are PIDS: "${JOBIDS[@]}"
         until check_running_jobs; do
-            echo $CALIBTIME' sec have elapsed, checking again in 10 sec'
+            echo "$CALIBTIME" sec have elapsed, checking again in 10 sec
 	    CALIBTIME=$((CALIBTIME+10))
             sleep 10
         done
@@ -796,7 +832,7 @@ if [[ ( $HAVE_EPIX10K -ge 1 ) && ( $WANT_ZYLA -eq 0 ) && ( $WANT_OPAL -eq 0 ) &&
     fi
 
     echo "---------------EPIX10K PEDESTALS CALCULATED NOW DEPLOY     --------------------"
-    if [ $DEPLOY == 1 ]; then
+    if [ "$DEPLOY" == 1 ]; then
         if [ "$NFAILEDJOBS" -gt 0 ]; then
             read -r -p "$NFAILEDJOBS of the calibration tasks failed, do you want to continue anyways (y/n)?"
             if [ "$REPLY" != "y" ];then
