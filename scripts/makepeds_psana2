@@ -315,7 +315,7 @@ if [ -v QUEUE ]; then
 	    fi
 	fi
     else
-	echo "${USER}" is not part of account lcls:"${EXP}", run interactively
+	echo "${USER}" is not part of account lcls:${EXP}@${QUEUE}, run interactively
 	RUNLOCAL=1
     fi
 else
@@ -535,6 +535,7 @@ if [[ $HAVE_EPIX10K -ge 1 ]]; then
             done
             ALLJOBIDS=("${JOBIDS[@]}")
         fi
+
         NFAILEDJOBS=0
         if [[ $RUNLOCAL != 1 ]]; then
             echo 'Wait for 1/2 minute before checking jobs:'
@@ -573,7 +574,7 @@ if [[ $HAVE_EPIX10K -ge 1 ]]; then
             for i in "${!DETNAMES[@]}"; do
                 EPIX10K="${DETNAMES[i]// /}"
                 #for EPIX10K in $DETNAMES; do
-                CMD="epix10ka_deploy_constants -D -d $EPIX10K -k exp=$EXP,run=$RUN,dir=$XTCDIR -L INFO"
+                CMD="epix10ka_deploy_constants -D -d $EPIX10K -k exp=$EXP,run=$RUN,dir=$XTCDIR -L INFO -o $CALIBDIR"
                 if [ -v "$VALSTR" ]; then
                     echo 'setting validity....'"$VALSTR"
                     CMD=$CMD' -t '$VALSTR
