@@ -218,6 +218,8 @@ def report_duplicates(indKeys, indPVs, myKeys, myPVs, myFiles, numLines):
                               str(numLines[value]).center(size_per_col))
             print(105*"=")
             print("\n")
+    else:
+        print("No duplicate aliases found.")
     if copyPV:
         print("--------------------------------------------",
               "Duplicate by PVs",
@@ -243,6 +245,8 @@ def report_duplicates(indKeys, indPVs, myKeys, myPVs, myFiles, numLines):
                               str(numLines[value]).center(size_per_col))
             print(105*"=")
             print("\n")
+    else:
+        print("No duplicate PVs found.")
 
 
 def report_warnings(extraKeys, noKeyPVs):
@@ -258,6 +262,8 @@ def report_warnings(extraKeys, noKeyPVs):
                              "Line number error"]
         table.add_rows(sortedListKeys)
         print(table)
+    else:
+        print("No aliases withouts PVs found.")
     if noKeyPVs:
         print("PVs with no Alias, WARNING!!!!:")
         sortedListPVs = sorted(noKeyPVs, key=lambda x: x[1])
@@ -266,6 +272,8 @@ def report_warnings(extraKeys, noKeyPVs):
                              "Line number error"]
         table.add_rows(sortedListPVs)
         print(table)
+    else:
+        print("No PVs without aliases found.")
 
 
 def report_statusPV(myKeys, myPVs, myFiles):
