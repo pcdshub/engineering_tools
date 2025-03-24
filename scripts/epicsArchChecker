@@ -105,8 +105,9 @@ def read_file(filename):
                 if line[0] == '<':
                     if '/' not in filename:
                         subfilename = line[1:].lstrip().strip()
-                        (filesMissing, subentries, subextraKeys, subnoKeyPVs) =\
+                        (subfilesMissing, subentries, subextraKeys, subnoKeyPVs) =\
                             read_file(subfilename)
+                        filesMissing = filesMissing or subfilesMissing
                         entries += subentries
                         extraKeys += subextraKeys
                         noKeyPVs += subnoKeyPVs
@@ -114,8 +115,9 @@ def read_file(filename):
                         folderName = filename.rpartition('/')
                         subfilename = folderName[0] + '/' + \
                             line[1:].lstrip().strip()
-                        (filesMissing, subentries, subextraKeys, subnoKeyPVs) =\
+                        (subfilesMissing, subentries, subextraKeys, subnoKeyPVs) =\
                             read_file(subfilename)
+                        filesMissing = filesMissing or subfilesMissing
                         entries += subentries
                         extraKeys += subextraKeys
                         noKeyPVs += subnoKeyPVs
