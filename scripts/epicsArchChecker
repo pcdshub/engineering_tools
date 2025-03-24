@@ -56,17 +56,25 @@ def main():
     dirpath = os.path.dirname(fullpath)
     filename = os.path.basename(fullpath)
     os.chdir(dirpath)
-    entries, extraKeys, noKeyPVs = read_file(filename)
+    filesMissing, entries, extraKeys, noKeyPVs = read_file(filename)
 
     myKeys, myPVs, myFiles, lineNumbers = create_Lists(entries)
     indKeys, indPVs = find_index(myKeys, myPVs, myFiles)
-    report_duplicates(indKeys, indPVs, myKeys, myPVs, myFiles, lineNumbers)
-    report_warnings(extraKeys, noKeyPVs)
-    if args.status:
-        report_statusPV(myKeys, myPVs, myFiles)
+    duplicates_present = report_duplicates(indKeys, indPVs, myKeys, myPVs, myFiles, lineNumbers)
+    warnings_present = report_warnings(extraKeys, noKeyPVs)
+    bad_status = report_statusPV(myKeys, myPVs, myFiles) if args.status else False
 
     if verify:
-        subprocess.run([f'bash -c "source /cds/sw/ds/ana/conda2/manage/bin/psconda.sh; epicsArchVerify {fullpath}"', fullpath], shell=True)
+        verifyreturncode = subprocess.run([f'bash -c "source /cds/sw/ds/ana/conda2/manage/bin/psconda.sh; epicsArchVerify {fullpath}"', fullpath], shell=True).returncode
+    else:
+        verifyreturncode = 0
+
+    if not any((filesMissing,
+                duplicates_present,
+                warnings_present,
+                bad_status,
+                verifyreturncode,)):
+        print("Everything looks great!")
 
 
 def read_file(filename):
@@ -84,6 +92,7 @@ def read_file(filename):
     extraKeys = []
     noKeyPVs = []
     key = ''
+    filesMissing = False
     try:
         with open(filename, 'r') as file:
             lineNum = 0
@@ -96,7 +105,7 @@ def read_file(filename):
                 if line[0] == '<':
                     if '/' not in filename:
                         subfilename = line[1:].lstrip().strip()
-                        (subentries, subextraKeys, subnoKeyPVs) =\
+                        (filesMissing, subentries, subextraKeys, subnoKeyPVs) =\
                             read_file(subfilename)
                         entries += subentries
                         extraKeys += subextraKeys
@@ -105,7 +114,7 @@ def read_file(filename):
                         folderName = filename.rpartition('/')
                         subfilename = folderName[0] + '/' + \
                             line[1:].lstrip().strip()
-                        (subentries, subextraKeys, subnoKeyPVs) =\
+                        (filesMissing, subentries, subextraKeys, subnoKeyPVs) =\
                             read_file(subfilename)
                         entries += subentries
                         extraKeys += subextraKeys
@@ -125,11 +134,12 @@ def read_file(filename):
             if key != '':
                 extraKeys.append((key, filename, keyline))
     except FileNotFoundError as errorDetail:
+        filesMissing = True
         print(filename, ' File not found!')
         print(errorDetail)
     """Print filename to see of there are duplicates."""
     print(filename)
-    return (entries, extraKeys, noKeyPVs)
+    return (filesMissing, entries, extraKeys, noKeyPVs)
 
 
 def create_Lists(entries):
@@ -247,6 +257,7 @@ def report_duplicates(indKeys, indPVs, myKeys, myPVs, myFiles, numLines):
             print("\n")
     else:
         print("No duplicate PVs found.")
+    return copyKey or copyPV
 
 
 def report_warnings(extraKeys, noKeyPVs):
@@ -274,6 +285,7 @@ def report_warnings(extraKeys, noKeyPVs):
         print(table)
     else:
         print("No PVs without aliases found.")
+    return extraKeys or noKeyPVs
 
 
 def report_statusPV(myKeys, myPVs, myFiles):
@@ -299,6 +311,7 @@ def report_statusPV(myKeys, myPVs, myFiles):
         print(table)
     else:
         print("All the PVs are connected!")
+    return bool(totalInfo)
 
 
 if __name__ == "__main__":
