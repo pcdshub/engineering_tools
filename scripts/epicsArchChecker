@@ -291,7 +291,7 @@ def report_warnings(extraKeys, noKeyPVs):
 
 
 def report_statusPV(myKeys, myPVs, myFiles):
-    """This function will display the no connected PVs."""
+    """This function will display the unconnected PVs."""
     totalInfo = []
     for pv in range(len(myPVs)):
         statusPV = []
@@ -299,7 +299,7 @@ def report_statusPV(myKeys, myPVs, myFiles):
             ophyd.signal.EpicsSignal(myPVs[pv]).get()
         except Exception:
             statusPV.append(myPVs[pv])
-            statusPV.append("No connected!")
+            statusPV.append("Not connected!")
             statusPV.append(myKeys[pv])
             statusPV.append(myFiles[pv])
         if statusPV:
@@ -307,7 +307,7 @@ def report_statusPV(myKeys, myPVs, myFiles):
     if totalInfo:
         sortedList = sorted(totalInfo, key=lambda x: x[3])
         table = PrettyTable()
-        print("PVs NO connected:")
+        print("PVs not connected:")
         table.field_names = ["PV Name", "Status", "Alias", "Location"]
         table.add_rows(sortedList)
         print(table)
