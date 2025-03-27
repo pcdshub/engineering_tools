@@ -19,8 +19,8 @@ from pathlib import Path
 import ophyd.signal
 from prettytable import PrettyTable
 
-LCLS2_HUTCHES = ["rix", "tmo", "ued", "txi"]
-LCLS1_HUTCHES = ["xpp", "xcs", "mfx", "cxi", "mec"]
+LCLS2_HUTCHES = ["rix", "tmo", "ued", "txi", "mfx"]
+LCLS1_HUTCHES = ["xpp", "xcs", "cxi", "mec"]
 
 
 def is_lcls2(path):

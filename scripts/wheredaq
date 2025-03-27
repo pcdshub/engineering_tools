@@ -1,12 +1,5 @@
 #!/bin/bash
 
-# Check if the current's user hutch uses daqmgr. If so,
-# use the python utilities to manage the daq.
-if [ "$(daqutils isdaqmgr)" = "true" ]; then
-    daqutils $(basename "$0") $@
-    exit 0
-fi
-
 usage()
 {
 cat << EOF
@@ -19,6 +12,14 @@ EOF
 if [[ ($1 == "--help") || ($1 == "-h") ]]; then
 	usage
 	exit 0
+fi
+
+# Check if the current's user hutch uses daqmgr. If so,
+# use the python utilities to manage the daq.
+#if compgen -G "/usr/bin/sinfo" > /dev/null; then
+if [ "$(daqutils isdaqmgr)" = "true" ]; then
+    daqutils $(basename "$0") $@
+    exit 0
 fi
 
 HUTCH=$(get_info --gethutch)
