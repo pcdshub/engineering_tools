@@ -461,6 +461,9 @@ def build_parser():
     search.add_argument('-n', '--no_color', action='store_true',
                         default=False,
                         help="Don't wrap the search results with a color")
+    search.add_argument('-O', '--no_filename', action='store_true',
+                        default=False,
+                        help="Don't print filename before results")
     return parser
 
 ###############################################################################
@@ -612,7 +615,8 @@ def main():
                                  .strip()
                                  )
                 if len(search_result) > 0:
-                    print(f'{Fore.LIGHTYELLOW_EX}{ioc}:{Style.RESET_ALL}')
+                    if not args.no_filename:
+                        print(f'{Fore.LIGHTYELLOW_EX}{ioc}:{Style.RESET_ALL}')
                     print(''.join(search_result.strip()))
                     check_search.append(len(search_result))
         if len(check_search) == 0:
