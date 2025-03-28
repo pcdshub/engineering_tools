@@ -300,7 +300,9 @@ fi
 #umask 002
 echo "This is a LCLS-II experiment"    
 SIT_ENV_DIR=$SIT_ENV_DIR'/conda2/'
-source $SIT_ENV_DIR/manage/bin/psconda.sh
+#source $SIT_ENV_DIR/manage/bin/psconda.sh
+#DEBUG - test release!
+source /sdf/group/lcls/ds/ana/sw/conda2/rel/lcls2_032725/setup_env.sh
 
 #if you don't pass the queue, it'll run interactively 
 if [ -v QUEUE ]; then
@@ -602,6 +604,130 @@ if [[ $HAVE_EPIX10K -ge 1 ]]; then
         fi	
     done
     echo "-------------------- STOP EPIX10K PEDESTALS at $(date +'%T') ----------------------------"
+fi
+
+
+####
+# jungfrau for MFX
+####
+HAVE_JUNGFRAU=$(grep -c jungfrau /tmp/detnames_"$EXP"_"$CREATE_TIME")
+if [[ $HAVE_JUNGFRAU -ge 1 ]]; then
+    DETNAMES=$(grep jungfrau /tmp/detnames_"$EXP"_"$CREATE_TIME" | grep raw | awk  'BEGIN { FS = "|"}; {print $1}' | paste -d " " -s)
+    DETTYPES=$(grep jungfrau /tmp/detnames_"$EXP"_"$CREATE_TIME" | grep raw | awk  'BEGIN { FS = "|"}; {print $2}' | paste -d " " -s)
+    for i in "${!DETNAMES[@]}"; do
+        LOCARG=' -o '$CALIBDIR
+        JUNGFRAU="${DETNAMES[i]// /}"
+	MYDETTYPE="${DETTYPES[i]// /}"
+        if [ "$MYDETTYPE" = 'jungfrau' ]; then
+            echo "Jungfrau name for "$EXP" is: "$JUNGFRAU
+	    NSEG=99
+            if [[ $JUNGFRAU =~ "16M" ]]; then
+	        NSEG=32; 
+	    fi
+            for calibcycle in {0..2}; do
+                nextcycle=$(( calibcycle + 1 ))
+                CMD="jungfrau_dark_proc $LOCARG -d $JUNGFRAU -k exp=$EXP,run=$RUN,dir=$XTCDIR --stepnum $calibcycle --stepmax $nextcycle -L INFO"
+                echo "---------------JUNGFRAU PEDESTALS FOR CYCLE $calibcycle --------------------"
+                if [[ $RUNLOCAL != 1 ]]; then
+                    for ((segment=0; segment<$NSEG; segment++)); do
+		        if [ $NSEG -lt 99 ]; then
+		            CMDS=$CMD' --idx '$segment
+		        else
+			    CMDS=$CMD
+			fi
+                        tmpScript=$(mktemp -p $WORKDIR jungfrau_pedestals_tmpXXXXX.sh)
+                        #trap "rm -f $tmpScript" EXIT
+                        chmod u+x "$tmpScript"
+                        printf '#!/bin/bash\n' > "$tmpScript"
+                        printf 'source %s/manage/bin/psconda.sh\n' "${SIT_ENV_DIR}" >> "$tmpScript"
+                        printf '%s\n' "${CMDS}" >> "$tmpScript"
+                        ep10kaCmd="sbatch ${SBATCH_ARGS} --mem 8GB --cpus-per-task 5 -o $WORKDIR/${JUNGFRAU}_${EXP}_Run${RUN}_cycle${calibcycle}_%J.out $tmpScript"
+
+                        echo "run in queue: $ep10kaCmd"
+                        SUBMISSION=$($ep10kaCmd)
+                        check_for_submit_error
+                        echo "$SUBMISSION"
+                        THISJOBID=$(echo "$SUBMISSION" | awk '{print $4}')
+                        JOBIDS+=( "$THISJOBID" )
+                        NJOBS=$((NJOBS+1))
+			if [ "$NSEG" -eq 99 ]; then
+			    break
+	                fi
+		    done
+                else            
+                    echo "$CMD"
+                    $CMD
+                fi
+            done
+            ALLJOBIDS=("${JOBIDS[@]}")
+        fi
+
+        NFAILEDJOBS=0
+        if [[ $RUNLOCAL != 1 ]]; then
+            echo 'Wait for 1/2 minute before checking jobs:'
+            sleep 30
+            CALIBTIME=30
+            echo Running "$NJOBS" jobs are PIDS: "${JOBIDS[@]}"
+            until check_running_jobs; do
+                echo $CALIBTIME' sec have elapsed, checking again in 10 sec'
+		CALIBTIME=$((CALIBTIME+10))
+                sleep 10
+            done
+            echo 'All jobs finished'
+            # and now check that none of the jobs have existed with an error code:
+            # currently, the jungfrau jobs print DONE at the end. 
+            # Second check necessary as jobs can fail without printing an exit code to the logfile
+            for JOBID in "${ALLJOBIDS[@]}"; do
+                echo "Checking job $JOBID"
+                if grep -q 'exit code' "$WORKDIR"/*"$JOBID".out; then
+                    NFAILEDJOBS=$((NFAILEDJOBS+1))
+                elif ! grep -q 'DONE' "$WORKDIR"/*"$JOBID".out; then
+                    NFAILEDJOBS=$((NFAILEDJOBS+1))
+                fi
+            done
+
+        fi
+
+        if [ "$DEPLOY" == 1 ]; then
+	    echo "---------------JUNGFRAU PEDESTALS CALCULATED NOW DEPLOY     --------------------"
+            if [ $NFAILEDJOBS -gt 0 ]; then
+                read -r -p "$NFAILEDJOBS of the calibration tasks failed, do you want to continue anyways (y/n)?"
+                if [ "$REPLY" != "y" ];then
+                    exit 1
+                fi
+            fi
+
+            for i in "${!DETNAMES[@]}"; do
+                JUNGFRAU="${DETNAMES[i]// /}"
+                #for JUNGFRAU in $DETNAMES; do
+                CMD="jungfrau_deploy_constants -D -d $JUNGFRAU -k exp=$EXP,run=$RUN,dir=$XTCDIR -L INFO -o $CALIBDIR"
+                if [ -v "$VALSTR" ]; then
+                    echo 'setting validity....'"$VALSTR"
+                    CMD=$CMD' -t '$VALSTR
+                fi
+		echo "$CMD"
+		if ! $CMD; then
+		    echo 'deployment failed'
+		    return 1
+		fi
+            done
+	    
+            if [[ $RUNLOCAL != 1 ]]; then
+                echo 'Print Information about batch jobs'
+                JOBIDSTR=''
+                for JOBID in "${ALLJOBIDS[@]}"; do
+                    if [[ $JOBIDSTR != '' ]]; then 
+			JOBIDSTR=$JOBIDSTR','
+		    fi
+                JOBIDSTR=$JOBIDSTR$JOBID
+                done
+                sacct -j "$JOBIDSTR" --format=JobID,AveCPU,AveVMSize,CPUTime,Start,End,Elapsed
+            fi
+	else
+	    echo "---------------JUNGFRAU PEDESTALS CALCULATED     --------------------"
+        fi	
+    done
+    echo "-------------------- STOP JUNGFRAU PEDESTALS at $(date +'%T') ----------------------------"
 fi
 
 #rm /tmp/detnames_"$EXP"_"$CREATE_TIME"
