@@ -1,59 +1,113 @@
 #!/usr/bin/env python3
 """
-Enforce more checks and controls for running the DAQ.
+Dummy daq-launcher script using DaqManager.
+This script demonstrates the DaqManager class that accepts
+verbose and configuration file arguments and provides commands.
 """
 
 import argparse
+import getpass
+import logging
+import os
+import shutil
+import socket
+import sys
 
-from daq_utils import LOCALHOST, DaqManager
+from daq_utils import DaqManager
+
+# Setup logging for better output management
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
+)
 
 
-def restartdaq(daqmgr, args):
-    daqmgr.restartdaq(args.aimhost)
+def has_slurm():
+    slurm_cmds = ["squeue", "sbatch", "scancel"]
+    missing = [cmd for cmd in slurm_cmds if not shutil.which(cmd)]
+    if missing:
+        logging.error("Missing Slurm commands: %s", ", ".join(missing))
+        return False
+    return True
 
 
-def wheredaq(daqmgr, args):
-    daqmgr.wheredaq()
+def run_cmd(daq, cmd, aimhost=None):
+    try:
+        func = getattr(daq, cmd)
+    except AttributeError:
+        logging.error("Invalid daq command: %s", cmd)
+        return None
+
+    try:
+        if cmd == "restartdaq":
+            if aimhost:
+                logging.debug("Calling DaqManager.restartdaq('%s')", aimhost)
+                return func(aimhost)
+            else:
+                logging.debug("Calling DaqManager.restartdaq() without aimhost")
+                return func()
+        else:
+            logging.debug("Calling DaqManager.%s()", cmd)
+            return func()
+    except Exception as e:
+        logging.error("Error executing daq command '%s': %s", cmd, e)
+        return str(e)
 
 
-def stopdaq(daqmgr, args):
-    daqmgr.stopdaq()
+def parse_args():
+    parser = argparse.ArgumentParser(
+        description="Dummy daq-launcher wrapper using DaqManager"
+    )
+    parser.add_argument(
+        "-v", "--verbose", action="store_true", help="Increase output verbosity"
+    )
+    parser.add_argument("--cnf", type=str, help="Path to configuration file")
+    parser.add_argument(
+        "-m",
+        "--aimhost",
+        type=str,
+        default=socket.gethostname(),
+        help="Target hostname (only applicable for restartdaq). Default: local hostname",
+    )
+    parser.add_argument(
+        "cmd",
+        choices=["restartdaq", "stopdaq", "wheredaq", "isdaqmgr"],
+        help="Command to execute",
+    )
+    return parser.parse_args()
 
 
-def isdaqmgr(daqmgr, args):
-    daqmgr.isdaqmgr()
+def main():
+    if not has_slurm():
+        sys.exit(
+            "Exiting: Slurm is required for launching daq processes. Please install Slurm and try again."
+        )
+
+    args = parse_args()
+
+    if args.verbose:
+        logging.getLogger().setLevel(logging.DEBUG)
+        logging.debug("Verbose mode enabled.")
+
+    if args.cnf:
+        if os.path.isfile(args.cnf):
+            logging.debug("Using configuration file: %s", args.cnf)
+        else:
+            sys.exit(f"Exiting: Configuration file '{args.cnf}' not found.")
+    else:
+        logging.debug("No configuration file provided. Using default configuration.")
+
+    user = getpass.getuser()
+    hostname = socket.gethostname()
+    logging.debug("Running as %s on %s", user, hostname)
+
+    daq = DaqManager(args.verbose, args.cnf)
+
+    logging.debug("Executing command: %s", args.cmd)
+    # For isdaqmgr, the method will exit with the appropriate code.
+    run_cmd(daq, args.cmd, aimhost=args.aimhost)
+    # For other commands, additional logging can follow if desired.
+    # (isdaqmgr will never return here)
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(prog="run_daq_utils", description=__doc__)
-
-    parser.add_argument("-v", "--verbose", action="store_false")
-    parser.add_argument("--cnf", default=None)
-    subparsers = parser.add_subparsers()
-    psr_restart = subparsers.add_parser(
-        "restartdaq",
-        help="Verify requirements for running the daq then stop and start it.",
-    )
-    psr_restart.add_argument("-m", "--aimhost", action="store_const", const=LOCALHOST)
-    psr_restart.set_defaults(func=restartdaq)
-
-    psr_where = subparsers.add_parser(
-        "wheredaq",
-        help="Discover what host is running the daq in the current hutch, if any.",
-    )
-    psr_where.set_defaults(func=wheredaq)
-
-    psr_stop = subparsers.add_parser(
-        "stopdaq", help="Stop the daq in the current hutch."
-    )
-    psr_stop.set_defaults(func=stopdaq)
-
-    psr_isdaqmgr = subparsers.add_parser(
-        "isdaqmgr", help="Determine if the current hutch uses daqmgr"
-    )
-    psr_isdaqmgr.set_defaults(func=isdaqmgr)
-
-    args = parser.parse_args()
-
-    daqmgr = DaqManager(args.verbose, args.cnf)
-    args.func(daqmgr, args)
+    main()
