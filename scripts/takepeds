@@ -21,7 +21,7 @@ HUTCH=${EXP:0:3}
 #SIT_ENV_DIR="/sdf/group/lcls/ds/ana/sw"
 SIT_ENV_DIR="/cds/group/psdm/sw"
 
-LCLS2_HUTCHES="rix, tmo, ued"
+LCLS2_HUTCHES="rix, tmo, ued, mfx"
 HUTCH=$(get_info --gethutch)
 if echo "$LCLS2_HUTCHES" | grep -iw "$HUTCH" > /dev/null; then
     echo "This is an LCLS-II experiment"
@@ -30,7 +30,10 @@ if echo "$LCLS2_HUTCHES" | grep -iw "$HUTCH" > /dev/null; then
     LCLS2=1
     if [[ ${HUTCH} =~ 'ued' ]]; then
         source $SIT_ENV_DIR/setup_env.sh
-        epixquad_pedestal_scan --record 1 --hutch ued
+        epixquad_pedestal_scan --record 1 --hutch ${HUTCH}
+    elif [[ ${HUTCH} =~ 'mfx' ]]; then
+        source $SIT_ENV_DIR/setup_env.sh
+        jungfrau_pedestal_scan --record 1 --hutch ${HUTCH} -p 0 -g 1 -v -t 10000 -C drp-srcf-cmp014
     fi
 else
     echo "This is an LCLS-I experiment"

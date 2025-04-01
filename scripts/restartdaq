@@ -67,6 +67,11 @@ do
 	esac
 done
 
+if [[ $(whoami) != *'opr'* ]]; then
+    echo "Please run the DAQ from the operator account!"
+    exit
+fi
+
 # Check if the current's user hutch uses daqmgr. If so,
 # use the python utilities to manage the daq.
 if [ "$(daqutils isdaqmgr)" = "true" ]; then
@@ -88,11 +93,6 @@ if [ "$(daqutils isdaqmgr)" = "true" ]; then
         daqutils "$(basename "$0")" "$@"
     fi
     exit 0
-fi
-
-if [[ $(whoami) != *'opr'* ]]; then
-    echo "Please run the DAQ from the operator account!"
-    exit
 fi
 
 HUTCH=$(get_info --gethutch)
@@ -118,12 +118,11 @@ unset LD_LIBRARY_PATH
 cd /reg/g/pcds/dist/pds/"$HUTCH"/scripts/ || exit
 
 DAQNETWORK='fez'
-LCLS2_HUTCHES="rix, tmo, ued, txi"
+LCLS2_HUTCHES="ued"
 if echo "$LCLS2_HUTCHES" | grep -iw "$HUTCH" > /dev/null; then
     # shellcheck disable=SC1090
     source /reg/g/pcds/dist/pds/"$HUTCH"/scripts/setup_env.sh
     PROCMGR='procmgr'
-    DAQNETWORK='drp'
 else
     PROCMGR="/reg/g/pcds/dist/pds/$HUTCH/current/tools/procmgr/procmgr"
 fi

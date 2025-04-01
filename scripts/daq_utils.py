@@ -12,7 +12,7 @@ import sys
 import time
 from subprocess import PIPE
 
-DAQMGR_HUTCHES = ["tmo", "rix", "txi"]
+DAQMGR_HUTCHES = ["tmo", "rix", "txi", "mfx"]
 LOCALHOST = socket.gethostname()
 SLURM_PARTITION = "drpq"
 SLURM_JOBNAME = "submit_daq"
