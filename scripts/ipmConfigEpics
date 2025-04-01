@@ -158,6 +158,11 @@ elif [[ $hutch == 'mfx' ]]; then
         BASE='MFX:USR:DIO'
         EVR='MFX:USR:DIO:EVR'
         WAVE8='usrdio'
+    elif [[ $1 == 'dg1ipmV3' ]]; then
+        IOC="IOC:MFX:DG1:W8:01"
+        BASE='MFX:DG1:W8:01'
+        EVR=''
+        WAVE8='dg1ipmV3'
     fi
 elif [[ $hutch == 'xpp' ]]; then
     if [[ $1 == 'diomono' ]]; then
