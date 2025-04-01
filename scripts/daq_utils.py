@@ -180,32 +180,42 @@ class DaqManager:
         return daq_host
 
     def calldaq(self, subcmd, daq_host=None):
-        prog = "daqmgr"
-        cmd = f"pushd {self.scripts_dir} > /dev/null; "
-        cmd += f'source {os.path.join(self.scripts_dir, "setup_env.sh")}; '
-        cmd += f"WHEREPROG=$(which {prog}); set -x; "
-        cmd += f"$WHEREPROG {subcmd} {os.path.join(self.scripts_dir, self.cnf_file)}; {{ set +x; }} 2>/dev/null; "
-        cmd += "popd > /dev/null;"
-
+        # Determine where to run the command
         if subcmd == "restart":
             query_daq_host = self.wheredaq()
         else:
             query_daq_host = self.wheredaq_internal()
 
         if daq_host is None:
-            daq_host = query_daq_host
-            if daq_host is None:
-                daq_host = LOCALHOST
+            daq_host = query_daq_host or LOCALHOST
 
-        logging.debug("Executing command on host: %s", daq_host)
+        logging.debug("Executing DAQ command on host: %s", daq_host)
+
+        # Build daq commad
+        env_setup = os.path.join(self.scripts_dir, "setup_env.sh")
+        try:
+            get_daqmgr_cmd = f"source {env_setup}; which daqmgr"
+            daqmgr_path = subprocess.check_output(get_daqmgr_cmd, shell=True, stderr=PIPE).strip().decode("utf-8")
+        except subprocess.CalledProcessError as e:
+            logging.error("Failed to locate 'daqmgr' after sourcing env: %s", e.stderr.decode())
+            return
+
+        daq_command = f"{daqmgr_path} {subcmd} {os.path.join(self.scripts_dir, self.cnf_file)}"
+        print(f"Running command: {daq_command}")
+
+        cmd = f"""
+pushd {self.scripts_dir} > /dev/null
+source {env_setup}
+{daq_command}
+popd > /dev/null
+"""
         if daq_host == LOCALHOST:
             try:
-                ret = subprocess.run(
-                    cmd, stdout=PIPE, stderr=PIPE, shell=True, check=True
-                )
-                logging.debug("Command output: %s", ret.stdout.decode())
+                ret = subprocess.run(cmd, stdout=PIPE, stderr=PIPE, shell=True, check=True)
+                logging.debug("Command stdout:\n%s", ret.stdout.decode())
+                logging.debug("Command stderr:\n%s", ret.stderr.decode())
             except subprocess.CalledProcessError as e:
-                logging.error("Local command failed: %s", e.stderr.decode())
+                logging.error("Local command failed:\n%s", e.stderr.decode())
         else:
             try:
                 call_sbatch(cmd, daq_host, self.scripts_dir)
@@ -215,7 +225,6 @@ class DaqManager:
         self.waitfor(subcmd)
 
     def stopdaq(self):
-        print("Stopping DAQ...")
         self.calldaq("stop")
 
     def restartdaq(self, daq_host):
@@ -225,4 +234,4 @@ class DaqManager:
         st = time.monotonic()
         self.calldaq("restart", daq_host=daq_host)
         en = time.monotonic()
-        print("Restarted DAQ in %.4f seconds.", en - st)
+        print(f"took {en-st:.4f}s. for starting the DAQ")  # noqa: E231
