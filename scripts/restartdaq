@@ -74,7 +74,7 @@ fi
 
 # Check if the current's user hutch uses daqmgr. If so,
 # use the python utilities to manage the daq.
-if [ "$(daqutils isdaqmgr)" = "true" ]; then
+if daqutils isdaqmgr; then
     if [[ -n "$DAQMGR_CNF" ]]; then
         for arg in "$@"; do
 	          shift

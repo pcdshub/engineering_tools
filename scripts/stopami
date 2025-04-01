@@ -14,7 +14,7 @@ if [[ ($1 == "--help") || ($1 == "-h") ]]; then
 fi
 
 HUTCH=$(get_hutch_name)
-if [ "$(daqutils isdaqmgr)" = "true" ]; then
+if daqutils isdaqmgr; then
     daqutils --cnf "${HUTCH}"_ami.py stopdaq "$@"
     exit 0
 fi
