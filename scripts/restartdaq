@@ -32,7 +32,7 @@ if [[ ($1 == "--help") || ($1 == "-h") ]]; then
 fi
 
 CORESIZE=0
-while getopts "m:pwscdCu:" OPTION
+while getopts "m:pwscdu:" OPTION
 do
     case $OPTION in
 	p)
@@ -53,9 +53,6 @@ do
 	u)
             UED_CNF=$OPTARG
             ;;
-  C)
-      DAQMGR_CNF=$OPTARG
-      ;;
  	d)
  	    DSSTEST=1
  	    ;;
@@ -74,26 +71,20 @@ fi
 
 # Check if the current's user hutch uses daqmgr. If so,
 # use the python utilities to manage the daq.
-if daqutils isdaqmgr; then
-    if [[ -n "$DAQMGR_CNF" ]]; then
-        for arg in "$@"; do
-	          shift
-	          case $arg in
-		            -C)
-		                shift
-		                shift
-		                ;;
-		             *)
-		                set -- "$@"
-		                ;;
-	          esac
-	      done
-        daqutils --cnf "$DAQMGR_CNF" "$(basename "$0")" "$@"
-    else
-        daqutils "$(basename "$0")" "$@"
-    fi
-    exit 0
-fi
+checkdaqroute "$(basename "$0")" "$@"
+case $? in
+    1)
+        # Not a daqmgr hutch — proceed with local fallback
+        ;;
+    2)
+        echo "Error: Unable to determine DAQ manager status." >&2
+        exit 2
+        ;;
+    *)
+        # Handled by checkdaqroute or failed internally — already exited
+        exit $?
+        ;;
+esac
 
 HUTCH=$(get_info --gethutch)
 CNFEXT=.cnf

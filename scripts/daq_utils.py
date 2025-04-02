@@ -8,7 +8,6 @@ import logging
 import os
 import socket
 import subprocess
-import sys
 import time
 from subprocess import PIPE
 
@@ -122,15 +121,6 @@ class DaqManager:
             self.hutch,
             self.cnf_file,
         )
-
-    def isdaqmgr(self):
-        result = self.hutch in DAQMGR_HUTCHES
-        msg = "true" if result else "false"
-        logging.debug("isdaqmgr: %s", msg)
-        if result:
-            sys.exit(0)
-        else:
-            sys.exit(1)
 
     def isvaliduser(self):
         valid = getpass.getuser() == self.user
