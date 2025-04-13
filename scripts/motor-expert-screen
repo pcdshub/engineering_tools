@@ -43,16 +43,14 @@ elif [ "${rtyp}" == 'motor' ]; then
     # Check to see if this is a Beckhoff axis
     #   caget will return exit code 0 if :PLC:nErrorId_RBV exists,
     #   we set isbeckhoff based on this.
-    caget "${PREFIX}:PLC:nErrorId_RBV" > /dev/null 2>&1
-    if [ $? -eq 0 ]; then
+    if caget "${PREFIX}:PLC:nErrorId_RBV" > /dev/null 2>&1; then
         title="Typhos Suite - ${PREFIX}"
         isbeckhoff=true;
     else
         title='Aerotech motor'
     fi
 else
-    caget "$PREFIX.PN" > /dev/null 2>&1
-    if [ $? -eq 0 ]; then
+    if caget "$PREFIX.PN" > /dev/null 2>&1; then
         title='IMS Motor Control -- Main'
     else
         title='IMS Motor Control'
@@ -91,8 +89,7 @@ elif [ "${rtyp}" == 'xps8p' ]; then
 elif [ "${rtyp}" == 'mmca' ]; then # MMC-100 axis
     edm -x -eolc -m "MOTOR=$PREFIX" mmc_main.edl > /dev/null 2>&1 &
 elif [ "${rtyp}" == 'motor' ]; then
-    caget "$PREFIX:PN" > /dev/null 2>&1
-    if [ $? -eq 0 ]; then
+    if caget "$PREFIX:PN" > /dev/null 2>&1; then
 	edm -x -eolc -m "MOTOR=$PREFIX" pcds_motionScreens/motor-control.edl &
     else
 	# smaracts have "motor" rtyp, so we catch them with the PREFIX or with smaract specific pvs
