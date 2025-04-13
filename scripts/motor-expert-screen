@@ -15,7 +15,7 @@ if [[ ($1 == "--help") || ($1 == "-h") || (-z $1) ]]; then
 	exit 0
 fi
 
-shift $(($OPTIND - 1))
+shift $((OPTIND - 1))
 
 PREFIX=$(echo $1 | cut -d . -f 1)
 
@@ -151,10 +151,10 @@ ypos=$(echo $y | cut -d':' -f 2)
 if [ -z $xpos ]; then
   exit
 # Check if mouse is already on the window. In this case, we wouldn't move it.
-elif [ "$xpos" -lt "$winx" ] || [ "$xpos" -gt $(( ${winx} + ${xwidth}  )) ] || [ "$ypos" -lt "$winy" ] || [ "$ypos" -gt $(( ${winy} + ${ywidth} )) ]; then
+elif [ "$xpos" -lt "$winx" ] || [ "$xpos" -gt $(( winx + xwidth )) ] || [ "$ypos" -lt "$winy" ] || [ "$ypos" -gt $(( winy + ywidth )) ]; then
     # Adjust xpos and ypos so center of window aligns with cursor.
-    xpos=$(( ${xpos} - ( ${xwidth} / 2 ) ))
-    ypos=$(( ${ypos} - ( ${ywidth} / 2 ) ))
+    xpos=$(( xpos - ( xwidth / 2 ) ))
+    ypos=$(( ypos - ( ywidth / 2 ) ))
     # Finally, move the window to our cursor.
     xdotool windowmove $id $xpos $ypos 2> /dev/null
 fi
