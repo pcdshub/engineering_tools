@@ -17,7 +17,7 @@ fi
 
 shift $((OPTIND - 1))
 
-PREFIX=$(echo $1 | cut -d . -f 1)
+PREFIX=$(echo "$1" | cut -d . -f 1)
 
 # Setup edm environment
 source /reg/g/pcds/setup/epicsenv-7.0.3.1-2.0.sh
@@ -34,7 +34,7 @@ isbeckhoff=false
 
 # Choose title so we can move the right window.
 # If this script hangs later, titles probably changed.
-rtyp=$(caget -t $PREFIX.RTYP) > /dev/null 2>&1
+rtyp=$(caget -t "$PREFIX".RTYP) > /dev/null 2>&1
 if [ "${rtyp}" == 'xps8p' ]; then
     title='Newport XPS Positioner'
 elif [ "${rtyp}" == 'ims' ]; then
@@ -65,12 +65,12 @@ oldwins=$(xdotool search --onlyvisible --maxdepth 2 --all --name "$title" 2> /de
 
 # Open new window
 if [ ${isbeckhoff} == true ]; then
-    motor-typhos ${PREFIX} > /dev/null 2>&1 &
+    motor-typhos "${PREFIX}" > /dev/null 2>&1 &
 elif [ "${rtyp}" == 'xps8p' ]; then
     # If we have a Newport motor, we need to parse the PV to get the macro
     # substitutions for the edm screen
-    base=$(echo $PREFIX | cut -d':' -f 1,2,3)
-    num=$(echo $PREFIX | cut -d':' -f 4)
+    base=$(echo "$PREFIX" | cut -d':' -f 1,2,3)
+    num=$(echo "$PREFIX" | cut -d':' -f 4)
     if [ "$num" -ge 1 ] && [ "$num" -le 8 ]; then
         ext=0108
     elif [ "$num" -ge 9 ] && [ "$num" -le 16 ]; then
@@ -94,7 +94,7 @@ elif [ "${rtyp}" == 'motor' ]; then
     else
 	# smaracts have "motor" rtyp, so we catch them with the PREFIX or with smaract specific pvs
 	if [[ $PREFIX == *"MCS2"* || $(caget "$PREFIX:PTYPE_RBV" > /dev/null 2>&1) -eq 0 ]]; then
-            enc=$(caget $PREFIX.UEIP)
+            enc=$(caget "$PREFIX".UEIP)
             if [[ $enc == *"Yes"* ]]; then
 		edm -x -eolc -m "MOTOR=$PREFIX" mcs2_main.edl > /dev/null 2>&1 &
             else
@@ -122,7 +122,7 @@ newwins=$(xdotool search --onlyvisible --maxdepth 2 --all --sync --name "$title"
 for new in $newwins; do
     foundMatch=0
     for old in $oldwins; do
-        if [ $new == $old ]; then
+        if [[ $new == "$old" ]]; then
             foundMatch=1
             break
         fi
@@ -134,7 +134,7 @@ for new in $newwins; do
 done
 
 # Get window location, dimensions
-geom=$(xdotool getwindowgeometry $id 2> /dev/null)
+geom=$(xdotool getwindowgeometry "$id" 2> /dev/null)
 locxy=${geom#*Position: }
 locxy=${locxy%% *}
 winx=${locxy%,*}
@@ -145,12 +145,12 @@ xwidth=${sizexy%x*}
 ywidth=${sizexy#*x}
 
 # Get mouse position
-# shellcheck disable=SC2034
+# shellcheck disable=SC2034,SC2046
 read -r x y s w <<<$(xdotool getmouselocation 2> /dev/null)
-xpos=$(echo $x | cut -d':' -f 2)
-ypos=$(echo $y | cut -d':' -f 2)
+xpos=$(echo "$x" | cut -d':' -f 2)
+ypos=$(echo "$y" | cut -d':' -f 2)
 
-if [ -z $xpos ]; then
+if [[ -z $xpos ]]; then
   exit
 # Check if mouse is already on the window. In this case, we wouldn't move it.
 elif [ "$xpos" -lt "$winx" ] || [ "$xpos" -gt $(( winx + xwidth )) ] || [ "$ypos" -lt "$winy" ] || [ "$ypos" -gt $(( winy + ywidth )) ]; then
@@ -158,5 +158,5 @@ elif [ "$xpos" -lt "$winx" ] || [ "$xpos" -gt $(( winx + xwidth )) ] || [ "$ypos
     xpos=$(( xpos - ( xwidth / 2 ) ))
     ypos=$(( ypos - ( ywidth / 2 ) ))
     # Finally, move the window to our cursor.
-    xdotool windowmove $id $xpos $ypos 2> /dev/null
+    xdotool windowmove "$id" $xpos $ypos 2> /dev/null
 fi
