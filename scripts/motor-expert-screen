@@ -101,6 +101,7 @@ elif [ "${rtyp}" == 'motor' ]; then
 		edm -x -eolc -m "MOTOR=$PREFIX" mcs2_openloop.edl > /dev/null 2>&1 &
             fi
 	else
+	    # shellcheck disable=SC2164
             cd /reg/neh/home/klg/epics/ioc/common/aerotech/current/motorScreens
             #cd /reg/neh/home4/mcbrowne/trunk2/ioc/common/aerotech/current/motorScreens
             edm -x -eolc -m "MOTOR=${PREFIX}" ens_main.edl >& /dev/null &
@@ -144,7 +145,8 @@ xwidth=${sizexy%x*}
 ywidth=${sizexy#*x}
 
 # Get mouse position
-read x y s w <<<$(xdotool getmouselocation 2> /dev/null)
+# shellcheck disable=SC2034
+read -r x y s w <<<$(xdotool getmouselocation 2> /dev/null)
 xpos=$(echo $x | cut -d':' -f 2)
 ypos=$(echo $y | cut -d':' -f 2)
 
