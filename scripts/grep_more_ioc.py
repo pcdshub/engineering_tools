@@ -607,7 +607,7 @@ def main():
                       + Style.RESET_ALL)
 
         if args.list:
-            print(df[args.list].to_string(index=False).replace(' ', ''))
+            print('\n'.join(df[args.list].to_list()))
 
 # --------------------------------------------------------------------------- #
 # %%% search
