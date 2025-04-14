@@ -428,6 +428,10 @@ def build_parser():
                              help='List the column from the dataframe.'
                              + ' Acceptable keys are: [id, host, port, dir, history]')
 
+    print_frame.add_argument('-n', '--no_dataframe',
+                             action='store_true', default=False,
+                             help='Skip printing the dataframe.')
+
     print_frame.add_argument('-r', '--release', action='store_true',
                              default=False,
                              help="Adds the parent IOC's"
@@ -556,7 +560,8 @@ def main():
                       'Release Version',
                       df.pop('Release Version'))
 
-        print_frame2term(df)
+        if not args.no_dataframe:
+            print_frame2term(df)
 
         if args.skip_comments is True:
             for ioc, d in df.loc[:, ['id', 'dir']].values:
