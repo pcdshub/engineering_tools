@@ -424,6 +424,10 @@ def build_parser():
                              help='Prints the IOC.cfg'
                              + ' file with comments skipped')
 
+    print_frame.add_argument('-l', '--list', type=str,
+                             help='List the column from the dataframe.'
+                             + ' Acceptable keys are: [id, host, port, dir, history]')
+
     print_frame.add_argument('-r', '--release', action='store_true',
                              default=False,
                              help="Adds the parent IOC's"
@@ -437,10 +441,6 @@ def build_parser():
     print_frame.add_argument('-y', '--print_history', action='store_true',
                              default=False,
                              help="Prints the child IOC's history to terminal")
-
-    print_frame.add_argument('-l', '--list', type=str,
-                             help='List the column from the dataframe.'
-                             + ' Acceptable keys are: [id, host, port, dir, history]')
 # --------------------------------------------------------------------------- #
 # search subarguments
 # --------------------------------------------------------------------------- #
