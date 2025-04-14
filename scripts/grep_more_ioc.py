@@ -453,22 +453,27 @@ def build_parser():
     search.add_argument('search',
                         type=str, help='PATT to use for regex search in file',
                         metavar='PATT')
-    search.add_argument('-q', '--quiet', action='store_true', default=False,
-                        help='Surpresses file warning for paths that do not'
-                        + ' exist.')
-    search.add_argument('-s', '--only_search', action='store_true',
+
+    search.add_argument('-n', '--no_color', action='store_true',
                         default=False,
-                        help="Don't print the dataframe, just search results.")
+                        help="Don't wrap the search results with a color")
+
     search.add_argument('-o', '--only_results', action='store_true',
                         default=False,
                         help="Only print the results of the regex match. Like"
                         " 'grep -o'.")
-    search.add_argument('-n', '--no_color', action='store_true',
-                        default=False,
-                        help="Don't wrap the search results with a color")
+
     search.add_argument('-O', '--no_filename', action='store_true',
                         default=False,
                         help="Don't print filename before results")
+
+    search.add_argument('-q', '--quiet', action='store_true', default=False,
+                        help='Surpresses file warning for paths that do not'
+                        + ' exist.')
+
+    search.add_argument('-s', '--only_search', action='store_true',
+                        default=False,
+                        help="Don't print the dataframe, just search results.")
     return parser
 
 ###############################################################################
