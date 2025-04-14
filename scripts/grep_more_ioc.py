@@ -433,9 +433,14 @@ def build_parser():
                              default=False,
                              help='Prints the child & parent IOC'
                              + ' directories as the final output')
+
     print_frame.add_argument('-y', '--print_history', action='store_true',
                              default=False,
                              help="Prints the child IOC's history to terminal")
+
+    print_frame.add_argument('-l', '--list', type=str,
+                             help='List the column from the dataframe.'
+                             + ' Acceptable keys are: [id, host, port, dir, history]')
 # --------------------------------------------------------------------------- #
 # search subarguments
 # --------------------------------------------------------------------------- #
@@ -590,6 +595,9 @@ def main():
             else:
                 print(f'{Fore.LIGHTRED_EX}No histories found in captured IOCs.'
                       + Style.RESET_ALL)
+
+        if args.list:
+            print(df[args.list].to_string(index=False).replace(' ', ''))
 
 # --------------------------------------------------------------------------- #
 # %%% search
