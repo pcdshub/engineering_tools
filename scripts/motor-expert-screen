@@ -150,7 +150,7 @@ read -r x y s w <<<$(xdotool getmouselocation 2> /dev/null)
 xpos=$(echo "$x" | cut -d':' -f 2)
 ypos=$(echo "$y" | cut -d':' -f 2)
 
-if [[ -z $xpos ]]; then
+if [[ -z $xpos ]] || [[ -z $winx ]] || [[ -z $xwidth ]]; then
   exit
 # Check if mouse is already on the window. In this case, we wouldn't move it.
 elif [ "$xpos" -lt "$winx" ] || [ "$xpos" -gt $(( winx + xwidth )) ] || [ "$ypos" -lt "$winy" ] || [ "$ypos" -gt $(( winy + ywidth )) ]; then
