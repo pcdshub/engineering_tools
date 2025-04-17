@@ -2,8 +2,10 @@
 """
 ioc-deploy is a script for building and deploying ioc tags from github.
 
-It will take one of two different actions: the normal deploy action,
-or a write permissions change on an existing deployed release.
+It will take one of three different actions:
+- the normal deploy action
+- a write permissions change on an existing deployed release
+- a rebuild on an existing deployed release (perhaps on a new os)
 
 The normal deploy action will create a shallow clone of your IOC in the
 standard release area at the correct path and "make" it.
@@ -31,7 +33,7 @@ then cd and make and chmod as appropriate.
 If the repository exists but the tag does not, the script will ask if you'd like
 to make a new tag and prompt you as appropriate.
 
-The second action will not do any git or make actions, it will only find the
+The update-perms action will not do any git or make actions, it will only find the
 release directory and change the file and directory permissions.
 This can be done with similar commands as above, adding the subparser command,
 and it can be done by passing the specific path you'd like to modify
@@ -43,6 +45,16 @@ Example commands:
 "ioc-deploy update-perms ro -n ioc-foo-bar -r R1.0.0"
 "ioc-deploy update-perms rw -p /cds/group/pcds/epics/ioc/foo/bar/R1.0.0"
 "ioc-deploy update-perms ro -p /cds/group/pcds/epics/ioc/foo/bar/R1.0.0"
+
+The rebuild action will run make again on your current OS.
+It will conveniently temporarily remove write protections from the release for
+the duration of the make so you don't have to do this in multiple steps.
+Like update-perms, you can invoke this using similar commands as the deploy action.
+
+Example commands:
+
+"ioc-deploy rebuild -n ioc-foo-bar -r R1.0.0"
+"ioc-deploy rebuild -p -p /cds/group/pcds/epics/ioc/foo/bar/R1.0.0"
 """
 
 import argparse
