@@ -425,6 +425,7 @@ def build_parser():
                              + ' file with comments skipped')
 
     print_frame.add_argument('-l', '--list', type=str,
+                             metavar='KEY',
                              help='List the column from the dataframe.'
                              + ' Acceptable keys are: [id, host, port, dir, history]')
 
@@ -607,7 +608,7 @@ def main():
                       + Style.RESET_ALL)
 
         if args.list:
-            print('\n'.join(df[args.list].to_list()))
+            print('\n'.join(df[args.list].astype(str).to_list()))
 
 # --------------------------------------------------------------------------- #
 # %%% search
