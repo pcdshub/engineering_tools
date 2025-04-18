@@ -2,7 +2,7 @@
 # See https://pre-commit.com/hooks.html for more hooks
 repos:
 -   repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.4.0
+    rev: v5.0.0
     hooks:
     -   id: no-commit-to-branch
     -   id: trailing-whitespace
@@ -23,12 +23,11 @@ repos:
     -   id: shellcheck
         args: [-x]  # allow source files outside of checked files
 
--   repo: https://github.com/pycqa/flake8.git
-    rev: 6.0.0
+-   repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.11.6
     hooks:
-    -   id: flake8
-
--   repo: https://github.com/timothycrosley/isort
-    rev: 5.11.5
-    hooks:
-    -   id: isort
+      # Run the linter.
+      - id: ruff
+        args: [ --fix ]
+      # Run the formatter.
+      - id: ruff-format

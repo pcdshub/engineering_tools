@@ -1,0 +1,9 @@
+exclude = [
+    ".git",
+]
+
+line-length = 88
+
+[lint]
+select = ["C", "E", "F", "W", "B", "I"]
+ignore = ["C901"]
