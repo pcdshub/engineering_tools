@@ -2,8 +2,10 @@
 """
 ioc-deploy is a script for building and deploying ioc tags from github.
 
-It will take one of two different actions: the normal deploy action,
-or a write permissions change on an existing deployed release.
+It will take one of three different actions:
+- the normal deploy action
+- a write permissions change on an existing deployed release
+- a rebuild on an existing deployed release (perhaps on a new os)
 
 The normal deploy action will create a shallow clone of your IOC in the
 standard release area at the correct path and "make" it.
@@ -31,7 +33,7 @@ then cd and make and chmod as appropriate.
 If the repository exists but the tag does not, the script will ask if you'd like
 to make a new tag and prompt you as appropriate.
 
-The second action will not do any git or make actions, it will only find the
+The update-perms action will not do any git or make actions, it will only find the
 release directory and change the file and directory permissions.
 This can be done with similar commands as above, adding the subparser command,
 and it can be done by passing the specific path you'd like to modify
@@ -43,6 +45,16 @@ Example commands:
 "ioc-deploy update-perms ro -n ioc-foo-bar -r R1.0.0"
 "ioc-deploy update-perms rw -p /cds/group/pcds/epics/ioc/foo/bar/R1.0.0"
 "ioc-deploy update-perms ro -p /cds/group/pcds/epics/ioc/foo/bar/R1.0.0"
+
+The rebuild action will run make again on your current OS.
+It will conveniently temporarily remove write protections from the release for
+the duration of the make so you don't have to do this in multiple steps.
+Like update-perms, you can invoke this using similar commands as the deploy action.
+
+Example commands:
+
+"ioc-deploy rebuild -n ioc-foo-bar -r R1.0.0"
+"ioc-deploy rebuild -p /cds/group/pcds/epics/ioc/foo/bar/R1.0.0"
 """
 
 import argparse
@@ -61,6 +73,8 @@ EPICS_SITE_TOP_DEFAULT = "/cds/group/pcds/epics"
 GITHUB_ORG_DEFAULT = "pcdshub"
 CHMOD_SYMLINKS = os.chmod in os.supports_follow_symlinks
 PERMS_CMD = "update-perms"
+REBUILD_CMD = "rebuild"
+ALL_SUBCOMMANDS = (PERMS_CMD, REBUILD_CMD)
 
 logger = logging.getLogger("ioc-deploy")
 
@@ -102,7 +116,7 @@ else:
     DeployInfo = SimpleNamespace
 
 
-def get_parser(subparser: bool = False) -> argparse.ArgumentParser:
+def get_parser(subparser: str = "") -> argparse.ArgumentParser:
     current_default_target = str(
         Path(os.environ.get("EPICS_SITE_TOP", EPICS_SITE_TOP_DEFAULT)) / "ioc"
     )
@@ -135,8 +149,20 @@ def get_parser(subparser: bool = False) -> argparse.ArgumentParser:
         type=force_lower,
         help="Select whether to make the deployment permissions read-only (ro) or read-write (rw).",
     )
+    # rebuild_parser doesn't have unique arguments but let's be consistent in our approach
+    rebuild_parser = subparsers.add_parser(
+        REBUILD_CMD,
+        help=(
+            f"Use 'ioc-deploy {REBUILD_CMD}' to help rebuild write-protected releases. "
+            f"See 'ioc-deploy {REBUILD_CMD} --help' for more information."
+        ),
+        description=(
+            "Rebuild a deployment, even if it is write protected. "
+            "This will briefly relax write permissions, run make, and then reapply permission restrictions."
+        ),
+    )
     # shared arguments
-    for parser in main_parser, perms_parser:
+    for parser in main_parser, perms_parser, rebuild_parser:
         parser.add_argument(
             "--name",
             "-n",
@@ -206,9 +232,13 @@ def get_parser(subparser: bool = False) -> argparse.ArgumentParser:
             f"With your current environment variables, this defaults to {current_default_org}."
         ),
     )
-    if subparser:
+    if not subparser:
+        return main_parser
+    elif subparser == PERMS_CMD:
         return perms_parser
-    return main_parser
+    elif subparser == REBUILD_CMD:
+        return rebuild_parser
+    raise ValueError(f"Subparser argument must be empty string or one of {ALL_SUBCOMMANDS}, not {subparser}")
 
 
 def is_yes(option: str, error_on_empty: bool = True) -> bool:
@@ -300,7 +330,7 @@ def main_deploy(args: CliArgs) -> int:
 
 def main_perms(args: CliArgs) -> int:
     """
-    All main steps of the only-apply-permissions script.
+    All main steps of the only-apply-permissions action.
 
     This will be called when the update-perms subparser is included.
 
@@ -313,7 +343,7 @@ def main_perms(args: CliArgs) -> int:
         return ReturnCode.EXCEPTION
     allow_write = args.permissions == "rw"
 
-    deploy_dir = get_perms_target(args)
+    deploy_dir = get_local_target(args)
 
     if allow_write:
         logger.info(f"Allowing writes to {deploy_dir}")
@@ -323,9 +353,19 @@ def main_perms(args: CliArgs) -> int:
         user_text = input("Confirm target? yes/true or no/false\n")
         if not is_yes(user_text, error_on_empty=False):
             return ReturnCode.NO_CONFIRM
+
+    return _perms(deploy_dir=deploy_dir, allow_write=allow_write, dry_run=args.dry_run)
+
+
+def _perms(deploy_dir: str, allow_write: bool, dry_run: bool) -> int:
+    """
+    Helper function: re-usable user-facing core of main_perms.
+
+    For example, this is used in both main_perms and in main_rebuild.
+    """
     try:
         rval = set_permissions(
-            deploy_dir=deploy_dir, allow_write=allow_write, dry_run=args.dry_run
+            deploy_dir=deploy_dir, allow_write=allow_write, dry_run=dry_run
         )
     except OSError as exc:
         logger.error(f"OSError during chmod: {exc}")
@@ -346,6 +386,33 @@ def main_perms(args: CliArgs) -> int:
 
     if rval == ReturnCode.SUCCESS:
         logger.info("Write protection change complete!")
+    return rval
+
+
+def main_rebuild(args: CliArgs) -> int:
+    """
+    All main steps of the rebuild-only action.
+
+    This will be called when the rebuild subparser is included.
+
+    Will either return an int code or raise.
+    """
+    deploy_dir = get_local_target(args)
+    logger.info(f"Planning to rebuild {deploy_dir}")
+    if not args.auto_confirm:
+        user_text = input("Confirm target? yes/true or no/false\n")
+        if not is_yes(user_text, error_on_empty=False):
+            return ReturnCode.NO_CONFIRM
+    rval = _perms(deploy_dir=deploy_dir, allow_write=True, dry_run=args.dry_run)
+    if rval != ReturnCode.SUCCESS:
+        return rval
+    rval = make_in(deploy_dir=deploy_dir, dry_run=args.dry_run)
+    if rval != ReturnCode.SUCCESS:
+        logger.error(f"Nonzero return value {rval} from make")
+        return rval
+    rval = _perms(deploy_dir=deploy_dir, allow_write=False, dry_run=args.dry_run)
+    if rval == ReturnCode.SUCCESS:
+        logger.info("Rebuild complete!")
     return rval
 
 
@@ -433,7 +500,7 @@ def get_deploy_info(args: CliArgs) -> DeployInfo:
     return DeployInfo(deploy_dir=deploy_dir, pkg_name=name, rel_name=release)
 
 
-def get_perms_target(args: CliArgs) -> str:
+def get_local_target(args: CliArgs) -> str:
     """
     Normalize user inputs and figure out which directory to modify.
 
@@ -445,7 +512,10 @@ def get_perms_target(args: CliArgs) -> str:
     """
     if args.path_override:
         return args.path_override
-    _, area, suffix = split_ioc_name(args.name)
+    try:
+        _, area, suffix = split_ioc_name(args.name)
+    except ValueError:
+        _, area, suffix = split_ioc_name(f"ioc-common-{args.name}")
     area = find_casing_in_dir(dir=args.ioc_dir, name=area)
     suffix = find_casing_in_dir(dir=str(Path(args.ioc_dir) / area), name=suffix)
     full_name = "-".join(("ioc", area, suffix))
@@ -1047,7 +1117,10 @@ def print_help_text_for_readme():
     """
     Prints a text blob for me to paste into the release notes table.
     """
-    text = get_parser().format_help() + "\n" + get_parser(subparser=True).format_help()
+    text = get_parser().format_help()
+    for subcmd in ALL_SUBCOMMANDS:
+        text += "\n"
+        text += get_parser(subparser=subcmd).format_help()
     lines = text.splitlines()
     output = []
     for line in lines:
@@ -1060,7 +1133,7 @@ def print_help_text_for_readme():
     print("\n".join(output))
 
 
-def rearrange_sys_argv_for_subcommands():
+def rearrange_sys_argv_for_subcommands() -> str:
     """
     Small trick to help argparse deal with my optional subcommand.
 
@@ -1071,29 +1144,50 @@ def rearrange_sys_argv_for_subcommands():
 
     Otherwise, the first example here is interpretted as if -p was never passed,
     which could be confusing.
+
+    Returns
+    -------
+    subcommand: str
+        The name of the subcommand invoked, or empty string otherwise.
     """
-    try:
-        perms_index = sys.argv.index(PERMS_CMD)
-    except ValueError:
-        return
-    if perms_index == 1:
-        return
-    subcmd = sys.argv[perms_index]
-    try:
-        mode = sys.argv[perms_index + 1]
-    except IndexError:
-        return
+    subc_index = None
+    for subcommand in ALL_SUBCOMMANDS:
+        try:
+            subc_index = sys.argv.index(subcommand)
+        except ValueError:
+            ...
+        else:
+            break
+    if subc_index is None:
+        return ""
+    subcmd = sys.argv[subc_index]
+    if subc_index == 1:
+        # It's already in the right place
+        return subcmd
+    if subcmd == PERMS_CMD:
+        num_pos_args = 1
+    elif subcmd == REBUILD_CMD:
+        num_pos_args = 0
+    else:
+        # This code path shouldn't be possible, but paranoia is good
+        raise RuntimeError(f"Invalid subcmd {subcmd}")
+    # Gather required positional args associated with the subcompand
+    pos_args = sys.argv[subc_index + 1 : subc_index + 2 + num_pos_args]
+    # Rearrange: remove the subcmd stuff and put in front
     sys.argv.remove(subcmd)
-    sys.argv.remove(mode)
+    for some_arg in pos_args:
+        sys.argv.remove(some_arg)
     sys.argv.insert(1, subcmd)
-    sys.argv.insert(2, mode)
+    for n, some_arg in enumerate(pos_args):
+        sys.argv.insert(n + 2, some_arg)
+    return subcmd
 
 
 def _main() -> int:
     """
     Thin wrapper of main() for log setup, args handling, and high-level error handling.
     """
-    rearrange_sys_argv_for_subcommands()
+    subcmd = rearrange_sys_argv_for_subcommands()
     args = CliArgs(**vars(get_parser().parse_args()))
     if args.verbose:
         level = logging.DEBUG
@@ -1114,14 +1208,12 @@ def _main() -> int:
                 "Check ioc-deploy --help for usage."
             )
             return ReturnCode.EXCEPTION
-        try:
-            do_perms_cmd = args.permissions
-        except AttributeError:
-            do_perms_cmd = False
-        if do_perms_cmd:
-            rval = main_perms(args)
-        else:
+        if not subcmd:
             rval = main_deploy(args)
+        elif subcmd == PERMS_CMD:
+            rval = main_perms(args)
+        elif subcmd == REBUILD_CMD:
+            rval = main_rebuild(args)
 
     except Exception as exc:
         logger.error(exc)
