@@ -353,9 +353,19 @@ def main_perms(args: CliArgs) -> int:
         user_text = input("Confirm target? yes/true or no/false\n")
         if not is_yes(user_text, error_on_empty=False):
             return ReturnCode.NO_CONFIRM
+
+    return _perms(deploy_dir=deploy_dir, allow_write=allow_write, dry_run=args.dry_run)
+
+
+def _perms(deploy_dir: str, allow_write: bool, dry_run: bool) -> int:
+    """
+    Helper function: re-usable user-facing core of main_perms.
+
+    For example, this is used in both main_perms and in main_rebuild.
+    """
     try:
         rval = set_permissions(
-            deploy_dir=deploy_dir, allow_write=allow_write, dry_run=args.dry_run
+            deploy_dir=deploy_dir, allow_write=allow_write, dry_run=dry_run
         )
     except OSError as exc:
         logger.error(f"OSError during chmod: {exc}")
@@ -393,17 +403,14 @@ def main_rebuild(args: CliArgs) -> int:
         user_text = input("Confirm target? yes/true or no/false\n")
         if not is_yes(user_text, error_on_empty=False):
             return ReturnCode.NO_CONFIRM
-    args.permissions = "rw"
-    args.auto_confirm = True
-    rval = main_perms(args)
+    rval = _perms(deploy_dir=deploy_dir, allow_write=True, dry_run=args.dry_run)
     if rval != ReturnCode.SUCCESS:
         return rval
     rval = make_in(deploy_dir=deploy_dir, dry_run=args.dry_run)
     if rval != ReturnCode.SUCCESS:
         logger.error(f"Nonzero return value {rval} from make")
         return rval
-    args.permissions = "ro"
-    rval = main_perms(args)
+    rval = _perms(deploy_dir=deploy_dir, allow_write=False, dry_run=args.dry_run)
     if rval == ReturnCode.SUCCESS:
         logger.info("Rebuild complete!")
     return rval
@@ -505,7 +512,10 @@ def get_local_target(args: CliArgs) -> str:
     """
     if args.path_override:
         return args.path_override
-    _, area, suffix = split_ioc_name(args.name)
+    try:
+        _, area, suffix = split_ioc_name(args.name)
+    except ValueError:
+        _, area, suffix = split_ioc_name(f"ioc-common-{args.name}")
     area = find_casing_in_dir(dir=args.ioc_dir, name=area)
     suffix = find_casing_in_dir(dir=str(Path(args.ioc_dir) / area), name=suffix)
     full_name = "-".join(("ioc", area, suffix))
@@ -1150,17 +1160,26 @@ def rearrange_sys_argv_for_subcommands() -> str:
             break
     if subc_index is None:
         return ""
-    if subc_index == 1:
-        return ""
     subcmd = sys.argv[subc_index]
-    try:
-        mode = sys.argv[subc_index + 1]
-    except IndexError:
+    if subc_index == 1:
+        # It's already in the right place
         return subcmd
+    if subcmd == PERMS_CMD:
+        num_pos_args = 1
+    elif subcmd == REBUILD_CMD:
+        num_pos_args = 0
+    else:
+        # This code path shouldn't be possible, but paranoia is good
+        raise RuntimeError(f"Invalid subcmd {subcmd}")
+    # Gather required positional args associated with the subcompand
+    pos_args = sys.argv[subc_index + 1 : subc_index + 2 + num_pos_args]
+    # Rearrange: remove the subcmd stuff and put in front
     sys.argv.remove(subcmd)
-    sys.argv.remove(mode)
+    for some_arg in pos_args:
+        sys.argv.remove(some_arg)
     sys.argv.insert(1, subcmd)
-    sys.argv.insert(2, mode)
+    for n, some_arg in enumerate(pos_args):
+        sys.argv.insert(n + 2, some_arg)
     return subcmd
 
 
