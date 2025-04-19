@@ -18,13 +18,13 @@ ldpathmunge /usr/local/lib
 
 
 if [[ $# -gt 0 ]]; then
-    SEARCHOPT='--onlyvisible --maxdepth 2 --limit 1 --all --desktop '$1' --sync '
+    SEARCHOPT=(--onlyvisible --maxdepth 2 --limit 1 --all --desktop "$1" --sync )
 else
-    SEARCHOPT='--onlyvisible --maxdepth 2 --limit 1 --all --sync '
+    SEARCHOPT=(--onlyvisible --maxdepth 2 --limit 1 --all --sync )
 fi
-proc=$(xdotool search $SEARCHOPT --name 'ProcStat')
-ami=$(xdotool search $SEARCHOPT --name 'DAQ Online Monitoring')
-env=$(xdotool search $SEARCHOPT --name 'Env')
-crwin=$(xdotool search $SEARCHOPT --name 'DAQ Control')
-echo $proc $ami $env $crwin
+proc=$(xdotool search "${SEARCHOPT[@]}" --name 'ProcStat')
+ami=$(xdotool search "${SEARCHOPT[@]}" --name 'DAQ Online Monitoring')
+env=$(xdotool search "${SEARCHOPT[@]}" --name 'Env')
+crwin=$(xdotool search "${SEARCHOPT[@]}" --name 'DAQ Control')
+echo "$proc $ami $env $crwin"
 exit
