@@ -111,6 +111,7 @@ get_included_configs "$1"
 for CFG in ${INCLUDED_CFGS[@]}; do
     list_cams "$CFG"
 done
+# shellcheck disable=SC2013
 for gige_cam in $(grep -v '#' "$1" | awk -F, '{print $4 "\n" }'); do
     echo "$gige_cam"
 done
@@ -173,13 +174,14 @@ STOP=0
 NUDGE=0
 hutch="" # Initialize hutch
 
-OPTIONS=$(getopt -o lmredasnc:w:u:H: --long list,main,reboot,enable,disable,acquire,stop,nudge,cam:,rate:,hutch: -n \'$0\' -- "$@")
-
-if [ $? != 0 ]; then echo "Terminating..." >&2 ; exit 1 ; fi
+if ! OPTIONS=$(getopt -o lmredasnc:w:u:H: --long list,main,reboot,enable,disable,acquire,stop,nudge,cam:,wait:,rate:,hutch: -n \'"$0"\' -- "$@"); then
+    echo "Terminating..." >&2
+    exit 1
+fi
 
 eval set -- "$OPTIONS"
 
-while [ : ]
+while :
 do
     case "$1" in
         -l|--list)
@@ -244,7 +246,7 @@ do
 done
 
 if [ $# -ge 1 ]; then
-    echo "Positional arguments unsupported: $@" >&2
+    echo "Positional arguments unsupported: $*" >&2
     usage
     exit 1
 fi
