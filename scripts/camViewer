@@ -45,7 +45,7 @@ NAME=$(echo "$1" | sed -e 's/-/ /g' -e 's/_/ /g' -e 's/ /[-_ ]/g')
 #
 # Make a temp file with just the PVs and camera names that match.
 tmp=/tmp/cv.$$
-cat "$VIEWERCFG" | grep -i "$NAME" | grep -v '#' | awk -F, '{ if (split($2,a,";")==1) n=$2; else n=a[2]; gsub(" ","",n); gsub(" "," ",$4); printf "%s %s\n", n, $4; }' >$tmp
+grep -i "$NAME" "$VIEWERCFG" | grep -v '#' | awk -F, '{ if (split($2,a,";")==1) n=$2; else n=a[2]; gsub(" ","",n); gsub(" "," ",$4); printf "%s %s\n", n, $4; }' >$tmp
 c=$(wc -l <$tmp)
 if [ "$c" -eq 0 ]; then
     echo "No match for $1 in $VIEWERCFG."
@@ -53,11 +53,11 @@ elif [ "$c" -eq 1 ]; then
     CAMPVFULL=$(awk '{print $1;}' <$tmp)
 elif [[ $c -gt 1 ]]; then
     # OK, ambiguous.  Look for a complete match on the second word.
-    if [ "$(grep -E -i " $NAME\$" < $tmp | wc -l)" -eq 1 ]; then
+    if [ "$(grep -E -i -c " $NAME\$" < $tmp)" -eq 1 ]; then
 	CAMPVFULL=$(grep -E -i " $NAME\$" < $tmp | awk '{print $1;}')
     # What about just a match at the end? (That is, if we are searching
     # for "yag1", prefer "mec_yag1" to "mec_yag11".)
-    elif [ "$(grep -E -i "$NAME\$" < $tmp | wc -l)" -eq 1 ]; then
+    elif [ "$(grep -E -i -c "$NAME\$" < $tmp)" -eq 1 ]; then
 	CAMPVFULL=$(grep -E -i "$NAME\$" < $tmp | awk '{print $1;}')
     else
 	echo '"'"$1"'" is ambiguous:'
@@ -88,7 +88,7 @@ VIEWERCFG=/reg/g/pcds/pyps/config/$hutch/camviewer.cfg
 printf -v GIGENUM "%02d" "$2"
 GIGEBASE=$HUTCH:GIGE:$GIGENUM
 
-echo "$(grep "$GIGEBASE" "$VIEWERCFG" | grep -v '#' | awk -F, '{print $4}')"
+grep "$GIGEBASE" "$VIEWERCFG" | grep -v '#' | awk -F, '{print $4}'
 }
 
 isNum(){
