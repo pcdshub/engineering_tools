@@ -67,6 +67,7 @@ fi
 rm -f $tmp
 if [[ -z $CAMPVFULL ]]; then
     get_included_configs "$VIEWERCFG"
+    # shellcheck disable=SC2068
     for CFG in ${INCLUDED_CFGS[@]}; do
 	name_to_pv "$1" "$CFG"
 	if [[ -n $CAMPVFULL ]]; then
@@ -108,6 +109,7 @@ if [ $# -lt 1 ]; then
     echo 'need one argument: config file'
 fi
 get_included_configs "$1"
+# shellcheck disable=SC2068
 for CFG in ${INCLUDED_CFGS[@]}; do
     list_cams "$CFG"
 done
