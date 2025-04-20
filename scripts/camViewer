@@ -313,18 +313,13 @@ echo working with camera of name: "$CAMNAME"
 name_to_pv "$CAMNAME" "$PVLIST"
 
 if [ $MAINSCREEN -gt 0 ]; then
-    tmp=/tmp/cv.$$
-    list_cams "$PVLIST" >$tmp
-    c=$(wc <$tmp | grep "$CAMNAME" $tmp | awk '{print $1}')
+    c=$(list_cams "$PVLIST" | grep "$CAMNAME")
     if [ "$c" == '' ]; then
         echo "Camera name not found in hutch. To see which cameras you can access from your current machine use the '-l/--list' option."
-        sleep 3
-    elif [ "$c" == "$CAMNAME" ] && [ "$hutch" != "$(get_info --gethutch)" ] ; then
+	exit 1
+    elif [[ "$c" =~ $CAMNAME ]] && [ "$hutch" != "$(get_info --gethutch)" ] ; then
         echo "To use camera controls, you must be on the same hutch network as your camera."
         echo "Opening read-only main screen..."
-        sleep 3
-
-    rm -f $tmp
     fi
     echo 'try to get the main screen for: ' "$CAMNAME"
     echo 'start the main screen for camera base PV: ' "$CAMPVFULL"
