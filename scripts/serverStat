@@ -209,22 +209,19 @@ elif [[ $CMD == "expert" ]]; then
     echo -e ""
     echo -e "Checking host/ipmi/fez network interfaces are online:"
     echo -e "-------------------------------------------------"
-    ping -w 2 "$NAME" >/dev/null 2>&1
-    if [[ $? == 0 ]]; then
+    if ping -w 2 "$NAME" >/dev/null 2>&1; then
        echo "$NAME pings."
        CDS_ONLINE=1
     else
        echo "$NAME does not ping."
        CDS_ONLINE=0
     fi
-    ping -w 2 "$NAME"-ipmi >/dev/null 2>&1
-    if [[ $? == 0 ]]; then
+    if ping -w 2 "$NAME"-ipmi >/dev/null 2>&1; then
        echo "$NAME-ipmi pings."
     else
        echo "$NAME-ipmi does not ping."
     fi
-    ping -w 2 "$NAME"-fez >/dev/null 2>&1
-    if [[ $? == 0 ]]; then
+    if ping -w 2 "$NAME"-fez >/dev/null 2>&1; then
        echo "$NAME-fez pings."
     else
        echo "$NAME-fez does not ping."
