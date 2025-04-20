@@ -6,11 +6,11 @@ names_from_name(){
     fi
     INNAME=$1
     if [[ $INNAME == *'-ipmi'* ]]; then
-        INNAME=$(echo "$INNAME" | sed s/-ipmi//g)
+        INNAME=${INNAME//-ipmi/}
     elif [[ $INNAME == *'-fez'* ]]; then
-        INNAME=$(echo "$INNAME" | sed s/-fez//g)
+        INNAME=${INNAME//-fez/}
     elif [[ $INNAME == *'-ana'* ]]; then
-        INNAME=$(echo "$INNAME" | sed s/-ana//g)
+        INNAME=${INNAME//-ana/}
     fi
     CDSNAME=$INNAME
     CDSIP=$(netconfig search "$CDSNAME" | grep IP: | awk '{print $2}')
@@ -118,13 +118,13 @@ fi
 
 if [[ $NAME == *'-ipmi'* ]]; then
     NAMEIPMI=$NAME
-    NAME=$(echo "$NAME" | sed s/-ipmi//g)
+    NAME=${NAME//-ipmi/}
     DEV=$NAME
 elif [[ $NAME == *'-fez'* ]]; then
-    NAME=$(echo "$NAME" | sed s/-fez//g)
+    NAME=${NAME//-fez/}
     DEV=$NAME
 elif [[ $NAME == *'-ana'* ]]; then
-    NAME=$(echo "$NAME" | sed s/-ana//g)
+    NAME=${NAME//-ana/}
 fi
 
 if  [[ $NAME == *rec* ]]; then
