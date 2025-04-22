@@ -318,12 +318,7 @@ def main_deploy(args: CliArgs) -> int:
         logger.error(f"Nonzero return value {rval} from make")
         return rval
     logger.info(f"Applying write protection to {deploy_dir}")
-    rval = set_permissions(
-        deploy_dir=deploy_dir, allow_write=False, dry_run=args.dry_run
-    )
-    if rval != ReturnCode.SUCCESS:
-        logger.error(f"Nonzero return value {rval} from set_permissions")
-        return rval
+    set_permissions(deploy_dir=deploy_dir, allow_write=False, dry_run=args.dry_run)
     logger.info("IOC clone, make, and permission change complete!")
     return ReturnCode.SUCCESS
 
@@ -371,16 +366,13 @@ def main_rebuild(args: CliArgs) -> int:
         user_text = input("Confirm target? yes/true or no/false\n")
         if not is_yes(user_text, error_on_empty=False):
             return ReturnCode.NO_CONFIRM
-    rval = set_permissions(deploy_dir=deploy_dir, allow_write=True, dry_run=args.dry_run)
-    if rval != ReturnCode.SUCCESS:
-        return rval
+    set_permissions(deploy_dir=deploy_dir, allow_write=True, dry_run=args.dry_run)
     rval = make_in(deploy_dir=deploy_dir, dry_run=args.dry_run)
     if rval != ReturnCode.SUCCESS:
         logger.error(f"Nonzero return value {rval} from make")
         return rval
-    rval = set_permissions(deploy_dir=deploy_dir, allow_write=False, dry_run=args.dry_run)
-    if rval == ReturnCode.SUCCESS:
-        logger.info("Rebuild complete!")
+    set_permissions(deploy_dir=deploy_dir, allow_write=False, dry_run=args.dry_run)
+    logger.info("Rebuild complete!")
     return rval
 
 
@@ -792,7 +784,7 @@ def make_in(deploy_dir: str, dry_run: bool) -> int:
         return subprocess.run(["make"], cwd=deploy_dir).returncode
 
 
-def set_permissions(deploy_dir: str, allow_write: bool, dry_run: bool) -> int:
+def set_permissions(deploy_dir: str, allow_write: bool, dry_run: bool) -> None:
     """
     Apply or remove write permissions from a deploy repo.
 
@@ -808,7 +800,7 @@ def set_permissions(deploy_dir: str, allow_write: bool, dry_run: bool) -> int:
         # Dry run has nothing to do if we didn't build the dir
         # Most things past this point will error out
         logger.info("Dry-run: skipping permission changes on never-made directory")
-        return ReturnCode.SUCCESS
+        return
     try:
         set_one_permission(deploy_dir, allow_write=allow_write, dry_run=dry_run)
 
@@ -831,10 +823,9 @@ def set_permissions(deploy_dir: str, allow_write: bool, dry_run: bool) -> int:
             f"For example, you might try 'sudo chmod -R {suggest} {deploy_dir}' "
             "from a server you have sudo access on."
         )
-        return ReturnCode.EXCEPTION
+        raise
 
     logger.info("Write protection change complete!")
-    return ReturnCode.SUCCESS
 
 
 def set_one_permission(path: str, allow_write: bool, dry_run: bool) -> None:
