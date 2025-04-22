@@ -1137,9 +1137,11 @@ def rearrange_sys_argv_for_subcommands() -> str:
     """
     Small trick to help argparse deal with my optional subcommand.
 
+    Warning: this mutates sys.argv in place!
+
     This will make argv like this:
     ioc-deploy -p some_path update-perms ro
-    be interpretted the same as:
+    be interpreted the same as:
     ioc-deploy update-perms ro -p some_path
 
     Otherwise, the first example here is interpretted as if -p was never passed,
