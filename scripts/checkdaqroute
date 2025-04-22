@@ -1,0 +1,81 @@
+#!/bin/bash
+
+# checkdaqroute
+# Usage: checkdaqroute <original-cmd-name> [args...]
+#
+# Behavior:
+#   - If the hutch uses daqmgr, this script handles the command and exits.
+#   - If not a daqmgr hutch, exits with code 1 (let calling script continue).
+#   - If check fails (e.g., can't determine hutch), exits with code 2 (error).
+#
+# Exit codes:
+#   0 => Command was handled by daqutils and completed successfully
+#   1 => Not a DAQ manager hutch — caller may continue
+#   2 => Failed to determine daqmgr status — fatal error
+#   * => Any other code means daqutils itself failed
+
+DAQTASK="$1"
+shift
+
+if daqutils isdaqmgr; then
+    # Determine actual command to run based on calling script
+    case "$DAQTASK" in
+        startami)
+            CMD=restartdaq
+            HUTCH=$(get_info --gethutch 2>/dev/null)
+            if [[ -z "$HUTCH" ]]; then
+                echo "Error: Could not determine HUTCH for AMI config." >&2
+                exit 2
+            fi
+            CNF_FILE="${HUTCH}_ami.py"
+            daqutils --cnf "$CNF_FILE" "$CMD" "$@"
+            ;;
+        stopami)
+            CMD=stopdaq
+            HUTCH=$(get_info --gethutch 2>/dev/null)
+            if [[ -z "$HUTCH" ]]; then
+                echo "Error: Could not determine HUTCH for AMI config." >&2
+                exit 2
+            fi
+            CNF_FILE="${HUTCH}_ami.py"
+            daqutils --cnf "$CNF_FILE" "$CMD" "$@"
+            ;;
+        *)
+            CMD="$DAQTASK"
+            if [[ -n "$DAQMGR_CNF" ]]; then
+                # Remove any existing -C <file> from args
+                filtered_args=()
+                skip_next=false
+                for arg in "$@"; do
+                    if $skip_next; then
+                        skip_next=false
+                        continue
+                    fi
+                    if [[ "$arg" == "-C" ]]; then
+                        skip_next=true
+                        continue
+                    fi
+                    filtered_args+=("$arg")
+                done
+                daqutils --cnf "$DAQMGR_CNF" "$CMD" "${filtered_args[@]}"
+            else
+                daqutils "$CMD" "$@"
+            fi
+            ;;
+    esac
+
+    # Capture and return daqutils' exit code
+    exit_code=$?
+    if [[ $exit_code -ne 0 ]]; then
+        echo "Error: daqutils command failed with exit code $exit_code." >&2
+        exit $exit_code
+    fi
+
+    exit 0
+elif [ $? -eq 2 ]; then
+    echo "Error: Failed to determine if this is a DAQ manager hutch." >&2
+    exit 2
+fi
+
+# Not a daqmgr hutch — let the calling script continue
+exit 1

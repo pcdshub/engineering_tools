@@ -1,0 +1,19 @@
+# default group
+* @pcdshub/python-reviewers @pcdshub/shell-reviewers
+
+# language-specific group(s)
+## PYTHON files
+*.py @pcdshub/python-reviewers
+*.pyi @pcdshub/python-reviewers
+*.pyc @pcdshub/python-reviewers
+*.pyw @pcdshub/python-reviewers
+*.pyx @pcdshub/python-reviewers
+*.pyd @pcdshub/python-reviewers
+## SHELL files
+*.sh @pcdshub/shell-reviewers
+*.zsh @pcdshub/shell-reviewers
+*.csh @pcdshub/shell-reviewers
+*.bash @pcdshub/shell-reviewers
+
+# github folder holds administrative files
+.github/** @pcdshub/software-admin
