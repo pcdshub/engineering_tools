@@ -1120,7 +1120,7 @@ def rearrange_sys_argv_for_subcommands() -> str:
     be interpreted the same as:
     ioc-deploy update-perms ro -p some_path
 
-    Otherwise, the first example here is interpretted as if -p was never passed,
+    Otherwise, the first example here is interpreted as if -p was never passed,
     which could be confusing.
 
     Returns
