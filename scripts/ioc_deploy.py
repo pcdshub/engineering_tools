@@ -354,39 +354,7 @@ def main_perms(args: CliArgs) -> int:
         if not is_yes(user_text, error_on_empty=False):
             return ReturnCode.NO_CONFIRM
 
-    return _perms(deploy_dir=deploy_dir, allow_write=allow_write, dry_run=args.dry_run)
-
-
-def _perms(deploy_dir: str, allow_write: bool, dry_run: bool) -> int:
-    """
-    Helper function: re-usable user-facing core of main_perms.
-
-    For example, this is used in both main_perms and in main_rebuild.
-    """
-    try:
-        rval = set_permissions(
-            deploy_dir=deploy_dir, allow_write=allow_write, dry_run=dry_run
-        )
-    except OSError as exc:
-        logger.error(f"OSError during chmod: {exc}")
-        error_path = Path(exc.filename)
-        logger.error(
-            f"Please contact file owner {error_path.owner()} "
-            "or someone with sudo permissions if you'd like to change the permissions here."
-        )
-        if allow_write:
-            suggest = "ug+w"
-        else:
-            suggest = "a-w"
-        logger.error(
-            f"For example, you might try 'sudo chmod -R {suggest} {deploy_dir}' "
-            "from a server you have sudo access on."
-        )
-        return ReturnCode.EXCEPTION
-
-    if rval == ReturnCode.SUCCESS:
-        logger.info("Write protection change complete!")
-    return rval
+    return set_permissions(deploy_dir=deploy_dir, allow_write=allow_write, dry_run=args.dry_run)
 
 
 def main_rebuild(args: CliArgs) -> int:
@@ -403,14 +371,14 @@ def main_rebuild(args: CliArgs) -> int:
         user_text = input("Confirm target? yes/true or no/false\n")
         if not is_yes(user_text, error_on_empty=False):
             return ReturnCode.NO_CONFIRM
-    rval = _perms(deploy_dir=deploy_dir, allow_write=True, dry_run=args.dry_run)
+    rval = set_permissions(deploy_dir=deploy_dir, allow_write=True, dry_run=args.dry_run)
     if rval != ReturnCode.SUCCESS:
         return rval
     rval = make_in(deploy_dir=deploy_dir, dry_run=args.dry_run)
     if rval != ReturnCode.SUCCESS:
         logger.error(f"Nonzero return value {rval} from make")
         return rval
-    rval = _perms(deploy_dir=deploy_dir, allow_write=False, dry_run=args.dry_run)
+    rval = set_permissions(deploy_dir=deploy_dir, allow_write=False, dry_run=args.dry_run)
     if rval == ReturnCode.SUCCESS:
         logger.info("Rebuild complete!")
     return rval
@@ -841,14 +809,31 @@ def set_permissions(deploy_dir: str, allow_write: bool, dry_run: bool) -> int:
         # Most things past this point will error out
         logger.info("Dry-run: skipping permission changes on never-made directory")
         return ReturnCode.SUCCESS
+    try:
+        set_one_permission(deploy_dir, allow_write=allow_write, dry_run=dry_run)
 
-    set_one_permission(deploy_dir, allow_write=allow_write, dry_run=dry_run)
+        for dirpath, dirnames, filenames in os.walk(deploy_dir):
+            for name in dirnames + filenames:
+                full_path = os.path.join(dirpath, name)
+                set_one_permission(full_path, allow_write=allow_write, dry_run=dry_run)
+    except OSError as exc:
+        logger.error(f"OSError while changing permissions: {exc}")
+        error_path = Path(exc.filename)
+        logger.error(
+            f"Please contact file owner {error_path.owner()} "
+            "or someone with sudo permissions if you'd like to change the permissions here."
+        )
+        if allow_write:
+            suggest = "ug+w"
+        else:
+            suggest = "a-w"
+        logger.error(
+            f"For example, you might try 'sudo chmod -R {suggest} {deploy_dir}' "
+            "from a server you have sudo access on."
+        )
+        return ReturnCode.EXCEPTION
 
-    for dirpath, dirnames, filenames in os.walk(deploy_dir):
-        for name in dirnames + filenames:
-            full_path = os.path.join(dirpath, name)
-            set_one_permission(full_path, allow_write=allow_write, dry_run=dry_run)
-
+    logger.info("Write protection change complete!")
     return ReturnCode.SUCCESS
 
 
