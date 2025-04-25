@@ -21,9 +21,9 @@ HUTCH=${EXP:0:3}
 #SIT_ENV_DIR="/sdf/group/lcls/ds/ana/sw"
 SIT_ENV_DIR="/cds/group/psdm/sw"
 
-LCLS2_HUTCHES="rix, tmo, ued, mfx"
 HUTCH=$(get_info --gethutch)
-if echo "$LCLS2_HUTCHES" | grep -iw "$HUTCH" > /dev/null; then
+#UED is still using the LCLS2 DAQ w procmgr
+if [[ "$(daqutils isdaqmgr)" = "true" || ${HUTCH} =~ 'ued' ]]; then
     echo "This is an LCLS-II experiment"
     
     SIT_ENV_DIR='/cds/group/pcds/dist/pds/'$HUTCH'/scripts/'
