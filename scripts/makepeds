@@ -200,7 +200,7 @@ else
     HUTCH=${EXP:0:3}
 fi
 
-LCLS2_HUTCHES="rix, tmo, txi, ued"
+LCLS2_HUTCHES="rix, tmo, txi, ued, mfx"
 if [ -v LCLS2 ]; then
     MAKEPEDSEXE=makepeds_psana2
 elif echo "$LCLS2_HUTCHES" | grep -iw "$HUTCH" > /dev/null; then
