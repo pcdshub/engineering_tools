@@ -188,6 +188,30 @@ optional arguments:<br/>
     </td>
 </tr>
 <tr>
+    <td>getAllEvrFWVersions</td>
+    <td>
+usage: getAllEvrFWVersions [-h]<br/>
+        <br/>
+Look through all active EVR IOCs in all IOC managers and attempt to query the FW version PV.
+        <br/>
+        <br/>
+    OPTIONS:<br/>
+    -h, --help   show the help message and exit
+    </td>
+</tr>
+<tr>
+    <td>getAllTprFWVersions</td>
+    <td>
+usage: getAllTprFWVersions [-h]<br/>
+        <br/>
+Look through all active TPR IOCs in all IOC managers and attempt to query the FW version PV.
+        <br/>
+        <br/>
+    OPTIONS:<br/>
+    -h, --help   show the help message and exit
+    </td>
+</tr>
+<tr>
     <td>get_curr_exp</td>
     <td>
 usage: get_curr_exp options<br/>
@@ -269,7 +293,7 @@ optional arguments:<br/>
     <td>
 usage: grep_ioc KEYWORD [hutch]<br/>
         hutch can be any of:<br/>
-    xpp, xcs, cxi, mfx, mec, xrt, aux, det, fee, hpl, icl, las, lfe, tst, thz, all<br/>
+    xpp, xcs, cxi, mfx, mec, xrt, aux, det, fee, hpl, icl, las, lfe, tst, thz, txi, all<br/>
     If no hutch is specified, all hutches will be searched
     </td>
 </tr>
@@ -821,6 +845,21 @@ usage: startami options<br/>
     OPTIONS:<br/>
     -s: stop the ami client current running on this machine<br/>
     -c: config file you'd like to use (i.e. cxi_test.cnf)
+    </td>
+</tr>
+
+<tr>>
+    <td>startami2</td>
+    <td>
+usage: startami2 <command><br/>
+        <br/>
+    AMI2 commands for LCLS-I<br/>
+    <br/>
+    COMMANDS:<br/>
+    status: print the status of AMI processes<br/>
+    restart: restart all AMI processes<br/>
+    stop: stop all AMI processes<br/>
+    client: start a second AMI client, connecting to the existing manager
     </td>
 </tr>
 

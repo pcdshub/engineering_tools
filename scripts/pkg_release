@@ -42,12 +42,12 @@ if ! ping -c 1 github.com &> /dev/null; then
 fi
 echo "Connection successful."
 TEST_OUTPUT=$(ssh -Tx git@github.com 2>&1) # Test ssh key with github and use ssh if appropriate, https otherwise
-if echo $TEST_OUTPUT | grep "successfully authenticated" > /dev/null; then
+if echo "$TEST_OUTPUT" | grep "successfully authenticated" > /dev/null; then
   echo "Attemping clone using SSH..."
   echo "URL = $SSH_URL"
   set -e  # Catch error in git clone
   git clone "${SSH_URL}" "${TEMP}"
-elif echo $TEST_OUTPUT | grep "Permission denied\|no kex alg" > /dev/null; then
+elif echo "$TEST_OUTPUT" | grep "Permission denied\|no kex alg" > /dev/null; then
   echo "Attemping clone using HTTPS..."
   echo "URL = $URL"
   set -e  # Catch error in git clone
@@ -61,7 +61,7 @@ echo "Checking out tag..."
 pushd "${TEMP}"
 git tag -l | grep "${TAG}" >/dev/null
 if [ "${?}" == "1" ]; then
-  echo "Error: could not find tag "${TAG}". Aborting."
+  echo "Error: could not find tag ${TAG}. Aborting."
   echo "Available tags:"
   git tag -l
   exit
@@ -69,8 +69,8 @@ fi
 set -e  # Catch error in git checkout
 git checkout "${TAG}"
 popd
-echo "Renaming "${TEMP}" directory to ${TAG}"
+echo "Renaming ${TEMP} directory to ${TAG}"
 mv "${TEMP}" "${TAG}"
 echo "Write-protecting directory..."
 chmod -R a-w "${TAG}"
-echo "Created $(readlink -f ${TAG})"
+echo "Created $(readlink -f "${TAG}")"

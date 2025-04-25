@@ -1,0 +1,20 @@
+#!/bin/bash
+usage()
+{
+cat << EOF
+usage: $0
+
+Print the TPR FW version for all TPR IOCs found in all IOC manager configurations.
+EOF
+}
+
+if [[ ($1 == "--help") || ($1 == "-h") ]]; then
+    usage
+    exit 0
+fi
+
+for i in $(grep_ioc tpr all | grep -v disable | awk '/id:/ { print $2 }' | grep tpr | cut -d\' -f2); do
+pv=$(grep FPGAVER /cds/data/iocData/"$i"/iocInfo/IOC.pvlist | cut -d, -f1)
+val="$(caget -0x "$pv")"
+echo "$i" : "$val"
+done

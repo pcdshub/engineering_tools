@@ -1,0 +1,733 @@
+#! /bin/bash
+
+# Datasets for testing
+# mfxdaq23,    run 005 : epix100
+# rixx1017523, run 388 : archon
+# uedc00104,   run 021 : epixquad
+
+usage()
+{
+cat << EOF
+usage: $0 options
+
+Make a pedestal file for offline use
+
+OPTIONS:
+        -r|--run         
+               runnumber for pedestal
+        -e|--experiment <expname> 
+               in case you do not want pedestals for the ongoing experiment
+        -q|--queue <queue>
+               queue for batch submisson
+        -O|--opal         
+               make pedestals for Opals (default only cspad/EPIX detectors)
+        -Z|--zyla         
+               make pedestals for Zyla (default only cspad/EPIX detectors)
+        -R|--Rayonix
+               make pedestals for Rayonix (please note that this is not the correct procedure for this detector)
+        -U|--uxi
+               make pedestals for Uxi detectors
+        -A|--alvium         
+               make pedestals for Alvium (default only cspad/EPIX detectors)
+        --reservation <reservation>
+               reservation for batch submisson
+        -v|--validity_start <val_run>
+               validity range (set to <val_run>-end)
+        -N|--nevents <#>  
+                use this number of events (default 1000). Needed when using -c as original events are counted
+        -c|--eventcode <evtcode x> 
+                use events with eventcode <x> set
+        -n|--noise_max <#> 
+                if you have created a noise file, then write pixel mask file for pixels with noise above #sigmas
+        -C|--noise_min <#> 
+                if noise filecreated, write pixel mask file for pixels with noise below xxx (currently integer only)
+        -m|--adu_min <#> 
+                write pixel mask file for pixels with pedestal below xxx (currently integer only)
+        -x|--adu_max <#>  
+                write pixel mask file for pixels with pedestal above xxx )currently integer only)
+        -d|--calibdir
+                give path for alternative calibdir
+        --gui
+                start calibman. -r 0: show all darks, -r n: show runs (n-25) - 25
+        --nstage1
+                events for the first stage of processing
+EOF
+}
+
+cancel_jobs_ctrl_c()
+{
+    echo "Canceling all SLURM Jobs"
+    echo "------------------------"
+    for JOBID in "${JOBIDS[@]}"; do
+        echo "Canceling ${JOBID}"
+        scancel "${JOBID}"
+    done
+    echo "Exiting makepeds"
+    exit 130
+}
+
+trap cancel_jobs_ctrl_c SIGINT
+
+check_for_submit_error()
+{
+    if [[ $? != 0 ]]; then
+        echo "Submission failed. Does the user have permission to submit with experiment account?"
+        exit 1
+    fi
+}
+
+check_running_jobs()
+{
+    declare -A SLURM_STAT_MSG=( ["R"]="is RUNNING."
+                                ["PD"]="is PENDING."
+                                ["CG"]="is COMPLETING."
+                                ["CD"]="has COMPLETED."
+                                ["PR"]="was PREEMPTED!"
+                                ["F"]="has FAILED!"
+                                ["S"]="was SUSPENDED!"
+                                ["ST"]="was STOPPED!" )
+    NJOBS=0
+    REMJOBIDS=()
+    for JOBID in "${JOBIDS[@]}"; do
+        if  squeue | grep -q "$JOBID"; then
+            JOBSTATUS=$(squeue | grep "${JOBID}" | awk '{print $5}')
+            if [ "${SLURM_STAT_MSG[$JOBSTATUS]}" ]; then
+                echo "${JOBID} ${SLURM_STAT_MSG[$JOBSTATUS]}"
+            else
+                echo "${JOBID} has unknown status ${JOBSTATUS}!"
+            fi
+            REMJOBIDS+=( "$JOBID" )
+            NJOBS=$((NJOBS+1))
+        fi
+    done
+    if (( NJOBS == 0 )); then
+        echo Nothing running
+        JOBIDS=''
+    else
+        JOBIDS=("${REMJOBIDS[@]}")
+        echo "$NJOBS" jobs are still running "${JOBIDS[@]}"
+    fi
+    return $NJOBS
+}
+
+# Arg: DETECTOR class.  This could be a comma-separated list, but we're 
+# matching it in the config file as a string.
+get_config()
+{
+    awk 'BEGIN{n=0;}/'"$1"' \{/{n=1;next;}/\}/{n=0;next;}{if(n)print;}' <"$CFGFILE" >/tmp/script.$$
+    source /tmp/script.$$
+    rm /tmp/script.$$
+    #overwrite if argument is passed
+    if [ "$MYNOISESIGMIN" -ne -1 ]; then
+        NOISESIGMIN=$MYNOISESIGMIN
+    fi
+    if [ "$MYNOISESIGMAX" -ne -1 ]; then
+        NOISESIGMAX=$MYNOISESIGMAX
+    fi
+    if [ "$MYADUMIN" -ne -1 ]; then
+        ADUMIN=$MYADUMIN
+    fi
+    if [ "$MYADUMAX" -ne -1 ]; then
+        ADUMAX=$MYADUMAX
+    fi
+}
+
+
+POSITIONAL=()
+while [[ $# -gt 0 ]]
+do
+    key="$1"
+
+    case $key in
+        -h|--help)
+            usage
+            exit
+            ;;
+        -A|--alvium)
+            WANT_ALVIUM=1
+            shift
+            ;;
+        -Z|--zyla)
+            WANT_ZYLA=1
+            shift
+            ;;
+        -O|--opal)
+            WANT_OPAL=1
+            shift
+            ;;
+        -R|--rayonix)
+            WANT_RAYONIX=1
+            shift
+            ;;
+        -U|--uxi)
+            WANT_UXI=1
+            shift
+            ;;
+        -r|--run)
+            RUN="$2"
+            POSITIONAL+=("$1" "$2")
+            shift
+            shift
+            ;;
+        -e|--experiment)
+            EXP="$2"
+            POSITIONAL+=("$1" "$2")
+            shift
+            shift
+            ;;
+        -l|--local)
+            RUNLOCAL=1
+            shift
+            ;;
+        -N|--nevents)
+            NUMEVT=("$2")
+            shift
+            shift
+            ;;
+        -q|--queue)
+            QUEUE=("$2")
+            shift
+            shift
+            ;;
+        --reservation)
+            RESERVATION=("$2")
+            shift
+            shift
+            ;;
+        --gui)
+            GUI=1
+            shift
+            ;;
+        -v|--validity_start)
+            VALSTR=("$2")
+            shift
+            shift
+            ;;
+        -d|--calibdir)
+            CALIBDIR=("$2")
+            shift
+            shift
+            ;;
+        -t|--test)
+            DEPLOY=0
+            shift
+            ;;
+        -n|--noise_max)
+            MYNOISESIGMAX=("$2")
+            shift
+            shift
+            ;;
+        -C|--noise_min)
+            MYNOISESIGMIN=("$2")
+            shift
+            shift
+            ;;
+        -m|--adu_min)
+            MYADUMIN=("$2")
+            shift
+            shift
+            ;;
+        -x|--adu_max)
+            MYADUMAX=("$2")
+            shift
+            shift
+            ;;
+	--nstage1)
+            NRECS1=("$2")
+            shift
+            shift
+            ;;
+        *)
+            POSITIONAL+=("$1")
+            shift
+            ;;
+    esac
+done
+set -- "${POSITIONAL[@]}"
+
+#check for a valid kerberos token, otherwise the deploy step will not work!
+if [ `klist | wc -l` -eq 0 ]; then
+    exit 4
+fi
+
+T="$(date +%s%N)"
+echo "XXXXXXXXXXXXXXXXX START MAKEPEDS at $(date +'%T') on $HOSTNAME XXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+
+
+
+
+RUN=${RUN:=0}
+EXP=${EXP:='xxx'}
+NUMEVT=${NUMEVT:=1000}
+GUI=${GUI:=0}
+RUNLOCAL=${RUNLOCAL:=0}
+DEPLOY=${DEPLOY:=1}
+MYNOISESIGMIN=${MYNOISESIGMIN:=-1}
+MYNOISESIGMAX=${MYNOISESIGMAX:=-1}
+MYADUMIN=${MYADUMIN:=-1}
+MYADUMAX=${MYADUMAX:=-1}
+#one setting to run each process on an own server (currently faster) or not (if we had to use reservations)
+
+if [ $RUN == 0 ]; then
+    printf "Please enter a run number HERE: \n"; read -r RUN
+fi
+
+PCDSDIR='/sdf/group/lcls/ds/tools/'
+SIT_ENV_DIR="/sdf/group/lcls/ds/ana/sw"
+
+if [ $EXP == 'xxx' ]; then
+    echo 'no experiment passed!!!'
+    HUTCH=$($PCDSDIR/engineering_tools/latest-released/scripts/get_info --gethutch)
+    echo HUTCH "$HUTCH"
+    if [[ "$HUTCH" != 'unknown_hutch' ]]; then
+        EXP=$($PCDSDIR/engineering_tools/latest-released/scripts/get_info --exp --hutch "$HUTCH")
+    fi
+else
+    HUTCH=${EXP:0:3}
+fi
+
+CFGFILE=$PCDSDIR/pyps/config/$HUTCH/makepeds.cfg
+
+if [[ $EXP == 'xxx' ]]; then
+    printf "Please enter an experiment name HERE: \n"; read -r EXP
+fi
+
+# set the umask so all the files create are group writeable
+#umask 002
+echo "This is a LCLS-II experiment"    
+SIT_ENV_DIR=$SIT_ENV_DIR'/conda2/'
+source $SIT_ENV_DIR/manage/bin/psconda.sh
+
+#if you don't pass the queue, it'll run interactively 
+if [ -v QUEUE ]; then
+    USER=$(whoami)
+    SBATCH_ARGS="-p $QUEUE --account lcls:$EXP"
+    if sacctmgr show asso account=lcls:${EXP}@${QUEUE} -n | grep -q ${USER} ; then
+	if [ -v RESERVATION ]; then
+	    if scontrol show rese -o "$RESERVATION" | grep -q "$EXP"; then
+		SBATCH_ARGS="$SBATCH_ARGS --reservation $RESERVATION"
+	    else
+		echo Experiment "${EXP}" is not not in the reservation "${RESERVATION}", will submit without
+	    fi
+	fi
+    else
+	echo "${USER}" is not part of account lcls:${EXP}@${QUEUE}, run interactively
+	RUNLOCAL=1
+    fi
+else
+    RUNLOCAL=1
+fi
+
+###########
+# find xtc directory
+# look for xtc w/o in progress if not using live mode. TOBEIMPLEMENTED
+###########
+RUNSTR=$(printf '%04d' $RUN)
+RUNSTR=$EXP-r$RUNSTR*.xtc2
+XTCDIR=/sdf/data/lcls/ds/"$HUTCH"/"$EXP"/xtc
+
+###########
+# setup/create calibdir (LCLS2 nominally uses a database)
+###########
+if [[ ! -v CALIBDIR ]]; then
+    RESDIR=/sdf/data/lcls/ds/${HUTCH}/$EXP/results
+    CALIBDIR=$RESDIR/calib_view
+    if [ ! -d "$CALIBDIR" ]; then
+        if [ -d "$RESDIR" ]; then
+            mkdir -p "$CALIBDIR"
+	fi
+    fi
+fi
+
+
+# If inprogress files use FFB location
+if compgen -G "$XTCDIR/$RUNSTR.inprogress" > /dev/null; then
+    XTCDIR=/sdf/data/lcls/drpsrcf/ffb/"$HUTCH"/"$EXP"/xtc
+# If no corresponding xtc files use FFB location
+elif ! compgen -G "$XTCDIR/$RUNSTR" > /dev/null; then
+    XTCDIR=/sdf/data/lcls/drpsrcf/ffb/"$HUTCH"/"$EXP"/xtc
+fi
+echo "Use XTC files from $XTCDIR."
+
+###########
+# setup work directory - always!
+###########
+WORKDIR=$CALIBDIR/pedestal_workdir
+if [ ! -d "$WORKDIR" ]; then
+    if [ -d "$CALIBDIR" ]; then
+        mkdir -p "$WORKDIR"
+        if [ ! -d "$WORKDIR" ]; then
+            echo 'Cannot create typical directory to store calib logfiles & results is not writeable, will attempt to work from /tmp, but things may fail'
+            WORKDIR='/tmp'
+        fi
+    else
+        echo "experiments directory $DIR does not exist, quit"
+        exit 2
+    fi
+fi
+if [ ! -w "$WORKDIR" ]; then
+    echo 'Typical directory to store calib logfiles & results is not writeable, will attempt to work from /tmp, but things may fail'
+    WORKDIR='/tmp'
+fi 
+cd "$WORKDIR" || exit
+echo We will work from directory "$WORKDIR"
+
+###########
+# few generic parameters
+###########
+if [ "$GUI" == 1 ]; then
+    echo 'now calling calibman (GUI)'
+    calibman
+    exit
+fi
+
+CREATE_TIME=$(date '+%m_%d_%Y_%H:%M:%S')
+printf -v RUNSTR "%04g" "$RUN"
+
+echo Check for data files:
+
+MINWAIT=0
+HAVEFILES=0
+while [[ $MINWAIT -lt 5 ]]; do
+    NFILES=$(ls -ltr "$XTCDIR"/*r"$RUNSTR"*s*xtc* | wc -l)
+    echo "$NFILES"
+    if [ "$NFILES" -eq 0 ]; then
+	echo 'Files are not present yet, wait a minute'
+	sleep 60
+	MINWAIT=$((MINWAIT+1))
+    else 
+	HAVEFILES=1
+	MINWAIT=6
+    fi
+done
+if [[ $HAVEFILES == 0 ]]; then
+   echo 'After 5 minutes, files were not present: quit! '
+   exit 3
+fi
+	
+ls -ltr "$XTCDIR"/*r"$RUNSTR"*s*xtc*
+
+echo Check detectors: 
+
+detnames -r exp="${EXP}",run="${RUN}",dir="${XTCDIR}" > /tmp/detnames_"$EXP"_"$CREATE_TIME"
+#running local
+echo "-----------------------"
+echo 'XTC files contain:'
+cat /tmp/detnames_"$EXP"_"$CREATE_TIME"
+echo "-----------------------"
+
+####
+# epix100 in LCLS2 related stuff. 
+####
+#DEBUG test mfxdaq23 run 5
+#check if epix100 detectors are present
+if [ "$DEPLOY" == 1 ]; then
+    ARG=$ARG' -D '
+fi
+
+HAVE_EPIX100=$(grep -c epix100 /tmp/detnames_"$EXP"_"$CREATE_TIME")
+if [[ $HAVE_EPIX100 -ge 1 ]]; then
+    DETNAMES=$(grep epix100 /tmp/detnames_"$EXP"_"$CREATE_TIME" | grep raw | awk  'BEGIN { FS = "|"}; {print $1}' | paste -d " " -s)
+    DETTYPES=$(grep epix100 /tmp/detnames_"$EXP"_"$CREATE_TIME" | grep raw | awk  'BEGIN { FS = "|"}; {print $2}' | paste -d " " -s)
+    for i in "${!DETNAMES[@]}"; do
+        LOCARG=$ARG' -o '$CALIBDIR 
+        if [[ -v VALSTR ]]; then
+            LOCARG=$LOCARG' -t '$VALSTR
+        fi
+        if [[ -v NRECS1 ]]; then
+            LOCARG=$LOCARG' --nrecs1 '$NRECS1
+        fi
+        MYDET="${DETNAMES[i]// /}"
+	MYDETTYPE="${DETTYPES[i]// /}"
+        if [ "$MYDETTYPE" = 'epix100' ]; then
+            echo 'now calibrate...'
+            CMD="det_dark_proc -d $MYDET -k exp=$EXP,run=$RUN,dir=$XTCDIR -L INFO $LOCARG"
+            echo "$CMD"
+            $CMD
+        fi
+    done
+fi
+
+#DEBUG rixx1017523, run 388 : archon
+#reconsider doing all det_dark_proc detectors together later
+#not sure this is supported + different numbers of skip events
+HAVE_ARCHON=$(grep -c archon /tmp/detnames_"$EXP"_"$CREATE_TIME")
+if [[ $HAVE_ARCHON -ge 1 ]]; then
+    DETNAMES=$(grep archon /tmp/detnames_"$EXP"_"$CREATE_TIME" | grep raw | awk  'BEGIN { FS = "|"}; {print $1}' | paste -d " " -s)
+    DETTYPES=$(grep archon /tmp/detnames_"$EXP"_"$CREATE_TIME" | grep raw | awk  'BEGIN { FS = "|"}; {print $2}' | paste -d " " -s)
+    for i in "${!DETNAMES[@]}"; do
+	LOCARG=$ARG' -o '$CALIBDIR
+        if [[ -v VALSTR ]]; then
+            LOCARG=$LOCARG' -t '$VALSTR
+        fi
+        if [[ -v NRECS1 ]]; then
+            LOCARG=$LOCARG' --nrecs1 '$NRECS1
+        fi
+
+        MYDET="${DETNAMES[i]// /}"
+	MYDETTYPE="${DETTYPES[i]// /}"
+        if [ "$MYDETTYPE" = 'archon' ]; then
+            echo 'now calibrate...'
+            CMD="det_dark_proc -d $MYDET -k exp=$EXP,run=$RUN,dir=$XTCDIR -L INFO $LOCARG"
+            echo "$CMD"
+            $CMD
+        fi
+    done
+fi
+
+####
+# epixquad for UED
+####
+HAVE_EPIX10K=$(grep -c epix10ka /tmp/detnames_"$EXP"_"$CREATE_TIME")
+if [[ $HAVE_EPIX10K -ge 1 ]]; then
+    DETNAMES=$(grep epix10ka /tmp/detnames_"$EXP"_"$CREATE_TIME" | grep raw | awk  'BEGIN { FS = "|"}; {print $1}' | paste -d " " -s)
+    DETTYPES=$(grep epix10ka /tmp/detnames_"$EXP"_"$CREATE_TIME" | grep raw | awk  'BEGIN { FS = "|"}; {print $2}' | paste -d " " -s)
+    for i in "${!DETNAMES[@]}"; do
+        LOCARG=' -o '$CALIBDIR
+        EPIX10K="${DETNAMES[i]// /}"
+	MYDETTYPE="${DETTYPES[i]// /}"
+        if [ "$MYDETTYPE" = 'epix10ka' ]; then
+            echo "Epix10ka name for "$EXP" is: "$EPIX10K
+	    NSEG=99
+            if [[ $EPIX10K =~ "2M" ]]; then
+	        NSEG=16; 
+            elif [[ $EPIX10K =~ "uad" ]]; then
+	        NSEG=4; 
+	    fi
+            for calibcycle in {0..4}; do
+                nextcycle=$(( calibcycle + 1 ))
+                CMD="epix10ka_pedestals_calibration $LOCARG -d $EPIX10K -k exp=$EXP,run=$RUN,dir=$XTCDIR --stepnum $calibcycle --stepmax $nextcycle -L INFO"
+                echo "---------------EPIX10K PEDESTALS FOR CYCLE $calibcycle --------------------"
+                if [[ $RUNLOCAL != 1 ]]; then
+                    for ((segment=0; segment<$NSEG; segment++)); do
+		        if [ $NSEG -lt 99 ]; then
+		            CMDS=$CMD' --idx '$segment
+		        else
+			    CMDS=$CMD
+			fi
+                        tmpScript=$(mktemp -p $WORKDIR epix10ka_pedestals_tmpXXXXX.sh)
+                        #trap "rm -f $tmpScript" EXIT
+                        chmod u+x "$tmpScript"
+                        printf '#!/bin/bash\n' > "$tmpScript"
+			printf 'source %s/manage/bin/psconda.sh\n' "${SIT_ENV_DIR}" >> "$tmpScript"
+                        printf '%s\n' "${CMDS}" >> "$tmpScript"
+                        ep10kaCmd="sbatch ${SBATCH_ARGS} --mem 8GB --cpus-per-task 5 -o $WORKDIR/${EPIX10K}_${EXP}_Run${RUN}_cycle${calibcycle}_%J.out $tmpScript"
+
+                        echo "run in queue: $ep10kaCmd"
+                        SUBMISSION=$($ep10kaCmd)
+                        check_for_submit_error
+                        echo "$SUBMISSION"
+                        THISJOBID=$(echo "$SUBMISSION" | awk '{print $4}')
+                        JOBIDS+=( "$THISJOBID" )
+                        NJOBS=$((NJOBS+1))
+			if [ "$NSEG" -eq 99 ]; then
+			    break
+	                fi
+		    done
+                else            
+                    echo "$CMD"
+                    $CMD
+                fi
+            done
+            ALLJOBIDS=("${JOBIDS[@]}")
+        fi
+
+        NFAILEDJOBS=0
+        if [[ $RUNLOCAL != 1 ]]; then
+            echo 'Wait for 1/2 minute before checking jobs:'
+            sleep 30
+            CALIBTIME=30
+            echo Running "$NJOBS" jobs are PIDS: "${JOBIDS[@]}"
+            until check_running_jobs; do
+                echo $CALIBTIME' sec have elapsed, checking again in 10 sec'
+		CALIBTIME=$((CALIBTIME+10))
+                sleep 10
+            done
+            echo 'All jobs finished'
+            # and now check that none of the jobs have existed with an error code:
+            # currently, the epix10k jobs print DONE at the end. 
+            # Second check necessary as jobs can fail without printing an exit code to the logfile
+            for JOBID in "${ALLJOBIDS[@]}"; do
+                echo "Checking job $JOBID"
+                if grep -q 'exit code' "$WORKDIR"/*"$JOBID".out; then
+                    NFAILEDJOBS=$((NFAILEDJOBS+1))
+                elif ! grep -q 'DONE' "$WORKDIR"/*"$JOBID".out; then
+                    NFAILEDJOBS=$((NFAILEDJOBS+1))
+                fi
+            done
+
+        fi
+
+        if [ "$DEPLOY" == 1 ]; then
+	    echo "---------------EPIX10K PEDESTALS CALCULATED NOW DEPLOY     --------------------"
+            if [ $NFAILEDJOBS -gt 0 ]; then
+                read -r -p "$NFAILEDJOBS of the calibration tasks failed, do you want to continue anyways (y/n)?"
+                if [ "$REPLY" != "y" ];then
+                    exit 1
+                fi
+            fi
+
+            for i in "${!DETNAMES[@]}"; do
+                EPIX10K="${DETNAMES[i]// /}"
+                #for EPIX10K in $DETNAMES; do
+                CMD="epix10ka_deploy_constants $LOCARG -D -d $EPIX10K -k exp=$EXP,run=$RUN,dir=$XTCDIR -L INFO"
+                if [ -v "$VALSTR" ]; then
+                    echo 'setting validity....'"$VALSTR"
+                    CMD=$CMD' -t '$VALSTR
+                fi
+		echo "$CMD"
+		if ! $CMD; then
+		    echo 'deployment failed'
+		    return 1
+		fi
+            done
+	    
+            if [[ $RUNLOCAL != 1 ]]; then
+                echo 'Print Information about batch jobs'
+                JOBIDSTR=''
+                for JOBID in "${ALLJOBIDS[@]}"; do
+                    if [[ $JOBIDSTR != '' ]]; then 
+			JOBIDSTR=$JOBIDSTR','
+		    fi
+                JOBIDSTR=$JOBIDSTR$JOBID
+                done
+                sacct -j "$JOBIDSTR" --format=JobID,AveCPU,AveVMSize,CPUTime,Start,End,Elapsed
+            fi
+	else
+	    echo "---------------EPIX10K PEDESTALS CALCULATED     --------------------"
+        fi	
+    done
+    echo "-------------------- STOP EPIX10K PEDESTALS at $(date +'%T') ----------------------------"
+fi
+
+
+####
+# jungfrau for MFX
+####
+HAVE_JUNGFRAU=$(grep -c jungfrau /tmp/detnames_"$EXP"_"$CREATE_TIME")
+if [[ $HAVE_JUNGFRAU -ge 1 ]]; then
+    DETNAMES=$(grep jungfrau /tmp/detnames_"$EXP"_"$CREATE_TIME" | grep raw | awk  'BEGIN { FS = "|"}; {print $1}' | paste -d " " -s)
+    DETTYPES=$(grep jungfrau /tmp/detnames_"$EXP"_"$CREATE_TIME" | grep raw | awk  'BEGIN { FS = "|"}; {print $2}' | paste -d " " -s)
+    for i in "${!DETNAMES[@]}"; do
+        LOCARG=' -o '$CALIBDIR
+        JUNGFRAU="${DETNAMES[i]// /}"
+	MYDETTYPE="${DETTYPES[i]// /}"
+        if [ "$MYDETTYPE" = 'jungfrau' ]; then
+            echo "Jungfrau name for "$EXP" is: "$JUNGFRAU
+	    NSEG=99
+            if [[ $JUNGFRAU =~ "16M" ]]; then
+	        NSEG=32; 
+	    fi
+            for calibcycle in {0..2}; do
+                nextcycle=$(( calibcycle + 1 ))
+                CMD="jungfrau_dark_proc $LOCARG -d $JUNGFRAU -k exp=$EXP,run=$RUN,dir=$XTCDIR --stepnum $calibcycle --stepmax $nextcycle -L INFO"
+                echo "---------------JUNGFRAU PEDESTALS FOR CYCLE $calibcycle --------------------"
+                if [[ $RUNLOCAL != 1 ]]; then
+                    for ((segment=0; segment<$NSEG; segment++)); do
+		        if [ $NSEG -lt 99 ]; then
+		            CMDS=$CMD' --idx '$segment
+		        else
+			    CMDS=$CMD
+			fi
+                        tmpScript=$(mktemp -p $WORKDIR jungfrau_pedestals_tmpXXXXX.sh)
+                        #trap "rm -f $tmpScript" EXIT
+                        chmod u+x "$tmpScript"
+                        printf '#!/bin/bash\n' > "$tmpScript"
+                        printf 'source %s/manage/bin/psconda.sh\n' "${SIT_ENV_DIR}" >> "$tmpScript"
+                        printf '%s\n' "${CMDS}" >> "$tmpScript"
+                        jfCmd="sbatch ${SBATCH_ARGS} --mem 8GB --cpus-per-task 5 -o $WORKDIR/${JUNGFRAU}_${EXP}_Run${RUN}_cycle${calibcycle}_%J.out $tmpScript"
+
+                        echo "run in queue: $jfCmd"
+                        SUBMISSION=$($jfCmd)
+                        check_for_submit_error
+                        echo "$SUBMISSION"
+                        THISJOBID=$(echo "$SUBMISSION" | awk '{print $4}')
+                        JOBIDS+=( "$THISJOBID" )
+                        NJOBS=$((NJOBS+1))
+			if [ "$NSEG" -eq 99 ]; then
+			    break
+	                fi
+		    done
+                else            
+                    echo "$CMD"
+                    $CMD
+                fi
+            done
+            ALLJOBIDS=("${JOBIDS[@]}")
+        fi
+
+        NFAILEDJOBS=0
+        if [[ $RUNLOCAL != 1 ]]; then
+            echo 'Wait for 1/2 minute before checking jobs:'
+            sleep 30
+            CALIBTIME=30
+            echo Running "$NJOBS" jobs are PIDS: "${JOBIDS[@]}"
+            until check_running_jobs; do
+                echo $CALIBTIME' sec have elapsed, checking again in 10 sec'
+		CALIBTIME=$((CALIBTIME+10))
+                sleep 10
+            done
+            echo 'All jobs finished'
+            # and now check that none of the jobs have existed with an error code:
+            # currently, the jungfrau jobs print DONE at the end. 
+            # Second check necessary as jobs can fail without printing an exit code to the logfile
+            for JOBID in "${ALLJOBIDS[@]}"; do
+                echo "Checking job $JOBID"
+                if grep -q 'exit code' "$WORKDIR"/*"$JOBID".out; then
+                    NFAILEDJOBS=$((NFAILEDJOBS+1))
+                elif ! grep -q 'DONE' "$WORKDIR"/*"$JOBID".out; then
+                    NFAILEDJOBS=$((NFAILEDJOBS+1))
+                fi
+            done
+
+        fi
+
+        if [ "$DEPLOY" == 1 ]; then
+	    echo "---------------JUNGFRAU PEDESTALS CALCULATED NOW DEPLOY     --------------------"
+            if [ $NFAILEDJOBS -gt 0 ]; then
+                read -r -p "$NFAILEDJOBS of the calibration tasks failed, do you want to continue anyways (y/n)?"
+                if [ "$REPLY" != "y" ];then
+                    exit 1
+                fi
+            fi
+
+            for i in "${!DETNAMES[@]}"; do
+                JUNGFRAU="${DETNAMES[i]// /}"
+                #for JUNGFRAU in $DETNAMES; do
+                CMD="jungfrau_deploy_constants -D -d $JUNGFRAU -k exp=$EXP,run=$RUN,dir=$XTCDIR -L INFO -o $CALIBDIR -p psrnx -N1"
+                if [ -v "$VALSTR" ]; then
+                    echo 'setting validity....'"$VALSTR"
+                    CMD=$CMD' -t '$VALSTR
+                fi
+		echo "$CMD"
+		if ! $CMD; then
+		    echo 'deployment failed'
+		    return 1
+		fi
+            done
+	    
+            if [[ $RUNLOCAL != 1 ]]; then
+                echo 'Print Information about batch jobs'
+                JOBIDSTR=''
+                for JOBID in "${ALLJOBIDS[@]}"; do
+                    if [[ $JOBIDSTR != '' ]]; then 
+			JOBIDSTR=$JOBIDSTR','
+		    fi
+                JOBIDSTR=$JOBIDSTR$JOBID
+                done
+                sacct -j "$JOBIDSTR" --format=JobID,AveCPU,AveVMSize,CPUTime,Start,End,Elapsed
+            fi
+	else
+	    echo "---------------JUNGFRAU PEDESTALS CALCULATED     --------------------"
+        fi	
+    done
+    echo "-------------------- STOP JUNGFRAU PEDESTALS at $(date +'%T') ----------------------------"
+fi
+
+#rm /tmp/detnames_"$EXP"_"$CREATE_TIME"
+T2="$(($(date +%s%N)-T))"
+S="$((T2/1000000000))"
+M="$((T2/1000000))"
+echo "xxxxxxxxxxxxxxxxx END MAKEPEDS at $(date +'%T') after  $S.$M XXXXXXXXXXXXXXXXXXXXXXX"
+
+
