@@ -26,9 +26,9 @@ grab()
 	exit
     fi
     LogBookGrabber_qt \
-	-i $HUTCH \
-	-e $1 \
-	-u $USERNAME \
+	-i "$HUTCH" \
+	-e "$1" \
+	-u "$USERNAME" \
 	-p pcds \
 	-w https://pswww.slac.stanford.edu/ws-auth/lgbk
     exit
@@ -38,21 +38,21 @@ grab()
 grab_script()
 {
 	LogBookGrabber_qt \
-    -i $HUTCH \
-    -e $EXPNAME \
-    -u $USERNAME \
+    -i "$HUTCH" \
+    -e "$EXPNAME" \
+    -u "$USERNAME" \
     -p pcds \
     -w https://pswww.slac.stanford.edu/ws-auth/lgbk \
-    -c $SCRIPT
+    -c "$SCRIPT"
     exit 1
 }
 
 grab_user()
 {
     LogBookGrabber_qt \
-	-i $HUTCH \
-	-e $1 \
-	-u $USERNAME \
+	-i "$HUTCH" \
+	-e "$1" \
+	-u "$USERNAME" \
 	-w https://pswww.slac.stanford.edu/ws-kerb/lgbk
     exit
 }
@@ -67,7 +67,7 @@ grab_instrument()
     LogBookGrabber_qt \
 	-i OPS \
 	-e "$EXPNAME" \
-	-u $USERNAME \
+	-u "$USERNAME" \
 	-p pcds \
 	-w https://pswww.slac.stanford.edu/ws-auth/lgbk
     exit
@@ -79,7 +79,7 @@ grab_controls()
     LogBookGrabber_qt \
 	-i OPS \
 	-e "$EXPNAME" \
-	-u $USERNAME \
+	-u "$USERNAME" \
 	-p pcds \
 	-w https://pswww.slac.stanford.edu/ws-auth/lgbk
     exit
@@ -92,9 +92,9 @@ fi
 
 ##who am I doing this? Why don't just use the actual username?
 #USERNAME=`get_info --gethutch`opr
-USERNAME=`whoami`
-EXPNAME=`get_curr_exp`
-HUTCH=`get_info --gethutch`
+USERNAME=$(whoami)
+EXPNAME=$(get_curr_exp)
+HUTCH=$(get_info --gethutch)
 
 while getopts "e:u:s:xct" OPTION
 do
@@ -105,7 +105,7 @@ do
 	    ;;
 	u)
 	    USERNAME=$OPTARG
-	    grab_user $EXPNAME
+	    grab_user "$EXPNAME"
 	    ;;
 	s)
 	    SCRIPT=$OPTARG
@@ -125,7 +125,7 @@ do
 done
 
 if [[ $USERNAME == *'opr'* ]]; then
-    grab $EXPNAME
+    grab "$EXPNAME"
 else
-    grab_user $EXPNAME
+    grab_user "$EXPNAME"
 fi

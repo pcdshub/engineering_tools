@@ -24,7 +24,7 @@ elif [ ! -e "${1}" ]; then
 fi
 
 PYDEV_DIR=~/pydev
-full_path="$(readlink -f $1)"
+full_path="$(readlink -f "$1")"
 if [ "${2}" == "module" ]; then
   link="${PYDEV_DIR}"
 elif [ "${2}" == "bin" ]; then

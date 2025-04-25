@@ -14,7 +14,7 @@ if [[ ($1 == "--help") || ($1 == "-h") ]]; then
 	exit 0
 fi
 
-PREFIX=`echo $1 | cut -d . -f 1`
+PREFIX=$(echo "$1" | cut -d . -f 1)
 
 if [ -z "${PREFIX}" ]; then
     usage;
@@ -24,9 +24,7 @@ fi
 # Use the latest tagged environment
 source /reg/g/pcds/pyps/conda/pcds_conda
 
-caget "${PREFIX}:PLC:nErrorId_RBV" > /dev/null 2>&1
-
-if [ $? -eq 0 ]; then
+if caget "${PREFIX}:PLC:nErrorId_RBV" &> /dev/null; then
     echo "* This looks like a Beckhoff axis."
     DEVICE_CLASS="pcdsdevices.epics_motor.BeckhoffAxis"
     NAME="${PREFIX}"  # maybe we can do better?
@@ -36,7 +34,8 @@ else
     NAME="${PREFIX}"
 fi
 
+# shellcheck disable=SC2089
 TYPHOS_ARGS="${DEVICE_CLASS}[{'prefix':'${PREFIX}','name':'${NAME}'}]"
 echo "* Launching typhos with arguments: ${TYPHOS_ARGS}"
 echo "* This may take a bit, please wait..."
-typhos ${TYPHOS_ARGS} > /dev/null 2>&1 &
+typhos "${TYPHOS_ARGS}" &> /dev/null &

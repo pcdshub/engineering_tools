@@ -38,7 +38,7 @@ else
     export IOC_DATA=/reg/d/iocData
     export IOC_COMMON=/reg/d/iocCommon
 fi
-PSPKG_OS=$(${PSPKG_ROOT}/etc/pspkg_os.sh)
+PSPKG_OS=$("${PSPKG_ROOT}"/etc/pspkg_os.sh)
 export PSPKG_OS
 if [ "$PSPKG_OS" == rhel5 ]; then
     echo "IocManager 2.0.0 and higher does not run on RHEL5!"
@@ -46,7 +46,7 @@ if [ "$PSPKG_OS" == rhel5 ]; then
 fi
 export QT_XKB_CONFIG_ROOT=/usr/share/X11/xkb
 export PSPKG_RELEASE=controls-0.1.9
-source $PSPKG_ROOT/etc/set_env.sh
+source "$PSPKG_ROOT"/etc/set_env.sh
 ulimit -c unlimited
 
 /reg/g/pcds/pyps/config/"${HUTCH,,}"/iocmanager/IocManager.py --hutch "${HUTCH,,}" > /dev/null &

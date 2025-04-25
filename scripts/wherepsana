@@ -11,7 +11,9 @@ OPTIONS:
 -h Show usage
 -c Pick a specific DAQ config file rather than automatically selecting
 current hutch's file
--d Also show information about dss node mapping
+-d Also show information about dss node mapping for psana
+-a also show nodes for ami1/ami2
+-e show detailed information for psana and ami1/ami2
 EOF
 }
 
@@ -33,7 +35,7 @@ if [ -z $FOUNDHUTCH ]; then
 fi
 NOTRUNNING='Not running'
 
-while getopts "c:d" OPTION
+while getopts "c:dae" OPTION
 do
     case "$OPTION" in
 	c)
@@ -41,6 +43,13 @@ do
 	    ;;
 	d)
 	    DETAIL="1"
+	    ;;
+	a)
+	    AMI="1"
+	    ;;
+	e)
+	    DETAIL="1"
+            AMI="1"
 	    ;;
 	?)
 	    usage
@@ -73,6 +82,8 @@ fi
 /reg/g/pcds/dist/pds/$HUTCH/current/tools/procmgr/procmgr status /reg/g/pcds/dist/pds/$HUTCH/scripts/$CONFIG > /tmp/procServStatus.$$
 
 PSANA_NODES=(`grep monreqsrvpsana /tmp/procServStatus.$$ | awk {'print $1'}`)
+AMI2_NODES=(`grep monreqsrvami2_ /tmp/procServStatus.$$ | awk {'print $1'}`)
+AMI1_NODES=(`grep monreqsrvami1_ /tmp/procServStatus.$$ | awk {'print $1'}`)
 
 if [[ -z $DETAIL ]]; then
     NODESTR=''
@@ -101,6 +112,58 @@ else
 	echo ""
     done
 
+fi
+
+if [[ $AMI ]]; then
+    if [[ -z $DETAIL ]]; then
+        NODESTR='ami1: '
+        for ((idx=0; idx<${#AMI1_NODES[@]}; ++idx)); do
+            NODESTR=$NODESTR${AMI1_NODES[idx]}',';
+        done
+        echo ${NODESTR::-1}
+        echo
+        NODESTR='ami2: '
+        for ((idx=0; idx<${#AMI2_NODES[@]}; ++idx)); do
+            NODESTR=$NODESTR${AMI2_NODES[idx]}',';
+        done
+        echo ${NODESTR::-1}
+    else
+        AMI1_MASKS=(`grep monreqsrvami1_ /tmp/procServStatus.$$ | awk -F "-i " {'print $2'} | awk {'print $1'}`)
+        echo 'ami1 runs on the following nodes looking at event nodes out of '${#EVENT[@]}
+        NODESTR=''
+        for ((idx=0; idx<${#AMI1_NODES[@]}; ++idx)); do
+            echo -n ${AMI1_NODES[idx]}':'
+            MASKS=${AMI1_MASKS[idx]}
+	    for ((m=0; m<${#EVENT[@]}; ++m)); do
+	        if [ $((${MASKS}&${EVENT_MASKS[m]})) != 0 ]; then
+	            echo -n ' '${EVENT[m]}
+		    MASKS=$((${MASKS}&~${EVENT_MASKS[m]}))
+	        fi
+            done
+	    if [ ${MASKS} != '0' ]; then
+	        echo " MISSING MON MASK: "$MASKS
+	    fi
+	    echo ""
+        done
+
+        AMI2_MASKS=(`grep monreqsrvami2_ /tmp/procServStatus.$$ | awk -F "-i " {'print $2'} | awk {'print $1'}`)
+        echo 'ami2 runs on the following nodes looking at event nodes out of '${#EVENT[@]}
+        NODESTR=''
+        for ((idx=0; idx<${#AMI2_NODES[@]}; ++idx)); do
+            echo -n ${AMI2_NODES[idx]}':'
+            MASKS=${AMI2_MASKS[idx]}
+	    for ((m=0; m<${#EVENT[@]}; ++m)); do
+	        if [ $((${MASKS}&${EVENT_MASKS[m]})) != 0 ]; then
+	            echo -n ' '${EVENT[m]}
+		    MASKS=$((${MASKS}&~${EVENT_MASKS[m]}))
+	        fi
+            done
+	    if [ ${MASKS} != '0' ]; then
+	        echo " MISSING MON MASK: "$MASKS
+	    fi
+	    echo ""
+        done
+    fi
 fi
 
 rm  /tmp/procServStatus.$$
