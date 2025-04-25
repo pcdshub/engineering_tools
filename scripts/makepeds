@@ -198,7 +198,6 @@ LCLS2_HUTCHES="rix, tmo, txi, ued, mfx"
 if echo "$LCLS2_HUTCHES" | grep -iw "$HUTCH" > /dev/null; then
     echo "This is a LCLS-II experiment"
     MAKEPEDSEXE=makepeds_psana2
-    LCLS2=1
 else
     echo "This is a LCLS-I experiment"
     MAKEPEDSEXE=makepeds_psana
