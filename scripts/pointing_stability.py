@@ -70,7 +70,8 @@ def build_parser():
         prog='pointing_stability',
         formatter_class=argparse.RawTextHelpFormatter,
         description='Collect centroids from the camera then'
-        ' determine the positional stability using ISO 11145:2018',
+        ' determine the positional stability using ISO 11145:2018'
+        ' Default is to use far-field calculations and a 10 cm focal length.',
         epilog='For more information on subcommands, use: '
                'pointing_stability --help')
 
@@ -90,8 +91,7 @@ def build_parser():
                         help='Supress the progressbar and graphs from printing to terminal')
     parser.add_argument('-r', '--near_field', action='store_true',
                         default=False,
-                        help='Whether to perform calculations assuming near field imaging.'
-                        ' Default is to use far-field calculations and a 10 cm focal length.')
+                        help='Whether to perform calculations assuming near field imaging.')
     parser.add_argument('-s', '--size', type=int,
                         default=5000,
                         help='Total number of centroids to acquire before calculating'
@@ -211,7 +211,10 @@ def main():
         y_samples = y_samples[:_length]
 
     # Convert from pixels to real dimensions using vendor's data and account for binning
-    pixel_size = PIXEL_DICT[model]
+    if args.pixel_size:
+        pixel_size = args.pixel_size
+    else:
+        pixel_size = PIXEL_DICT[model]
     x_samples_um = np.asarray(x_samples)*pixel_size*bin_x
     y_samples_um = np.asarray(y_samples)*pixel_size*bin_y
 
@@ -290,6 +293,7 @@ def main():
         axs[1].legend(loc='upper right')
         axs[1].set_xlabel("Pointing (\u03bcrad)")
         axs[1].set_ylabel("Counts")
+        axs[1].set_box_aspect(1)
         row_labels = row_labels + ['\u03b8_avg (\u03bcrad)', '\u03b8 std_dev (\u03bcrad)']
         table_data = table_data + [theta_means, theta_stds]
     # Now add the table
@@ -306,7 +310,6 @@ def main():
     fig.set_figheight(10)
     fig.set_figwidth(10)
     plt.tight_layout()
-    plt.gca().set_aspect('equal')
     if not args.quiet:
         plt.show()
 
