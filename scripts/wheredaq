@@ -1,12 +1,5 @@
 #!/bin/bash
 
-# Check if the current's user hutch uses daqmgr. If so,
-# use the python utilities to manage the daq.
-if [ "$(daqutils isdaqmgr)" = "true" ]; then
-    daqutils $(basename "$0") $@
-    exit 0
-fi
-
 usage()
 {
 cat << EOF
@@ -20,6 +13,28 @@ if [[ ($1 == "--help") || ($1 == "-h") ]]; then
 	usage
 	exit 0
 fi
+
+#if compgen -G "/usr/bin/sinfo" > /dev/null; then
+
+# ---------------------------------------------------------------
+# Check if this hutch uses daqmgr and should be routed to daqutils.
+# If so, checkdaqroute will handle the command and exit.
+# Otherwise, continue with local logic for non-daqmgr hutches.
+# ---------------------------------------------------------------
+checkdaqroute "$(basename "$0")" "$@"
+case $? in
+    1)
+        # Not a daqmgr hutch — proceed with local fallback
+        ;;
+    2)
+        echo "Error: Unable to determine DAQ manager status." >&2
+        exit 2
+        ;;
+    *)
+        # Handled by checkdaqroute or failed internally — already exited
+        exit $?
+        ;;
+esac
 
 HUTCH=$(get_info --gethutch)
 CNFEXT=.cnf
@@ -46,6 +61,6 @@ if [[ ! -f /reg/g/pcds/dist/pds/"$HUTCH"/scripts/p"$PLATFORM".cnf.running ]]; th
 	echo 'DAQ is not running in '"$HUTCH"
     fi
 else
-    DAQ_HOST=$(grep "'HOST'" /reg/g/pcds/dist/pds/"$HUTCH"/scripts/p"$PLATFORM".cnf.running | awk {'print $3'} | sed s/\'//g)
+    DAQ_HOST=$(grep "'HOST'" /reg/g/pcds/dist/pds/"$HUTCH"/scripts/p"$PLATFORM".cnf.running | awk '{print $3}' | sed "s/'//g")
     echo 'DAQ is running on '"$DAQ_HOST"
 fi

@@ -12,6 +12,7 @@ OPTIONS:
 -s silent (do not email jana)
 -c enable core files
 -C (LCLS2 DAQMGR Hutches ONLY!) Select a cnf to use.
+-u UED .cnf file
 EOF
 }
 
@@ -31,7 +32,7 @@ if [[ ($1 == "--help") || ($1 == "-h") ]]; then
 fi
 
 CORESIZE=0
-while getopts "m:pwscdC:" OPTION
+while getopts "m:pwscdu:" OPTION
 do
     case $OPTION in
 	p)
@@ -49,9 +50,9 @@ do
  	c)
  	    CORESIZE=2000000000
  	    ;;
-  C)
-      DAQMGR_CNF=$OPTARG
-      ;;
+	u)
+            UED_CNF=$OPTARG
+            ;;
  	d)
  	    DSSTEST=1
  	    ;;
@@ -63,33 +64,27 @@ do
 	esac
 done
 
-# Check if the current's user hutch uses daqmgr. If so,
-# use the python utilities to manage the daq.
-if [ "$(daqutils isdaqmgr)" = "true" ]; then
-    if [[ -n "$DAQMGR_CNF" ]]; then
-        for arg in "$@"; do
-	          shift
-	          case $arg in
-		            -C)
-		                shift
-		                shift
-		                ;;
-		             *)
-		                set -- "$@"
-		                ;;
-	          esac
-	      done
-        daqutils --cnf "$DAQMGR_CNF" "$(basename "$0")" "$@"
-    else
-        daqutils "$(basename "$0")" "$@"
-    fi
-    exit 0
-fi
-
 if [[ $(whoami) != *'opr'* ]]; then
     echo "Please run the DAQ from the operator account!"
     exit
 fi
+
+# Check if the current's user hutch uses daqmgr. If so,
+# use the python utilities to manage the daq.
+checkdaqroute "$(basename "$0")" "$@"
+case $? in
+    1)
+        # Not a daqmgr hutch — proceed with local fallback
+        ;;
+    2)
+        echo "Error: Unable to determine DAQ manager status." >&2
+        exit 2
+        ;;
+    *)
+        # Handled by checkdaqroute or failed internally — already exited
+        exit $?
+        ;;
+esac
 
 HUTCH=$(get_info --gethutch)
 CNFEXT=.cnf
@@ -114,17 +109,23 @@ unset LD_LIBRARY_PATH
 cd /reg/g/pcds/dist/pds/"$HUTCH"/scripts/ || exit
 
 DAQNETWORK='fez'
-LCLS2_HUTCHES="rix, tmo, ued, txi"
+LCLS2_HUTCHES="ued"
 if echo "$LCLS2_HUTCHES" | grep -iw "$HUTCH" > /dev/null; then
     # shellcheck disable=SC1090
     source /reg/g/pcds/dist/pds/"$HUTCH"/scripts/setup_env.sh
     PROCMGR='procmgr'
-    DAQNETWORK='drp'
 else
     PROCMGR="/reg/g/pcds/dist/pds/$HUTCH/current/tools/procmgr/procmgr"
 fi
 
-IS_DAQ_HOST=$(netconfig search "$AIMHOST"-$DAQNETWORK --brief | grep -c $DAQNETWORK)
+# If UED machine; bypass drp node requirement, else; check for drp node
+if [ "$HUTCH" == "ued" ]; then
+    IS_DAQ_HOST=1
+    CNFFILE=$UED_CNF
+else
+    IS_DAQ_HOST=$(netconfig search "$AIMHOST"-$DAQNETWORK --brief | grep -c $DAQNETWORK)
+fi
+
 if [ "$IS_DAQ_HOST" == 0 ]; then
     HOSTS=$(netconfig search "$HUTCH"-*-$DAQNETWORK --brief | sed s/-$DAQNETWORK//g)
     WORKINGHOSTS=''

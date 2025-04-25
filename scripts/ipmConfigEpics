@@ -16,18 +16,18 @@ lfeIpm='um6_ipm hfxdg2_ipm pim3m'
 ipmList()
 {
 printf 'Possible boxes:\n'
-if [ $hutch == 'xcs' ]; then
-   for box in $hx2Ipm $um6Ipm $dg2Ipm $xcsIpm; do echo $box; done
-elif [ $hutch == 'xpp' ]; then
-   for box in $hx2Ipm $xppIpm; do echo $box; done
-elif [ $hutch == 'cxi' ]; then
-   for box in $hx2Ipm $um6Ipm $dg2Ipm $cxiIpm; do echo $box; done
-elif [ $hutch == 'mfx' ]; then
-   for box in $hx2Ipm $um6Ipm $mfxIpm; do echo $box; done
-elif [ $hutch == 'mec' ]; then
-   for box in $hx2Ipm $um6Ipm $mecIpm; do echo $box; done
-elif [ $hutch == 'lfe' ]; then
-   for box in $lfeIpm; do echo $box; done
+if [[ $hutch == 'xcs' ]]; then
+   for box in $hx2Ipm $um6Ipm $dg2Ipm $xcsIpm; do echo "$box"; done
+elif [[ $hutch == 'xpp' ]]; then
+   for box in $hx2Ipm $xppIpm; do echo "$box"; done
+elif [[ $hutch == 'cxi' ]]; then
+   for box in $hx2Ipm $um6Ipm $dg2Ipm $cxiIpm; do echo "$box"; done
+elif [[ $hutch == 'mfx' ]]; then
+   for box in $hx2Ipm $um6Ipm $mfxIpm; do echo "$box"; done
+elif [[ $hutch == 'mec' ]]; then
+   for box in $hx2Ipm $um6Ipm $mecIpm; do echo "$box"; done
+elif [[ $hutch == 'lfe' ]]; then
+   for box in $lfeIpm; do echo "$box"; done
 else
     echo 'hutch cannot be determined, quit'
     exit
@@ -42,194 +42,199 @@ if [ $# -lt 1 ]; then
 fi
 
 # Shared IPMs
-if [ $1 == 'hx2_ipm' ]; then
+if [[ $1 == 'hx2_ipm' ]]; then
     IOC="IOC:HX2:SB1:BMMON"
     BASE='HX2:SB1:BMMON'
     EVR='HX2:SB1:BMMON:EVR'
     WAVE8='hx2_ipm'
-elif [ $1 == 'um6_ipm' ]; then		#aka xcs ipm1
+elif [[ $1 == 'um6_ipm' ]]; then		#aka xcs ipm1
     BASE="XCS:DG1:IMB:01"
     IOC="XCS:R04:IOC:34"
     EVR="XCS:R04:EVR:34"
-elif [ $1 == 'um6_dio' ]; then		#aka xcs ipm1
+elif [[ $1 == 'um6_dio' ]]; then		#aka xcs ipm1
     BASE="XCS:DG1:IMB:02"
     IOC="XCS:R04:IOC:34"
     EVR="XCS:R04:EVR:34"
-elif [ $1 == 'hfxdg2_ipm' ]; then	#aka xcs ipm2
+elif [[ $1 == 'hfxdg2_ipm' ]]; then	#aka xcs ipm2
     IOC="IOC:HFX:DG2:BMMON"
     BASE='HFX:DG2:BMMON'
     EVR='HFX:DG2:BMMON:EVR'
     WAVE8='hfxipm'
-elif [ $1 == 'pim3m' ]; then
+elif [[ $1 == 'pim3m' ]]; then
     BASE="HFX:DG3:IMB:02"
     IOC="XCS:R38:IOC:43"
     EVR="XCS:R38:EVR:43"
 fi
 
 # Hutch-specific IPMs
-if [ $hutch == 'xcs' ]; then
-    if [ $1 == 'decmono' ]; then
+if [[ $hutch == 'xcs' ]]; then
+    if [[ $1 == 'decmono' ]]; then
 	BASE="HFX:MON:IMB:03"
 	IOC="XCS:R38:IOC:43"
 	EVR="XCS:R38:EVR:43"
-    elif [ $1 == 'diomono' ]; then
+    elif [[ $1 == 'diomono' ]]; then
 	BASE="HFX:MON:IMB:02"
 	IOC="XCS:R38:IOC:43"
 	EVR="XCS:R38:EVR:43"
-    elif [ $1 == 'ipmmono' ]; then
+    elif [[ $1 == 'ipmmono' ]]; then
 	BASE="HFX:MON:IMB:01"
 	IOC="XCS:R38:IOC:43"
 	EVR="XCS:R38:EVR:43"
-    elif [ $1 == 'pim3' ]; then
+    elif [[ $1 == 'pim3' ]]; then
 	BASE="XCS:DG3:IMB:04"
 	IOC="XCS:R38:IOC:43"
 	EVR="XCS:R38:EVR:43"
-    elif [ $1 == 'ipm3' ]; then
+    elif [[ $1 == 'ipm3' ]]; then
 	BASE="XCS:DG3:IMB:03"
 	IOC="XCS:R38:IOC:43"
 	EVR="XCS:R38:EVR:43"
-    elif [ $1 == 'ipm4' ]; then
+    elif [[ $1 == 'ipm4' ]]; then
 	IOC="IOC:XCS:SB1:BMMON"
 	BASE='XCS:SB1:BMMON'
 	EVR='XCS:SB1:BMMON:EVR'
 	WAVE8='sb1bmmon'
-    elif [ $1 == 'pim4' ]; then
+    elif [[ $1 == 'pim4' ]]; then
 	BASE="XCS:SB1:IMB:02"
 	IOC="IOC:XCS:IPM"
 	EVR="XCS:R44:EVR:01"
-    elif [ $1 == 'ipm5' ]; then
+    elif [[ $1 == 'ipm5' ]]; then
 	IOC="IOC:XCS:SB2:BMMON"
 	BASE='XCS:SB2:BMMON'
 	EVR='XCS:SB2:BMMON:EVR'
 	WAVE8='sb2bmmon'
-    elif [ $1 == 'usrdio' ]; then
+    elif [[ $1 == 'usrdio' ]]; then
         IOC="IOC:XCS:USR:DIO"
         BASE='XCS:USR:DIO'
         EVR='XCS:USR:DIO:EVR'
         WAVE8='usrdio'
-    elif [ $1 == 'pim5' ]; then
+    elif [[ $1 == 'pim5' ]]; then
 	BASE="XCS:SB2:IMB:02"
 	IOC="IOC:XCS:IPM"
 	EVR="XCS:R44:EVR:01"
-    elif [ $1 == 'ipmgonLD' ]; then
+    elif [[ $1 == 'ipmgonLD' ]]; then
 	BASE="XCS:USR:IMB:01"
 	IOC="IOC:XCS:USR:IPM"
 	EVR="XCS:R42:EVR:01"
-    elif [ $1 == 'ipmlamLD' ]; then
+    elif [[ $1 == 'ipmlamLD' ]]; then
 	BASE="XCS:LAM:IMB:02"
 	IOC="IOC:XCS:IPM"
 	EVR="XCS:R44:EVR:01"
-    elif [ $1 == 'snddio' ]; then
+    elif [[ $1 == 'snddio' ]]; then
 	IOC="IOC:XCS:SND:DIO"
 	BASE='XCS:SND:DIO'
 	EVR='XCS:SND:DIO:EVR'
 	WAVE8='snddio'
     fi
-elif [ $hutch == 'cxi' ]; then
-    if [ $1 == 'dg2ipm' ]; then
+elif [[ $hutch == 'cxi' ]]; then
+    if [[ $1 == 'dg2ipm' ]]; then
 	IOC="IOC:CXI:DG2:BMMON"
 	BASE='CXI:DG2:BMMON'
 	EVR='CXI:DG2:BMMON:EVR'
 	WAVE8='dg2ipm'
-    elif [ $1 == 'dg3ipm' ]; then
+    elif [[ $1 == 'dg3ipm' ]]; then
 	IOC="IOC:CXI:DG3:BMMON"
 	BASE='CXI:DG3:BMMON'
 	EVR='CXI:DG3:BMMON:EVR'
 	WAVE8='dg3ipm'
-    elif [ $1 == 'usrdio' ]; then
+    elif [[ $1 == 'usrdio' ]]; then
         IOC="IOC:CXI:USR:DIO"
         BASE='CXI:USR:DIO'
         EVR='CXI:USR:DIO:EVR'
         WAVE8='usrdio'
     fi
-elif [ $hutch == 'mfx' ]; then
-    if [ $1 == 'dg1ipm' ]; then
+elif [[ $hutch == 'mfx' ]]; then
+    if [[ $1 == 'dg1ipm' ]]; then
 	IOC="IOC:MFX:DG1:BMMON"
 	BASE='MFX:DG1:BMMON'
 	EVR='MFX:DG1:BMMON:EVR'
 	WAVE8='dg1ipm'
-    elif [ $1 == 'dg2ipm' ]; then
+    elif [[ $1 == 'dg2ipm' ]]; then
 	IOC="IOC:MFX:DG2:BMMON"
 	BASE='MFX:DG2:BMMON'
 	EVR='MFX:DG2:BMMON:EVR'
 	WAVE8='dg2ipm'
-    elif [ $1 == 'usrdio' ]; then
+    elif [[ $1 == 'usrdio' ]]; then
         IOC="IOC:MFX:USR:DIO"
         BASE='MFX:USR:DIO'
         EVR='MFX:USR:DIO:EVR'
         WAVE8='usrdio'
+    elif [[ $1 == 'dg1ipmV3' ]]; then
+        IOC="IOC:MFX:DG1:W8:01"
+        BASE='MFX:DG1:W8:01'
+        EVR=''
+        WAVE8='dg1ipmV3'
     fi
-elif [ $hutch == 'xpp' ]; then
-    if [ $1 == 'diomono' ]; then
+elif [[ $hutch == 'xpp' ]]; then
+    if [[ $1 == 'diomono' ]]; then
 	IOC="IOC:XPP:IPM"
 	BASE='XPP:MON:IPM:02'
 	EVR='XPP:IPM:EVR'
-    elif [ $1 == 'decmono' ]; then
+    elif [[ $1 == 'decmono' ]]; then
 	IOC="IOC:XPP:IPM"
 	BASE='XPP:MON:IPM:01'
 	EVR='XPP:IPM:EVR'
-    elif [ $1 == 'ipm2' ]; then
+    elif [[ $1 == 'ipm2' ]]; then
 	IOC="IOC:XPP:SB2:BMMON"
 	BASE='XPP:SB2:BMMON'
 	EVR='XPP:SB2:BMMON:EVR'
 	WAVE8='sb2bmmon'
-    elif [ $1 == 'ipm3' ]; then
+    elif [[ $1 == 'ipm3' ]]; then
 	IOC="IOC:XPP:SB3:BMMON"
 	BASE='XPP:SB3:BMMON'
 	EVR='XPP:SB3:BMMON:EVR'
 	WAVE8='sb3bmmon'
-    elif [ $1 == 'pim3' ]; then
+    elif [[ $1 == 'pim3' ]]; then
 	IOC="IOC:XPP:IPM"
 	BASE='XPP:SB3:IPM:02'
 	EVR='XPP:IPM:EVR'
-    elif [ $1 == 'diodeU' ]; then
+    elif [[ $1 == 'diodeU' ]]; then
 	IOC="IOC:XPP:IPM"
 	BASE='XPP:USR:IPM:01'
 	EVR='XPP:IPM:EVR'
     fi
-elif [ $hutch == 'mec' ]; then
-    if [ $1 == 'ipm1' ]; then
+elif [[ $hutch == 'mec' ]]; then
+    if [[ $1 == 'ipm1' ]]; then
 	IOC="XRT:R33:IOC:39"
 	BASE='MEC:HXM:IPM:01'
 	EVR='XRT:R44:EVR:39'
-    elif [ $1 == 'hxm_pim' ]; then
+    elif [[ $1 == 'hxm_pim' ]]; then
 	IOC="XRT:R33:IOC:39"
 	BASE='MEC:HXM:PIM:01'
 	EVR='XRT:R44:EVR:39'
-    elif [ $1 == 'pim2' ]; then
+    elif [[ $1 == 'pim2' ]]; then
 	IOC="IOC:MEC:IMB02"
 	BASE='MEC:XT2:PIM:02'
 	EVR='MEC:XT2:EVR:01'
-    elif [ $1 == 'pim3' ]; then
+    elif [[ $1 == 'pim3' ]]; then
 	IOC="IOC:MEC:IMB02"
 	BASE='MEC:XT2:PIM:03'
 	EVR='MEC:XT2:EVR:01'
-    elif [ $1 == 'tc1_imb1' ]; then
+    elif [[ $1 == 'tc1_imb1' ]]; then
 	IOC="IOC:MEC:IPIMB01"
 	EVR='MEC:TC1:EVR:01'
 	BASE='MEC:TC1:IMB:01'
-    elif [ $1 == 'usr_imb1' ]; then
+    elif [[ $1 == 'usr_imb1' ]]; then
 	IOC="IOC:MEC:IPIMB01"
 	EVR='MEC:TC1:EVR:01'
 	BASE='MEC:USR:IMB:01'
-    elif [ $1 == 'usr_imb2' ]; then
+    elif [[ $1 == 'usr_imb2' ]]; then
 	IOC="IOC:MEC:IPIMB01"
 	EVR='MEC:TC1:EVR:01'
 	BASE='MEC:USR:IMB:02'
-    elif [ $1 == 'las_imb1' ]; then
+    elif [[ $1 == 'las_imb1' ]]; then
 	IOC="IOC:MEC:IPIMB01"
 	EVR='MEC:TC1:EVR:01'
 	BASE='MEC:LAS:IMB:01'
-    elif [ $1 == 'las_imb2' ]; then
+    elif [[ $1 == 'las_imb2' ]]; then
 	IOC="IOC:MEC:IPIMB01"
 	EVR='MEC:TC1:EVR:01'
 	BASE='MEC:LAS:IMB:02'
-    elif [ $1 == 'ipm2' ]; then
+    elif [[ $1 == 'ipm2' ]]; then
 	IOC="IOC:MEC:XT2-1:BMMON"
 	EVR="MEC:XT2-1:BMMON:EVR"
 	BASE="MEC:XT2-1:BMMON"
 	WAVE8='xt2-1bmmon'
-    elif [ $1 == 'ipm3' ]; then
+    elif [[ $1 == 'ipm3' ]]; then
 	IOC="IOC:MEC:XT2-2:BMMON"
 	EVR="MEC:XT2-2:BMMON:EVR"
 	BASE="MEC:XT2-2:BMMON"
@@ -245,11 +250,11 @@ fi
 
 # Attempt to read the :SUM PV and open a GUI if successful and exits if not. Uses wave8 or ipimb accordingly
 ipmGUI(){
-    if caget ${BASE}:SUM > /dev/null 2>&1; then
+    if caget "${BASE}":SUM > /dev/null 2>&1; then
         if [ ${#WAVE8} -gt 0 ]; then
-            /reg/g/pcds/pyps/apps/wave8/latest/wave8 --base $BASE --evr $EVR --ioc $IOC
+            /reg/g/pcds/pyps/apps/wave8/latest/wave8 --base "$BASE" --evr "$EVR" --ioc "$IOC"
         else
-            /reg/g/pcds/controls/pycaqt/ipimb/ipimb --base $BASE --ioc $IOC --evr $EVR
+            /reg/g/pcds/controls/pycaqt/ipimb/ipimb --base "$BASE" --ioc "$IOC" --evr "$EVR"
         fi
     else
         echo "Could not connect to ${BASE}. Exiting..."
@@ -259,8 +264,8 @@ ipmGUI(){
 # Get hutch name, if not given, using get_info
 get_hutch(){
     if [ -z "$HUTCH" ]; then
-        hutch=`get_info --gethutch`
-        if [ $hutch = unknown_hutch ]; then
+        hutch=$(get_info --gethutch)
+        if [[ $hutch = unknown_hutch ]]; then
 	    echo 'unknown hutch, cannot use ipmConfigEpics script'
 	    exit 1
         fi
@@ -292,7 +297,7 @@ helpBld(){
         # Attempt to caput values
         caput HFX:DG3:CVV:01:Stats2:EnableCallbacks 0
         caput XCS:DG3:CVV:02:Stats2:EnableCallbacks 0
-        # Check if actually set      
+        # Check if actually set
         if [[ $(caget -nt HFX:DG3:CVV:01:Stats2:EnableCallbacks 2> /dev/null) == 0 ]] && [[ $(caget -nt XCS:DG3:CVV:02:Stats2:EnableCallbacks 2> /dev/null) == 0 ]]; then
             echo 'Turned off statsPlugin for XCS ipm3 and dio3'
         else
@@ -339,10 +344,10 @@ done
 get_hutch
 if [ ${#BOXNAME} == 0 ]; then
     ipmList
-    printf 'Enter box name from above list:\n'; read BOXNAME
+    printf 'Enter box name from above list:\n'; read -r BOXNAME
 fi
 
-ipmSetEnvPars $BOXNAME
+ipmSetEnvPars "$BOXNAME"
 if [ $HELPDAQBLD -gt 0 ]; then
     helpBld
 else

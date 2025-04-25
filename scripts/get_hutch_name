@@ -2,7 +2,7 @@
 usage()
 {
 cat << EOF
-usage: $0 
+usage: $0
 
 Returns the hutch name based on the host it is run on
 EOF
@@ -13,9 +13,9 @@ if [[ ($1 == "--help") || ($1 == "-h") ]]; then
 	exit 0
 fi
 
-DIRTMP=`dirname  "${BASH_SOURCE[0]}"`
-DIR="$( cd $DIRTMP && pwd -P )"
+DIRTMP=$(dirname  "${BASH_SOURCE[0]}")
+DIR="$( cd "$DIRTMP" && pwd -P )"
 PATH=$PATH:$DIR
 
-hutch=`get_info --gethutch`
-echo $hutch
+hutch=$(get_info --gethutch)
+echo "$hutch"
