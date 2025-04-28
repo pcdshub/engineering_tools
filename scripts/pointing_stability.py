@@ -82,9 +82,10 @@ def build_parser():
                         default=10.,
                         help='Focal length of the imaging lens in cm as a float. Defaults to 10 cm.')
     parser.add_argument('-d', '--dir', type=str,
-                        help='Set directory for the output data. Defaults to $PWD')
+                        help='Set directory for the output data. Defaults to $PWD.')
     parser.add_argument('-f', '--filename', type=str,
-                        help='Set the base filename for the output data.')
+                        help='Set the base filename for the output data.'
+                        ' Defaults to "data_" appended by the camera name and timestamp.')
     parser.add_argument('-p', '--pixel_size', type=float,
                         help='Set the pixel size if you have a special snowflake camera.')
     parser.add_argument('-q', '--quiet', action='store_true',
