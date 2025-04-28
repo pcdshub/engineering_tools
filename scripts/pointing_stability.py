@@ -13,6 +13,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from colorama import Fore, Style
 from epics import PV, caget
+from matplotlib.figure import Figure
 from numpy.typing import ArrayLike, NDArray
 
 PIXEL_DICT = {'Manta_G046B': 8.3,
@@ -208,6 +209,90 @@ def calc_angular_displacement(centered_data: NDArray,
     return [theta, theta_avg, theta_std]
 
 
+def make_figures(position_data: list[NDArray],
+                 pos_stabilities: list[float],
+                 camera: str, num_plots: int = 3, quiet: bool = False,
+                 theta_data: list[NDArray] = None,
+                 theta_stats: list[list[float]] = None
+                 ) -> Figure:
+    """
+    Generate the figures for the pointing stability output. Optionally
+    include the angular data. Returns a matplotlib Figure.
+
+    Parameters
+    -----------
+    position_data (list[NDArray]):
+        List of the centered position data. e.g. [x_centered, y_centered]
+    pos_stabilities (list[float]):
+        List of positional stabilities. e.g. [x_stability, y_stability]
+    camera (str):
+        Camera PV prefix
+    num_plots (int, optional):
+        Number of plots to use. Defaults to 3.
+    quiet (bool, optional):
+        Surpress printing the graphic. Defaults to False.
+    theta_data (list[NDArray], optional):
+        Angular data, typically in the form of [theta_x, theta_y]. Defaults to None.
+    theta_stats (list[list[float]], optional):
+        Statistics for the angular data.
+        e.g. [[theta_x_avg, theta_x_std], [theta_y_avg, theta_y_std]]
+        Defaults to None.
+
+    Returns
+    --------
+        Figure: matplotlib Figure
+    """
+    if not theta_data:
+        num_plots = 2
+    fig, axs = plt.subplots(num_plots,
+                            height_ratios=(num_plots-1)*[1]+[0.5])
+    # Positional displacement plot
+    axs[0].scatter(x=position_data[0], y=position_data[-1])
+    axs[0].axhline(y=0, color='black', linestyle='--')
+    axs[0].axvline(x=0, color='black', linestyle='--')
+    axs[0].set_xlabel('X displacement (\u03bcm)')
+    axs[0].set_ylabel('Y displacement (\u03bcm)')
+    axs[0].set_box_aspect(1)
+    # Stat data for table printing
+    col_labels = ['X', 'Y']
+    row_labels = ['\u0394 (\u03bcm)']
+    table_data = [pos_stabilities]
+    # Angular displacement subplot
+    if theta_data:
+        axs[1].hist(theta_data[0], bins='fd',
+                    fc=(0, 0, 1, 0.5),
+                    edgecolor='black',
+                    label='X')
+        axs[1].hist(theta_data[-1], bins='fd',
+                    fc=(1, 0.25, 0.25, 0.5),
+                    edgecolor='black',
+                    label='Y')
+        axs[1].legend(loc='upper right')
+        axs[1].set_xlabel("Pointing (\u03bcrad)")
+        axs[1].set_ylabel("Counts")
+        axs[1].set_box_aspect(1)
+        row_labels = row_labels + ['\u03b8_avg (\u03bcrad)', '\u03b8 std_dev (\u03bcrad)']
+        table_data = table_data + theta_stats
+    # Now add the table
+    table_data = [[f'{_s:2.3e}' for _s in _ls] for _ls in table_data]
+    axs[-1].table(cellText=table_data,
+                  cellLoc='center',
+                  loc='center',
+                  rowLabels=row_labels,
+                  colLabels=col_labels
+                  )
+    axs[-1].axis('Off')
+    plt.suptitle(f'{camera}')
+    plt.subplots_adjust(hspace=0.4)
+    fig.set_figheight(10)
+    fig.set_figwidth(10)
+    plt.tight_layout()
+    if not quiet:
+        plt.show()
+
+    return fig
+
+
 def main():
     # Build parser and initialize lists
     parser = build_parser()
@@ -223,7 +308,12 @@ def main():
     stats_input_port = caget(f'{camera}Stats2:NDArrayPort', connection_timeout=5)
     port = camera if 'CAM' in stats_input_port else f'{camera}{stats_input_port}:'
     bin_x = caget(f'{port}BinX_RBV', connection_timeout=5)
-    bin_y = caget(f'{port}BinX_RBV', connection_timeout=5)
+    bin_y = caget(f'{port}BinY_RBV', connection_timeout=5)
+    if not bin_x or not bin_y:
+        raise Exception('Could not connect to PVs:\n'
+                        '\n'.join([f'{port}{_suffix}'
+                                   for _suffix in ['BinX_RBV', 'BinY_RBV']])
+                        )
     # Initialize lists and connect to centroid PVs
     total = args.size
     x_samples = []
@@ -296,54 +386,19 @@ def main():
     # #-----------------------------------------------------------------------------------------# #
     # Plotting outputs
     # #-----------------------------------------------------------------------------------------# #
-    # Positional displacement subplot
-    num_plots = 3
-    if args.near_field:
-        num_plots = 2
-    fig, axs = plt.subplots(num_plots,
-                            height_ratios=(num_plots-1)*[1]+[0.5])
-    axs[0].scatter(x_centered, y_centered)
-    axs[0].axhline(y=0, color='black', linestyle='--')
-    axs[0].axvline(x=0, color='black', linestyle='--')
-    axs[0].set_xlabel('X displacement (\u03bcm)')
-    axs[0].set_ylabel('Y displacement (\u03bcm)')
-    axs[0].set_box_aspect(1)
-    # Stat data for table printing
-    col_labels = ['X', 'Y']
-    row_labels = ['\u0394 (\u03bcm)']
-    table_data = [pos_stabilities]
-    # Angular displacement subplot
     if not args.near_field:
-        axs[1].hist(theta_x, bins='fd',
-                    fc=(0, 0, 1, 0.5),
-                    edgecolor='black',
-                    label='X')
-        axs[1].hist(theta_y, bins='fd',
-                    fc=(1, 0.25, 0.25, 0.5),
-                    edgecolor='black',
-                    label='Y')
-        axs[1].legend(loc='upper right')
-        axs[1].set_xlabel("Pointing (\u03bcrad)")
-        axs[1].set_ylabel("Counts")
-        axs[1].set_box_aspect(1)
-        row_labels = row_labels + ['\u03b8_avg (\u03bcrad)', '\u03b8 std_dev (\u03bcrad)']
-        table_data = table_data + [theta_means, theta_stds]
-    # Now add the table
-    table_data = [[f'{_s:2.3e}' for _s in _ls] for _ls in table_data]
-    axs[-1].table(cellText=table_data,
-                  cellLoc='center',
-                  loc='center',
-                  rowLabels=row_labels,
-                  colLabels=col_labels
-                  )
-    axs[-1].axis('Off')
-    plt.suptitle(f'{camera}')
-    plt.subplots_adjust(hspace=0.4)
-    fig.set_figheight(10)
-    fig.set_figwidth(10)
-    plt.tight_layout()
-    if not args.quiet:
-        plt.show()
+        fig = make_figures(position_data=[x_centered, y_centered],
+                           pos_stabilities=pos_stabilities,
+                           theta_data=[theta_x, theta_y],
+                           theta_stats=[[theta_x_avg, theta_x_std],
+                                        [theta_y_avg, theta_y_std]],
+                           camera=camera,
+                           quiet=args.quiet)
+    else:
+        fig = make_figures([x_centered, y_centered],
+                           pos_stabilities=pos_stabilities,
+                           camera=camera,
+                           quiet=args.quiet)
 
     # Format the data for saving
 
