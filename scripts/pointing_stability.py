@@ -220,7 +220,7 @@ def main():
         raise Exception(f'Could not connect to {camera}Model_RBV.')
     # Make sure you're capturing if the bin is != 1
     # First check the source of the stats plugin
-    stats_input_port = PV(f'{camera}Stats2:NDArrayPort', connection_timeout=5).get()
+    stats_input_port = caget(f'{camera}Stats2:NDArrayPort', connection_timeout=5)
     port = camera if 'CAM' in stats_input_port else f'{camera}{stats_input_port}:'
     bin_x = caget(f'{port}BinX_RBV', connection_timeout=5)
     bin_y = caget(f'{port}BinX_RBV', connection_timeout=5)
