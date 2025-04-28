@@ -424,6 +424,15 @@ def build_parser():
                              help='Prints the IOC.cfg'
                              + ' file with comments skipped')
 
+    print_frame.add_argument('-l', '--list', type=str,
+                             metavar='KEY',
+                             help='List the column from the dataframe.'
+                             + ' Acceptable keys are: [id, host, port, dir, history]')
+
+    print_frame.add_argument('-n', '--no_dataframe',
+                             action='store_true', default=False,
+                             help='Skip printing the dataframe.')
+
     print_frame.add_argument('-r', '--release', action='store_true',
                              default=False,
                              help="Adds the parent IOC's"
@@ -433,6 +442,7 @@ def build_parser():
                              default=False,
                              help='Prints the child & parent IOC'
                              + ' directories as the final output')
+
     print_frame.add_argument('-y', '--print_history', action='store_true',
                              default=False,
                              help="Prints the child IOC's history to terminal")
@@ -448,22 +458,27 @@ def build_parser():
     search.add_argument('search',
                         type=str, help='PATT to use for regex search in file',
                         metavar='PATT')
-    search.add_argument('-q', '--quiet', action='store_true', default=False,
-                        help='Surpresses file warning for paths that do not'
-                        + ' exist.')
-    search.add_argument('-s', '--only_search', action='store_true',
+
+    search.add_argument('-n', '--no_color', action='store_true',
                         default=False,
-                        help="Don't print the dataframe, just search results.")
+                        help="Don't wrap the search results with a color")
+
     search.add_argument('-o', '--only_results', action='store_true',
                         default=False,
                         help="Only print the results of the regex match. Like"
                         " 'grep -o'.")
-    search.add_argument('-n', '--no_color', action='store_true',
-                        default=False,
-                        help="Don't wrap the search results with a color")
+
     search.add_argument('-O', '--no_filename', action='store_true',
                         default=False,
                         help="Don't print filename before results")
+
+    search.add_argument('-q', '--quiet', action='store_true', default=False,
+                        help='Surpresses file warning for paths that do not'
+                        + ' exist.')
+
+    search.add_argument('-s', '--only_search', action='store_true',
+                        default=False,
+                        help="Don't print the dataframe, just search results.")
     return parser
 
 ###############################################################################
@@ -546,7 +561,8 @@ def main():
                       'Release Version',
                       df.pop('Release Version'))
 
-        print_frame2term(df)
+        if not args.no_dataframe:
+            print_frame2term(df)
 
         if args.skip_comments is True:
             for ioc, d in df.loc[:, ['id', 'dir']].values:
@@ -590,6 +606,9 @@ def main():
             else:
                 print(f'{Fore.LIGHTRED_EX}No histories found in captured IOCs.'
                       + Style.RESET_ALL)
+
+        if args.list:
+            print('\n'.join(df[args.list].astype(str).to_list()))
 
 # --------------------------------------------------------------------------- #
 # %%% search
