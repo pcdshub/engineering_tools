@@ -409,7 +409,11 @@ ls -ltr "$XTCDIR"/*r"$RUNSTR"*s*xtc*
 
 echo Check detectors: 
 
-detnames -r exp="${EXP}",run="${RUN}",dir="${XTCDIR}" > /tmp/detnames_"$EXP"_"$CREATE_TIME"
+CMD="detnames -r exp="${EXP}",run="${RUN}",dir="${XTCDIR}" > /tmp/detnames_"$EXP"_"$CREATE_TIME
+if ! $CMD; then
+    echo 'detnames failed'
+    return 8
+fi
 #running local
 echo "-----------------------"
 echo 'XTC files contain:'
