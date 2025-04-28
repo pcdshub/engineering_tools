@@ -61,8 +61,6 @@ OPTIONS:
                 give path for alternative calibdir
         -b|--nbunch
                 number of bunches for the laseroff XTCAV calculations
-        --lcls2
-                force lcls2 (to be used for MFX)
         --sdfdir
                 Directory where engineering tool in on S3DF. For development work only.
 EOF
@@ -167,10 +165,6 @@ do
             shift
             shift
             ;;
-        --lcls2)
-            LCLS2=True
-            shift
-            ;;
         *)
             POSITIONAL+=("$1")
             shift
@@ -201,12 +195,9 @@ else
 fi
 
 LCLS2_HUTCHES="rix, tmo, txi, ued, mfx"
-if [ -v LCLS2 ]; then
-    MAKEPEDSEXE=makepeds_psana2
-elif echo "$LCLS2_HUTCHES" | grep -iw "$HUTCH" > /dev/null; then
+if echo "$LCLS2_HUTCHES" | grep -iw "$HUTCH" > /dev/null; then
     echo "This is a LCLS-II experiment"
     MAKEPEDSEXE=makepeds_psana2
-    LCLS2=1
 else
     echo "This is a LCLS-I experiment"
     MAKEPEDSEXE=makepeds_psana
@@ -251,11 +242,13 @@ if [ $chk -gt 0 ]; then
     elif [ $chk -eq 5 ]; then
 	echo Deployment of geometry failed
     elif [ $chk -eq 6 ]; then
-	echo Deployment of gain constants
+	echo Deployment of gain constants failed
     elif [ $chk -eq 7 ]; then
 	echo Additional command failed -- jungfrau constants
     elif [ $chk -eq 1 ]; then
 	echo makepeds calibration jobs failed, exited as requested.
+    elif [ $chk -eq 8 ]; then
+	echo detnames failed
     else
 	echo something else went wrong, received error code $sshchk, will exit
     fi
