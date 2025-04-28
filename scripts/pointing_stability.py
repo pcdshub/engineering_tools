@@ -5,7 +5,6 @@ positional & pointing stability standards.
 
 import argparse
 import os
-import sys
 import time
 from functools import partial
 
@@ -423,8 +422,6 @@ def main():
 
     np.savetxt(f"{file_dest}.csv", np.transpose(data), delimiter=',', header=camera_header)
     fig.savefig(f"{file_dest}.png")
-
-    sys.exit(0)
 
 
 if __name__ == '__main__':
