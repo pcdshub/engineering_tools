@@ -13,6 +13,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from colorama import Fore, Style
 from epics import PV, caget
+from numpy.typing import ArrayLike, NDArray
 
 PIXEL_DICT = {'Manta_G046B': 8.3,
               'Manta_G146B': 4.65,
@@ -159,6 +160,53 @@ def connect_centroids(cam_prefix: str) -> list[PV]:
     return centroid_x, centroid_y
 
 
+def convert_px_to_um(data: ArrayLike, pixel_size: float, bin: int) -> NDArray:
+    """
+    Convert list of centroid data from pixels to micron.
+    Returns NDArray.
+    """
+    return np.asarray(data)*pixel_size*bin
+
+
+def center_dataset(data: NDArray) -> NDArray:
+    """
+    Convert dataset to displacement from the mean.
+    Returns NDArray.
+    """
+    mean = np.mean(data)
+    return data - mean
+
+
+def calc_pos_stability(centered_data: NDArray) -> float:
+    """
+    Calculate the positional stability using statistics in the centered array data.
+    Returns float.
+    """
+    return 4*np.std(centered_data, ddof=1)
+
+
+def calc_angular_displacement(centered_data: NDArray,
+                              focal_length: float) -> list[NDArray, float, float]:
+    """
+    For far field calculations, convert the positional displacements to angular ones.
+    Parameters
+    -----------
+    centered_data (NDArray): centroid data represented as displacement from the mean
+    focal_length (float): focal length of the lens in micron.
+
+    Returns
+    --------
+    list[NDArray, float, float]: theta, theta_avg, theta_std
+        theta is an NDArray in microradians
+        theta_avg is the mean of the theta array
+        theta_std is the standard deviation (N-1)
+    """
+    theta = np.arctan(centered_data/focal_length)*1E6
+    theta_avg = np.mean(theta)
+    theta_std = np.std(theta, ddof=1)
+    return [theta, theta_avg, theta_std]
+
+
 def main():
     # Build parser and initialize lists
     parser = build_parser()
@@ -211,32 +259,19 @@ def main():
         pixel_size = args.pixel_size
     else:
         pixel_size = PIXEL_DICT[model]
-    x_samples_um = np.asarray(x_samples)*pixel_size*bin_x
-    y_samples_um = np.asarray(y_samples)*pixel_size*bin_y
+    x_samples_um = convert_px_to_um(x_samples, pixel_size, bin_x)
+    y_samples_um = convert_px_to_um(y_samples, pixel_size, bin_y)
 
     # Now let's do some fun math
-    x_mean = np.mean(x_samples_um)
-    y_mean = np.mean(y_samples_um)
-    x_centered = x_samples_um - x_mean
-    y_centered = y_samples_um - y_mean
+    x_centered = center_dataset(x_samples_um)
+    y_centered = center_dataset(y_samples_um)
 
-    x_std_dev = np.std(x_samples_um, ddof=1)
-    y_std_dev = np.std(y_samples_um, ddof=1)
-
-    positional_stability_x = 4*x_std_dev
-    positional_stability_y = 4*y_std_dev
-    pos_stabilities = [positional_stability_x, positional_stability_y]
+    pos_stabilities = [calc_pos_stability(x_centered), calc_pos_stability(y_centered)]
 
     # Now let's look at angular displacements
     if not args.near_field:
-        theta_x = np.arctan(x_centered/focal_length)*1E6
-        theta_y = np.arctan(y_centered/focal_length)*1E6
-
-        theta_x_avg = np.mean(theta_x)
-        theta_y_avg = np.mean(theta_y)
-
-        theta_x_std = np.std(theta_x, ddof=1)
-        theta_y_std = np.std(theta_y, ddof=1)
+        theta_x, theta_x_avg, theta_x_std = calc_angular_displacement(x_centered, focal_length)
+        theta_y, theta_y_avg, theta_y_std = calc_angular_displacement(y_centered, focal_length)
 
         theta_means = [theta_x_avg, theta_y_avg]
         theta_stds = [theta_x_std, theta_y_std]
