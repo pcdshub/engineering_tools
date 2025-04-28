@@ -12,7 +12,7 @@ from functools import partial
 import matplotlib.pyplot as plt
 import numpy as np
 from colorama import Fore, Style
-from epics import PV
+from epics import PV, caget
 
 PIXEL_DICT = {'Manta_G046B': 8.3,
               'Manta_G146B': 4.65,
@@ -166,19 +166,17 @@ def main():
 
     # Make sure the prefix matches AD standard
     camera = args.cam + ':' if args.cam[-1] != ':' else args.cam
-    model = PV(f'{camera}Model_RBV', connection_timeout=5).get()
+    model = caget(f'{camera}Model_RBV', connection_timeout=5)
     if not model:
         raise Exception(f'Could not connect to {camera}Model_RBV.')
     # Make sure you're capturing if the bin is != 1
     # First check the source of the stats plugin
     stats_input_port = PV(f'{camera}Stats2:NDArrayPort', connection_timeout=5).get()
     port = camera if 'CAM' in stats_input_port else f'{camera}{stats_input_port}:'
-    bin_x = PV(f'{port}BinX_RBV', connection_timeout=5).get()
-    bin_y = PV(f'{port}BinX_RBV', connection_timeout=5).get()
+    bin_x = caget(f'{port}BinX_RBV', connection_timeout=5)
+    bin_y = caget(f'{port}BinX_RBV', connection_timeout=5)
     # Initialize lists and connect to centroid PVs
-    total = 5000
-    if args.size:
-        total = args.size
+    total = args.size
     x_samples = []
     y_samples = []
 
@@ -200,9 +198,7 @@ def main():
     centroid_y_pv.remove_callback(1)
 
     # Convert focal length to micron
-    focal_length = 10.0*1E4
-    if args.focal_length:
-        focal_length = args.focal_length*1E4
+    focal_length = args.focal_length*1E4
 
     # Trim to same array lengths if necessary
     if len(x_samples) != len(y_samples):
