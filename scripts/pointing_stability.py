@@ -79,7 +79,7 @@ def build_parser():
                         help='PV prefix for the camera using ECS naming convention')
     parser.add_argument('-l', '--focal_length', type=float,
                         default=10.,
-                        help='Focal lenght of the imaging lens in cm as a float. Defaults to 10 cm.')
+                        help='Focal length of the imaging lens in cm as a float. Defaults to 10 cm.')
     parser.add_argument('-d', '--dir', type=str,
                         help='Set directory for the output data. Defaults to $PWD')
     parser.add_argument('-f', '--filename', type=str,
