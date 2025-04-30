@@ -246,9 +246,14 @@ def make_figures(position_data: list[NDArray],
     fig, axs = plt.subplots(num_plots,
                             height_ratios=(num_plots-1)*[1]+[0.5])
     # Positional displacement plot
+    _positions = np.asarray(position_data)
+    _min = _positions.min()*1.05
+    _max = _positions.max()*1.05
     axs[0].scatter(x=position_data[0], y=position_data[-1])
     axs[0].axhline(y=0, color='black', linestyle='--')
     axs[0].axvline(x=0, color='black', linestyle='--')
+    axs[0].set_xlim(_min, _max)
+    axs[0].set_ylim(_min, _max)
     axs[0].set_xlabel('X displacement (\u03bcm)')
     axs[0].set_ylabel('Y displacement (\u03bcm)')
     axs[0].set_box_aspect(1)
@@ -286,8 +291,6 @@ def make_figures(position_data: list[NDArray],
     fig.set_figheight(10)
     fig.set_figwidth(10)
     plt.tight_layout()
-    if not quiet:
-        plt.show()
 
     return fig
 
@@ -421,6 +424,9 @@ def main():
 
     np.savetxt(f"{file_dest}.csv", np.transpose(data), delimiter=',', header=camera_header)
     fig.savefig(f"{file_dest}.png")
+
+    if not args.quiet:
+        fig.show()
 
 
 if __name__ == '__main__':
