@@ -270,8 +270,8 @@ def make_figures(position_data: list[NDArray],
         axs[1].set_xlabel("Pointing (\u03bcrad)")
         axs[1].set_ylabel("Counts")
         axs[1].set_box_aspect(1)
-        row_labels = row_labels + ['\u03b8_avg (\u03bcrad)', '\u03b8 std_dev (\u03bcrad)']
-        table_data = table_data + theta_stats
+        row_labels = row_labels + ['\u03b8 std_dev (\u03bcrad)']
+        table_data = table_data + [theta_stats]
     # Now add the table
     table_data = [[f'{_s:2.3e}' for _s in _ls] for _ls in table_data]
     axs[-1].table(cellText=table_data,
@@ -378,7 +378,7 @@ def main():
         # Print (Θ_x ± σ_x, Θ_y ± σ_y)
         print('Angular pointing:\n\t'
               + '('
-              + ', '.join([f'{_m:2.3e} \u00b1 {_std:2.3e}'
+              + ', '.join([f'{_m:2.3f} \u00b1 {_std:2.3e}'
                           for _m, _std in zip(theta_means, theta_stds)]
                           )
               + ') \u03bcrad')
@@ -389,8 +389,7 @@ def main():
         fig = make_figures(position_data=[x_centered, y_centered],
                            pos_stabilities=pos_stabilities,
                            theta_data=[theta_x, theta_y],
-                           theta_stats=[[theta_x_avg, theta_x_std],
-                                        [theta_y_avg, theta_y_std]],
+                           theta_stats=[theta_x_std, theta_y_std],
                            camera=camera,
                            quiet=args.quiet)
     else:
