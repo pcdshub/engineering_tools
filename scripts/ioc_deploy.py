@@ -88,16 +88,17 @@ if sys.version_info >= (3, 7, 0):
         Argparse argument types for type checking.
         """
 
-        name: str = ""
-        release: str = ""
-        ioc_dir: str = ""
-        github_org: str = ""
-        path_override: str = ""
-        auto_confirm: bool = False
-        dry_run: bool = False
-        verbose: bool = False
-        version: bool = False
-        permissions: str = ""
+        subparser: str
+        name: str
+        release: str
+        ioc_dir: str
+        github_org: str
+        path_override: str
+        auto_confirm: bool
+        dry_run: bool
+        verbose: bool
+        version: bool
+        permissions: str
 
     @dataclasses.dataclass(frozen=True)
     class DeployInfo:
@@ -116,11 +117,23 @@ else:
     DeployInfo = SimpleNamespace
 
 
+# Separate from class def because still supporting rhel7 built-in python3 at 3.6.8
+DEFAULT_ARGS = CliArgs(
+    subparser="",
+    name="",
+    release="",
+    ioc_dir=str(Path(os.environ.get("EPICS_SITE_TOP", EPICS_SITE_TOP_DEFAULT)) / "ioc"),
+    github_org=os.environ.get("GITHUB_ORG", GITHUB_ORG_DEFAULT),
+    path_override="",
+    auto_confirm=False,
+    dry_run=False,
+    verbose=False,
+    version=False,
+    permissions="",
+)
+
+
 def get_parser(subparser: str = "") -> argparse.ArgumentParser:
-    current_default_target = str(
-        Path(os.environ.get("EPICS_SITE_TOP", EPICS_SITE_TOP_DEFAULT)) / "ioc"
-    )
-    current_default_org = os.environ.get("GITHUB_ORG", GITHUB_ORG_DEFAULT)
     main_parser = argparse.ArgumentParser(
         prog="ioc-deploy",
         description=__doc__,
@@ -130,7 +143,7 @@ def get_parser(subparser: str = "") -> argparse.ArgumentParser:
     main_parser.add_argument(
         "--version", action="store_true", help="Show version number and exit."
     )
-    subparsers = main_parser.add_subparsers(help="Subcommands (will not deploy):")
+    subparsers = main_parser.add_subparsers(help="Subcommands (will not deploy):", dest="subparser")
     # perms_parser unique arguments that should go first
     perms_parser = subparsers.add_parser(
         PERMS_CMD,
@@ -167,7 +180,7 @@ def get_parser(subparser: str = "") -> argparse.ArgumentParser:
             "--name",
             "-n",
             action="store",
-            default="",
+            default=argparse.SUPPRESS,
             help=(
                 "The name of the repository to deploy. This is a required argument. "
                 "If it does not exist on github, we'll also try prepending with 'ioc-common-'."
@@ -177,24 +190,25 @@ def get_parser(subparser: str = "") -> argparse.ArgumentParser:
             "--release",
             "-r",
             action="store",
-            default="",
+            default=argparse.SUPPRESS,
             help="The version of the IOC to deploy. This is a required argument.",
         )
         parser.add_argument(
             "--ioc-dir",
             "-i",
             action="store",
-            default=current_default_target,
+            default=argparse.SUPPRESS,
             help=(
                 f"The directory to deploy IOCs in. This defaults to $EPICS_SITE_TOP/ioc, "
                 f"or {EPICS_SITE_TOP_DEFAULT}/ioc if the environment variable is not set. "
-                f"With your current environment variables, this defaults to {current_default_target}."
+                f"With your current environment variables, this defaults to {DEFAULT_ARGS.ioc_dir}."
             ),
         )
         parser.add_argument(
             "--path-override",
             "-p",
             action="store",
+            default=argparse.SUPPRESS,
             help=(
                 "If provided, ignore all normal path-selection rules in favor of the specific provided path. "
                 "This will let you deploy IOCs or apply protection rules to arbitrary specific paths."
@@ -206,11 +220,13 @@ def get_parser(subparser: str = "") -> argparse.ArgumentParser:
             "--yes",
             "-y",
             action="store_true",
+            default=argparse.SUPPRESS,
             help="Skip the confirmation promps, automatically saying yes to each one.",
         )
         parser.add_argument(
             "--dry-run",
             action="store_true",
+            default=argparse.SUPPRESS,
             help="Do not deploy anything, just print what would have been done.",
         )
         parser.add_argument(
@@ -218,6 +234,7 @@ def get_parser(subparser: str = "") -> argparse.ArgumentParser:
             "-v",
             "--debug",
             action="store_true",
+            default=argparse.SUPPRESS,
             help="Display additional debug information.",
         )
     # main_parser unique arguments that should go last
@@ -225,11 +242,11 @@ def get_parser(subparser: str = "") -> argparse.ArgumentParser:
         "--github_org",
         "--org",
         action="store",
-        default=current_default_org,
+        default=DEFAULT_ARGS.github_org,
         help=(
             "The github org to deploy IOCs from. "
             f"This defaults to $GITHUB_ORG, or {GITHUB_ORG_DEFAULT} if the environment variable is not set. "
-            f"With your current environment variables, this defaults to {current_default_org}."
+            f"With your current environment variables, this defaults to {DEFAULT_ARGS.github_org}."
         ),
     )
     if not subparser:
@@ -239,6 +256,25 @@ def get_parser(subparser: str = "") -> argparse.ArgumentParser:
     elif subparser == REBUILD_CMD:
         return rebuild_parser
     raise ValueError(f"Subparser argument must be empty string or one of {ALL_SUBCOMMANDS}, not {subparser}")
+
+
+def args_to_dataclass(args: argparse.Namespace) -> CliArgs:
+    """
+    Interpret the results of argparse as a CliArgs dataclass.
+
+    Unlike a standard argparse parsing, we could be missing
+    arguments entirely from the namespace via argparse.SUPPRESS.
+
+    This is required because our subparsers share arguments
+    with the main parser, and if they have default values
+    they will override the main parser every time.
+
+    Therefore, it's the duty of this function to fill in any
+    missing arguments with their default values.
+    """
+    kw = vars(DEFAULT_ARGS)
+    kw.update(vars(args))
+    return CliArgs(**kw)
 
 
 def is_yes(option: str, error_on_empty: bool = True) -> bool:
@@ -1109,64 +1145,11 @@ def print_help_text_for_readme():
     print("\n".join(output))
 
 
-def rearrange_sys_argv_for_subcommands() -> str:
-    """
-    Small trick to help argparse deal with my optional subcommand.
-
-    Warning: this mutates sys.argv in place!
-
-    This will make argv like this:
-    ioc-deploy -p some_path update-perms ro
-    be interpreted the same as:
-    ioc-deploy update-perms ro -p some_path
-
-    Otherwise, the first example here is interpreted as if -p was never passed,
-    which could be confusing.
-
-    Returns
-    -------
-    subcommand: str
-        The name of the subcommand invoked, or empty string otherwise.
-    """
-    subc_index = None
-    for subcommand in ALL_SUBCOMMANDS:
-        try:
-            subc_index = sys.argv.index(subcommand)
-        except ValueError:
-            ...
-        else:
-            break
-    if subc_index is None:
-        return ""
-    subcmd = sys.argv[subc_index]
-    if subc_index == 1:
-        # It's already in the right place
-        return subcmd
-    if subcmd == PERMS_CMD:
-        num_pos_args = 1
-    elif subcmd == REBUILD_CMD:
-        num_pos_args = 0
-    else:
-        # This code path shouldn't be possible, but paranoia is good
-        raise RuntimeError(f"Invalid subcmd {subcmd}")
-    # Gather required positional args associated with the subcompand
-    pos_args = sys.argv[subc_index + 1 : subc_index + 2 + num_pos_args]
-    # Rearrange: remove the subcmd stuff and put in front
-    sys.argv.remove(subcmd)
-    for some_arg in pos_args:
-        sys.argv.remove(some_arg)
-    sys.argv.insert(1, subcmd)
-    for n, some_arg in enumerate(pos_args):
-        sys.argv.insert(n + 2, some_arg)
-    return subcmd
-
-
 def _main() -> int:
     """
-    Thin wrapper of main() for log setup, args handling, and high-level error handling.
+    Thin wrapper of the various main_ functions for log setup, args handling, and high-level error handling.
     """
-    subcmd = rearrange_sys_argv_for_subcommands()
-    args = CliArgs(**vars(get_parser().parse_args()))
+    args = args_to_dataclass(get_parser().parse_args())
     if args.verbose:
         level = logging.DEBUG
         fmt = "%(levelname)-8s %(name)s:%(lineno)d: %(message)s"
@@ -1186,12 +1169,14 @@ def _main() -> int:
                 "Check ioc-deploy --help for usage."
             )
             return ReturnCode.EXCEPTION
-        if not subcmd:
+        if not args.subparser:
             rval = main_deploy(args)
-        elif subcmd == PERMS_CMD:
+        elif args.subparser == PERMS_CMD:
             rval = main_perms(args)
-        elif subcmd == REBUILD_CMD:
+        elif args.subparser == REBUILD_CMD:
             rval = main_rebuild(args)
+        else:
+            raise ValueError(f"Invalid subcommand {args.subparser}")
 
     except Exception as exc:
         logger.error(exc)
