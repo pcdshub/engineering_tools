@@ -393,14 +393,14 @@ to rebuild an existing release on a new architecture or remove it entirely.
 &nbsp;
 Example command:
 &nbsp;
-"ioc-deploy -n ioc-foo-bar -r R1.0.0"
+"ioc-deploy -n ioc-common-foo -r R1.0.0"
 &nbsp;
 This will clone the repository to the default ioc directory and run make using the
 currently set EPICS environment variables, then apply write protection.
 &nbsp;
 With default settings, this will clone
-from https://github.com/pcdshub/ioc-foo-bar
-to /cds/group/pcds/epics/ioc/foo/bar/R1.0.0
+from https://github.com/pcdshub/ioc-common-foo
+to /cds/group/pcds/epics/ioc/common/foo/R1.0.0
 then cd and make and chmod as appropriate.
 &nbsp;
 If the repository exists but the tag does not, the script will ask if you'd like
@@ -414,10 +414,10 @@ if this is more convenient for you.
 &nbsp;
 Example commands:
 &nbsp;
-"ioc-deploy update-perms rw -n ioc-foo-bar -r R1.0.0"
-"ioc-deploy update-perms ro -n ioc-foo-bar -r R1.0.0"
-"ioc-deploy update-perms rw -p /cds/group/pcds/epics/ioc/foo/bar/R1.0.0"
-"ioc-deploy update-perms ro -p /cds/group/pcds/epics/ioc/foo/bar/R1.0.0"
+"ioc-deploy update-perms rw -n ioc-common-foo -r R1.0.0"
+"ioc-deploy update-perms ro -n ioc-common-foo -r R1.0.0"
+"ioc-deploy update-perms rw -p /cds/group/pcds/epics/ioc/common/foo/R1.0.0"
+"ioc-deploy update-perms ro -p /cds/group/pcds/epics/ioc/common/foo/R1.0.0"
 &nbsp;
 The rebuild action will run make again on your current OS.
 It will conveniently temporarily remove write protections from the release for
@@ -426,8 +426,8 @@ Like update-perms, you can invoke this using similar commands as the deploy acti
 &nbsp;
 Example commands:
 &nbsp;
-"ioc-deploy rebuild -n ioc-foo-bar -r R1.0.0"
-"ioc-deploy rebuild -p /cds/group/pcds/epics/ioc/foo/bar/R1.0.0"
+"ioc-deploy rebuild -n ioc-common-foo -r R1.0.0"
+"ioc-deploy rebuild -p /cds/group/pcds/epics/ioc/common/foo/R1.0.0"
 &nbsp;
 positional arguments:
 &nbsp; {update-perms,rebuild}
