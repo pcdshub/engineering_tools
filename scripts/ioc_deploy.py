@@ -278,6 +278,7 @@ def args_to_dataclass(args: argparse.Namespace) -> CliArgs:
     Therefore, it's the duty of this function to fill in any
     missing arguments with their default values.
     """
+    # TODO use dataclasses.replace once we're free of py3.6
     kw = vars(DEFAULT_ARGS)
     kw.update(vars(args))
     return CliArgs(**kw)
