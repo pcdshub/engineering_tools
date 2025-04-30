@@ -1183,7 +1183,7 @@ def _main() -> int:
         logger.debug("Traceback", exc_info=True)
         rval = ReturnCode.EXCEPTION
     except KeyboardInterrupt:
-        logger.error("Interruped with ctrl+C")
+        logger.error("Interrupted with ctrl+C")
         logger.debug("Traceback", exc_info=True)
         rval = ReturnCode.NO_CONFIRM
 
