@@ -182,7 +182,9 @@ def get_parser(subparser: str = "") -> argparse.ArgumentParser:
             action="store",
             default=argparse.SUPPRESS,
             help=(
-                "The name of the repository to deploy. This is a required argument. "
+                "The name of the repository to deploy. "
+                "You must provide both the --name and --release arguments, "
+                "or the --path-override argument. "
                 "If it does not exist on github, we'll also try prepending with 'ioc-common-'."
             ),
         )
@@ -191,7 +193,11 @@ def get_parser(subparser: str = "") -> argparse.ArgumentParser:
             "-r",
             action="store",
             default=argparse.SUPPRESS,
-            help="The version of the IOC to deploy. This is a required argument.",
+            help=(
+                "The version of the IOC to deploy. "
+                "You must provide both the --name and --release arguments, "
+                "or the --path-override argument."
+            ),
         )
         parser.add_argument(
             "--ioc-dir",
