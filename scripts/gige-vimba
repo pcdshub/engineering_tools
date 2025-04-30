@@ -1,0 +1,3 @@
+#!/bin/bash
+export GENICAM_GENTL64_PATH=/cds/group/pcds/package/external/Vimba_6_0/VimbaGigETL/CTI/x86_64bit
+/cds/group/pcds/package/external/Vimba_6_0/Tools/Viewer/Bin/x86_64bit/VimbaViewer

@@ -289,6 +289,17 @@ optional arguments:<br/>
 </tr>
 
 <tr>
+    <td>gige-vimba</td>
+    <td>
+usage: gige-vimba<br/>
+Launches the Vimba Viewer GUI software for GigE Cameras from the vendor.<br/>
+This GUI lets you change camera IPs and other settings not supported by the IOC.<br/>
+It also lets you check if a camera works or change settings prior to setting up an IOC.<br/>
+It does not have any command-line arguments.<br/>
+This uses a build of the software installed in /cds/group/pcds/package/external/Vimba_6_0<br/>
+</tr>
+
+<tr>
     <td>grep_ioc</td>
     <td>
 usage: grep_ioc KEYWORD [hutch]<br/>
