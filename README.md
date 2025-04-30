@@ -442,12 +442,14 @@ positional arguments:
 optional arguments:
 &nbsp; -h, --help            show this help message and exit
 &nbsp; --version             Show version number and exit.
-&nbsp; --name NAME, -n NAME  The name of the repository to deploy. This is a
-&nbsp;                       required argument. If it does not exist on github,
-&nbsp;                       we'll also try prepending with 'ioc-common-'.
+&nbsp; --name NAME, -n NAME  The name of the repository to deploy. You must provide
+&nbsp;                       both the --name and --release arguments, or the
+&nbsp;                       --path-override argument. If it does not exist on
+&nbsp;                       github, we'll also try prepending with 'ioc-common-'.
 &nbsp; --release RELEASE, -r RELEASE
-&nbsp;                       The version of the IOC to deploy. This is a required
-&nbsp;                       argument.
+&nbsp;                       The version of the IOC to deploy. You must provide
+&nbsp;                       both the --name and --release arguments, or the
+&nbsp;                       --path-override argument.
 &nbsp; --ioc-dir IOC_DIR, -i IOC_DIR
 &nbsp;                       The directory to deploy IOCs in. This defaults to
 &nbsp;                       $EPICS_SITE_TOP/ioc, or /cds/group/pcds/epics/ioc if
@@ -487,12 +489,14 @@ positional arguments:
 &nbsp;
 optional arguments:
 &nbsp; -h, --help            show this help message and exit
-&nbsp; --name NAME, -n NAME  The name of the repository to deploy. This is a
-&nbsp;                       required argument. If it does not exist on github,
-&nbsp;                       we'll also try prepending with 'ioc-common-'.
+&nbsp; --name NAME, -n NAME  The name of the repository to deploy. You must provide
+&nbsp;                       both the --name and --release arguments, or the
+&nbsp;                       --path-override argument. If it does not exist on
+&nbsp;                       github, we'll also try prepending with 'ioc-common-'.
 &nbsp; --release RELEASE, -r RELEASE
-&nbsp;                       The version of the IOC to deploy. This is a required
-&nbsp;                       argument.
+&nbsp;                       The version of the IOC to deploy. You must provide
+&nbsp;                       both the --name and --release arguments, or the
+&nbsp;                       --path-override argument.
 &nbsp; --ioc-dir IOC_DIR, -i IOC_DIR
 &nbsp;                       The directory to deploy IOCs in. This defaults to
 &nbsp;                       $EPICS_SITE_TOP/ioc, or /cds/group/pcds/epics/ioc if
@@ -521,12 +525,14 @@ write permissions, run make, and then reapply permission restrictions.
 &nbsp;
 optional arguments:
 &nbsp; -h, --help            show this help message and exit
-&nbsp; --name NAME, -n NAME  The name of the repository to deploy. This is a
-&nbsp;                       required argument. If it does not exist on github,
-&nbsp;                       we'll also try prepending with 'ioc-common-'.
+&nbsp; --name NAME, -n NAME  The name of the repository to deploy. You must provide
+&nbsp;                       both the --name and --release arguments, or the
+&nbsp;                       --path-override argument. If it does not exist on
+&nbsp;                       github, we'll also try prepending with 'ioc-common-'.
 &nbsp; --release RELEASE, -r RELEASE
-&nbsp;                       The version of the IOC to deploy. This is a required
-&nbsp;                       argument.
+&nbsp;                       The version of the IOC to deploy. You must provide
+&nbsp;                       both the --name and --release arguments, or the
+&nbsp;                       --path-override argument.
 &nbsp; --ioc-dir IOC_DIR, -i IOC_DIR
 &nbsp;                       The directory to deploy IOCs in. This defaults to
 &nbsp;                       $EPICS_SITE_TOP/ioc, or /cds/group/pcds/epics/ioc if
