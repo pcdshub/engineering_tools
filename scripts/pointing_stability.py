@@ -284,7 +284,7 @@ def make_figures(x_positions: NDArray,
         axs[1].set_ylabel("Counts")
         axs[1].set_box_aspect(1)
         row_labels = row_labels + ['\u03b8 std_dev (\u03bcrad)']
-        table_data = table_data + [theta_x_std, theta_y_std]
+        table_data = table_data + [[theta_x_std, theta_y_std]]
     # Now add the table
     table_data = [[f'{item:2.3e}' for item in row] for row in table_data]
     axs[-1].table(cellText=table_data,
@@ -438,7 +438,7 @@ def main():
     fig.savefig(f"{file_dest}.png")
 
     if not args.quiet:
-        fig.show()
+        plt.show()
 
 
 if __name__ == '__main__':
