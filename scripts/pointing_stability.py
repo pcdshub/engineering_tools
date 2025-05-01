@@ -7,6 +7,7 @@ import argparse
 import os
 import time
 from functools import partial
+from typing import Optional
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -208,11 +209,14 @@ def calc_angular_displacement(centered_data: NDArray,
     return [theta, theta_avg, theta_std]
 
 
-def make_figures(position_data: list[NDArray],
+def make_figures(x_positions: NDArray,
+                 y_positions: NDArray,
                  pos_stabilities: list[float],
                  camera: str, num_plots: int = 3, quiet: bool = False,
-                 theta_data: list[NDArray] = None,
-                 theta_stats: list[list[float]] = None
+                 theta_x: Optional[NDArray] = None,
+                 theta_y: Optional[NDArray] = None,
+                 theta_x_std: Optional[float] = None,
+                 theta_y_std: Optional[float] = None
                  ) -> Figure:
     """
     Generate the figures for the pointing stability output. Optionally
@@ -220,8 +224,10 @@ def make_figures(position_data: list[NDArray],
 
     Parameters
     -----------
-    position_data (list[NDArray]):
-        List of the centered position data. e.g. [x_centered, y_centered]
+    x_positions (NDArray):
+        Positions of mean-centered centroids in X
+    y_positions (NDArray):
+        Positions of mean-centered centroids in Y
     pos_stabilities (list[float]):
         List of positional stabilities. e.g. [x_stability, y_stability]
     camera (str):
@@ -230,26 +236,28 @@ def make_figures(position_data: list[NDArray],
         Number of plots to use. Defaults to 3.
     quiet (bool, optional):
         Surpress printing the graphic. Defaults to False.
-    theta_data (list[NDArray], optional):
-        Angular data, typically in the form of [theta_x, theta_y]. Defaults to None.
-    theta_stats (list[list[float]], optional):
-        Statistics for the angular data.
-        e.g. [[theta_x_avg, theta_x_std], [theta_y_avg, theta_y_std]]
-        Defaults to None.
+    theta_x (NDArray, optional):
+        Angular data in X. Defaults to None.
+    theta_y (NDArray, optional):
+        Angular data in Y. Defaults to None.
+    theta_x_std (float, optional):
+        Standard deviation in theta_x
+    theta_y_std (float, optional):
+        Standard deviation in theta_y
 
     Returns
     --------
         Figure: matplotlib Figure
     """
-    if not theta_data:
+    if any([_item is None for _item in [theta_x, theta_y]]):
         num_plots = 2
     fig, axs = plt.subplots(num_plots,
                             height_ratios=(num_plots-1)*[1]+[0.5])
     # Positional displacement plot
-    _positions = np.asarray(position_data)
+    _positions = np.asarray([x_positions, y_positions])
     _min = _positions.min()*1.05
     _max = _positions.max()*1.05
-    axs[0].scatter(x=position_data[0], y=position_data[-1])
+    axs[0].scatter(x=x_positions, y=y_positions)
     axs[0].axhline(y=0, color='black', linestyle='--')
     axs[0].axvline(x=0, color='black', linestyle='--')
     axs[0].set_xlim(_min, _max)
@@ -262,12 +270,12 @@ def make_figures(position_data: list[NDArray],
     row_labels = ['\u0394 (\u03bcm)']
     table_data = [pos_stabilities]
     # Angular displacement subplot
-    if theta_data:
-        axs[1].hist(theta_data[0], bins='fd',
+    if not any([_item is None for _item in [theta_x, theta_y]]):
+        axs[1].hist(theta_x, bins='fd',
                     fc=(0, 0, 1, 0.5),
                     edgecolor='black',
                     label='X')
-        axs[1].hist(theta_data[-1], bins='fd',
+        axs[1].hist(theta_y, bins='fd',
                     fc=(1, 0.25, 0.25, 0.5),
                     edgecolor='black',
                     label='Y')
@@ -276,9 +284,9 @@ def make_figures(position_data: list[NDArray],
         axs[1].set_ylabel("Counts")
         axs[1].set_box_aspect(1)
         row_labels = row_labels + ['\u03b8 std_dev (\u03bcrad)']
-        table_data = table_data + [theta_stats]
+        table_data = table_data + [theta_x_std, theta_y_std]
     # Now add the table
-    table_data = [[f'{_s:2.3e}' for _s in _ls] for _ls in table_data]
+    table_data = [[f'{item:2.3e}' for item in row] for row in table_data]
     axs[-1].table(cellText=table_data,
                   cellLoc='center',
                   loc='center',
@@ -389,14 +397,18 @@ def main():
     # Plotting outputs
     # #-----------------------------------------------------------------------------------------# #
     if not args.near_field:
-        fig = make_figures(position_data=[x_centered, y_centered],
+        fig = make_figures(x_positions=x_centered,
+                           y_positions=y_centered,
                            pos_stabilities=pos_stabilities,
-                           theta_data=[theta_x, theta_y],
-                           theta_stats=[theta_x_std, theta_y_std],
+                           theta_x=theta_x,
+                           theta_y=theta_y,
+                           theta_x_std=theta_x_std,
+                           theta_y_std=theta_y_std,
                            camera=camera,
                            quiet=args.quiet)
     else:
-        fig = make_figures([x_centered, y_centered],
+        fig = make_figures(x_positions=x_centered,
+                           y_positions=y_centered,
                            pos_stabilities=pos_stabilities,
                            camera=camera,
                            quiet=args.quiet)
