@@ -155,8 +155,8 @@ def connect_centroids(cam_prefix: str) -> list[PV]:
     centroid_x = PV(f'{cam_prefix}Stats2:CentroidX_RBV', connection_timeout=5)
     centroid_y = PV(f'{cam_prefix}Stats2:CentroidY_RBV', connection_timeout=5)
 
-    centroid_x.wait_for_connection()
-    centroid_y.wait_for_connection()
+    centroid_x.wait_for_connection(timeout=5)
+    centroid_y.wait_for_connection(timeout=5)
 
     return centroid_x, centroid_y
 
