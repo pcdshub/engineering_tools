@@ -292,7 +292,7 @@ optional arguments:<br/>
     <td>gige-vimba</td>
     <td>
 usage: gige-vimba<br/>
-Launches the Vimba Viewer GUI software for GigE Cameras from the vendor.<br/>
+Launches the Vimba Viewer GUI software for GigE Cameras from Allied Vision.<br/>
 This GUI lets you change camera IPs and other settings not supported by the IOC.<br/>
 It also lets you check if a camera works or change settings prior to setting up an IOC.<br/>
 It does not have any command-line arguments.<br/>
