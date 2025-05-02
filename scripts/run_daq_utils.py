@@ -116,9 +116,11 @@ def main():
     # configuration files, or any external setup beyond `get_info` and `DAQMGR_HUTCHES`.
     if args.cmd == "isdaqmgr":
         if check_isdaqmgr():
-            sys.exit(0)
+            print("true")
+            sys.exit()
         else:
-            sys.exit(1)
+            print("false")
+            sys.exit()
 
     if not has_slurm():
         sys.exit(
