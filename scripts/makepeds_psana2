@@ -409,10 +409,10 @@ ls -ltr "$XTCDIR"/*r"$RUNSTR"*s*xtc*
 
 echo Check detectors: 
 
-CMD="detnames -r exp="${EXP}",run="${RUN}",dir="${XTCDIR}" > /tmp/detnames_"$EXP"_"$CREATE_TIME
-if ! $CMD; then
+detnames -r exp="${EXP}",run="${RUN}",dir="${XTCDIR}" > /tmp/detnames_"$EXP"_"$CREATE_TIME"
+if $?; then
     echo 'detnames failed'
-    return 8
+    exit 8
 fi
 #running local
 echo "-----------------------"
