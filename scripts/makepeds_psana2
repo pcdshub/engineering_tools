@@ -679,8 +679,8 @@ if [[ $HAVE_JUNGFRAU -ge 1 ]]; then
                 echo "Checking job $JOBID"
                 if grep -q 'exit code' "$WORKDIR"/*"$JOBID".out; then
                     NFAILEDJOBS=$((NFAILEDJOBS+1))
-#                elif ! grep -q 'DONE' "$WORKDIR"/*"$JOBID".out; then
-#                    NFAILEDJOBS=$((NFAILEDJOBS+1))
+                elif ! grep -q 'End' "$WORKDIR"/*"$JOBID".out; then
+                    NFAILEDJOBS=$((NFAILEDJOBS+1))
                 fi
             done
 
