@@ -16,10 +16,20 @@ fi
 
 # Check if the current's user hutch uses daqmgr. If so,
 # use the python utilities to manage the daq.
-if [ "$(daqutils isdaqmgr)" = "true" ]; then
-    daqutils $(basename "$0") $@
-    exit 0
-fi
+checkdaqroute "$(basename "$0")" "$@"
+case $? in
+    1)
+        # Not a daqmgr hutch — proceed with local fallback
+        ;;
+    2)
+        echo "Error: Unable to determine DAQ manager status." >&2
+        exit 2
+        ;;
+    *)
+        # Handled by checkdaqroute or failed internally — already exited
+        exit $?
+        ;;
+esac
 
 HUTCH=$(get_info --gethutch)
 DAQHOST=$(wheredaq)
@@ -41,7 +51,7 @@ fi
 unset PYTHONPATH
 unset LD_LIBRARY_PATH
 
-#go to hutches DAQ scripts directory 
+#go to hutches DAQ scripts directory
 #(puts pid file in consistent location - necessary for stopping for LCLS-II DAQ)
 cd /reg/g/pcds/dist/pds/"$HUTCH"/scripts/ || exit
 
@@ -59,7 +69,7 @@ PLATFORM=$(grep 'if not platform' /reg/g/pcds/dist/pds/"$HUTCH"/scripts/"$CNFFIL
 if [[ "$DAQHOST" != 'DAQ is not running' ]]; then
     T="$(date +%s%N)"
     echo stop the DAQ from "$HOSTNAME"
-    $PROCMGR stop /reg/g/pcds/dist/pds/"$HUTCH"/scripts/$CNFFILE    
+    $PROCMGR stop /reg/g/pcds/dist/pds/"$HUTCH"/scripts/"$CNFFILE"
     if [ -f /reg/g/pcds/dist/pds/"$HUTCH"/scripts/p"$PLATFORM""$CNFEXT".running ]; then
 	echo 'the DAQ did not stop properly, exit now and try again or call your POC or the DAQ phone'
 	exit

@@ -410,6 +410,10 @@ ls -ltr "$XTCDIR"/*r"$RUNSTR"*s*xtc*
 echo Check detectors: 
 
 detnames -r exp="${EXP}",run="${RUN}",dir="${XTCDIR}" > /tmp/detnames_"$EXP"_"$CREATE_TIME"
+if $?; then
+    echo 'detnames failed'
+    exit 8
+fi
 #running local
 echo "-----------------------"
 echo 'XTC files contain:'
@@ -675,7 +679,7 @@ if [[ $HAVE_JUNGFRAU -ge 1 ]]; then
                 echo "Checking job $JOBID"
                 if grep -q 'exit code' "$WORKDIR"/*"$JOBID".out; then
                     NFAILEDJOBS=$((NFAILEDJOBS+1))
-                elif ! grep -q 'DONE' "$WORKDIR"/*"$JOBID".out; then
+                elif ! grep -q 'End' "$WORKDIR"/*"$JOBID".out; then
                     NFAILEDJOBS=$((NFAILEDJOBS+1))
                 fi
             done
