@@ -410,10 +410,11 @@ ls -ltr "$XTCDIR"/*r"$RUNSTR"*s*xtc*
 echo Check detectors: 
 
 detnames -r exp="${EXP}",run="${RUN}",dir="${XTCDIR}" > /tmp/detnames_"$EXP"_"$CREATE_TIME"
-if $?; then
+if [ $? -ne 0 ]; then
     echo 'detnames failed'
     exit 8
 fi
+
 #running local
 echo "-----------------------"
 echo 'XTC files contain:'
@@ -430,6 +431,8 @@ if [ "$DEPLOY" == 1 ]; then
 fi
 
 HAVE_EPIX100=$(grep -c epix100 /tmp/detnames_"$EXP"_"$CREATE_TIME")
+#REMOVE BEFORE COMMIT
+HAVE_EPIX100=0
 if [[ $HAVE_EPIX100 -ge 1 ]]; then
     DETNAMES=$(grep epix100 /tmp/detnames_"$EXP"_"$CREATE_TIME" | grep raw | awk  'BEGIN { FS = "|"}; {print $1}' | paste -d " " -s)
     DETTYPES=$(grep epix100 /tmp/detnames_"$EXP"_"$CREATE_TIME" | grep raw | awk  'BEGIN { FS = "|"}; {print $2}' | paste -d " " -s)
@@ -472,6 +475,30 @@ if [[ $HAVE_ARCHON -ge 1 ]]; then
 	MYDETTYPE="${DETTYPES[i]// /}"
         if [ "$MYDETTYPE" = 'archon' ]; then
             echo 'now calibrate...'
+            CMD="det_dark_proc -d $MYDET -k exp=$EXP,run=$RUN,dir=$XTCDIR -L INFO $LOCARG"
+            echo "$CMD"
+            $CMD
+        fi
+    done
+fi
+
+HAVE_AXIS_SVLS=$(grep -c axis_svls /tmp/detnames_"$EXP"_"$CREATE_TIME")
+if [[ $HAVE_AXIS_SVLS -ge 1 ]]; then
+    DETNAMES=$(grep axis_svls /tmp/detnames_"$EXP"_"$CREATE_TIME" | grep raw | awk  'BEGIN { FS = "|"}; {print $1}' | paste -d " " -s)
+    DETTYPES=$(grep axis_svls /tmp/detnames_"$EXP"_"$CREATE_TIME" | grep raw | awk  'BEGIN { FS = "|"}; {print $2}' | paste -d " " -s)
+    for i in "${!DETNAMES[@]}"; do
+	LOCARG=$ARG' -o '$CALIBDIR
+        if [[ -v VALSTR ]]; then
+            LOCARG=$LOCARG' -t '$VALSTR
+        fi
+        if [[ -v NRECS1 ]]; then
+            LOCARG=$LOCARG' --nrecs1 '$NRECS1
+        fi
+
+        MYDET="${DETNAMES[i]// /}"
+	MYDETTYPE="${DETTYPES[i]// /}"
+        if [ "$MYDETTYPE" = 'pv' ]; then
+            echo 'now calibrate...'$MYDET
             CMD="det_dark_proc -d $MYDET -k exp=$EXP,run=$RUN,dir=$XTCDIR -L INFO $LOCARG"
             echo "$CMD"
             $CMD
@@ -621,6 +648,12 @@ if [[ $HAVE_JUNGFRAU -ge 1 ]]; then
 	    NSEG=99
             if [[ $JUNGFRAU =~ "16M" ]]; then
 	        NSEG=32; 
+	    elif [[ $JUNGFRAU =~ "4M" ]]; then
+	        NSEG=8; 
+	    elif [[ $JUNGFRAU =~ "1M" ]]; then
+	        NSEG=2; 
+	    elif [[ $EXP =~ "mfx" ]]; then #note that this is a hotfix!
+	        NSEG=32; 
 	    fi
             for calibcycle in {0..2}; do
                 nextcycle=$(( calibcycle + 1 ))
@@ -628,11 +661,13 @@ if [[ $HAVE_JUNGFRAU -ge 1 ]]; then
                 echo "---------------JUNGFRAU PEDESTALS FOR CYCLE $calibcycle --------------------"
                 if [[ $RUNLOCAL != 1 ]]; then
                     for ((segment=0; segment<$NSEG; segment++)); do
-		        if [ $NSEG -lt 99 ]; then
-		            CMDS=$CMD' --idx '$segment
-		        else
-			    CMDS=$CMD
-			fi
+			CMDS=$CMD
+			#commenting this out as MFX currently only uses 4 of the 16 segments
+		        #if [ $NSEG -lt 99 ]; then
+		        #    CMDS=$CMD' --idx '$segment
+		        #else
+			#    CMDS=$CMD
+			#fi
                         tmpScript=$(mktemp -p $WORKDIR jungfrau_pedestals_tmpXXXXX.sh)
                         #trap "rm -f $tmpScript" EXIT
                         chmod u+x "$tmpScript"
@@ -651,10 +686,15 @@ if [[ $HAVE_JUNGFRAU -ge 1 ]]; then
 			if [ "$NSEG" -eq 99 ]; then
 			    break
 	                fi
+			#this here is while we don't have a 32 segment jungfrau available
+			if [ "$NSEG" -eq 32 ]; then
+			    break
+	                fi
 		    done
                 else            
                     echo "$CMD"
-                    $CMD
+		    #PLEASE CHANGE BEFOER COMMITTING
+                    #$CMD
                 fi
             done
             ALLJOBIDS=("${JOBIDS[@]}")
@@ -687,6 +727,12 @@ if [[ $HAVE_JUNGFRAU -ge 1 ]]; then
         fi
 
         if [ "$DEPLOY" == 1 ]; then
+            if [[ $RUNLOCAL == 1 ]]; then
+		read -r -p "Did all jobs success and you want to deploy now (y/n)"
+                if [ "$REPLY" != "y" ];then
+                    exit 1
+                fi
+	    fi
 	    echo "---------------JUNGFRAU PEDESTALS CALCULATED NOW DEPLOY     --------------------"
             if [ $NFAILEDJOBS -gt 0 ]; then
                 read -r -p "$NFAILEDJOBS of the calibration tasks failed, do you want to continue anyways (y/n)?"
@@ -698,15 +744,21 @@ if [[ $HAVE_JUNGFRAU -ge 1 ]]; then
             for i in "${!DETNAMES[@]}"; do
                 JUNGFRAU="${DETNAMES[i]// /}"
                 #for JUNGFRAU in $DETNAMES; do
-                CMD="jungfrau_deploy_constants -D -d $JUNGFRAU -k exp=$EXP,run=$RUN,dir=$XTCDIR -L INFO -o $CALIBDIR -p psrnx -N1"
+		echo "****"
+		echo `which jungfrau_deploy_constants`
+		echo "****"
+                CMD="jungfrau_deploy_constants -D -d $JUNGFRAU -k exp=$EXP,run=$RUN,dir=$XTCDIR -L INFO -o $CALIBDIR -p psrnx"
                 if [ -v "$VALSTR" ]; then
                     echo 'setting validity....'"$VALSTR"
                     CMD=$CMD' -t '$VALSTR
                 fi
+		if [ $NSEG -lt 99 ]; then
+		    CMD=$CMD' -N '$NSEG
+		fi
 		echo "$CMD"
 		if ! $CMD; then
 		    echo 'deployment failed'
-		    return 1
+		    exit 1
 		fi
             done
 	    
