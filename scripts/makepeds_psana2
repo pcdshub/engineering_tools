@@ -726,7 +726,7 @@ if [[ $HAVE_JUNGFRAU -ge 1 ]]; then
 
         if [ "$DEPLOY" == 1 ]; then
             if [[ $RUNLOCAL == 1 ]]; then
-		read -r -p "Did all jobs success and you want to deploy now (y/n)"
+		read -r -p "Did all jobs succeed and do you want to deploy now (y/n)"
                 if [ "$REPLY" != "y" ];then
                     exit 1
                 fi
