@@ -691,8 +691,7 @@ if [[ $HAVE_JUNGFRAU -ge 1 ]]; then
 		    done
                 else            
                     echo "$CMD"
-		    #PLEASE CHANGE BEFOER COMMITTING
-                    #$CMD
+                    $CMD
                 fi
             done
             ALLJOBIDS=("${JOBIDS[@]}")
