@@ -119,9 +119,9 @@ else:
         if args.setExp:
             hutch = args.setExp[:3].upper()
             foundHutch = True
-    if not foundHutch:
-        # then ask.....outside of python
-        print('unknown_hutch')
+        else:
+            # then ask.....outside of python
+            print('unknown_hutch')
         sys.exit()
     if args.getHutch:
         print(hutch.upper())
