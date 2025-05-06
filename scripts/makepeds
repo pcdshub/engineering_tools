@@ -194,8 +194,8 @@ else
     HUTCH=${EXP:0:3}
 fi
 
-DAQ=$(get_info --daq --exp $EXP)
-if [ $DAQ == 'LCLS2' ]; then
+DAQ=$(get_info --daq --setExp $EXP)
+if [[ $DAQ == 'LCLS2' ]]; then
     echo "This is a LCLS-II experiment"
     MAKEPEDSEXE=makepeds_psana2
 else
