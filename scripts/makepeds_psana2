@@ -742,7 +742,7 @@ if [[ $HAVE_JUNGFRAU -ge 1 ]]; then
                 JUNGFRAU="${DETNAMES[i]// /}"
                 #for JUNGFRAU in $DETNAMES; do
 		echo "****"
-		echo `which jungfrau_deploy_constants`
+		echo $(which jungfrau_deploy_constants)
 		echo "****"
                 CMD="jungfrau_deploy_constants -D -d $JUNGFRAU -k exp=$EXP,run=$RUN,dir=$XTCDIR -L INFO -o $CALIBDIR -p psrnx"
                 if [ -v "$VALSTR" ]; then
