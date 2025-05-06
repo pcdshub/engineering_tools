@@ -216,9 +216,6 @@ if args.daq:
                             {"instrument_name": hutch, "station": station})
         exp = resp.json().get("value", {}).get("name")
 
-    print('get exp:')
-    print(ws_url + "/lgbk/" + exp + "/ws"
-                                 + "/file_counts_by_extension")
     r = requests.get(ws_url + "/lgbk/" + exp + "/ws"
                                  + "/file_counts_by_extension")
     r.raise_for_status()
