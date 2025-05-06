@@ -431,8 +431,6 @@ if [ "$DEPLOY" == 1 ]; then
 fi
 
 HAVE_EPIX100=$(grep -c epix100 /tmp/detnames_"$EXP"_"$CREATE_TIME")
-#REMOVE BEFORE COMMIT
-HAVE_EPIX100=0
 if [[ $HAVE_EPIX100 -ge 1 ]]; then
     DETNAMES=$(grep epix100 /tmp/detnames_"$EXP"_"$CREATE_TIME" | grep raw | awk  'BEGIN { FS = "|"}; {print $1}' | paste -d " " -s)
     DETTYPES=$(grep epix100 /tmp/detnames_"$EXP"_"$CREATE_TIME" | grep raw | awk  'BEGIN { FS = "|"}; {print $2}' | paste -d " " -s)
