@@ -660,7 +660,7 @@ if [[ $HAVE_JUNGFRAU -ge 1 ]]; then
                 if [[ $RUNLOCAL != 1 ]]; then
                     for ((segment=0; segment<$NSEG; segment++)); do
 			CMDS=$CMD
-			#commenting this out as MFX currently only uses 4 of the 16 segments
+			#commenting this out as MFX currently only uses 4 of the 32 segments
 		        #if [ $NSEG -lt 99 ]; then
 		        #    CMDS=$CMD' --idx '$segment
 		        #else
@@ -684,7 +684,7 @@ if [[ $HAVE_JUNGFRAU -ge 1 ]]; then
 			if [ "$NSEG" -eq 99 ]; then
 			    break
 	                fi
-			#this here is while we don't have a 32 segment jungfrau available
+			#this here is while we don't have a 32 segment jungfrau available - this belong w/ the --idx section
 			if [ "$NSEG" -eq 32 ]; then
 			    break
 	                fi
