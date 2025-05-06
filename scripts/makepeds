@@ -194,8 +194,8 @@ else
     HUTCH=${EXP:0:3}
 fi
 
-LCLS2_HUTCHES="rix, tmo, txi, ued, mfx"
-if echo "$LCLS2_HUTCHES" | grep -iw "$HUTCH" > /dev/null; then
+DAQ=$(get_info --daq --setExp $EXP)
+if [[ $DAQ == 'LCLS2' ]]; then
     echo "This is a LCLS-II experiment"
     MAKEPEDSEXE=makepeds_psana2
 else

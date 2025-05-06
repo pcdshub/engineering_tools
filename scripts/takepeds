@@ -34,6 +34,10 @@ if [[ "$(daqutils isdaqmgr)" = "true" || ${HUTCH} =~ 'ued' ]]; then
     elif [[ ${HUTCH} =~ 'mfx' ]]; then
         source $SIT_ENV_DIR/setup_env.sh
         jungfrau_pedestal_scan --record 1 --hutch ${HUTCH} -p 0 -g 1 -v -t 10000 -C drp-srcf-cmp014
+    elif [[ ${HUTCH} =~ 'rix' ]]; then
+        echo "Running LCLS2 RIX specific pedestal acquisition..."
+        source /cds/group/pcds/dist/pds/rix/scripts/setup_env.sh
+        timed_run --duration="60" --config="/cds/group/pcds/dist/pds/rix/scripts/rix.py" --record
     fi
 else
     echo "This is an LCLS-I experiment"
@@ -46,6 +50,8 @@ else
 fi
 
 if [ $? -eq 0 ]; then
+    echo 'Finished taking the pedestals, now posting to the elog'
+    echo 'Please call: makepeds -q milano -r '`get_lastRun`' -u <userID>'
     elogMessage="DARK"
     source pcds_conda
     PYCMD=LogBookPost
@@ -54,7 +60,6 @@ if [ $? -eq 0 ]; then
     echo $PYCMD -i "${HUTCH^^}" -u `whoami` -e "$EXP"  -t DARK  -r $RUN -m "$elogMessage"
     $PYCMD -i "${HUTCH^^}" -u `whoami` -p pcds -e "$EXP"  -t DARK  -r $RUN -m "$elogMessage"&
 
-    echo 'Please call: makepeds -q milano -r '`get_lastRun`' -u <userID>'
 else
     echo 'takepeds failed, make sure the DAQ is setup appropriately!'
 fi
