@@ -52,7 +52,6 @@ fi
 if [ $? -eq 0 ]; then
     echo 'Finished taking the pedestals, now posting to the elog'
     echo 'Please call: makepeds -q milano -r '`get_lastRun`' -u <userID>'
-    echo 'Now posting to the elog: '
     elogMessage="DARK"
     source pcds_conda
     PYCMD=LogBookPost
