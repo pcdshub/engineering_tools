@@ -10,7 +10,7 @@ on:
 jobs:
   get_changed_files:
     name: "get_changed_files"
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     outputs:
       PROJECT_FILES: ${{ steps.changed_files.outputs.PROJECT_FILES }}
     steps:
