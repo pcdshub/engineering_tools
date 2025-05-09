@@ -32,7 +32,7 @@ if [[ ($1 == "--help") || ($1 == "-h") ]]; then
 fi
 
 CORESIZE=0
-while getopts "m:pwscdu:" OPTION
+while getopts "m:pwscdCu:v" OPTION
 do
     case $OPTION in
 	p)
@@ -51,11 +51,17 @@ do
  	    CORESIZE=2000000000
  	    ;;
 	u)
-            UED_CNF=$OPTARG
-            ;;
+        UED_CNF=$OPTARG
+        ;;
+    C)
+        DAQMGR_CNF=$OPTARG
+        ;;
  	d)
  	    DSSTEST=1
  	    ;;
+    v)
+        VERBOSE=1
+        ;;
 	?)
 	    usage
 	    exit 1
@@ -63,6 +69,10 @@ do
 
 	esac
 done
+
+# Prevent ShellCheck SC2034 warning for unused vars passed to other scripts
+# shellcheck disable=SC2034
+: "$DAQMGR_CNF" "$VERBOSE"
 
 if [[ $(whoami) != *'opr'* ]]; then
     echo "Please run the DAQ from the operator account!"
