@@ -59,7 +59,6 @@ cd /reg/g/pcds/dist/pds/"$HUTCH"/scripts/ || exit
 #   on the daqutils check above. only UED is procmgr DAQ hutch
 LCLS2_HUTCHES="ued"
 if echo "$LCLS2_HUTCHES" | grep -iw "$HUTCH" > /dev/null; then
-    # shellcheck disable=SC1090
     source /reg/g/pcds/dist/pds/"$HUTCH"/scripts/setup_env.sh
     PROCMGR='procmgr'
 else
