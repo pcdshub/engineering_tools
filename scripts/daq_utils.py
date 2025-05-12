@@ -8,7 +8,6 @@ import logging
 import os
 import socket
 import subprocess
-import sys
 import time
 from subprocess import PIPE
 
@@ -117,13 +116,6 @@ class DaqManager:
         self.sbman = SbatchManager(self.user)
         self.scripts_dir = f"/reg/g/pcds/dist/pds/{self.hutch}/scripts"
         self.cnf_file = f"{self.hutch}.py" if cnf is None else cnf
-
-        full_path_cnf_file = os.path.join(self.scripts_dir, self.cnf_file)
-        if os.path.isfile(full_path_cnf_file):
-            logging.debug("Using configuration file: %s", full_path_cnf_file)
-        else:
-            sys.exit("Exiting: Configuration file '' not found.")
-
         logging.debug(
             "DaqManager initialized for hutch %s with config %s",
             self.hutch,

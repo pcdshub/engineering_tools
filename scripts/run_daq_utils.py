@@ -8,6 +8,7 @@ verbose and configuration file arguments and provides commands.
 import argparse
 import getpass
 import logging
+import os
 import shutil
 import socket
 import sys
@@ -88,7 +89,7 @@ def parse_args():
     parser.add_argument(
         "-v", "--verbose", action="store_true", help="Increase output verbosity"
     )
-    parser.add_argument("-C", "--cnf", type=str, help="Path to configuration file")
+    parser.add_argument("--cnf", type=str, help="Path to configuration file")
     parser.add_argument(
         "-m",
         "--aimhost",
@@ -126,7 +127,12 @@ def main():
             "Exiting: Slurm is required for launching daq processes. Please install Slurm and try again."
         )
 
-    if not args.cnf:
+    if args.cnf:
+        if os.path.isfile(args.cnf):
+            logging.debug("Using configuration file: %s", args.cnf)
+        else:
+            sys.exit(f"Exiting: Configuration file '{args.cnf}' not found.")
+    else:
         logging.debug("No configuration file provided. Using default configuration.")
 
     user = getpass.getuser()
