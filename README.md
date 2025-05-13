@@ -148,8 +148,8 @@ For example,
 <tr>
     <td>dev_conda</td>
     <td>
- Source this to activate a shared in-development version of a pcds conda environment.<br/>
-     The environment provided by this is not guaranteed to be stable.
+Source this to activate a shared in-development version of a pcds conda environment.<br/>
+The environment provided by this is not guaranteed to be stable.
     </td>
 </tr>
 
@@ -736,9 +736,9 @@ usage: motorInfo MOTOR_PV (motor_pv_2/autosave/archive/pmgr_diff/pmgr_save) OPT<
 <tr>
     <td>pcds_conda</td>
     <td>
- Source this to activate a pcds conda environment.<br/>
-     By default, this activates the latest environment.<br/>
-     Use export PCDS_CONDA_VER=VERSION before running to pick a different env.
+Source this to activate a pcds conda environment.<br/>
+By default, this activates the latest environment.<br/>
+Use export PCDS_CONDA_VER=VERSION before running to pick a different env.
     </td>
 </tr>
 
