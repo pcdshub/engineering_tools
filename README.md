@@ -289,6 +289,17 @@ optional arguments:<br/>
 </tr>
 
 <tr>
+    <td>gige-vimba</td>
+    <td>
+usage: gige-vimba<br/>
+Launches the Vimba Viewer GUI software for GigE Cameras from Allied Vision.<br/>
+This GUI lets you change camera IPs and other settings not supported by the IOC.<br/>
+It also lets you check if a camera works or change settings prior to setting up an IOC.<br/>
+It does not have any command-line arguments.<br/>
+This uses a build of the software installed in /cds/group/pcds/package/external/Vimba_6_0<br/>
+</tr>
+
+<tr>
     <td>grep_ioc</td>
     <td>
 usage: grep_ioc KEYWORD [hutch]<br/>
@@ -371,12 +382,14 @@ usage: ioc-deploy [-h] [--version] [--name NAME] [--release RELEASE]
 &nbsp;                 [--ioc-dir IOC_DIR] [--path-override PATH_OVERRIDE]
 &nbsp;                 [--auto-confirm] [--dry-run] [--verbose]
 &nbsp;                 [--github_org GITHUB_ORG]
-&nbsp;                 {update-perms} ...
+&nbsp;                 {update-perms,rebuild} ...
 &nbsp;
 ioc-deploy is a script for building and deploying ioc tags from github.
 &nbsp;
-It will take one of two different actions: the normal deploy action,
-or a write permissions change on an existing deployed release.
+It will take one of three different actions:
+- the normal deploy action
+- a write permissions change on an existing deployed release
+- a rebuild on an existing deployed release (perhaps on a new os)
 &nbsp;
 The normal deploy action will create a shallow clone of your IOC in the
 standard release area at the correct path and "make" it.
@@ -391,20 +404,20 @@ to rebuild an existing release on a new architecture or remove it entirely.
 &nbsp;
 Example command:
 &nbsp;
-"ioc-deploy -n ioc-foo-bar -r R1.0.0"
+"ioc-deploy -n ioc-common-foo -r R1.0.0"
 &nbsp;
 This will clone the repository to the default ioc directory and run make using the
 currently set EPICS environment variables, then apply write protection.
 &nbsp;
 With default settings, this will clone
-from https://github.com/pcdshub/ioc-foo-bar
-to /cds/group/pcds/epics/ioc/foo/bar/R1.0.0
+from https://github.com/pcdshub/ioc-common-foo
+to /cds/group/pcds/epics/ioc/common/foo/R1.0.0
 then cd and make and chmod as appropriate.
 &nbsp;
 If the repository exists but the tag does not, the script will ask if you'd like
 to make a new tag and prompt you as appropriate.
 &nbsp;
-The second action will not do any git or make actions, it will only find the
+The update-perms action will not do any git or make actions, it will only find the
 release directory and change the file and directory permissions.
 This can be done with similar commands as above, adding the subparser command,
 and it can be done by passing the specific path you'd like to modify
@@ -412,26 +425,42 @@ if this is more convenient for you.
 &nbsp;
 Example commands:
 &nbsp;
-"ioc-deploy update-perms rw -n ioc-foo-bar -r R1.0.0"
-"ioc-deploy update-perms ro -n ioc-foo-bar -r R1.0.0"
-"ioc-deploy update-perms rw -p /cds/group/pcds/epics/ioc/foo/bar/R1.0.0"
-"ioc-deploy update-perms ro -p /cds/group/pcds/epics/ioc/foo/bar/R1.0.0"
+"ioc-deploy update-perms rw -n ioc-common-foo -r R1.0.0"
+"ioc-deploy update-perms ro -n ioc-common-foo -r R1.0.0"
+"ioc-deploy update-perms rw -p /cds/group/pcds/epics/ioc/common/foo/R1.0.0"
+"ioc-deploy update-perms ro -p /cds/group/pcds/epics/ioc/common/foo/R1.0.0"
+&nbsp;
+The rebuild action will run make again on your current OS.
+It will conveniently temporarily remove write protections from the release for
+the duration of the make so you don't have to do this in multiple steps.
+Like update-perms, you can invoke this using similar commands as the deploy action.
+&nbsp;
+Example commands:
+&nbsp;
+"ioc-deploy rebuild -n ioc-common-foo -r R1.0.0"
+"ioc-deploy rebuild -p /cds/group/pcds/epics/ioc/common/foo/R1.0.0"
 &nbsp;
 positional arguments:
-&nbsp; {update-perms}        Subcommands (will not deploy):
+&nbsp; {update-perms,rebuild}
+&nbsp;                       Subcommands (will not deploy):
 &nbsp;   update-perms        Use 'ioc-deploy update-perms' to update the write
 &nbsp;                       permissions of a deployment. See 'ioc-deploy update-
 &nbsp;                       perms --help' for more information.
+&nbsp;   rebuild             Use 'ioc-deploy rebuild' to help rebuild write-
+&nbsp;                       protected releases. See 'ioc-deploy rebuild --help'
+&nbsp;                       for more information.
 &nbsp;
 optional arguments:
 &nbsp; -h, --help            show this help message and exit
 &nbsp; --version             Show version number and exit.
-&nbsp; --name NAME, -n NAME  The name of the repository to deploy. This is a
-&nbsp;                       required argument. If it does not exist on github,
-&nbsp;                       we'll also try prepending with 'ioc-common-'.
+&nbsp; --name NAME, -n NAME  The name of the repository to deploy. You must provide
+&nbsp;                       both the --name and --release arguments, or the
+&nbsp;                       --path-override argument. If it does not exist on
+&nbsp;                       github, we'll also try prepending with 'ioc-common-'.
 &nbsp; --release RELEASE, -r RELEASE
-&nbsp;                       The version of the IOC to deploy. This is a required
-&nbsp;                       argument.
+&nbsp;                       The version of the IOC to deploy. You must provide
+&nbsp;                       both the --name and --release arguments, or the
+&nbsp;                       --path-override argument.
 &nbsp; --ioc-dir IOC_DIR, -i IOC_DIR
 &nbsp;                       The directory to deploy IOCs in. This defaults to
 &nbsp;                       $EPICS_SITE_TOP/ioc, or /cds/group/pcds/epics/ioc if
@@ -471,12 +500,50 @@ positional arguments:
 &nbsp;
 optional arguments:
 &nbsp; -h, --help            show this help message and exit
-&nbsp; --name NAME, -n NAME  The name of the repository to deploy. This is a
-&nbsp;                       required argument. If it does not exist on github,
-&nbsp;                       we'll also try prepending with 'ioc-common-'.
+&nbsp; --name NAME, -n NAME  The name of the repository to deploy. You must provide
+&nbsp;                       both the --name and --release arguments, or the
+&nbsp;                       --path-override argument. If it does not exist on
+&nbsp;                       github, we'll also try prepending with 'ioc-common-'.
 &nbsp; --release RELEASE, -r RELEASE
-&nbsp;                       The version of the IOC to deploy. This is a required
-&nbsp;                       argument.
+&nbsp;                       The version of the IOC to deploy. You must provide
+&nbsp;                       both the --name and --release arguments, or the
+&nbsp;                       --path-override argument.
+&nbsp; --ioc-dir IOC_DIR, -i IOC_DIR
+&nbsp;                       The directory to deploy IOCs in. This defaults to
+&nbsp;                       $EPICS_SITE_TOP/ioc, or /cds/group/pcds/epics/ioc if
+&nbsp;                       the environment variable is not set. With your current
+&nbsp;                       environment variables, this defaults to
+&nbsp;                       /reg/g/pcds/epics/ioc.
+&nbsp; --path-override PATH_OVERRIDE, -p PATH_OVERRIDE
+&nbsp;                       If provided, ignore all normal path-selection rules in
+&nbsp;                       favor of the specific provided path. This will let you
+&nbsp;                       deploy IOCs or apply protection rules to arbitrary
+&nbsp;                       specific paths.
+&nbsp; --auto-confirm, --confirm, --yes, -y
+&nbsp;                       Skip the confirmation promps, automatically saying yes
+&nbsp;                       to each one.
+&nbsp; --dry-run             Do not deploy anything, just print what would have
+&nbsp;                       been done.
+&nbsp; --verbose, -v, --debug
+&nbsp;                       Display additional debug information.
+&nbsp;
+usage: ioc-deploy rebuild [-h] [--name NAME] [--release RELEASE]
+&nbsp;                         [--ioc-dir IOC_DIR] [--path-override PATH_OVERRIDE]
+&nbsp;                         [--auto-confirm] [--dry-run] [--verbose]
+&nbsp;
+Rebuild a deployment, even if it is write protected. This will briefly relax
+write permissions, run make, and then reapply permission restrictions.
+&nbsp;
+optional arguments:
+&nbsp; -h, --help            show this help message and exit
+&nbsp; --name NAME, -n NAME  The name of the repository to deploy. You must provide
+&nbsp;                       both the --name and --release arguments, or the
+&nbsp;                       --path-override argument. If it does not exist on
+&nbsp;                       github, we'll also try prepending with 'ioc-common-'.
+&nbsp; --release RELEASE, -r RELEASE
+&nbsp;                       The version of the IOC to deploy. You must provide
+&nbsp;                       both the --name and --release arguments, or the
+&nbsp;                       --path-override argument.
 &nbsp; --ioc-dir IOC_DIR, -i IOC_DIR
 &nbsp;                       The directory to deploy IOCs in. This defaults to
 &nbsp;                       $EPICS_SITE_TOP/ioc, or /cds/group/pcds/epics/ioc if
