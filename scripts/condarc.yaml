@@ -1,0 +1,4 @@
+# Customizations for dev-conda
+# Some options can only be set using config files
+# Included in dev_conda using the CONDARC environment variable
+env_prompt: '(dev-{default_env}) '
