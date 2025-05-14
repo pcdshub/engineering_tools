@@ -36,5 +36,6 @@ PYDM_DISPLAYS_PATH="$(cut -d ":" -f 3- <<< "${PYDM_DISPLAYS_PATH}")"
 export PYDM_DISPLAYS_PATH
 
 # In case you want to use this info
-export IS_PCDS_CONDA=0
+export IS_PCDS_CONDA=1
+export IS_TAG_CONDA=0
 export IS_DEV_CONDA=1

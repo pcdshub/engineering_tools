@@ -25,4 +25,5 @@ source "${THIS_DIR}/shared_conda_setup.sh"
 
 # In case you want to use this info
 export IS_PCDS_CONDA=1
+export IS_TAG_CONDA=1
 export IS_DEV_CONDA=0
