@@ -13,22 +13,11 @@ if [[ ($1 == "--help") || ($1 == "-h") ]]; then
 	exit 0
 fi
 
-checkdaqroute "$(basename "$0")" "$@"
-case $? in
-    1)
-        # Not a daqmgr hutch — proceed with local fallback
-        ;;
-    2)
-        echo "Error: Unable to determine DAQ manager status." >&2
-        exit 2
-        ;;
-    *)
-        # Handled by checkdaqroute or failed internally — already exited
-        exit $?
-        ;;
-esac
-
 HUTCH=$(get_hutch_name)
+if [ "$(daqutils isdaqmgr)" = "true" ]; then
+    daqutils --cnf "${HUTCH}"_ami.py stopdaq "$@"
+    exit 0
+fi
 DAQHOST=$(wheredaq)
 RESCNT=$(echo "$DAQHOST" |wc| awk '{print $2}')
 if [ "$RESCNT" -eq 1 ]; then
