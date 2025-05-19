@@ -494,8 +494,8 @@ if [[ $HAVE_AXIS_SVLS -ge 1 ]]; then
         fi
 
         MYDET="${DETNAMES[i]// /}"
-	MYDETTYPE="${DETTYPES[i]// /}"
-        if [ "$MYDETTYPE" = 'pv' ]; then
+        MYDETTYPE="${DETTYPES[i]// /}"
+        if [ "$MYDETTYPE" = 'axis' ]; then
             echo 'now calibrate...'$MYDET
             CMD="det_dark_proc -d $MYDET -k exp=$EXP,run=$RUN,dir=$XTCDIR -L INFO $LOCARG"
             echo "$CMD"
