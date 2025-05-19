@@ -23,9 +23,8 @@ SIT_ENV_DIR="/cds/group/psdm/sw"
 
 HUTCH=$(get_info --gethutch)
 #UED is still using the LCLS2 DAQ w procmgr
-if [[ "$(daqutils isdaqmgr)" = "true" || ${HUTCH} =~ 'ued' ]]; then
+if [[ "$(daqutils isdaqmgr)" = "true" ]]; then
     echo "This is an LCLS-II experiment"
-    
     SIT_ENV_DIR='/cds/group/pcds/dist/pds/'$HUTCH'/scripts/'
     source $SIT_ENV_DIR/setup_env.sh
     LCLS2=1
