@@ -27,16 +27,14 @@ if [[ "$(daqutils isdaqmgr)" = "true" || ${HUTCH} =~ 'ued' ]]; then
     echo "This is an LCLS-II experiment"
     
     SIT_ENV_DIR='/cds/group/pcds/dist/pds/'$HUTCH'/scripts/'
+    source $SIT_ENV_DIR/setup_env.sh
     LCLS2=1
     if [[ ${HUTCH} =~ 'ued' ]]; then
-        source $SIT_ENV_DIR/setup_env.sh
         epixquad_pedestal_scan --record 1 --hutch ${HUTCH}
     elif [[ ${HUTCH} =~ 'mfx' ]]; then
-        source $SIT_ENV_DIR/setup_env.sh
         jungfrau_pedestal_scan --record 1 --hutch ${HUTCH} -p 0 -g 1 -v -t 10000 -C drp-srcf-cmp014
     elif [[ ${HUTCH} =~ 'rix' ]]; then
         echo "Running LCLS2 RIX specific pedestal acquisition..."
-        source /cds/group/pcds/dist/pds/rix/scripts/setup_env.sh
         timed_run --duration="60" --config="/cds/group/pcds/dist/pds/rix/scripts/rix.py" --record
     fi
 else
