@@ -15,15 +15,14 @@ if [[ ($1 == "--help") || ($1 == "-h") ]]; then
 fi
 
 HUTCH=$(get_info --gethutch)
+DAQTYPE=$(get_info --daq)
 
-LCLS2_HUTCHES="rix, tmo, ued"
-if echo "$LCLS2_HUTCHES" | grep -iw "$HUTCH" > /dev/null; then
-    # shellcheck disable=SC1090
-    source /reg/g/pcds/dist/pds/"$HUTCH"/scripts/setup_env.sh
-    PROCMGR='procmgr'
-else
-    PROCMGR="/reg/g/pcds/dist/pds/$HUTCH/current/tools/procmgr/procmgr"
+if [[ $DAQTYPE == 'LCLS2' ]]; then
+    echo 'LCLS2 no longer uses cnf files!'
+    exit 0
 fi
+
+PROCMGR="/reg/g/pcds/dist/pds/$HUTCH/current/tools/procmgr/procmgr"
 
 CNFEXT=.cnf
 CNFFILE="$HUTCH"$CNFEXT
@@ -38,7 +37,7 @@ fi
 STATUS=$($PROCMGR status /reg/g/pcds/dist/pds/"$HUTCH"/scripts/"$CNFFILE" control_gui)
 ISOK=$(echo "$STATUS" | grep -c platform)
 if [[ $ISOK == 0 ]]; then
-    echo The cnf file for "$HUTCH" can be parsed
+    echo Good, the cnf file for "$HUTCH" can be parsed.
 else
     echo WARNING: the cnf file for "$HUTCH" cannot parsed!
 fi
