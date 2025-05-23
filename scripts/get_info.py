@@ -12,6 +12,7 @@ parser.add_argument("--run", help="get last run", action='store_true')
 parser.add_argument("--exp", help="get experiment name", action='store_true')
 parser.add_argument("--live", help="ongoing?", action='store_true')
 parser.add_argument("--ended", help="ended", action='store_true')
+parser.add_argument("--daq", help="get DAQ type", action='store_true')
 parser.add_argument("--hutch", help="get experiment for hutch xxx")
 parser.add_argument("--station", help="optional station for hutch with two daqs, e.g. cxi and mfx")
 parser.add_argument("--getHutch", help="get hutch (uppercase)", action='store_true')
@@ -115,9 +116,13 @@ else:
                 hutch = 'LFE'  # because we have so many names for the same subnet.
                 foundHutch = True
     if not foundHutch:
-        # then ask.....outside of python
-        print('unknown_hutch')
-        sys.exit()
+        if args.setExp:
+            hutch = args.setExp[:3].upper()
+            foundHutch = True
+        else:
+            # then ask.....outside of python
+            print('unknown_hutch')
+            sys.exit()
     if args.getHutch:
         print(hutch.upper())
         sys.exit()
@@ -202,6 +207,22 @@ if args.run:
     except Exception:
         logger.exception("No runs?")
         print('No runs taken yet')
+
+if args.daq:
+    if args.setExp:
+        exp = args.setExp
+    else:
+        resp = requests.get(ws_url + "/lgbk/ws/activeexperiment_for_instrument_station",
+                            {"instrument_name": hutch, "station": station})
+        exp = resp.json().get("value", {}).get("name")
+
+    r = requests.get(ws_url + "/lgbk/" + exp + "/ws"
+                                 + "/file_counts_by_extension")
+    r.raise_for_status()
+    if "xtc2" in r.json()["value"]:
+        print('LCLS2')
+    else:
+        print('LCLS1')
 
 if args.files_for_run or args.nfiles_for_run:
     if args.files_for_run:

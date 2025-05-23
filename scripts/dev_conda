@@ -4,7 +4,8 @@ usage()
 cat << EOF
 usage: source $0
 
-Source this to activate the latest version a pcds conda environment.
+Source this to activate a shared in-development version of a pcds conda environment.
+The environment provided by this is not guaranteed to be stable.
 EOF
 }
 
@@ -13,46 +14,28 @@ if [[ ($1 == "--help") || ($1 == "-h") ]]; then
 	exit 0
 fi
 
-unset LD_LIBRARY_PATH
-unset PYTHONPATH
 
-# Pick up EPICS environment variable settings just in case user did not
-source /cds/group/pcds/setup/epics-ca-env.sh
+# Clear any PCDS_CONDA_VER to ensure we start from default in shared_conda_setup.sh
+unset PCDS_CONDA_VER
 
-# Source the bash setup
-PYPS_ROOT="/cds/group/pcds/pyps"
-APPS_ROOT="${PYPS_ROOT}/apps"
-CONDA_ROOT="${PYPS_ROOT}/conda"
-BASE_ENV="${CONDA_ROOT}/py39"
-source "${BASE_ENV}/etc/profile.d/conda.sh"
+# Target scripts in this directory, resolving symbolic links
+THIS_DIR="$(dirname "$(realpath "${BASH_SOURCE[0]}")")"
+# Add custom config file for putting dev- into prompt
+export CONDARC="${THIS_DIR}/condarc.yaml"
+# Load the shared elements, including whatever the default env is
+source "${THIS_DIR}/shared_conda_setup.sh"
 
-# Activate base env first so things like conda build are available
-conda activate
-# Default to latest pcds release as the base
-conda activate "$(cat "${BASE_ENV}/latest_env")"
-
-PCDSDEVICES_DEV_UI="${APPS_ROOT}/dev/pcdsdevices/pcdsdevices/ui"
-
-EPICS_ROOT="/cds/group/pcds/epics-dev"
-
+# Use PYTHONPATH to load dev modules on top of the default env
 export PYTHONPATH="${APPS_ROOT}/dev/pythonpath"
-export PYQTDESIGNERPATH="${CONDA_ROOT}/dev_designer_plugins/:${PYQTDESIGNERPATH}"
-export PYDM_CONFIRM_QUIT=0
-export PYDM_DEFAULT_PROTOCOL=ca
-export PYDM_DESIGNER_ONLINE=1
-export PYDM_DISPLAYS_PATH="${PCDSDEVICES_DEV_UI}:${EPICS_ROOT}/screens/pydm:${EPICS_ROOT}"
-export PYDM_STYLESHEET="${EPICS_ROOT}/screens/pydm/vacuumscreens/styleSheet/masterStyleSheet.qss"
-export PYDM_STYLESHEET_INCLUDE_DEFAULT=1
-export LUCID_CONFIG="${APPS_ROOT}/hutch-python/lucid_config/"
-export HAPPI_CFG="${APPS_ROOT}/hutch-python/device_config/happi.cfg"
-export TYPHOS_JIRA_EMAIL_SUFFIX="@slac.stanford.edu"
 
-# Keep tokens off of github
-TOKEN_DIR="${CONDA_ROOT}/.tokens"
-source "${TOKEN_DIR}/typhos.sh"
+# Strip out the installed prod stuff from the PYDM displays
+# Before: pcdsdevices_prod:typhos_prod:pcdsdevices_dev:pydm_epics_dev:epics_dev
+# After: pcdsdevices_dev:pydm_epics_dev:epics_dev
+# This allows the pcdsdevices dev folder uis to be found before the installed tag
+PYDM_DISPLAYS_PATH="$(cut -d ":" -f 3- <<< "${PYDM_DISPLAYS_PATH}")"
+export PYDM_DISPLAYS_PATH
 
-# Revert to Software Raster when SSH to avoid issues with QtQuick.
-# The same was done with PyDM and this fixes Designer and friends.
-if [ -n "${SSH_CONNECTION}" ]; then
-  export QT_QUICK_BACKEND="software"
-fi
+# In case you want to use this info
+export IS_PCDS_CONDA=1
+export IS_TAG_CONDA=0
+export IS_DEV_CONDA=1
