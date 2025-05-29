@@ -47,6 +47,8 @@ OPTIONS:
                 write pixel mask file for pixels with pedestal above xxx )currently integer only)
         -d|--calibdir
                 give path for alternative calibdir
+        --noseg
+                do not split jobs into segments
         --gui
                 start calibman. -r 0: show all darks, -r n: show runs (n-25) - 25
         --nstage1
@@ -198,6 +200,10 @@ do
             GUI=1
             shift
             ;;
+        --noseg)
+            NOSEG=1
+            shift
+            ;;     
         -v|--validity_start)
             VALSTR=("$2")
             shift
@@ -260,6 +266,7 @@ RUN=${RUN:=0}
 EXP=${EXP:='xxx'}
 NUMEVT=${NUMEVT:=1000}
 GUI=${GUI:=0}
+NOSEG=${NOSEG:=0}
 RUNLOCAL=${RUNLOCAL:=0}
 DEPLOY=${DEPLOY:=1}
 MYNOISESIGMIN=${MYNOISESIGMIN:=-1}
@@ -517,7 +524,7 @@ if [[ $HAVE_EPIX10K -ge 1 ]]; then
 	MYDETTYPE="${DETTYPES[i]// /}"
         if [ "$MYDETTYPE" = 'epix10ka' ]; then
             echo "Epix10ka name for "$EXP" is: "$EPIX10K
-	    NSEG=99
+	    NSEG=1
             if [[ $EPIX10K =~ "2M" ]]; then
 	        NSEG=16; 
             elif [[ $EPIX10K =~ "uad" ]]; then
@@ -529,7 +536,7 @@ if [[ $HAVE_EPIX10K -ge 1 ]]; then
                 echo "---------------EPIX10K PEDESTALS FOR CYCLE $calibcycle --------------------"
                 if [[ $RUNLOCAL != 1 ]]; then
                     for ((segment=0; segment<$NSEG; segment++)); do
-		        if [ $NSEG -lt 99 ]; then
+		        if [ $NSEG -gt 1 ]; then
 		            CMDS=$CMD' --idx '$segment
 		        else
 			    CMDS=$CMD
@@ -549,9 +556,6 @@ if [[ $HAVE_EPIX10K -ge 1 ]]; then
                         THISJOBID=$(echo "$SUBMISSION" | awk '{print $4}')
                         JOBIDS+=( "$THISJOBID" )
                         NJOBS=$((NJOBS+1))
-			if [ "$NSEG" -eq 99 ]; then
-			    break
-	                fi
 		    done
                 else            
                     echo "$CMD"
@@ -643,7 +647,7 @@ if [[ $HAVE_JUNGFRAU -ge 1 ]]; then
 	MYDETTYPE="${DETTYPES[i]// /}"
         if [ "$MYDETTYPE" = 'jungfrau' ]; then
             echo "Jungfrau name for "$EXP" is: "$JUNGFRAU
-	    NSEG=99
+	    NSEG=1
             if [[ $JUNGFRAU =~ "16M" ]]; then
 	        NSEG=32; 
 	    elif [[ $JUNGFRAU =~ "4M" ]]; then
@@ -653,6 +657,11 @@ if [[ $HAVE_JUNGFRAU -ge 1 ]]; then
 	    elif [[ $EXP =~ "mfx" ]]; then #note that this is a hotfix!
 	        NSEG=32; 
 	    fi
+	    MEM=8
+	    if [[ $NOSEG -gt 0 ]]; then
+		if [[ $NSEG -eq 32 ]]; then MEM=32; fi
+		NSEG=1
+	    fi
             for calibcycle in {0..2}; do
                 nextcycle=$(( calibcycle + 1 ))
                 CMD="jungfrau_dark_proc $LOCARG -d $JUNGFRAU -k exp=$EXP,run=$RUN,dir=$XTCDIR --stepnum $calibcycle --stepmax $nextcycle -L INFO"
@@ -661,18 +670,18 @@ if [[ $HAVE_JUNGFRAU -ge 1 ]]; then
                     for ((segment=0; segment<$NSEG; segment++)); do
 			CMDS=$CMD
 			#commenting this out as MFX currently only uses 4 of the 32 segments
-		        #if [ $NSEG -lt 99 ]; then
-		        #    CMDS=$CMD' --idx '$segment
-		        #else
-			#    CMDS=$CMD
-			#fi
+		        if [ $NSEG -gt 1 ]; then
+		            CMDS=$CMD' --segind '$segment
+		        else
+			    CMDS=$CMD
+			fi
                         tmpScript=$(mktemp -p $WORKDIR jungfrau_pedestals_tmpXXXXX.sh)
                         #trap "rm -f $tmpScript" EXIT
                         chmod u+x "$tmpScript"
                         printf '#!/bin/bash\n' > "$tmpScript"
                         printf 'source %s/manage/bin/psconda.sh\n' "${SIT_ENV_DIR}" >> "$tmpScript"
                         printf '%s\n' "${CMDS}" >> "$tmpScript"
-                        jfCmd="sbatch ${SBATCH_ARGS} --mem 8GB --cpus-per-task 5 -o $WORKDIR/${JUNGFRAU}_${EXP}_Run${RUN}_cycle${calibcycle}_%J.out $tmpScript"
+                        jfCmd="sbatch ${SBATCH_ARGS} --mem ${MEM}GB --cpus-per-task 5 -o $WORKDIR/${JUNGFRAU}_${EXP}_Run${RUN}_cycle${calibcycle}_segment${segment}_%J.out $tmpScript"
 
                         echo "run in queue: $jfCmd"
                         SUBMISSION=$($jfCmd)
@@ -681,13 +690,6 @@ if [[ $HAVE_JUNGFRAU -ge 1 ]]; then
                         THISJOBID=$(echo "$SUBMISSION" | awk '{print $4}')
                         JOBIDS+=( "$THISJOBID" )
                         NJOBS=$((NJOBS+1))
-			if [ "$NSEG" -eq 99 ]; then
-			    break
-	                fi
-			#this here is while we don't have a 32 segment jungfrau available - this belong w/ the --idx section
-			if [ "$NSEG" -eq 32 ]; then
-			    break
-	                fi
 		    done
                 else            
                     echo "$CMD"
