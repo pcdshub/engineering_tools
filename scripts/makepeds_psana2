@@ -442,7 +442,6 @@ if [[ $HAVE_EPIX100 -ge 1 ]]; then
 	    echo '$MYDET is a $DETTYPE, looking for epix100'
 	    continue
 	fi
-	    
         echo "now calibrate $MYDET"
         CMD="det_dark_proc -d $MYDET -k exp=$EXP,run=$RUN,dir=$XTCDIR -L INFO $LOCARG"
         echo "$CMD"
@@ -641,13 +640,13 @@ if [[ $HAVE_JUNGFRAU -ge 1 ]]; then
         echo "Jungfrau name for ${EXP} is: ${JUNGFRAU}"
 	NSEG=1
         if [[ $JUNGFRAU =~ "16M" ]]; then
-	    NSEG=32; 
+	    NSEG=32;
 	elif [[ $JUNGFRAU =~ "4M" ]]; then
-	    NSEG=8; 
+	    NSEG=8;
 	elif [[ $JUNGFRAU =~ "1M" ]]; then
-	    NSEG=2; 
+	    NSEG=2;
 	elif [[ $EXP =~ "mfx" ]]; then #note that this is a hotfix!
-	    NSEG=32; 
+	    NSEG=32;
 	fi
 	MEM=8
 	if [[ $NOSEG -gt 0 ]]; then
