@@ -47,9 +47,10 @@ fi
 
 if [ $? -eq 0 ]; then
     echo 'Finished taking the pedestals, now posting to the elog'
+    # changing to the LCLS2 DAQ enviroment breaks get_info based scripts
+    source pcds_conda
     echo 'Please call: makepeds -q milano -r '`get_lastRun`' -u <userID>'
     elogMessage="DARK"
-    source pcds_conda
     PYCMD=LogBookPost
 
     RUN=`get_lastRun`
