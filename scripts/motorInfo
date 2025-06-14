@@ -38,6 +38,7 @@ do
     *)
         echo "Unknown flag used"
         usage
+        exit 1
     esac
 done
 
