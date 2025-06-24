@@ -13,33 +13,33 @@ usage: $0 options
 Make a pedestal file for offline use
 
 OPTIONS:
-        -r|--run         
+        -r|--run
                runnumber for pedestal
-        -e|--experiment <expname> 
+        -e|--experiment <expname>
                in case you do not want pedestals for the ongoing experiment
         -q|--queue <queue>
                queue for batch submisson
-        -O|--opal         
+        -O|--opal
                make pedestals for Opals (default only cspad/EPIX detectors)
-        -Z|--zyla         
+        -Z|--zyla
                make pedestals for Zyla (default only cspad/EPIX detectors)
-        -A|--alvium         
+        -A|--alvium
                make pedestals for Alvium (default only cspad/EPIX detectors)
         --reservation <reservation>
                reservation for batch submisson
         -v|--validity_start <val_run>
                validity range (set to <val_run>-end)
-        -N|--nevents <#>  
+        -N|--nevents <#>
                 use this number of events (default 1000). Needed when using -c as original events are counted
-        -c|--eventcode <evtcode x> 
+        -c|--eventcode <evtcode x>
                 use events with eventcode <x> set
-        -n|--noise_max <#> 
+        -n|--noise_max <#>
                 if you have created a noise file, then write pixel mask file for pixels with noise above #sigmas
-        -C|--noise_min <#> 
+        -C|--noise_min <#>
                 if noise filecreated, write pixel mask file for pixels with noise below xxx (currently integer only)
-        -m|--adu_min <#> 
+        -m|--adu_min <#>
                 write pixel mask file for pixels with pedestal below xxx (currently integer only)
-        -x|--adu_max <#>  
+        -x|--adu_max <#>
                 write pixel mask file for pixels with pedestal above xxx )currently integer only)
         -d|--calibdir
                 give path for alternative calibdir
@@ -108,7 +108,7 @@ check_running_jobs()
     return $NJOBS
 }
 
-# Arg: DETECTOR class.  This could be a comma-separated list, but we're 
+# Arg: DETECTOR class. This could be a comma-separated list, but we're
 # matching it in the config file as a string.
 get_config()
 {
@@ -191,7 +191,7 @@ do
         --noseg)
             NOSEG=1
             shift
-            ;;     
+            ;;
         -v|--validity_start)
             VALSTR=("$2")
             shift
@@ -289,11 +289,11 @@ fi
 
 # set the umask so all the files create are group writeable
 #umask 002
-echo "This is a LCLS-II experiment"    
+echo "This is a LCLS-II experiment"
 SIT_ENV_DIR=$SIT_ENV_DIR'/conda2/'
 source $SIT_ENV_DIR/manage/bin/psconda.sh
 
-#if you don't pass the queue, it'll run interactively 
+#if you don't pass the queue, it'll run interactively
 if [ -v QUEUE ]; then
     USER=$(whoami)
     SBATCH_ARGS="-p $QUEUE --account lcls:$EXP"
@@ -363,7 +363,7 @@ fi
 if [ ! -w "$WORKDIR" ]; then
     echo 'Typical directory to store calib logfiles & results is not writeable, will attempt to work from /tmp, but things may fail'
     WORKDIR='/tmp'
-fi 
+fi
 cd "$WORKDIR" || exit
 echo We will work from directory "$WORKDIR"
 
@@ -390,7 +390,7 @@ while [[ $MINWAIT -lt 5 ]]; do
 	echo 'Files are not present yet, wait a minute'
 	sleep 60
 	MINWAIT=$((MINWAIT+1))
-    else 
+    else
 	HAVEFILES=1
 	MINWAIT=6
     fi
@@ -402,7 +402,7 @@ fi
 
 ls -ltr "$XTCDIR"/*r"$RUNSTR"*s*xtc*
 
-echo Check detectors: 
+echo Check detectors:
 
 detnames -r exp="${EXP}",run="${RUN}",dir="${XTCDIR}" > /tmp/detnames_"$EXP"_"$CREATE_TIME"
 if [[ $? != 0 ]]; then
@@ -417,7 +417,7 @@ cat /tmp/detnames_"$EXP"_"$CREATE_TIME"
 echo "-----------------------"
 
 ####
-# epix100 in LCLS2 related stuff. 
+# epix100 in LCLS2 related stuff.
 ####
 #DEBUG test mfxdaq23 run 5
 #check if epix100 detectors are present
@@ -430,7 +430,7 @@ if [[ $HAVE_EPIX100 -ge 1 ]]; then
     echo "***** have epix100 ***"
     DETNAMES=$(grep epix100 /tmp/detnames_"$EXP"_"$CREATE_TIME" | grep raw | awk  'BEGIN { FS = "|"}; {print $1}' | paste -d " " -s)
     for MYDET in ${DETNAMES}; do
-        LOCARG=$ARG' -o '$CALIBDIR 
+        LOCARG=$ARG' -o '$CALIBDIR
         if [[ -v VALSTR ]]; then
             LOCARG=$LOCARG' -t '$VALSTR
         fi
@@ -469,7 +469,8 @@ if [[ $HAVE_ARCHON -ge 1 ]]; then
 	MYDETTYPE="${DETTYPES[i]// /}"
         if [ "$MYDETTYPE" = 'archon' ]; then
             echo "now calibrate ${MYDET}"
-            CMD="det_dark_proc -d $MYDET -k exp=$EXP,run=$RUN,dir=$XTCDIR -L INFO $LOCARG"
+            KARG="{'exp':'$EXP','run':$RUN,'detectors':['$MYDET'],'dir':'$XTCDIR'}"
+            CMD="det_dark_proc -d $MYDET -k $KARG -L INFO $LOCARG"
             echo "$CMD"
             $CMD
         fi
@@ -493,7 +494,8 @@ if [[ $HAVE_AXIS_SVLS -ge 1 ]]; then
         MYDETTYPE="${DETTYPES[i]// /}"
         if [ "$MYDETTYPE" = 'axis' ]; then
             echo "now calibrate ${MYDET}"
-            CMD="det_dark_proc -d $MYDET -k exp=$EXP,run=$RUN,dir=$XTCDIR -L INFO $LOCARG"
+            KARG="{'exp':'$EXP','run':$RUN,'detectors':['$MYDET'],'dir':'$XTCDIR'}"
+            CMD="det_dark_proc -d $MYDET -k $KARG -L INFO $LOCARG"
             echo "$CMD"
             $CMD
         fi
@@ -517,9 +519,9 @@ if [[ $HAVE_EPIX10K -ge 1 ]]; then
         echo "Epix10ka name for ${EXP} is: ${EPIX10K}"
 	NSEG=1
         if [[ $EPIX10K =~ "2M" ]]; then
-	    NSEG=16; 
+	    NSEG=16;
         elif [[ $EPIX10K =~ "uad" ]]; then
-	    NSEG=4; 
+	    NSEG=4;
 	fi
         for calibcycle in {0..4}; do
             nextcycle=$(( calibcycle + 1 ))
@@ -548,14 +550,14 @@ if [[ $HAVE_EPIX10K -ge 1 ]]; then
                     JOBIDS+=( "$THISJOBID" )
                     NJOBS=$((NJOBS+1))
 		    done
-            else            
+            else
                 echo "$CMD"
                 $CMD
             fi
         done
     done
     ALLJOBIDS=("${JOBIDS[@]}")
-       
+
 
     NFAILEDJOBS=0
     if [[ $RUNLOCAL != 1 ]]; then
@@ -570,7 +572,7 @@ if [[ $HAVE_EPIX10K -ge 1 ]]; then
         done
         echo 'All jobs finished'
         # and now check that none of the jobs have existed with an error code:
-        # currently, the epix10k jobs print DONE at the end. 
+        # currently, the epix10k jobs print DONE at the end.
         # Second check necessary as jobs can fail without printing an exit code to the logfile
         for JOBID in "${ALLJOBIDS[@]}"; do
             echo "Checking job $JOBID"
@@ -606,12 +608,12 @@ if [[ $HAVE_EPIX10K -ge 1 ]]; then
     	    return 1
     	fi
         done
-        
+
         if [[ $RUNLOCAL != 1 ]]; then
             echo 'Print Information about batch jobs'
             JOBIDSTR=''
             for JOBID in "${ALLJOBIDS[@]}"; do
-                if [[ $JOBIDSTR != '' ]]; then 
+                if [[ $JOBIDSTR != '' ]]; then
     		JOBIDSTR=$JOBIDSTR','
     	    fi
             JOBIDSTR=$JOBIDSTR$JOBID
@@ -620,7 +622,7 @@ if [[ $HAVE_EPIX10K -ge 1 ]]; then
         fi
     else
         echo "---------------EPIX10K PEDESTALS CALCULATED     --------------------"
-    fi	
+    fi
     echo "-------------------- STOP EPIX10K PEDESTALS at $(date +'%T') ----------------------------"
 fi
 
@@ -682,7 +684,7 @@ if [[ $HAVE_JUNGFRAU -ge 1 ]]; then
                     JOBIDS+=( "$THISJOBID" )
                     NJOBS=$((NJOBS+1))
 		    done
-            else            
+            else
                 echo "$CMD"
                 $CMD
             fi
@@ -703,7 +705,7 @@ if [[ $HAVE_JUNGFRAU -ge 1 ]]; then
         done
         echo 'All jobs finished'
         # and now check that none of the jobs have existed with an error code:
-        # currently, the jungfrau jobs print DONE at the end. 
+        # currently, the jungfrau jobs print DONE at the end.
         # Second check necessary as jobs can fail without printing an exit code to the logfile
         for JOBID in "${ALLJOBIDS[@]}"; do
             echo "Checking job $JOBID"
@@ -747,12 +749,12 @@ if [[ $HAVE_JUNGFRAU -ge 1 ]]; then
 	        exit 1
      	    fi
         done
-	
+
         if [[ $RUNLOCAL != 1 ]]; then
             echo 'Print Information about batch jobs'
             JOBIDSTR=''
             for JOBID in "${ALLJOBIDS[@]}"; do
-                if [[ $JOBIDSTR != '' ]]; then 
+                if [[ $JOBIDSTR != '' ]]; then
 			JOBIDSTR=$JOBIDSTR','
 		    fi
             JOBIDSTR=$JOBIDSTR$JOBID
@@ -761,7 +763,7 @@ if [[ $HAVE_JUNGFRAU -ge 1 ]]; then
         fi
      else
 	echo "---------------JUNGFRAU PEDESTALS CALCULATED     --------------------"
-    fi	
+    fi
     echo "-------------------- STOP JUNGFRAU PEDESTALS at $(date +'%T') ----------------------------"
 fi
 
