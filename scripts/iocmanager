@@ -20,11 +20,7 @@ fi
 
 # For newer IOC manager, use the built-in help and env setup
 if [[ -f "${IOCMANAGER}"/scripts/gui.sh ]]; then
-    if [[ "$HUTCH" == "unknown_hutch" ]]; then
-        "${IOCMANAGER}"/scripts/gui.sh "$@"
-    else
-        "${IOCMANAGER}"/scripts/gui.sh "${HUTCH}" "$@"
-    fi
+    "${IOCMANAGER}"/scripts/gui.sh "$@"
     exit $?
 fi
 

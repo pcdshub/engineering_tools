@@ -30,12 +30,8 @@ else
 fi
 
 # For newer IOC manager, use the built-in help and env setup
-if [[ -f "${IOCMANAGER}"/scripts/gui.sh ]]; then
-    if [[ "$HUTCH" == "unknown_hutch" ]]; then
-        "${IOCMANAGER}"/scripts/imgr "$@"
-    else
-        "${IOCMANAGER}"/scripts/imgr --hutch "${HUTCH}" "$@"
-    fi
+if [[ -f "${IOCMANAGER}"/scripts/imgr ]]; then
+    "${IOCMANAGER}"/scripts/imgr "$@"
     exit $?
 fi
 
