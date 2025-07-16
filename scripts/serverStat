@@ -223,11 +223,13 @@ elif [[ $CMD == "expert" ]]; then
     else
        echo "$NAME-ipmi does not ping."
     fi
-    ping -w 2 "$NAME"-fez >/dev/null 2>&1
-    if [[ $? == 0 ]]; then
-       echo "$NAME-fez pings."
-    else
-       echo "$NAME-fez does not ping."
+    if [[ $(netconfig search "$NAME"-fez --brief | wc -w) -gt 0 ]]; then
+	ping -w 2 "$NAME"-fez >/dev/null 2>&1
+        if [[ $? == 0 ]]; then
+           echo "$NAME-fez pings."
+        else
+           echo "$NAME-fez does not ping."
+        fi
     fi
     echo -e " "
     if [[ $CDS_ONLINE == 1 ]]; then
@@ -242,18 +244,17 @@ elif [[ $CMD == "expert" ]]; then
             echo -e "-------------------------------------------------"
             lspci | grep SLAC
             echo -e ""
+            echo -e "Serial PCI Hardware:"
+            echo -e "-------------------------------------------------"
+            lspci | grep -i serial
+            echo -e ""
+            echo -e "EDT cards"
+            echo -e "-------------------------------------------------"
+            lspci | grep -i 'Engineering Design Team'
+            echo -e ""
             echo -e "Network PCI Hardware:"
             echo -e "-------------------------------------------------"
             lspci | grep Ethernet
-            echo -e ""
-            echo -e "Leutron PCI Hardware:"
-            echo -e "-------------------------------------------------"
-            echo -e ""
-            if [[ -e /opt/EDTpdv/pciload ]]; then
-               echo -e "EDT Cards:"
-               echo -e "-------------------------------------------------"
-               /opt/EDTpdv/pciload
-            fi
             echo -e ""
             echo -e "IOC Processes:"
             echo -e "-------------------------------------------------"
