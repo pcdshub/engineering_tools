@@ -783,7 +783,7 @@ if [[ ( $HAVE_EPIX10K -ge 1 ) && ( $WANT_ZYLA -eq 0 ) && ( $WANT_OPAL -eq 0 ) &&
                     printf '#!/bin/bash\n' > "$tmpScript"
                     printf 'source %s/manage/bin/psconda.sh\n' "${SIT_ENV_DIR}" >> "$tmpScript"
                     printf '%s\n' "${CMD}" >> "$tmpScript"
-                    ep10kaCmd="sbatch ${SBATCH_ARGS} --mem 8GB --cpus-per-task 5 -o $WORKDIR/${EPIX10K}_${EXP}_Run${RUN}_cycle${calibcycle}_%J.out $tmpScript"
+                    ep10kaCmd="sbatch ${SBATCH_ARGS} --mem 8GB --cpus-per-task 1 -o $WORKDIR/${EPIX10K}_${EXP}_Run${RUN}_cycle${calibcycle}_%J.out $tmpScript"
                     echo "run in queue: $ep10kaCmd"
                     SUBMISSION=$($ep10kaCmd)
                     check_for_submit_error

@@ -540,7 +540,7 @@ if [[ $HAVE_EPIX10K -ge 1 ]]; then
                     printf '#!/bin/bash\n' > "$tmpScript"
 			printf 'source %s/manage/bin/psconda.sh\n' "${SIT_ENV_DIR}" >> "$tmpScript"
                     printf '%s\n' "${CMDS}" >> "$tmpScript"
-                    ep10kaCmd="sbatch ${SBATCH_ARGS} --mem 8GB --cpus-per-task 5 -o $WORKDIR/${EPIX10K}_${EXP}_Run${RUN}_cycle${calibcycle}_%J.out $tmpScript"
+                    ep10kaCmd="sbatch ${SBATCH_ARGS} --mem 8GB --cpus-per-task 1 -o $WORKDIR/${EPIX10K}_${EXP}_Run${RUN}_cycle${calibcycle}_%J.out $tmpScript"
 
                     echo "run in queue: $ep10kaCmd"
                     SUBMISSION=$($ep10kaCmd)
@@ -674,7 +674,7 @@ if [[ $HAVE_JUNGFRAU -ge 1 ]]; then
                     printf '#!/bin/bash\n' > "$tmpScript"
                     printf 'source %s/manage/bin/psconda.sh\n' "${SIT_ENV_DIR}" >> "$tmpScript"
                     printf '%s\n' "${CMDS}" >> "$tmpScript"
-                    jfCmd="sbatch ${SBATCH_ARGS} --mem ${MEM}GB --cpus-per-task 5 -o $WORKDIR/${JUNGFRAU}_${EXP}_Run${RUN}_cycle${calibcycle}_segment${segment}_%J.out $tmpScript"
+                    jfCmd="sbatch ${SBATCH_ARGS} --mem ${MEM}GB --cpus-per-task 1 -o $WORKDIR/${JUNGFRAU}_${EXP}_Run${RUN}_cycle${calibcycle}_segment${segment}_%J.out $tmpScript"
 
                     echo "run in queue: $jfCmd"
                     SUBMISSION=$($jfCmd)
