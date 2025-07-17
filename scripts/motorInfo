@@ -72,7 +72,7 @@ fi
 if [[ $2 == 'autosave' ]]; then
     IOC_DIR='/reg/d/iocData/'$(find_pv "$MOTOR_PV" | grep IOC: | head -n 1 | awk '{print $2}')'/autosave'
 
-    files=$(ls -t "$IOC_DIR"/*sav_1*)
+    files=$(ls -t "$IOC_DIR"/*sav_*)
     for field in $PVFIELDS; do
 	if [[ "$field" == *RBV* ]] || [[ "$field" == *VAL* ]] || [[ "$field" == *DESC* ]]; then
 	    continue
@@ -104,14 +104,14 @@ elif [[ "$2" == *pmgr* ]]; then
     hutch=${HUTCH,,}
     ACTION=$(echo "$2" | cut -d _ -f 2)
     if [[ $ACTION == 'diff' ]]; then
-	/reg/g/pcds/config/"$hutch"/pmgr/pmgrUtils.sh "$ACTION" "$MOTOR_PV"
+	/reg/g/pcds/config/"$hutch"/pmgr/bin/pmgrUtils.sh "$ACTION" "$MOTOR_PV"
     elif [[ $ACTION == 'save' ]]; then
 	echo "Differences of $MOTOR_PV to saved config:"
-	/reg/g/pcds/config/"$hutch"/pmgr/pmgrUtils.sh diff "$MOTOR_PV"
+	/reg/g/pcds/config/"$hutch"/pmgr/bin/pmgrUtils.sh diff "$MOTOR_PV"
 	echo 'Save current config (yes/no)? '; read -r ANSWER
 	if [[ $ANSWER == 'yes' ]]; then
 	    echo 'Save now...'
-	    /reg/g/pcds/config/"$hutch"/pmgr/pmgrUtils.sh save "$MOTOR_PV"
+	    /reg/g/pcds/config/"$hutch"/pmgr/bin/pmgrUtils.sh save "$MOTOR_PV"
 	    echo 'Saved.'
 	fi
     else
