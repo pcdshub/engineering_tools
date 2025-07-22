@@ -41,13 +41,6 @@ if [[ ($1 == "--help") || ($1 == "-h") ]]; then
 	exit 0
 fi
 
-# Exit if hutch is still unknown
-# TODO: Replace with check for actual hutch names
-if [[ "$HUTCH" == "unknown_hutch" ]]; then
-    echo "Unknown hutch, please specify e.g. 'iocmanager xrt'" >&2
-    exit 1
-fi
-
 # Setup environment
 if [ -x /etc/pathinit ]; then
     source /etc/pathinit

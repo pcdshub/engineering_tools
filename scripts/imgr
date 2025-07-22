@@ -23,7 +23,7 @@ HUTCH=${HUTCH:-$(get_hutch_name)}
 
 : "${PYPS_ROOT:=/cds/group/pcds/pyps}"
 
-if [[ "$HUTCH" == "unknown_hutch" ]] || [[ -n "${FORCE_LATEST_IOCMANAGER}" ]]; then
+if [[ "$HUTCH" == "unknown_hutch" ]]; then
     IOCMANAGER="${PYPS_ROOT}/apps/iocmanager/latest-R3"
 else
     IOCMANAGER="${PYPS_ROOT}/config/${HUTCH,,}/iocmanager"
@@ -65,13 +65,6 @@ if [ $# -lt 1 ]; then
 elif [[ ($1 == "--help") || ($1 == "-h") ]]; then
     usage
     exit 0
-fi
-
-# Exit if hutch is still unknown
-# TODO: Replace with check for actual hutch names
-if [[ "$HUTCH" == "unknown_hutch" ]]; then
-    echo "Unknown hutch, please use --hutch argument" >&2
-    exit 1
 fi
 
 # Setup environment
