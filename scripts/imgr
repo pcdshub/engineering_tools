@@ -1,5 +1,44 @@
 #!/bin/bash
 
+# We need to check hutch early to figure out old vs new ioc manager
+# Add engineering_tools to PATH for get_hutch_name
+DIR=$(readlink -f "$(dirname "${BASH_SOURCE[0]}")")
+PATH=$PATH:$DIR
+
+# Search for hutch in args
+for (( i=1; i<=$#; i++)); do
+    if [[ "${!i}" == "--hutch" ]]; then
+        ARGHUTCH_INDEX=$((i+1))
+        ARGHUTCH=${!ARGHUTCH_INDEX}
+        break
+    fi
+done
+
+# Hutch choice priority order:
+# 1. --hutch arg
+# 2. HUTCH environment variable
+# 3. get_hutch_name
+HUTCH=${ARGHUTCH:-$HUTCH}
+HUTCH=${HUTCH:-$(get_hutch_name)}
+
+if [[ -z "${PYPS_ROOT}" ]]; then
+    PYPS_ROOT=/cds/group/pcds/pyps
+fi
+
+if [[ "$HUTCH" == "unknown_hutch" ]]; then
+    IOCMANAGER="${PYPS_ROOT}/apps/iocmanager/latest-R3"
+else
+    IOCMANAGER="${PYPS_ROOT}/config/${HUTCH,,}/iocmanager"
+fi
+
+# For newer IOC manager, use the built-in help and env setup
+if [[ -f "${IOCMANAGER}"/scripts/imgr ]]; then
+    "${IOCMANAGER}"/scripts/imgr "$@"
+    exit $?
+fi
+
+# For older IOC manager, use the legacy script below
+
 # Define usage here for faster return
 usage()
 {
@@ -28,33 +67,6 @@ if [ $# -lt 1 ]; then
 elif [[ ($1 == "--help") || ($1 == "-h") ]]; then
     usage
     exit 0
-fi
-
-# Add engineering_tools to PATH for get_hutch_name
-DIR=$(readlink -f "$(dirname "${BASH_SOURCE[0]}")")
-PATH=$PATH:$DIR
-
-# Search for hutch in args
-for (( i=1; i<=$#; i++)); do
-    if [[ "${!i}" == "--hutch" ]]; then
-        ARGHUTCH_INDEX=$((i+1))
-        ARGHUTCH=${!ARGHUTCH_INDEX}
-        break
-    fi
-done
-
-# Hutch choice priority order:
-# 1. --hutch arg
-# 2. HUTCH environment variable
-# 3. get_hutch_name
-HUTCH=${ARGHUTCH:-$HUTCH}
-HUTCH=${HUTCH:-$(get_hutch_name)}
-
-# Exit if hutch is still unknown
-# TODO: Replace with check for actual hutch names
-if [[ "$HUTCH" == "unknown_hutch" ]]; then
-    echo "Unknown hutch, please use --hutch argument" >&2
-    exit 1
 fi
 
 # Setup environment

@@ -1,5 +1,33 @@
 #!/bin/bash
 
+# We need to check hutch early to figure out old vs new ioc manager
+# Add engineering_tools to PATH for get_hutch_name
+DIR=$(readlink -f "$(dirname "${BASH_SOURCE[0]}")")
+PATH=$PATH:$DIR
+if [[ ($1 == "--help") || ($1 == "-h") ]]; then
+	HUTCH="$(get_hutch_name)"
+else
+    HUTCH=${1:-$(get_hutch_name)}
+fi
+
+if [[ -z "${PYPS_ROOT}" ]]; then
+    PYPS_ROOT=/cds/group/pcds/pyps
+fi
+
+if [[ "$HUTCH" == "unknown_hutch" ]]; then
+    IOCMANAGER="${PYPS_ROOT}/apps/iocmanager/latest-R3"
+else
+    IOCMANAGER="${PYPS_ROOT}/config/${HUTCH,,}/iocmanager"
+fi
+
+# For newer IOC manager, use the built-in help and env setup
+if [[ -f "${IOCMANAGER}"/scripts/gui.sh ]]; then
+    "${IOCMANAGER}"/scripts/gui.sh "$@"
+    exit $?
+fi
+
+# For older IOC manager, use the legacy script below
+
 # Define usage here for faster return
 usage()
 {
@@ -13,18 +41,6 @@ EOF
 if [[ ($1 == "--help") || ($1 == "-h") ]]; then
 	usage
 	exit 0
-fi
-
-# Check hutch
-DIR=$(readlink -f "$(dirname "${BASH_SOURCE[0]}")")
-PATH=$PATH:$DIR
-HUTCH=${1:-$(get_hutch_name)}
-
-# Exit if hutch is still unknown
-# TODO: Replace with check for actual hutch names
-if [[ "$HUTCH" == "unknown_hutch" ]]; then
-    echo "Unknown hutch, please specify e.g. 'iocmanager xrt'" >&2
-    exit 1
 fi
 
 # Setup environment
