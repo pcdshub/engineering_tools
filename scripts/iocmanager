@@ -12,10 +12,10 @@ fi
 
 : "${PYPS_ROOT:=/cds/group/pcds/pyps}"
 
-if [[ "$HUTCH" == "unknown_hutch" ]] || [[ -n "${FORCE_LATEST_IOCMANAGER}" ]]; then
+if [[ "$HUTCH" == "unknown_hutch" ]]; then
     IOCMANAGER="${PYPS_ROOT}/apps/iocmanager/latest-R3"
 else
-    IOCMANAGER="${PYPS_ROOT}/${HUTCH}/iocmanager"
+    IOCMANAGER="${PYPS_ROOT}/config/${HUTCH,,}/iocmanager"
 fi
 
 # For newer IOC manager, use the built-in help and env setup
