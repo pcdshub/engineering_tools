@@ -10,7 +10,9 @@ else
     HUTCH=${1:-$(get_hutch_name)}
 fi
 
-: "${PYPS_ROOT:=/cds/group/pcds/pyps}"
+if [[ -z "${PYPS_ROOT}" ]]; then
+    PYPS_ROOT=/cds/group/pcds/pyps
+fi
 
 if [[ "$HUTCH" == "unknown_hutch" ]]; then
     IOCMANAGER="${PYPS_ROOT}/apps/iocmanager/latest-R3"
