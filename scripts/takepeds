@@ -10,12 +10,12 @@ Takes a run with dark images for use in pedestals, and posts to the elog.
 EOF
 }
 
-if [[($1 == "--help") || ($1 == "-h")]]; then
+if [[ ($1 == "--help") || ($1 == "-h") ]]; then
         usage
         exit 0
 fi
 
-EXP=`get_curr_exp`
+EXP=$(get_curr_exp)
 HUTCH=${EXP:0:3}
 
 #SIT_ENV_DIR="/sdf/group/lcls/ds/ana/sw"
@@ -25,12 +25,11 @@ HUTCH=$(get_info --gethutch)
 if [[ "$(daqutils isdaqmgr)" = "true" ]]; then
     echo "This is an LCLS-II experiment"
     SIT_ENV_DIR='/cds/group/pcds/dist/pds/'$HUTCH'/scripts/'
-    source $SIT_ENV_DIR/setup_env.sh
-    LCLS2=1
+    source "$SIT_ENV_DIR"/setup_env.sh
     if [[ ${HUTCH} =~ 'ued' ]]; then
-        epixquad_pedestal_scan --record 1 --hutch ${HUTCH}
+        epixquad_pedestal_scan --record 1 --hutch "${HUTCH}"
     elif [[ ${HUTCH} =~ 'mfx' ]]; then
-        jungfrau_pedestal_scan --record 1 --hutch ${HUTCH} -p 0 -g 1 -v -t 10000 -C drp-srcf-cmp014
+        jungfrau_pedestal_scan --record 1 --hutch "${HUTCH}" -p 0 -g 1 -v -t 10000 -C drp-srcf-cmp014
     elif [[ ${HUTCH} =~ 'rix' ]]; then
         echo "Running LCLS2 RIX specific pedestal acquisition..."
         timed_run --duration="60" --config="/cds/group/pcds/dist/pds/rix/scripts/rix.py" --record
@@ -42,20 +41,21 @@ else
 
     # -R: for norecord , -r forces recording
     station=$(get_info --getstation)
-    $DAQ_RELEASE/tools/scanning/take_pedestals -p $station -r
+    $DAQ_RELEASE/tools/scanning/take_pedestals -p "$station" -r
 fi
 
+# shellcheck disable=SC2181
 if [ $? -eq 0 ]; then
     echo 'Finished taking the pedestals, now posting to the elog'
     # changing to the LCLS2 DAQ enviroment breaks get_info based scripts
     source pcds_conda
-    echo 'Please call: makepeds -q milano -r '`get_lastRun`' -u <userID>'
+    echo "Please call: makepeds -q milano -r $(get_lastRun) -u <userID>"
     elogMessage="DARK"
     PYCMD=LogBookPost
 
-    RUN=`get_lastRun`
-    echo $PYCMD -i "${HUTCH^^}" -u `whoami` -e "$EXP"  -t DARK  -r $RUN -m "$elogMessage"
-    $PYCMD -i "${HUTCH^^}" -u `whoami` -p pcds -e "$EXP"  -t DARK  -r $RUN -m "$elogMessage"&
+    RUN=$(get_lastRun)
+    echo $PYCMD -i "${HUTCH^^}" -u "$(whoami)" -e "$EXP"  -t DARK  -r "$RUN" -m "$elogMessage"
+    $PYCMD -i "${HUTCH^^}" -u "$(whoami)" -p pcds -e "$EXP"  -t DARK  -r "$RUN" -m "$elogMessage"&
 
 else
     echo 'takepeds failed, make sure the DAQ is setup appropriately!'
