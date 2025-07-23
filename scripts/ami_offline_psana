@@ -44,7 +44,7 @@ if [ -z "$EXP" ]; then
     echo getting the experiment "$EXP"
     HUTCH=$(get_hutch_name)
     if [ "$HUTCH" == 'unknown_hutch' ]; then
-	read -pr 'please enter an experiment name: ' EXP
+	read -rp 'please enter an experiment name: ' EXP
     else
 	EXP=$(get_curr_exp)
     fi
@@ -68,8 +68,8 @@ fi
 #get executable
 ami_base_path=$(grep ami_base_path /reg/g/pcds/dist/pds/"$HUTCH"/scripts/"$CNF" | grep -v '#' | grep -v 'ami_base_path+' | tail -n 1 | awk 'BEGIN { FS = "=" }; { print $2}' | sed s/\'//g)
 ami_path=$ami_base_path$(grep ami_path /reg/g/pcds/dist/pds/"$HUTCH"/scripts/"$CNF" | grep -v 'ami_path+' | grep -v '#' | awk 'BEGIN { FS = "= " }; { print $2}' | sed s/ami_base_path+//g | sed s/\'//g)
-
-if [[ ! -f  $ami_path/offline_ami ]]; then
+# shellcheck disable=SC2086
+if [ ! -f  $ami_path/offline_ami ]; then
     echo "could not find offline_ami executable in ""$ami_path"
     exit
 fi
