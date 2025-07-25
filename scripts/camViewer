@@ -286,7 +286,9 @@ if [ "$CAMNUM" -eq 0 ]; then
         CAMNAME=IM2K0
     elif [ "$hutch" = "rix" ]; then
         CAMNAME=IM1K1
-    elif [ "$hutch" = "kfe" ]; then
+    elif [ "$hutch" = "txi" ]; then
+        CAMNAME=TXI01
+     elif [ "$hutch" = "kfe" ]; then
         CAMNAME=IM1K0
     elif [ "$hutch" = "xpp" ]; then
         CAMNAME=hx2_sb1_yag
