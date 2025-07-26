@@ -4,10 +4,11 @@
 # Add engineering_tools to PATH for get_hutch_name
 DIR=$(readlink -f "$(dirname "${BASH_SOURCE[0]}")")
 PATH=$PATH:$DIR
-if [[ ($1 == "--help") || ($1 == "-h") ]]; then
+if [[ ($1 == "--help") || ($1 == "-h") || (-z $1) ]]; then
 	HUTCH="$(get_hutch_name)"
 else
-    HUTCH=${1:-$(get_hutch_name)}
+    HUTCH=${1}
+    shift
 fi
 
 if [[ -z "${PYPS_ROOT}" ]]; then
@@ -26,7 +27,7 @@ if [[ -f "${IOCMANAGER}"/scripts/gui.sh ]]; then
     "${IOCMANAGER}"/scripts/gui.sh "$@"
     exit $?
   else
-    "${IOCMANAGER}"/scripts/gui.sh "${HUTCH}" "$@"
+    "${IOCMANAGER}"/scripts/gui.sh "${HUTCH,,}" "$@"
     exit $?
   fi
 fi
