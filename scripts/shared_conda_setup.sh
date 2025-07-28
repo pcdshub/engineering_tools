@@ -58,8 +58,8 @@ version_ge () {
 # Based on the user's selection or non-selection, pick the correct env
 if [[ -z "${PCDS_CONDA_VER}" ]]; then
   # If env var unset, then default to latest
-  BASE_ENV="${CONDA_ROOT}/py39"
-  PYTHON_VER="3.9"
+  BASE_ENV="${CONDA_ROOT}/py312"
+  PYTHON_VER="3.12"
   PCDS_CONDA_VER="$(cat "${BASE_ENV}/latest_env")"
 else
   # Figure out which base to use
