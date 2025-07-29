@@ -33,11 +33,11 @@ fi
 
 # For newer IOC manager, use the built-in help and env setup
 if [[ -f "${IOCMANAGER}"/scripts/imgr ]]; then
-  if [[ "$HUTCH" == "unknown_hutch" ]]; then
+  if [[ ("$HUTCH" == "unknown_hutch") || (-n $ARGHUTCH) ]]; then
     "${IOCMANAGER}"/scripts/imgr "$@"
     exit $?
   else
-    "${IOCMANAGER}"/scripts/imgr --hutch "${HUTCH}" "$@"
+    "${IOCMANAGER}"/scripts/imgr --hutch "${HUTCH,,}" "$@"
     exit $?
   fi
 fi
