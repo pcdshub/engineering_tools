@@ -24,10 +24,10 @@ fi
 # For newer IOC manager, use the built-in help and env setup
 if [[ -f "${IOCMANAGER}"/scripts/gui.sh ]]; then
   if [[ "$HUTCH" == "unknown_hutch" ]]; then
-    "${IOCMANAGER}"/scripts/gui.sh "$@"
+    "${IOCMANAGER}"/scripts/gui.sh "$@" &
     exit $?
   else
-    "${IOCMANAGER}"/scripts/gui.sh "${HUTCH,,}" "$@"
+    "${IOCMANAGER}"/scripts/gui.sh "${HUTCH,,}" "$@" &
     exit $?
   fi
 fi
