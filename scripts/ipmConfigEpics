@@ -5,6 +5,7 @@ ulimit -c unlimited
 
 hx2Ipm='hx2_ipm'
 um6Ipm='um6_ipm um6_dio'
+dg1Ipm='hxxdg1_ipm'
 dg2Ipm='hfxdg2_ipm'
 xcsIpm='decmono ipmmono diomono pim3 pim3m ipm3 pim4 ipm4 snddio ipm5 pim5 ipmgonLD ipmlamLD usrdio'
 xppIpm='diomono decmono ipm2 ipm3 pim3 diodeU'
@@ -27,7 +28,7 @@ elif [[ $hutch == 'mfx' ]]; then
 elif [[ $hutch == 'mec' ]]; then
    for box in $hx2Ipm $um6Ipm $mecIpm; do echo "$box"; done
 elif [[ $hutch == 'lfe' ]]; then
-   for box in $lfeIpm; do echo "$box"; done
+   for box in $lfeIpm $dg1Ipm; do echo "$box"; done
 else
     echo 'hutch cannot be determined, quit'
     exit
@@ -55,6 +56,12 @@ elif [[ $1 == 'um6_dio' ]]; then		#aka xcs ipm1
     BASE="XCS:DG1:IMB:02"
     IOC="XCS:R04:IOC:34"
     EVR="XCS:R04:EVR:34"
+elif [[ $1 == 'hxxdg1_ipm' ]]; then
+    IOC="IOC:HXX:DG1:BMMON"
+    BASE='HXX:DG1:BMMON'
+    EVR='HXX:DG1:BMMON:EVR'
+    WAVE8='hxxipm'
+
 elif [[ $1 == 'hfxdg2_ipm' ]]; then	#aka xcs ipm2
     IOC="IOC:HFX:DG2:BMMON"
     BASE='HFX:DG2:BMMON'
