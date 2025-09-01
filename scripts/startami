@@ -64,17 +64,6 @@ if [[ -z $CONFIG ]]; then
     CONFIG=$HUTCH$CNFEXT
 fi
 
-#
-# this is XPP specific. Don't think we should have local plugins anyways,
-# only release ones.
-#
-source /reg/g/pcds/setup/pathmunge.sh
-if [ "$HUTCH" == 'xpp' ]; then
-    ldpathmunge /reg/neh/operator/xppopr/ami_plugins
-elif [ "$HUTCH" == 'xcs' ]; then
-    ldpathmunge /reg/neh/operator/xcsopr/online/ami_plugins
-fi
-
 
 DAQHOST=$(wheredaq)
 ami_base_path=$(grep ami_base_path /reg/g/pcds/dist/pds/"$HUTCH"/scripts/"$CONFIG" | grep -v '#' | grep -v 'ami_base_path+'  | awk 'BEGIN { FS = "=" }; { print $2}' | sed s/\'//g)
