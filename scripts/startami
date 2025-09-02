@@ -97,11 +97,4 @@ fi
 
 echo "$ami_path""$amicmd"
 
-echo DEBUG
-echo "---""$ami_base_path""----"
-echo "-----"
-echo "---""$ami_path""----"
-echo "-----"
-echo "---""$amicmd""----"
-echo "-----"
 eval "$ami_path$amicmd &"
