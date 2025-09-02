@@ -64,25 +64,14 @@ if [[ -z $CONFIG ]]; then
     CONFIG=$HUTCH$CNFEXT
 fi
 
-#
-# this is XPP specific. Don't think we should have local plugins anyways,
-# only release ones.
-#
-source /reg/g/pcds/setup/pathmunge.sh
-if [ "$HUTCH" == 'xpp' ]; then
-    ldpathmunge /reg/neh/operator/xppopr/ami_plugins
-elif [ "$HUTCH" == 'xcs' ]; then
-    ldpathmunge /reg/neh/operator/xcsopr/online/ami_plugins
-fi
-
 
 DAQHOST=$(wheredaq)
 ami_base_path=$(grep ami_base_path /reg/g/pcds/dist/pds/"$HUTCH"/scripts/"$CONFIG" | grep -v '#' | grep -v 'ami_base_path+'  | awk 'BEGIN { FS = "=" }; { print $2}' | sed s/\'//g)
-ami_path=$ami_base_path$(grep ami_path /reg/g/pcds/dist/pds/"$HUTCH"/scripts/"$CONFIG" | grep -v 'ami_path+' | grep -v '#' | awk 'BEGIN { FS = "= " }; { print $2}' | sed s/ami_base_path+// | sed s/\'//g)
+ami_path=$ami_base_path$(grep ami_GUI_path /reg/g/pcds/dist/pds/"$HUTCH"/scripts/"$CONFIG" | grep -v 'ami_path+' | grep -v '#' | awk 'BEGIN { FS = "= " }; { print $2}' | sed s/ami_base_path+// | sed s/\'//g)
 
 proxy_cds=$(/reg/g/pcds/dist/pds/"$HUTCH"/current/tools/procmgr/procmgr status /reg/g/pcds/dist/pds/"$HUTCH"/scripts/"$CONFIG" | grep ami_proxy | awk '{print $1}' | sed s/'-fez'/''/g)
 
-amicmd=$(grep ami_client /reg/g/pcds/dist/pds/"$HUTCH"/scripts/"$CONFIG" | grep -v '#' |  awk 'BEGIN { FS = ":" }; { print $4}' | sed s/ami_path//g | sed s/\'+proxy_cds/"$proxy_cds"/g | sed  s:\'+expname:"$EXPNAME"/:g | sed s/+\'//g | sed s/\'\}\)//g)
+amicmd=$(grep ami_client /reg/g/pcds/dist/pds/"$HUTCH"/scripts/"$CONFIG" | grep -v '#' |  awk 'BEGIN { FS = ":" }; { print $4}' | sed s/ami_GUI_path//g | sed s/\'+proxy_cds/"$proxy_cds"/g | sed  s:\'+expname:"$EXPNAME"/:g | sed s/+\'//g | sed s/\'\}\)//g)
 
 if [[ "$DAQHOST" == *"$HOSTNAME" ]]; then  # Check host and daq host line share host name...
     #running on the DAQ host, this will restart the ami_client!
@@ -107,4 +96,5 @@ else
 fi
 
 echo "$ami_path""$amicmd"
+
 eval "$ami_path$amicmd &"
