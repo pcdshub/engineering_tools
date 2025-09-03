@@ -250,8 +250,11 @@ fi
 # Attempt to read the :SUM PV and open a GUI if successful and exits if not. Uses wave8 or ipimb accordingly
 ipmGUI(){
     if caget "${BASE}":SUM > /dev/null 2>&1; then
+        if [ ${#WAVE8V3} -gt 0 ]; then
+            cmdName=$(caget -St "${BASE}":LAUNCH_EDM)
             # Validate cmdName: allow only safe characters (alphanum, underscore, dash, slash, period)
             if [[ "$cmdName" =~ ^[a-zA-Z0-9_./-]+$ ]]; then
+                echo calling edm main screen from: "$cmdName"
                 $cmdName
             else
                 echo "Error: Unsafe command detected in LAUNCH_EDM PV: '$cmdName'. Aborting."
