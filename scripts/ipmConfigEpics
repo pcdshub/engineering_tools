@@ -3,29 +3,29 @@
 export EPICS_CA_MAX_ARRAY_BYTES=8388608
 ulimit -c unlimited
 
-hx2Ipm='hx2_ipm'
-um6Ipm='um6_ipm um6_dio'
+em3l0='em3l0'
+um6Ipm='hxxdg1_ipm um6_dio'
 dg2Ipm='hfxdg2_ipm'
 xcsIpm='decmono ipmmono diomono pim3 pim3m ipm3 pim4 ipm4 snddio ipm5 pim5 ipmgonLD ipmlamLD usrdio'
 xppIpm='diomono decmono ipm2 ipm3 pim3 diodeU'
 cxiIpm='pim3m dg2ipm dg3ipm usrdio'
 mfxIpm='dg1ipm dg2ipm usrdio'
 mecIpm='ipm1 ipm2 ipm3 hxm_pim pim2 pim3 tc1_imb1 usr_imb1 usr_imb2 las_imb1 las_imb2'
-lfeIpm='um6_ipm hfxdg2_ipm pim3m'
+lfeIpm='hxxdg1_ipm hfxdg2_ipm pim3m'
 
 ipmList()
 {
 printf 'Possible boxes:\n'
 if [[ $hutch == 'xcs' ]]; then
-   for box in $hx2Ipm $um6Ipm $dg2Ipm $xcsIpm; do echo "$box"; done
+   for box in $em3l0 $um6Ipm $dg2Ipm $xcsIpm; do echo "$box"; done
 elif [[ $hutch == 'xpp' ]]; then
-   for box in $hx2Ipm $xppIpm; do echo "$box"; done
+   for box in $em3l0 $xppIpm; do echo "$box"; done
 elif [[ $hutch == 'cxi' ]]; then
-   for box in $hx2Ipm $um6Ipm $dg2Ipm $cxiIpm; do echo "$box"; done
+   for box in $em3l0 $um6Ipm $dg2Ipm $cxiIpm; do echo "$box"; done
 elif [[ $hutch == 'mfx' ]]; then
-   for box in $hx2Ipm $um6Ipm $mfxIpm; do echo "$box"; done
+   for box in $em3l0 $um6Ipm $mfxIpm; do echo "$box"; done
 elif [[ $hutch == 'mec' ]]; then
-   for box in $hx2Ipm $um6Ipm $mecIpm; do echo "$box"; done
+   for box in $em3l0 $um6Ipm $mecIpm; do echo "$box"; done
 elif [[ $hutch == 'lfe' ]]; then
    for box in $lfeIpm; do echo "$box"; done
 else
@@ -42,15 +42,14 @@ if [ $# -lt 1 ]; then
 fi
 
 # Shared IPMs
-if [[ $1 == 'hx2_ipm' ]]; then
-    IOC="IOC:HX2:SB1:BMMON"
-    BASE='HX2:SB1:BMMON'
-    EVR='HX2:SB1:BMMON:EVR'
-    WAVE8='hx2_ipm'
-elif [[ $1 == 'um6_ipm' ]]; then		#aka xcs ipm1
-    BASE="XCS:DG1:IMB:01"
-    IOC="XCS:R04:IOC:34"
-    EVR="XCS:R04:EVR:34"
+if [[ $1 == 'em3l0' ]]; then
+    BASE='EM3L0:IPM:W8:01'
+    WAVE8V3='em3l0'
+elif [[ $1 == 'hxxdg1_ipm' ]]; then		#aka xcs ipm1
+    IOC="IOC:HXX:DG1:BMMON"
+    BASE='HXX:DG1:BMMON'
+    EVR='HXX:DG1:BMMON:EVR'
+    WAVE8='hxxipm'
 elif [[ $1 == 'um6_dio' ]]; then		#aka xcs ipm1
     BASE="XCS:DG1:IMB:02"
     IOC="XCS:R04:IOC:34"
@@ -251,7 +250,11 @@ fi
 # Attempt to read the :SUM PV and open a GUI if successful and exits if not. Uses wave8 or ipimb accordingly
 ipmGUI(){
     if caget "${BASE}":SUM > /dev/null 2>&1; then
-        if [ ${#WAVE8} -gt 0 ]; then
+        if [ ${#WAVE8V3} -gt 0 ]; then
+            cmdName=$(caget -St "${BASE}":LAUNCH_EDM)
+            echo calling the screen from: "$cmdName"
+            $cmdName
+        elif [ ${#WAVE8} -gt 0 ]; then
             /reg/g/pcds/pyps/apps/wave8/latest/wave8 --base "$BASE" --evr "$EVR" --ioc "$IOC"
         else
             /reg/g/pcds/controls/pycaqt/ipimb/ipimb --base "$BASE" --ioc "$IOC" --evr "$EVR"
