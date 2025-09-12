@@ -599,7 +599,6 @@ HAVE_JUNGFRAU=$(grep -c Jungfrau /tmp/detnames_"$EXP"_"$CREATE_TIME")
 if [[ ( $HAVE_JUNGFRAU -ge 1 ) && ( $WANT_ZYLA -eq 0 ) && ( $WANT_OPAL -eq 0 ) && ( $WANT_RAYONIX -eq 0 )  && ( $WANT_UXI -eq 0 ) && ( $WANT_ALVIUM -eq 0 ) ]]; then
     
     DETNAMES=$(grep Jungfrau /tmp/detnames_"$EXP"_"$CREATE_TIME" | awk  'BEGIN { FS = "|"}; {print $1}' | paste -d " " -s)
-    ALIASES=$(grep Jungfrau /tmp/detnames_"$EXP"_"$CREATE_TIME" | awk  'BEGIN { FS = "|"}; {print $2}' | paste -d " " -s)
     
     DSNAME='exp='$EXP':run='$RUN':smd:stream=0-79'
     if [ -v OLD_JUNGFRAU ]; then # Do we need to keep the old JF stuff?
@@ -632,9 +631,8 @@ if [[ ( $HAVE_JUNGFRAU -ge 1 ) && ( $WANT_ZYLA -eq 0 ) && ( $WANT_OPAL -eq 0 ) &
         NJOBS=0
     fi
  
-    for i in "${!DETNAMES[@]}"; do
-        JUNGFRAU="${DETNAMES[i]// /}"
-        ALIAS="${ALIASES[i]// /}"
+    for JUNGFRAU in ${DETNAMES}; do
+	ALIAS=$(grep $JUNGFRAU /tmp/detnames_"$EXP"_"$CREATE_TIME" | grep raw | awk  'BEGIN { FS = "|"}; {print $2}' | paste -d " " -s)
         echo "jungfrau loop $JUNGFRAU with alias $ALIAS -- $RUNLOCAL"
         NSEG=99
         if [[ $ALIAS =~ "5" ]]; then
@@ -752,16 +750,14 @@ HAVE_EPIX10K=$(grep -c Epix10ka /tmp/detnames_"$EXP"_"$CREATE_TIME")
 if [[ ( $HAVE_EPIX10K -ge 1 ) && ( $WANT_ZYLA -eq 0 ) && ( $WANT_OPAL -eq 0 ) && ( $WANT_RAYONIX -eq 0 ) && ( $WANT_UXI -eq 0 ) && ( $WANT_ALVIUM -eq 0 ) ]]; then
     echo "-------------------- START EPIX10K PEDESTALS at $(date +'%T') ----------------------------"
     DETNAMES=$(grep Epix10ka /tmp/detnames_"$EXP"_"$CREATE_TIME" | awk  'BEGIN { FS = "|"}; {print $1}' | paste -d " " -s)
-    ALIASES=$(grep Epix10ka /tmp/detnames_"$EXP"_"$CREATE_TIME" | awk  'BEGIN { FS = "|"}; {print $2}' | paste -d " " -s)
 
     if [[ $RUNLOCAL -ne 1 ]]; then
         JOBIDS=()
         NJOBS=0
     fi
     
-    for i in "${!DETNAMES[@]}"; do
-        EPIX10K="${DETNAMES[i]// /}"
-        ALIAS="${ALIASES[i]// /}"
+    for EPIX10K in ${DETNAMES}; do
+	ALIAS=$(grep $EPIX10K /tmp/detnames_"$EXP"_"$CREATE_TIME" | grep raw | awk  'BEGIN { FS = "|"}; {print $2}' | paste -d " " -s)
         echo "Epix10ka name for $EXP is: ${EPIX10K} with alias ${ALIAS}"
         NSEG=99
         if [[ $ALIAS =~ "2M" ]]; then
@@ -787,7 +783,7 @@ if [[ ( $HAVE_EPIX10K -ge 1 ) && ( $WANT_ZYLA -eq 0 ) && ( $WANT_OPAL -eq 0 ) &&
                     printf '#!/bin/bash\n' > "$tmpScript"
                     printf 'source %s/manage/bin/psconda.sh\n' "${SIT_ENV_DIR}" >> "$tmpScript"
                     printf '%s\n' "${CMD}" >> "$tmpScript"
-                    ep10kaCmd="sbatch ${SBATCH_ARGS} --mem 8GB --cpus-per-task 5 -o $WORKDIR/${EPIX10K}_${EXP}_Run${RUN}_cycle${calibcycle}_%J.out $tmpScript"
+                    ep10kaCmd="sbatch ${SBATCH_ARGS} --mem 8GB --cpus-per-task 1 -o $WORKDIR/${EPIX10K}_${EXP}_Run${RUN}_cycle${calibcycle}_%J.out $tmpScript"
                     echo "run in queue: $ep10kaCmd"
                     SUBMISSION=$($ep10kaCmd)
                     check_for_submit_error

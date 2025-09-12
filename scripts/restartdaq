@@ -6,13 +6,9 @@ cat << EOF
 usage: $0 options
 
 OPTIONS:
--w sort windows after start
--d dss-test setup
--p select partition (same as used last)
--s silent (do not email jana)
--c enable core files
--C (LCLS2 DAQMGR Hutches ONLY!) Select a cnf to use.
--u UED .cnf file
+-w|--sortwindows sort windows after start
+-c|--coresize    enable core files
+-C|--cnf         (LCLS2 DAQMGR Hutches ONLY!) Select a cnf/py to use.
 EOF
 }
 
@@ -21,10 +17,7 @@ EOF
 
 NOTRUNNING='not running'
 AIMHOST=$HOSTNAME
-SELPART=''
 DOWIN=''
-#make it silent for now until done with testing and jana has been warned
-SILENT=1
 
 if [[ ($1 == "--help") || ($1 == "-h") ]]; then
 	usage
@@ -32,69 +25,47 @@ if [[ ($1 == "--help") || ($1 == "-h") ]]; then
 fi
 
 CORESIZE=0
-while getopts "m:pwscdCu:v" OPTION
-do
-    case $OPTION in
-	p)
-	    SELPART='Select Partition'
-	    ;;
-	w)
-	    DOWIN='Sort Windows'
-	    ;;
-	s)
-	    SILENT=1
-	    ;;
-	m)
-	    AIMHOST=$OPTARG
-	    ;;
- 	c)
- 	    CORESIZE=2000000000
- 	    ;;
-	u)
-        UED_CNF=$OPTARG
-        ;;
-    C)
-        DAQMGR_CNF=$OPTARG
-        ;;
- 	d)
- 	    DSSTEST=1
- 	    ;;
-    v)
-        VERBOSE=1
-        ;;
-	?)
-	    usage
-	    exit 1
-	    ;;
 
-	esac
+while [[ $# -gt 0 ]]
+do
+    key="$1"
+
+    case $key in
+    -h|--help)
+        usage
+        exit
+        ;;
+    -c|--coresize)
+        CORESIZE=2000000000
+        shift
+        ;;
+    -w|--sortwindows)
+	DOWIN='Sort Windows'
+        shift
+        ;;
+    -C|--cnf)
+        DAQMGR_CNF=$2
+        shift
+        shift
+        ;;
+    esac
 done
 
-# Prevent ShellCheck SC2034 warning for unused vars passed to other scripts
-# shellcheck disable=SC2034
-: "$DAQMGR_CNF" "$VERBOSE"
+# Check if the current's user hutch uses daqmgr. If so,
+# use the python utilities to manage the daq.
+if [ "$(daqutils isdaqmgr)" = "true" ]; then
+    if [[ -n "$DAQMGR_CNF" ]]; then
+        daqutils --cnf "$DAQMGR_CNF" "$(basename "$0")"
+    else
+        daqutils "$(basename "$0")" "$@"
+    fi
+    exit 0
+fi
 
 if [[ $(whoami) != *'opr'* ]]; then
     echo "Please run the DAQ from the operator account!"
     exit
 fi
-
-# Check if the current's user hutch uses daqmgr. If so,
-# use the python utilities to manage the daq.
-checkdaqroute "$(basename "$0")" "$@"
-case $? in
-    1)
-        # Not a daqmgr hutch — proceed with local fallback
-        ;;
-    2)
-        echo "Error: Unable to determine DAQ manager status." >&2
-        exit 2
-        ;;
-    *)
-        # Handled by checkdaqroute or failed internally — already exited
-        exit $?
-        ;;
-esac
 
 HUTCH=$(get_info --gethutch)
 CNFEXT=.cnf
@@ -107,10 +78,6 @@ elif [ "$HOSTNAME" == 'cxi-monitor' ]; then
     CNFFILE=$HUTCH$PEXT$CNFEXT
 fi
 
-if [[ "$DSSTEST" == 1 ]]; then
-    CNFFILE=dss.cnf
-fi
-
 #clean the enviroment before sourcing any conda env.
 unset PYTHONPATH
 unset LD_LIBRARY_PATH
@@ -119,22 +86,7 @@ unset LD_LIBRARY_PATH
 cd /reg/g/pcds/dist/pds/"$HUTCH"/scripts/ || exit
 
 DAQNETWORK='fez'
-LCLS2_HUTCHES="ued"
-if echo "$LCLS2_HUTCHES" | grep -iw "$HUTCH" > /dev/null; then
-    # shellcheck disable=SC1090
-    source /reg/g/pcds/dist/pds/"$HUTCH"/scripts/setup_env.sh
-    PROCMGR='procmgr'
-else
-    PROCMGR="/reg/g/pcds/dist/pds/$HUTCH/current/tools/procmgr/procmgr"
-fi
-
-# If UED machine; bypass drp node requirement, else; check for drp node
-if [ "$HUTCH" == "ued" ]; then
-    IS_DAQ_HOST=1
-    CNFFILE=$UED_CNF
-else
-    IS_DAQ_HOST=$(netconfig search "$AIMHOST"-$DAQNETWORK --brief | grep -c $DAQNETWORK)
-fi
+PROCMGR="/reg/g/pcds/dist/pds/$HUTCH/current/tools/procmgr/procmgr"
 
 if [ "$IS_DAQ_HOST" == 0 ]; then
     HOSTS=$(netconfig search "$HUTCH"-*-$DAQNETWORK --brief | sed s/-$DAQNETWORK//g)
@@ -150,11 +102,7 @@ if [ "$IS_DAQ_HOST" == 0 ]; then
     exit
 fi
 
-if [[ $DSSTEST == 1 ]]; then
-    DAQHOST=$(wheredaq -d)
-else
-    DAQHOST=$(wheredaq)
-fi
+DAQHOST=$(wheredaq)
 
 PLATFORM=$(grep 'if not platform' /reg/g/pcds/dist/pds/"$HUTCH"/scripts/"$CNFFILE" | awk '{print $NF}' | sed s/\'//g)
 if [[ "$DAQHOST" != *$NOTRUNNING* ]]; then
@@ -200,13 +148,8 @@ else
     ssh -Y "$AIMHOST" restartdaq
 fi
 
-if [[ $DSSTEST == 1 ]]; then
-    DAQHOST=$(wheredaq -d)
-    echo 'checked dss-node test DAQ....'
-    echo "$DAQHOST"
-else
-    DAQHOST=$(wheredaq)
-fi
+DAQHOST=$(wheredaq)
+
 
 if [[ "$DAQHOST" == *$NOTRUNNING* ]]; then
     echo 'We tried restarting the DAQ, but wheredaq says its still off!'
@@ -252,25 +195,6 @@ if [ ${#DOWIN} != 0 ]; then
     Sinter="$((Tdinter/1000000000))"
     Minter="$((Tdinter/1000000))"
     echo 'and '"$Sinter"'.'"$Minter"' extra seconds for windows'
-fi
-
-if [ ${#SELPART} != 0 ]; then
-    DAQC=$(xdotool search  --onlyvisible --name 'DAQ Control')
-    #echo $DAQC
-    xdotool mousemove --sync --window "$DAQC" 80 230
-    xdotool windowfocus "$DAQC"
-    xdotool click 1
-
-    PARTSEL=$(xdotool search  --onlyvisible --sync --name 'Partition Selection')
-    YLOW=$(xdotool search --name 'Partition Selection' getwindowgeometry %@ | grep Geometry | awk '{print $2}' | sed s/x/" "/g | awk '{print $2}')
-        #echo $PARTSEL
-    xdotool mousemove --sync --window "$PARTSEL" 80 $(("$YLOW"-28))
-    xdotool click 1
-fi
-
-if [ "$SILENT" == 0 ];then
-    /reg/g/pcds/dist/pds/scripts/txtjana.sh
-    printf 'email jana that we restarted the DAQ\n'
 fi
 
 exit

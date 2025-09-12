@@ -1,5 +1,13 @@
 #!/bin/bash
 
+# Check if the current's user hutch uses daqmgr. If so,
+# use the python utilities to manage the daq.
+if [ "$(daqutils isdaqmgr)" = "true" ]; then
+    # shellcheck disable=SC2068
+    daqutils "$(basename "$0")" $@
+    exit 0
+fi
+
 usage()
 {
 cat << EOF
@@ -13,23 +21,6 @@ if [[ ($1 == "--help") || ($1 == "-h") ]]; then
 	usage
 	exit 0
 fi
-
-# Check if the current's user hutch uses daqmgr. If so,
-# use the python utilities to manage the daq.
-checkdaqroute "$(basename "$0")" "$@"
-case $? in
-    1)
-        # Not a daqmgr hutch — proceed with local fallback
-        ;;
-    2)
-        echo "Error: Unable to determine DAQ manager status." >&2
-        exit 2
-        ;;
-    *)
-        # Handled by checkdaqroute or failed internally — already exited
-        exit $?
-        ;;
-esac
 
 HUTCH=$(get_info --gethutch)
 DAQHOST=$(wheredaq)
@@ -55,16 +46,7 @@ unset LD_LIBRARY_PATH
 #(puts pid file in consistent location - necessary for stopping for LCLS-II DAQ)
 cd /reg/g/pcds/dist/pds/"$HUTCH"/scripts/ || exit
 
-#tmo, rix & mfx have fallen back (or stepped forward)
-#   on the daqutils check above. only UED is procmgr DAQ hutch
-LCLS2_HUTCHES="ued"
-if echo "$LCLS2_HUTCHES" | grep -iw "$HUTCH" > /dev/null; then
-    source /reg/g/pcds/dist/pds/"$HUTCH"/scripts/setup_env.sh
-    PROCMGR='procmgr'
-else
-    PROCMGR="/reg/g/pcds/dist/pds/$HUTCH/current/tools/procmgr/procmgr"
-fi
-
+PROCMGR="/reg/g/pcds/dist/pds/$HUTCH/current/tools/procmgr/procmgr"
 PLATFORM=$(grep 'if not platform' /reg/g/pcds/dist/pds/"$HUTCH"/scripts/"$CNFFILE" | awk '{print $NF}' | sed s/\'//g)
 if [[ "$DAQHOST" != 'DAQ is not running' ]]; then
     T="$(date +%s%N)"

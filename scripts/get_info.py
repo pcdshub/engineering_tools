@@ -122,7 +122,7 @@ else:
         else:
             # then ask.....outside of python
             print('unknown_hutch')
-        sys.exit()
+            sys.exit()
     if args.getHutch:
         print(hutch.upper())
         sys.exit()
