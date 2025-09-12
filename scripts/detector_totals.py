@@ -26,8 +26,9 @@ def getDAQDetectorTotals(experiment):
 
     resp = requests.get(
         f"{lgbkprefix}/{experiment}/ws/run_table_sources",
-        headers=krbheaders).json()
-    rps = resp["value"].get("DAQ", [])
+        headers=krbheaders)
+    resp.raise_for_status()
+    rps = resp.json()["value"].get("DAQ", [])
     daqdets = map(lambda x: x["source"].replace("params.", ""),
                   filter(lambda x: x["label"].startswith("DAQ Detectors/"),
                          rps))
@@ -153,7 +154,13 @@ if __name__ == '__main__':
     daq_counts = OrderedDict()
     for experiment in experiments:
         logger.debug("Getting DAQ detector counts for %s", experiment)
-        daq_counts[experiment] = getDAQDetectorTotals(experiment)
+        try:
+            daq_counts[experiment] = getDAQDetectorTotals(experiment)
+        except:
+            logger.exception("Exception getting  DAQ detector counts"
+                             " for %s. Note; this may be expected "
+                             "( for example, restricted experiments ) ", 
+                            experiment)
 
     det_counts = OrderedDict()
     for experiment, detectors in daq_counts.items():
