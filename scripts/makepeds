@@ -222,8 +222,8 @@ else
         DIR=`echo $DIR | sed 's/cds/sdf/g'`
     fi
 
-    echo ssh -Y "$USER"@s3dflogin ssh -Y psana "$DIR/$MAKEPEDSEXE $@"
-    ssh -Y "$USER"@s3dflogin ssh -Y psana "$DIR/$MAKEPEDSEXE $@"
+    echo ssh -Y "$USER"@psana.sdf "$DIR/$MAKEPEDSEXE $@"
+    ssh -Y "$USER"@psana.sdf "$DIR/$MAKEPEDSEXE $@"
     chk="$?"
 fi
 
