@@ -1,6 +1,6 @@
 #! /bin/bash
 
-DIR=`dirname $(readlink -f $0)`
+DIR=$(dirname "$(readlink -f "$0")")
 PATH=$PATH:$DIR
 
 usage()
@@ -11,29 +11,29 @@ usage: $0 options
 Make a pedestal file for offline use
 
 OPTIONS:
-        -u|--user        
+        -u|--user
                user (needs to be able to log into the s3df)
-        -p|--post <text>  
+        -p|--post <text>
                add <text> to elog post
         -t|--test
                 do not deploy pedestals (epix10k only)
-        -r|--run         
+        -r|--run
                runnumber for pedestal
-        -e|--experiment <expname> 
+        -e|--experiment <expname>
                in case you do not want pedestals for the ongoing experiment
         -q|--queue <queue>
                queue for batch submisson
-        -A|--alvium         
+        -A|--alvium
                make pedestals for Alvium (default only cspad/EPIX detectors)
-        -O|--opal         
+        -O|--opal
                make pedestals for Opals (default only cspad/EPIX detectors)
-        -Z|--zyla         
+        -Z|--zyla
                make pedestals for Zyla (default only cspad/EPIX detectors)
         -R|--Rayonix
                make pedestals for Rayonix (please note that this is not the correct procedure for this detector)
         -U|--uxi
                make pedestals for Uxi/Icarus detector
-        -j|--jungfrau3     
+        -j|--jungfrau3
                make pedestals for Jungfrau - 3 run version(default only cspad/EPIX detectors)
         -r|--reservation <reservation>
                reservation for batch submisson
@@ -43,19 +43,19 @@ OPTIONS:
                lasing off run for XTCAV
         -v|--validity_start <val_run>
                validity range (set to <val_run>-end)
-        -N|--nevents <#>  
+        -N|--nevents <#>
                 use this number of events (default 1000). Needed when using -c as original events are counted
-        -c|--eventcode <evtcode x> 
+        -c|--eventcode <evtcode x>
                 use events with eventcode <x> set
-        -n|--noise_max <#> 
+        -n|--noise_max <#>
                 if you have created a noise file, then write pixel mask file for pixels with noise above #sigmas
-        -C|--noise_min <#> 
+        -C|--noise_min <#>
                 if noise filecreated, write pixel mask file for pixels with noise below xxx (currently integer only)
-        -m|--adu_min <#> 
+        -m|--adu_min <#>
                 write pixel mask file for pixels with pedestal below xxx (currently integer only)
-        -x|--adu_max <#>  
+        -x|--adu_max <#>
                 write pixel mask file for pixels with pedestal above xxx )currently integer only)
-        -i|--interactive 
+        -i|--interactive
                 start calibman. -r 0: show all darks, -r n: show runs (n-25) - 25
         -d|--calibdir
                 give path for alternative calibdir
@@ -88,7 +88,7 @@ do
             shift
             ;;
         -L|--xtcav_lasingoff)
-            POSITIONAL+=" $1"
+            POSITIONAL+=("$1")
             elogMessage="Lasing off for XTCAV"
             shift
             ;;
@@ -150,7 +150,7 @@ do
             shift
             shift
             ;;
-        -r|--reservation)
+        --reservation)
             POSITIONAL+=("--reservation $2")
             shift
             shift
@@ -181,20 +181,20 @@ INTERACTIVE=${INTERACTIVE:=0}
 
 if [[ $RUN == 0 ]]; then
     if [[ $INTERACTIVE == 0 ]]; then
-        printf "Please enter a run number: \n"; read RUN
-        set -- "$@" '--run ' $RUN
+        printf "Please enter a run number: \n"; read -r RUN
+        set -- "$@" '--run ' "$RUN"
     fi
 fi
 
 if [[ $EXP == 'xxx' ]]; then
     HUTCH=$(get_info --gethutch)
-    EXP=$(get_info --exp --hutch $HUTCH)
-    set -- "$@" '--experiment ' $EXP
+    EXP=$(get_info --exp --hutch "$HUTCH")
+    set -- "$@" '--experiment ' "$EXP"
 else
     HUTCH=${EXP:0:3}
 fi
 
-DAQ=$(get_info --daq --setExp $EXP)
+DAQ=$(get_info --daq --setExp "$EXP")
 if [[ $DAQ == 'LCLS2' ]]; then
     echo "This is a LCLS-II experiment"
     MAKEPEDSEXE=makepeds_psana2
@@ -204,53 +204,61 @@ else
 fi
 
 if [[ $HOSTNAME =~ "sdf" ]]; then
-    echo $DIR/$MAKEPEDSEXE $@
-    $DIR/$MAKEPEDSEXE $@
+    echo "$DIR/$MAKEPEDSEXE $*"
+    "$DIR/$MAKEPEDSEXE $*"
     chk="$?"
 
 else
     if [[ $USER =~ "opr" ]]; then
-        printf "Please enter user name (cannot run as from operator account): \n"; read USER
+        printf "Please enter user name (cannot run as from operator account): \n"; read -r USER
     fi
-    echo calling on SDF system: $MAKEPEDSEXE $@
+    echo "calling on SDF system: $MAKEPEDSEXE $*"
     # We need to change paths here as the S3DF filesytem is completely independent
     if [ -v SDFDIR  ]; then
         DIR=$SDFDIR
     else
-        DIR=`echo $DIR | sed 's/\/cds\/group\/pcds/\/sdf\/group\/lcls\/ds\/tools/g' | sed 's/\/reg\/g\/pcds/\/sdf\/group\/lcls\/ds\/tools/g'`
+        DIR=$(echo "$DIR" | sed 's/\/cds\/group\/pcds/\/sdf\/group\/lcls\/ds\/tools/g' | sed 's/\/reg\/g\/pcds/\/sdf\/group\/lcls\/ds\/tools/g')
         #this line was needed for testing from personal checkouts
-        DIR=`echo $DIR | sed 's/cds/sdf/g'`
+        DIR=${DIR//cds/sdf}
     fi
 
-    echo ssh -Y "$USER"@psana.sdf "$DIR/$MAKEPEDSEXE $@"
-    ssh -Y "$USER"@psana.sdf "$DIR/$MAKEPEDSEXE $@"
+    # We will setup a logfile to store the output locally in the operator home
+    MAKEPEDS_LOGDIR="${HOME}/makepeds_logs/${EXP}"
+    mkdir -p "${MAKEPEDS_LOGDIR}" # Does nothing if it already exists
+    RUN_FMT=$(printf "%04d" "$RUN")
+    EXEC_DATE=$(date +"%Y%m%d_%k%M%S")
+    MAKEPEDS_LOGFILE="${MAKEPEDS_LOGDIR}/run${RUN_FMT}_${EXEC_DATE}_${USER}.log"
+
+    echo "Output will be logged to ${MAKEPEDS_LOGFILE}"
+    echo ssh -Y "$USER"@psana.sdf "$DIR/$MAKEPEDSEXE $*"
+    ssh -Y "$USER"@psana.sdf "$DIR/$MAKEPEDSEXE $*" 2>&1 | tee "${MAKEPEDS_LOGFILE}"
     chk="$?"
 fi
 
 if [ $chk -gt 0 ]; then
     echo !!! Something went wrong !!!
     if [ $chk -eq 255 ]; then
-        echo User $USER has no access to the psana pool on S3DF, will exit
+        echo "User $USER has no access to the psana pool on S3DF, will exit"
     elif [ $chk -eq 130 ]; then
-	echo makepeds was aborted w/ crtl-c
+	echo "makepeds was aborted w/ crtl-c"
     elif [ $chk -eq 2 ]; then
-	echo makepeds could not make its work directory
+	echo "makepeds could not make its work directory"
     elif [ $chk -eq 3 ]; then
-	echo After waiting for 5 minutes, XTC files were still not present
+	echo "After waiting for 5 minutes, XTC files were still not present"
     elif [ $chk -eq 4 ]; then
-	echo $USER has no valid kerberos token - needed for LCLS2 deployment of calibration constants
+	echo "$USER has no valid kerberos token - needed for LCLS2 deployment of calibration constants"
     elif [ $chk -eq 5 ]; then
-	echo Deployment of geometry failed
+	echo "Deployment of geometry failed"
     elif [ $chk -eq 6 ]; then
-	echo Deployment of gain constants failed
+	echo "Deployment of gain constants failed"
     elif [ $chk -eq 7 ]; then
-	echo Additional command failed -- jungfrau constants
+	echo "Additional command failed -- jungfrau constants"
     elif [ $chk -eq 1 ]; then
-	echo makepeds calibration jobs failed, exited as requested.
+	echo "makepeds calibration jobs failed, exited as requested."
     elif [ $chk -eq 8 ]; then
-	echo detnames failed
+	echo "detnames failed"
     else
-	echo something else went wrong, received error code $sshchk, will exit
+	echo "something else went wrong, received error code $chk, will exit"
     fi
     exit 1
 fi
@@ -264,7 +272,7 @@ fi
 elog_par_post --file pedestal -e "$EXP" -r "$RUN"
 
 #if this is a default pedestal run, then do not post as this is handled in takepeds
-if [[ $elogMessage == 'DARK' ]] && [[ $ELOGTXT == '' ]] ; then
+if [[ $elogMessage == 'DARK' ]] && [[ $ELOGTEXT == '' ]] ; then
     echo ---- Done processing pedestals for Run "$RUN" -----
     exit 0
 fi
@@ -280,17 +288,17 @@ echo -- "$elogMessage" --
 
 elogMessage+=$ELOGTEXT
 if [[ $(whoami) =~ "opr" ]]; then
-    echo "$BINPATH" $PYCMD -i "${HUTCH^^}" -u $(whoami) -e "$EXP"  -t DARK  -r "$RUN" -m "$elogMessage"
+    echo "$BINPATH" "$PYCMD" -i "${HUTCH^^}" -u "$(whoami)" -e "$EXP"  -t DARK  -r "$RUN" -m "$elogMessage"
     if [[ $HOSTNAME == 'cxi-monitor' ]]; then
-        $BINPATH $PYCMD -i "${HUTCH^^}" -u $(whoami) -p pcds -e "$EXP"  -t DARK  -r "$RUN" -m "$elogMessage" -s 1&
+        "$BINPATH" "$PYCMD" -i "${HUTCH^^}" -u "$(whoami)" -p pcds -e "$EXP"  -t DARK  -r "$RUN" -m "$elogMessage" -s 1&
     else
-        $BINPATH $PYCMD -i "${HUTCH^^}" -u $(whoami) -p pcds -e "$EXP"  -t DARK  -r "$RUN" -m "$elogMessage"&
+        "$BINPATH" "$PYCMD" -i "${HUTCH^^}" -u "$(whoami)" -p pcds -e "$EXP"  -t DARK  -r "$RUN" -m "$elogMessage"&
     fi
 else
-    echo $BINPATH $PYCMD -i "${HUTCH^^}" -e "$EXP"  -t DARK -r "$RUN" -m "$elogMessage"
+    echo "$BINPATH" "$PYCMD" -i "${HUTCH^^}" -e "$EXP"  -t DARK -r "$RUN" -m "$elogMessage"
     if [[ $HOSTNAME == 'cxi-monitor' ]]; then
-        $BINPATH $PYCMD -i "${HUTCH^^}" -e "$EXP" -t DARK -r "$RUN" -m "$elogMessage" -s 1&
+        "$BINPATH" "$PYCMD" -i "${HUTCH^^}" -e "$EXP" -t DARK -r "$RUN" -m "$elogMessage" -s 1&
     else
-        $BINPATH $PYCMD -i "${HUTCH^^}" -e "$EXP" -t DARK -r "$RUN" -m "$elogMessage"&
+        "$BINPATH" "$PYCMD" -i "${HUTCH^^}" -e "$EXP" -t DARK -r "$RUN" -m "$elogMessage"&
     fi
 fi
