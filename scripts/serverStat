@@ -142,6 +142,17 @@ if [[ "${NAME,,}" == *drp* ]] && { [[ $CMD == "off" ]] || [[ $CMD == "cycle" ]];
     exit 1
 fi
 
+if [[ "${NAME,,}" == *drp* ]] && [[ $CMD == "reset" ]]; then
+    if ping -w 2 "$NAME" >/dev/null 2>&1; then
+	printf "%s is reachable, are you sure you want to reset (n/y)" "${NAME}"
+	read -r ANSWER
+	if [[ $ANSWER == 'n' ]] || [[ $ANSWER == 'N' ]] || [[ $ANSWER == 'no' ]]; then
+            printf "quit now.\n"
+            exit 0
+	fi
+    fi
+fi
+
 #check if this is a DAQ device
 if [[ $ISSRV -lt 1 ]] && [[ $HUTCH != 'unknown_hutch' ]]; then
     if [[ $HUTCH == 'cxi' ]]; then # only supporting primary daq for now
