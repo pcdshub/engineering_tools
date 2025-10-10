@@ -142,7 +142,7 @@ if [[ "${NAME,,}" == *drp* ]] && { [[ $CMD == "off" ]] || [[ $CMD == "cycle" ]];
     exit 1
 fi
 
-if [[ "${NAME,,}" == *drp* ]] && { [[ $CMD == "reset" ]]; }; then
+if [[ "${NAME,,}" == *drp* ]] && [[ $CMD == "reset" ]]; then
     if ping -w 2 "$NAME" >/dev/null 2>&1; then
 	printf "%s is reachable, are you sure you want to reset (n/y)" "${NAME}"
 	read -r ANSWER
