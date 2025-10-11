@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# spyder-env is in the 3.9 conda system, make sure we're in that conda root folder
+export PCDS_CONDA_VER=5.9.1
 source pcds_conda
 conda activate spyder-env
 spyder
