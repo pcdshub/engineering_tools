@@ -28,7 +28,7 @@ if [[ "$(daqutils isdaqmgr)" = "true" ]]; then
     source $SIT_ENV_DIR/setup_env.sh
     LCLS2=1
     if [[ ${HUTCH} =~ 'ued' ]]; then
-        epixquad_pedestal_scan --record 1 --hutch ${HUTCH}
+        epixquad_pedestal_scan --record 1 --detname epixquad1kfps --hutch ${HUTCH}
     elif [[ ${HUTCH} =~ 'mfx' ]]; then
         jungfrau_pedestal_scan --record 1 --hutch ${HUTCH} -p 0 -g 1 -v -t 10000 -C drp-srcf-cmp014
     elif [[ ${HUTCH} =~ 'rix' ]]; then
