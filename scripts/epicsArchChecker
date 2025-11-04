@@ -65,7 +65,11 @@ def main():
     bad_status = report_statusPV(myKeys, myPVs, myFiles) if args.status else False
 
     if verify:
-        verifyreturncode = subprocess.run([f'bash -c "source /cds/sw/ds/ana/conda2/manage/bin/psconda.sh; epicsArchVerify {fullpath}"', fullpath], shell=True).returncode
+        path = Path(str.lower(fullpath))
+        for hutch in LCLS2_HUTCHES:
+            if hutch in path.parts:
+                break
+        verifyreturncode = subprocess.run([f'bash -c "source /cds/group/pcds/dist/pds/{hutch}/scripts/setup_env.sh; epicsArchVerify {fullpath}"', fullpath], shell=True).returncode
     else:
         verifyreturncode = 0
 
