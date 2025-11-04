@@ -10,7 +10,7 @@ xcsIpm='decmono ipmmono diomono pim3 pim3m ipm3 pim4 ipm4 snddio ipm5 pim5 ipmgo
 xppIpm='diomono decmono ipm2 ipm3 pim3 diodeU'
 cxiIpm='pim3m dg2ipm dg3ipm usrdio'
 mfxIpm='dg1ipm dg2ipm usrdio'
-mecIpm='ipm1 ipm2 ipm3 hxm_pim pim2 pim3 tc1_imb1 usr_imb1 usr_imb2 las_imb1 las_imb2'
+mecIpm='ipm1 ipm2 ipm3 hxm_pim pim2 pim3 tc1_imb1 usr_imb1 usr_imb2 las_imb1 las_imb2 usr_dio'
 lfeIpm='hxxdg1_ipm hfxdg2_ipm pim3m'
 
 ipmList()
@@ -238,6 +238,11 @@ elif [[ $hutch == 'mec' ]]; then
 	EVR="MEC:XT2-2:BMMON:EVR"
 	BASE="MEC:XT2-2:BMMON"
 	WAVE8='xt2-2bmmon'
+    elif [[ $1 == 'usr_dio' ]]; then
+	IOC="IOC:MEC:USR:DIO"
+	EVR="MEC:USR:DIO:EVR"
+	BASE="MEC:USR:DIO"
+	WAVE8='usr-dio'
     fi
 fi
 if [ ${#BASE} == 0 ]
