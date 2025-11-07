@@ -43,12 +43,17 @@ OPTIONS:
                 write pixel mask file for pixels with pedestal above xxx )currently integer only)
         -d|--calibdir
                 give path for alternative calibdir
+        -t|--test
+                do not deploy
         --noseg
                 do not split jobs into segments
         --gui
                 start calibman. -r 0: show all darks, -r n: show runs (n-25) - 25
         --nstage1
                 events for the first stage of processing
+        --datinfo
+                print info about run for detectors
+ 
 EOF
 }
 
@@ -106,6 +111,12 @@ check_running_jobs()
         echo "$NJOBS" jobs are still running "${JOBIDS[@]}"
     fi
     return $NJOBS
+}
+
+get_datinfo()
+{
+    echo DATINFO_DEBUG
+    datinfo -d $MYDET -k exp=$EXP,run=$RUN,dir=$XTCDIR -L CRITICAL -t DRS > /tmp/datinfo_"$MYDET"_"$EXP"_"$CREATE_TIME"
 }
 
 # Arg: DETECTOR class. This could be a comma-separated list, but we're
@@ -229,6 +240,10 @@ do
 	--nstage1)
             NRECS1=("$2")
             shift
+            shift
+            ;;
+	--datinfo)
+            DATINFO=1
             shift
             ;;
         *)
@@ -442,8 +457,45 @@ if [[ $HAVE_EPIX100 -ge 1 ]]; then
 	    echo '$MYDET is a $DETTYPE, looking for epix100'
 	    continue
 	fi
-        echo "now calibrate $MYDET"
+        if [[ -v DATINFO ]]; then
+	    echo "get information in run for ${MYDET}"
+            datinfo -d $MYDET -k exp=$EXP,run=$RUN,dir=$XTCDIR -L CRITICAL -t DRS 
+	fi
+	echo "now calibrate $MYDET"
         CMD="det_dark_proc -d $MYDET -k exp=$EXP,run=$RUN,dir=$XTCDIR -L INFO $LOCARG"
+        echo "$CMD"
+        $CMD
+    done
+fi
+
+HAVE_EPIXM=$(grep -c epixm /tmp/detnames_"$EXP"_"$CREATE_TIME")
+if [[ $HAVE_EPIXM -ge 1 ]]; then
+    echo "***** have epixm ***"
+    DETNAMES=$(grep epixm /tmp/detnames_"$EXP"_"$CREATE_TIME" | grep raw | awk  'BEGIN { FS = "|"}; {print $1}' | paste -d " " -s)
+    for MYDET in ${DETNAMES}; do
+        LOCARG=$ARG' -o '$CALIBDIR
+        if [[ -v VALSTR ]]; then
+            LOCARG=$LOCARG' -t '$VALSTR
+        fi
+        if [[ -v NRECS1 ]]; then
+            LOCARG=$LOCARG' --nrecs1 '$NRECS1
+	else
+	    LOCARG=$LOCARG' --nrecs1 100'
+        fi
+        if [[ -v NUMEVT ]]; then
+            LOCARG=$LOCARG' -n '$NUMEVT
+	fi
+	DETTYPE=$(grep $MYDET /tmp/detnames_"$EXP"_"$CREATE_TIME" | grep raw | awk  'BEGIN { FS = "|"}; {print $2}' | paste -d " " -s)
+        if [[ ! $DETTYPE =~ 'epixm' ]]; then
+	    echo '$MYDET is a $DETTYPE, looking for epixm'
+	    continue
+	fi
+        if [[ -v DATINFO ]]; then
+            echo "get information in run for $MYDET"
+            datinfo -d $MYDET -k exp=$EXP,run=$RUN,dir=$XTCDIR -L CRITICAL -t DRS
+	fi
+        echo "now calibrate $MYDET"
+        CMD="epixm320_dark_proc -d $MYDET -k exp=$EXP,run=$RUN,dir=$XTCDIR -L INFO $LOCARG"
         echo "$CMD"
         $CMD
     done
@@ -508,25 +560,30 @@ fi
 HAVE_EPIX10K=$(grep -c epix10ka /tmp/detnames_"$EXP"_"$CREATE_TIME")
 if [[ $HAVE_EPIX10K -ge 1 ]]; then
     DETNAMES=$(grep epix10ka /tmp/detnames_"$EXP"_"$CREATE_TIME" | grep raw | awk  'BEGIN { FS = "|"}; {print $1}' | paste -d " " -s)
-    for EPIX10K in ${DETNAMES}; do
+    for MYDET in ${DETNAMES}; do
         LOCARG=' -o '$CALIBDIR
-        #EPIX10K="${DETNAMES[i]// /}"
-	DETTYPE=$(grep $EPIX10K /tmp/detnames_"$EXP"_"$CREATE_TIME" | grep raw | awk  'BEGIN { FS = "|"}; {print $2}' | paste -d " " -s)
+        #MYDET="${DETNAMES[i]// /}"
+	DETTYPE=$(grep $MYDET /tmp/detnames_"$EXP"_"$CREATE_TIME" | grep raw | awk  'BEGIN { FS = "|"}; {print $2}' | paste -d " " -s)
 	#MYDETTYPE="${DETTYPES[i]// /}"
         if [ ! "$DETTYPE" =~ 'epix10ka' ]; then
 	    continue
 	fi
-        echo "Epix10ka name for ${EXP} is: ${EPIX10K}"
+        echo "Epix10ka name for ${EXP} is: ${MYDET}"
+
+        if [[ -v DATINFO ]]; then
+	    echo "get information in run for ${MYDET}"
+            datinfo -d $MYDET -k exp=$EXP,run=$RUN,dir=$XTCDIR -L CRITICAL -t DRS
+	fi
 	NSEG=1
-        if [[ $EPIX10K =~ "2M" ]]; then
+        if [[ $MYDET =~ "2M" ]]; then
 	    NSEG=16;
-        elif [[ $EPIX10K =~ "uad" ]]; then
+        elif [[ $MYDET =~ "uad" ]]; then
 	    NSEG=4;
 	fi
         for calibcycle in {0..4}; do
             nextcycle=$(( calibcycle + 1 ))
-            CMD="epix10ka_pedestals_calibration $LOCARG -d $EPIX10K -k exp=$EXP,run=$RUN,dir=$XTCDIR --stepnum $calibcycle --stepmax $nextcycle -L INFO"
-            echo "---------------EPIX10K PEDESTALS FOR CYCLE $calibcycle --------------------"
+            CMD="epix10ka_pedestals_calibration $LOCARG -d $MYDET -k exp=$EXP,run=$RUN,dir=$XTCDIR --stepnum $calibcycle --stepmax $nextcycle -L INFO"
+            echo "---------------MYDET PEDESTALS FOR CYCLE $calibcycle --------------------"
             if [[ $RUNLOCAL != 1 ]]; then
                 for ((segment=0; segment<NSEG; segment++)); do
 		        if [[ $NSEG -gt 1 ]]; then
@@ -540,7 +597,7 @@ if [[ $HAVE_EPIX10K -ge 1 ]]; then
                     printf '#!/bin/bash\n' > "$tmpScript"
 			printf 'source %s/manage/bin/psconda.sh\n' "${SIT_ENV_DIR}" >> "$tmpScript"
                     printf '%s\n' "${CMDS}" >> "$tmpScript"
-                    ep10kaCmd="sbatch ${SBATCH_ARGS} --mem 8GB --cpus-per-task 1 -o $WORKDIR/${EPIX10K}_${EXP}_Run${RUN}_cycle${calibcycle}_%J.out $tmpScript"
+                    ep10kaCmd="sbatch ${SBATCH_ARGS} --mem 8GB --cpus-per-task 1 -o $WORKDIR/${MYDET}_${EXP}_Run${RUN}_cycle${calibcycle}_%J.out $tmpScript"
 
                     echo "run in queue: $ep10kaCmd"
                     SUBMISSION=$($ep10kaCmd)
@@ -586,7 +643,7 @@ if [[ $HAVE_EPIX10K -ge 1 ]]; then
     fi
 
     if [ "$DEPLOY" == 1 ]; then
-        echo "---------------EPIX10K PEDESTALS CALCULATED NOW DEPLOY     --------------------"
+        echo "--------------- PEDESTALS CALCULATED NOW DEPLOY     --------------------"
         if [ "$NFAILEDJOBS" -gt 0 ]; then
             read -r -p "$NFAILEDJOBS of the calibration tasks failed, do you want to continue anyways (y/n)?"
             if [ "$REPLY" != "y" ];then
@@ -595,9 +652,9 @@ if [[ $HAVE_EPIX10K -ge 1 ]]; then
         fi
 
         for i in "${!DETNAMES[@]}"; do
-            EPIX10K="${DETNAMES[i]// /}"
-            #for EPIX10K in $DETNAMES; do
-            CMD="epix10ka_deploy_constants $LOCARG -D -d $EPIX10K -k exp=$EXP,run=$RUN,dir=$XTCDIR -L INFO"
+            MYDET="${DETNAMES[i]// /}"
+            #for MYDET in $DETNAMES; do
+            CMD="epix10ka_deploy_constants $LOCARG -D -d $MYDET -k exp=$EXP,run=$RUN,dir=$XTCDIR -L INFO"
             if [ -v "$VALSTR" ]; then
                 echo 'setting validity....'"$VALSTR"
                 CMD=$CMD' -t '$VALSTR
@@ -633,19 +690,23 @@ fi
 HAVE_JUNGFRAU=$(grep -c jungfrau /tmp/detnames_"$EXP"_"$CREATE_TIME")
 if [[ $HAVE_JUNGFRAU -ge 1 ]]; then
     DETNAMES=$(grep jungfrau /tmp/detnames_"$EXP"_"$CREATE_TIME" | grep raw | awk  'BEGIN { FS = "|"}; {print $1}' | paste -d " " -s)
-    for JUNGFRAU in ${DETNAMES}; do
+    for MYDET in ${DETNAMES}; do
         LOCARG=' -o '$CALIBDIR
-	DETTYPE=$(grep $JUNGFRAU /tmp/detnames_"$EXP"_"$CREATE_TIME" | grep raw | awk  'BEGIN { FS = "|"}; {print $2}' | paste -d " " -s)
+	DETTYPE=$(grep $MYDET /tmp/detnames_"$EXP"_"$CREATE_TIME" | grep raw | awk  'BEGIN { FS = "|"}; {print $2}' | paste -d " " -s)
         if [[ ! $DETTYPE =~ 'jungfrau' ]]; then
 	    continue
 	fi
-        echo "Jungfrau name for ${EXP} is: ${JUNGFRAU}"
+        echo "Jungfrau name for ${EXP} is: ${MYDET}"
+        if [[ -v DATINFO ]]; then
+	    echo "get information in run for ${MYDET}"
+            datinfo -d $MYDET -k exp=$EXP,run=$RUN,dir=$XTCDIR -L CRITICAL -t DRS 
+	fi
 	NSEG=1
-        if [[ $JUNGFRAU =~ "16M" ]]; then
+        if [[ $MYDET =~ "16M" ]]; then
 	    NSEG=32;
-	elif [[ $JUNGFRAU =~ "4M" ]]; then
+	elif [[ $MYDET =~ "4M" ]]; then
 	    NSEG=8;
-	elif [[ $JUNGFRAU =~ "1M" ]]; then
+	elif [[ $MYDET =~ "1M" ]]; then
 	    NSEG=2;
 	elif [[ $EXP =~ "mfx" ]]; then #note that this is a hotfix!
 	    NSEG=32;
@@ -657,7 +718,7 @@ if [[ $HAVE_JUNGFRAU -ge 1 ]]; then
 	fi
         for calibcycle in {0..2}; do
             nextcycle=$(( calibcycle + 1 ))
-            CMD="jungfrau_dark_proc $LOCARG -d $JUNGFRAU -k exp=$EXP,run=$RUN,dir=$XTCDIR --stepnum $calibcycle --stepmax $nextcycle -L INFO"
+            CMD="jungfrau_dark_proc $LOCARG -d $MYDET -k exp=$EXP,run=$RUN,dir=$XTCDIR --stepnum $calibcycle --stepmax $nextcycle -L INFO"
             echo "---------------JUNGFRAU PEDESTALS FOR CYCLE $calibcycle --------------------"
             if [[ $RUNLOCAL != 1 ]]; then
                 for ((segment=0; segment<NSEG; segment++)); do
@@ -674,7 +735,7 @@ if [[ $HAVE_JUNGFRAU -ge 1 ]]; then
                     printf '#!/bin/bash\n' > "$tmpScript"
                     printf 'source %s/manage/bin/psconda.sh\n' "${SIT_ENV_DIR}" >> "$tmpScript"
                     printf '%s\n' "${CMDS}" >> "$tmpScript"
-                    jfCmd="sbatch ${SBATCH_ARGS} --mem ${MEM}GB --cpus-per-task 1 -o $WORKDIR/${JUNGFRAU}_${EXP}_Run${RUN}_cycle${calibcycle}_segment${segment}_%J.out $tmpScript"
+                    jfCmd="sbatch ${SBATCH_ARGS} --mem ${MEM}GB --cpus-per-task 1 -o $WORKDIR/${MYDET}_${EXP}_Run${RUN}_cycle${calibcycle}_segment${segment}_%J.out $tmpScript"
 
                     echo "run in queue: $jfCmd"
                     SUBMISSION=$($jfCmd)
@@ -734,8 +795,8 @@ if [[ $HAVE_JUNGFRAU -ge 1 ]]; then
             fi
         fi
 
-        for JUNGFRAU in ${DETNAMES}; do
-            CMD="jungfrau_deploy_constants -D -d $JUNGFRAU -k exp=$EXP,run=$RUN,dir=$XTCDIR -L INFO -o $CALIBDIR -p psrnx"
+        for MYDET in ${DETNAMES}; do
+            CMD="jungfrau_deploy_constants -D -d $MYDET -k exp=$EXP,run=$RUN,dir=$XTCDIR -L INFO -o $CALIBDIR -p psrnx"
             if [ -v "$VALSTR" ]; then
                 echo 'setting validity....'"$VALSTR"
                 CMD=$CMD' -t '$VALSTR
