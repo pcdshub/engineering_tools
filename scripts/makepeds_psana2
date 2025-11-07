@@ -254,11 +254,6 @@ do
 done
 set -- "${POSITIONAL[@]}"
 
-#check for a valid kerberos token, otherwise the deploy step will not work!
-if [ $(klist | wc -l) -eq 0 ]; then
-    exit 4
-fi
-
 T="$(date +%s%N)"
 echo "XXXXXXXXXXXXXXXXX START MAKEPEDS at $(date +'%T') on $HOSTNAME XXXXXXXXXXXXXXXXXXXXXXXXXXXX"
 
@@ -277,6 +272,14 @@ MYNOISESIGMAX=${MYNOISESIGMAX:=-1}
 MYADUMIN=${MYADUMIN:=-1}
 MYADUMAX=${MYADUMAX:=-1}
 #one setting to run each process on an own server (currently faster) or not (if we had to use reservations)
+
+#check for a valid kerberos token, otherwise the deploy step will not work!
+if ! klist -s ; then
+    echo No valid kerberos token, deployment will not work
+    if [ $DEPLOY == 1 ]; then
+        exit 4
+    fi
+fi
 
 if [ "$RUN" == 0 ]; then
     printf "Please enter a run number HERE: \n"; read -r RUN
