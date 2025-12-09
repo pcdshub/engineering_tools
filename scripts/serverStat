@@ -13,17 +13,17 @@ names_from_name(){
         INNAME=${INNAME//-ana/}
     fi
     CDSNAME=$INNAME
-    CDSIP=$(netconfig search "$CDSNAME" | grep IP: | awk '{print $2}')
-    if [[ -z $CDSIP ]]; then
-        echo "Host ($CDSNAME) not found in netconfig, exiting..." >&2
+    if ! host "$CSDNAME" &> /dev/null; then
+        echo "Host ($CDSNAME) not found in DNS, exiting..." >&2
         exit 1
     fi
-    if [[ $(netconfig search "$NAME"-ipmi --brief | wc -w) -gt 0 ]]; then
+    CDSIP=$(host "$CDSNAME" | awk '{print $4}')
+    if host "$NAME"-ipmi &> /dev/null; then
         NAMEIPMI=$INNAME-ipmi
     fi
-    if [[ $(netconfig search "$NAME"-fez --brief | wc -w) -gt 0 ]]; then
+    if host "$NAME"-fez &> /dev/null; then
         FEZNAME=$INNAME-fez
-        FEZIP=$(netconfig search "$FEZNAME" | grep IP: | awk '{print $2}')
+        FEZIP=$(host "$FEZNAME" | awk '{print $4}')
     fi
 }
 
@@ -77,9 +77,11 @@ for name in "tmo" "rix" "txi" "xpp" "xcs" "mfx" "cxi" "mec" "det"; do
     fi
 done
 
-
-HOST_HAS_FEZ=$(netconfig search "$HOSTNAME"-fez --brief | wc -l)
-
+if host "$HOSTNAME"-fez $> /dev/null; then
+    HOST_HAS_FEZ=1
+else
+    HOST_HAS_FEZ=0
+fi
 
 if [[ $# -lt 2 ]]; then
     if [[ $# -lt 1 ]]; then
@@ -110,10 +112,11 @@ fi
 
 if [[ $NAME == *'172.21'* ]]; then
     ISSRV=1
-    NAME=$(netconfig search "$NAME" --brief | awk '{print $1}')
+    NAME=$(host "$NAME" | awk '{print $5}' | cut -d "." -f 1)
     echo "$DEV is an IP for $NAME"
 else
-    ISSRV=$(netconfig search "$NAME" | grep 'Found' | awk '{print $2}')
+    host "$NAME" $> /dev/null
+    ISSRV=$?
 fi
 
 if [[ $NAME == *'-ipmi'* ]]; then
@@ -182,17 +185,17 @@ if [[ $ISSRV -lt 1 ]] && [[ $HUTCH != 'unknown_hutch' ]]; then
         fi
     fi
     if [[ $NAME ]]; then
-        ISSRV=$(netconfig search "$NAME" | grep 'Found' | awk '{print $2}')
+        host "$NAME" $> /dev/null
+        ISSRV=$?
     fi
     if [[ $ISSRV -lt 1 ]]; then
-        echo "Host ($NAME) not found in netconfig, exiting..." >&2
+        echo "Host ($NAME) not found in DNS, exiting..." >&2
         exit 1
     fi
-
-    SRVIP=$(netconfig search "$NAME" | grep IP: | awk '{print $2}')
+    SRVIP=host "$NAME" | awk '{print $4}'
     echo "server for $DEV is: $NAME"
 else
-    SRVIP=$(netconfig search "$DEV" | grep IP: | awk '{print $2}')
+    SRVIP=host "$DEV" | awk '{print $4}'
 fi
 
 
@@ -210,9 +213,11 @@ elif [[ $CMD == "console" ]]; then
 elif [[ $CMD == "reset" ]]; then
     psipmi "$NAMEIPMI" power reset
 elif [[ $CMD == "expert" ]]; then
-    echo "Host netconfig entry:"
+    echo "Host sdfconfig entry:"
     echo -e "-------------------------------------------------"
-    netconfig view "$NAME"
+    # sdfconfig view currently broken, use search and hope for one entry only
+    # sdfconfig --domain pcdsn view "$NAME"
+    sdfconfig search "$NAME"
     echo -e ""
     echo -e "Checking IPMI power status:"
     echo -e "-------------------------------------------------"
@@ -232,7 +237,7 @@ elif [[ $CMD == "expert" ]]; then
     else
        echo "$NAME-ipmi does not ping."
     fi
-    if [[ $(netconfig search "$NAME"-fez --brief | wc -w) -gt 0 ]]; then
+    if host "$NAME"-fez $> /dev/null; then
         if ping -w 2 "$NAME"-fez >/dev/null 2>&1; then
            echo "$NAME-fez pings."
         else
