@@ -13,7 +13,7 @@ names_from_name(){
         INNAME=${INNAME//-ana/}
     fi
     CDSNAME=$INNAME
-    if ! host "$CSDNAME" &> /dev/null; then
+    if ! host "$CDSNAME" &> /dev/null; then
         echo "Host ($CDSNAME) not found in DNS, exiting..." >&2
         exit 1
     fi
@@ -77,7 +77,7 @@ for name in "tmo" "rix" "txi" "xpp" "xcs" "mfx" "cxi" "mec" "det"; do
     fi
 done
 
-if host "$HOSTNAME"-fez $> /dev/null; then
+if host "$HOSTNAME"-fez &> /dev/null; then
     HOST_HAS_FEZ=1
 else
     HOST_HAS_FEZ=0
@@ -115,8 +115,7 @@ if [[ $NAME == *'172.21'* ]]; then
     NAME=$(host "$NAME" | awk '{print $5}' | cut -d "." -f 1)
     echo "$DEV is an IP for $NAME"
 else
-    host "$NAME" $> /dev/null
-    ISSRV=$?
+    host "$NAME" &> /dev/null && ISSRV=1 || ISSRV=0
 fi
 
 if [[ $NAME == *'-ipmi'* ]]; then
@@ -185,17 +184,17 @@ if [[ $ISSRV -lt 1 ]] && [[ $HUTCH != 'unknown_hutch' ]]; then
         fi
     fi
     if [[ $NAME ]]; then
-        host "$NAME" $> /dev/null
+        host "$NAME" &> /dev/null
         ISSRV=$?
     fi
     if [[ $ISSRV -lt 1 ]]; then
         echo "Host ($NAME) not found in DNS, exiting..." >&2
         exit 1
     fi
-    SRVIP=host "$NAME" | awk '{print $4}'
+    SRVIP="$(host "$NAME" | awk '{print $4}')"
     echo "server for $DEV is: $NAME"
 else
-    SRVIP=host "$DEV" | awk '{print $4}'
+    SRVIP="$(host "$DEV" | awk '{print $4}')"
 fi
 
 
@@ -215,9 +214,7 @@ elif [[ $CMD == "reset" ]]; then
 elif [[ $CMD == "expert" ]]; then
     echo "Host sdfconfig entry:"
     echo -e "-------------------------------------------------"
-    # sdfconfig view currently broken, use search and hope for one entry only
-    # sdfconfig --domain pcdsn view "$NAME"
-    sdfconfig search "$NAME"
+    sdfconfig view "$NAME".pcdsn
     echo -e ""
     echo -e "Checking IPMI power status:"
     echo -e "-------------------------------------------------"
@@ -237,7 +234,7 @@ elif [[ $CMD == "expert" ]]; then
     else
        echo "$NAME-ipmi does not ping."
     fi
-    if host "$NAME"-fez $> /dev/null; then
+    if host "$NAME"-fez &> /dev/null; then
         if ping -w 2 "$NAME"-fez >/dev/null 2>&1; then
            echo "$NAME-fez pings."
         else
