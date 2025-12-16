@@ -88,21 +88,21 @@ cd /reg/g/pcds/dist/pds/"$HUTCH"/scripts/ || exit
 DAQNETWORK='fez'
 PROCMGR="/reg/g/pcds/dist/pds/$HUTCH/current/tools/procmgr/procmgr"
 
-if [ "$IS_DAQ_HOST" == 0 ]; then
-    # There is currently no suitable way to find daq-compatible hosts in sdfconfig
-    # Maybe this will work in the future, disable for now and have worse UX
-    # HOSTS=$(sdfconfig search --type subnet PCDSN-${DAQNETWORK^^}-${HUTCH^^} --brief)
-    # WORKINGHOSTS=''
-    # #make sure at least cds is up.
-    # for HOST in $HOSTS; do
-	#       if [[ $(ping -w 2 "$HOST" >/dev/null 2>&1) == 0 ]]; then
-	#     WORKINGHOSTS=$WORKINGHOSTS' '$HOST
-	# fi
-    # done
-    # Placeholder less useful message:
-    echo "$AIMHOST" does not have "$DAQNETWORK", please choose a server with "$DAQNETWORK"
-    # echo "$AIMHOST" does not have "$DAQNETWORK", please choose one of the following machines to run the DAQ: "$WORKINGHOSTS"
-    echo "restartdaq -m <machine_with_$DAQNETWORK>"
+if [ "${IS_DAQ_HOST}" == 0 ]; then
+    HOSTS="$(sdfconfig search --brief --type subnet PCDSN-"${DAQNETWORK^^}"-"${HUTCH^^}")"
+    WORKINGHOSTS=""
+    for HOST in $HOSTS; do
+        # Only consider hosts that start with hutch-, e.g. xpp-control, xcs-daq
+	    if [[ "${HOST}" == "${HUTCH}"-* ]]; then
+            # Make sure cds intf is up via ping
+            # Remove trailing .pcdsn to switch from fqdn to hostname
+            if ping -w 2 "${HOST%.pcdsn}" &> /dev/null; then
+                WORKINGHOSTS="${WORKINGHOSTS} ${HOST%.pcdsn}"
+            fi
+	    fi
+    done
+    echo "${AIMHOST} does not have ${DAQNETWORK}, please choose one of the following machines to run the DAQ:${WORKINGHOSTS}"
+    echo "restartdaq -m <machine_with_${DAQNETWORK}>"
     exit
 fi
 
