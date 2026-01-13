@@ -113,6 +113,22 @@ check_running_jobs()
     return $NJOBS
 }
 
+check_completed_jobs()
+{
+    echo "Checking all jobs ${ALLJOBIDS}"
+    for JOBID in "${ALLJOBIDS[@]}"; do
+	JOBSTATE=$(sacct -j "$JOBID" -X -o State | tail -n 1)
+	if [[ $JOBSTATE =~ "COMPLETED" ]]; then
+	    echo $JOBID $JOBSTATE
+	else
+	    NFAILEDJOBS=$((NFAILEDJOBS+1))
+	    JOBEXITCODE=$(sacct -j "$JOBID" -X -o ExitCode | tail -n 1)
+	    JOBCMD=$(sacct -j "$JOBID" -X -o Submitline%500 | tail -n 1 | sed 's/  //g')
+	    echo $JOBID reported $JOBSTATE and failed with error code $JOBEXITCODE command was $JOBCMD
+	fi
+    done
+}
+
 get_datinfo()
 {
     echo DATINFO_DEBUG
@@ -632,17 +648,8 @@ if [[ $HAVE_EPIX10K -ge 1 ]]; then
         done
         echo 'All jobs finished'
         # and now check that none of the jobs have existed with an error code:
-        # currently, the epix10k jobs print DONE at the end.
-        # Second check necessary as jobs can fail without printing an exit code to the logfile
-        for JOBID in "${ALLJOBIDS[@]}"; do
-            echo "Checking job $JOBID"
-            if grep -q 'exit code' "$WORKDIR"/*"$JOBID".out; then
-                NFAILEDJOBS=$((NFAILEDJOBS+1))
-            elif ! grep -q 'DONE' "$WORKDIR"/*"$JOBID".out; then
-                NFAILEDJOBS=$((NFAILEDJOBS+1))
-            fi
-        done
-
+        NFAILEDJOBS=0
+	check_completed_jobs
     fi
 
     if [ "$DEPLOY" == 1 ]; then
@@ -769,17 +776,8 @@ if [[ $HAVE_JUNGFRAU -ge 1 ]]; then
         done
         echo 'All jobs finished'
         # and now check that none of the jobs have existed with an error code:
-        # currently, the jungfrau jobs print DONE at the end.
-        # Second check necessary as jobs can fail without printing an exit code to the logfile
-        for JOBID in "${ALLJOBIDS[@]}"; do
-            echo "Checking job $JOBID"
-            if grep -q 'exit code' "$WORKDIR"/*"$JOBID".out; then
-                NFAILEDJOBS=$((NFAILEDJOBS+1))
-            elif ! grep -q 'End' "$WORKDIR"/*"$JOBID".out; then
-                NFAILEDJOBS=$((NFAILEDJOBS+1))
-            fi
-        done
-
+        NFAILEDJOBS=0
+	check_completed_jobs
     fi
 
     echo "---------------JUNGFRAU PEDESTALS CALCULATED    --------------------"
