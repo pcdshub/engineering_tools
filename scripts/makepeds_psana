@@ -148,6 +148,22 @@ xtcav_dark()
    exit 0
 }
 
+check_completed_jobs()
+{
+    echo "Checking all jobs ${ALLJOBIDS}"
+    for JOBID in "${ALLJOBIDS[@]}"; do
+	JOBSTATE=$(sacct -j "$JOBID" -X -o State | tail -n 1)
+	if [[ $JOBSTATE =~ "COMPLETED" ]]; then
+	    echo $JOBID $JOBSTATE
+	else
+	    NFAILEDJOBS=$((NFAILEDJOBS+1))
+	    JOBEXITCODE=$(sacct -j "$JOBID" -X -o ExitCode | tail -n 1)
+	    JOBCMD=$(sacct -j "$JOBID" -X -o Submitline%500 | tail -n 1 | sed 's/  //g')
+	    echo $JOBID reported $JOBSTATE and failed with error code $JOBEXITCODE command was $JOBCMD
+	fi
+    done
+}
+
 xtcav_lasOff()
 {
     #the new XTCAV code does not seem to care about bumber of bunches in the lasing off data.
@@ -703,14 +719,8 @@ if [[ ( $HAVE_JUNGFRAU -ge 1 ) && ( $WANT_ZYLA -eq 0 ) && ( $WANT_OPAL -eq 0 ) &
         done
         echo 'All jobs finished'
         # and now check that none of the jobs have exited with an error code:
-        for JOBID in "${ALLJOBIDS[@]}"; do
-            echo "Checking job $JOBID"
-            if grep -q 'exit code' "$WORKDIR"/*"$JOBID".out; then
-                NFAILEDJOBS=$((NFAILEDJOBS+1))
-            elif ! grep -q 'consumed' "$WORKDIR"/*"$JOBID".out; then
-                NFAILEDJOBS=$((NFAILEDJOBS+1))
-            fi
-        done
+        NFAILEDJOBS=0
+	check_completed_jobs
     fi
 
     #Now deploy.
@@ -813,18 +823,9 @@ if [[ ( $HAVE_EPIX10K -ge 1 ) && ( $WANT_ZYLA -eq 0 ) && ( $WANT_OPAL -eq 0 ) &&
             sleep 10
         done
         echo 'All jobs finished'
-        # and now check that none of the jobs have existed with an error code:
-        # currently, the epix10k jobs print DONE at the end. 
-    # Second check necessary as jobs can fail without printing an exit code to the logfile
+        # and now check that none of the jobs have exited with an error code:
         NFAILEDJOBS=0
-        for JOBID in "${ALLJOBIDS[@]}"; do
-            echo "Checking job $JOBID"
-            if grep -q 'exit code' "$WORKDIR"/*"$JOBID".out; then
-                NFAILEDJOBS=$((NFAILEDJOBS+1))
-            elif ! grep -q 'DONE' "$WORKDIR"/*"$JOBID".out; then
-                NFAILEDJOBS=$((NFAILEDJOBS+1))
-            fi
-        done    
+	check_completed_jobs
     fi
 
     echo "---------------EPIX10K PEDESTALS CALCULATED NOW DEPLOY     --------------------"
