@@ -386,15 +386,15 @@ else
     echo 'cannot check Acquiring PV, try to open camera viewer anyways....'
 fi
 
-current_host="$(hostname)"
 if [[ -z "$IS_REMOTE_SSH" ]]; then
-    if [ "$hutch" == "kfe" ] && [ "$current_host" != "kfe-console" ]; then
+    current_host="$(hostname)"
+    if [[ "$hutch" == "kfe" && "$current_host" != "kfe-console" && "$current_host" != "xbdo-control" ]]; then
         echo "Not in SSH, connecting to kfe-console..." >&2
         ssh -t kfe-console "IS_REMOTE_SSH=1 $EXE --camerapv '$CAMPVFULL' --instrument '$hutch' --pvlist '$PVLIST' --rate '$RATE' ; bash"
         exit_status=$?
         echo "SSH exit status: $exit_status" >&2
         exit $exit_status
-    elif [ "$hutch" == "lfe" ] || [ "$hutch" == "xrt" ] && [ "$current_host" != "lfe-console" ]; then
+    elif [[ ("$hutch" == "lfe" || "$hutch" == "xrt") && "$current_host" != "lfe-console" && "$current_host" != "xbdo-control" ]]; then
         echo "Not in SSH, connecting to lfe-console..." >&2
         ssh -t lfe-console "IS_REMOTE_SSH=1 $EXE --camerapv '$CAMPVFULL' --instrument '$hutch' --pvlist '$PVLIST' --rate '$RATE' ; bash"
         exit_status=$?
