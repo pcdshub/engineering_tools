@@ -20,7 +20,7 @@ if [[ ($1 == "--help") || ($1 == "-h") ]]; then
 fi
 
 hutch=${1,,}
-for i in "tmo" "txi" "rix" "xpp" "xcs" "mfx" "cxi" "mec" "ued" "ued" "det" "lfe" "kfe" "tst" "las" "hpl"; do
+for i in "tmo" "txi" "rix" "xpp" "xcs" "mfx" "cxi" "mec" "ued" "ued" "det" "lfe" "kfe" "xrt" "tst" "las" "hpl"; do
     if [[ $hutch == "$i" ]]; then
         exit 0
     fi
