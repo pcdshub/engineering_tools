@@ -100,14 +100,15 @@ if [[ "$current_host" != "lfe-console" &&
 	    "$current_host" != "xbdo-control" && 
 	    -z "$IS_REMOTE_SSH" && 
             "$NEED_SSH" -eq 1 ]]; then
+
     echo "Not in SSH, connecting to lfe-console..." >&2
-    ssh -t lfe-console "IS_REMOTE_SSH=1 $DIR/camViewer $@ ; bash"
+    ssh -t lfe-console "IS_REMOTE_SSH=1 $DIR/camViewer $* ; bash "
     #ssh -t lfe-console "IS_REMOTE_SSH=1 nohup $DIR/camViewer $@ 1>&2 | tee nohup.out &"
     #ssh -t lfe-console "IS_REMOTE_SSH=1 nohup $DIR/camViewer $@ "
     exit_status=$?
     echo "SSH exit status: $exit_status" >&2
     exit $exit_status
 else
-   $DIR/camViewer -H lfe "$@"
+    "$DIR"/camViewer -H lfe $*
 fi
 

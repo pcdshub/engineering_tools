@@ -194,7 +194,7 @@ do
             ;;
         -H|--hutch)
             hutch=$2
-            echo "HUTCH: $hutch" >&2
+            #echo "HUTCH: $hutch" >&2
             shift 2
             ;;
         -m|--main)
@@ -316,8 +316,7 @@ if [ $MAINSCREEN -gt 0 ]; then
         echo "Camera name not found in hutch. To see which cameras you can access from your current machine use the '-l/--list' option."
 	exit 1
     elif [[ "$c" =~ $CAMNAME ]] && [ "$hutch" != "$(get_info --gethutch)" ] ; then
-        echo "To use camera controls, you must be on the same hutch network as your camera."
-        echo "Opening read-only main screen..."
+	echo "Note that your use of camera controls depend on the gateway setup"
     fi
     echo 'try to get the main screen for: ' "$CAMNAME"
     echo 'start the main screen for camera base PV: ' "$CAMPVFULL"
@@ -351,8 +350,19 @@ if [ $DISABLE -gt 0 ]; then
 fi
 
 if [ $ACQUIRE -gt 0 ]; then
-    echo "Starting acquisition for ${CAMNAME}"
-    caput -n "$CAMPVFULL":Acquire 1
+    if [ "$CAMNAME" == 'XTCAV' ]; then
+	echo "Acquire PV for XTCAV not writeable from photon side"
+	exit
+    fi
+    IS_ACQUIRING=$(caget -t -n "$CAMPVFULL":Acquire_RBV)
+    if isNum "$IS_ACQUIRING"; then
+        if [ "$IS_ACQUIRING" -eq 0 ]; then
+            echo "Starting acquisition for ${CAMNAME}"
+            caput -n "$CAMPVFULL":Acquire 1
+	else
+	    echo "Acquisition for ${CAMNAME} running"
+	fi
+    fi
     exit
 fi
 
@@ -372,7 +382,8 @@ fi
 
 # we do not have write permissions for the XTCAV camera _and_ 
 # the Acquire_RBV is 0 even when the camera is runnig
-if [ $CAMNAME != 'XTCAV' ]; then
+if [[ "$CAMNAME" != 'XTCAV' &&
+   -z "$IS_REMOTE_SSH" ]]; then
     IS_ACQUIRING=$(caget -t -n "$CAMPVFULL":Acquire_RBV)
     if isNum "$IS_ACQUIRING"; then
         if [ "$IS_ACQUIRING" -eq 0 ]; then

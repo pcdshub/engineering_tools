@@ -101,11 +101,10 @@ if [[ "$current_host" != "kfe-console" &&
 	    -z "$IS_REMOTE_SSH" && 
             "$NEED_SSH" -eq 1 ]]; then
     echo "Not in SSH, connecting to lfe-console..." >&2
-    ssh -t kfe-console "IS_REMOTE_SSH=1 $DIR/camViewer $@ ; bash"
+    ssh kfe-console "IS_REMOTE_SSH=1 $DIR/camViewer $* ; bash "
     exit_status=$?
     echo "SSH exit status: $exit_status" >&2
     exit $exit_status
 else
-   $DIR/camViewer -H kfe "$@"
+   "$DIR"/camViewer -H kfe $*
 fi
-
