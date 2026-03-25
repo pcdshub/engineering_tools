@@ -11,7 +11,7 @@ xppIpm='diomono decmono ipm2 ipm3 pim3 diodeU'
 cxiIpm='pim3m dg2ipm dg3ipm usrdio'
 mfxIpm='dg1ipm dg2ipm usrdio'
 mecIpm='ipm1 ipm2 ipm3 hxm_pim pim2 pim3 tc1_imb1 usr_imb1 usr_imb2 las_imb1 las_imb2 usr_dio'
-lfeIpm='hxxdg1_ipm hfxdg2_ipm pim3m'
+lfeIpm='hfxdg2_ipm pim3m'
 
 ipmList()
 {
@@ -21,13 +21,13 @@ if [[ $hutch == 'xcs' ]]; then
 elif [[ $hutch == 'xpp' ]]; then
    for box in $em3l0 $xppIpm; do echo "$box"; done
 elif [[ $hutch == 'cxi' ]]; then
-   for box in $em3l0 $um6Ipm $dg2Ipm $cxiIpm; do echo "$box"; done
+   for box in $em3l0 $um6Ipm $lfeIpm $cxiIpm; do echo "$box"; done
 elif [[ $hutch == 'mfx' ]]; then
    for box in $em3l0 $um6Ipm $mfxIpm; do echo "$box"; done
 elif [[ $hutch == 'mec' ]]; then
    for box in $em3l0 $um6Ipm $mecIpm; do echo "$box"; done
 elif [[ $hutch == 'lfe' ]]; then
-   for box in $lfeIpm; do echo "$box"; done
+   for box in $em3l0 $um6Ipm $lfeIpm; do echo "$box"; done
 else
     echo 'hutch cannot be determined, quit'
     exit
@@ -45,16 +45,16 @@ fi
 if [[ $1 == 'em3l0' ]]; then
     BASE='EM3L0:IPM:W8:01'
     WAVE8V3='em3l0'
-elif [[ $1 == 'hxxdg1_ipm' ]]; then		#aka xcs ipm1
+elif [[ $1 == 'hxxdg1_ipm' ]]; then		#aka xrt ipm1
     IOC="IOC:HXX:DG1:BMMON"
     BASE='HXX:DG1:BMMON'
     EVR='HXX:DG1:BMMON:EVR'
     WAVE8='hxxipm'
-elif [[ $1 == 'um6_dio' ]]; then		#aka xcs ipm1
+elif [[ $1 == 'um6_dio' ]]; then		#aka xrt yag1 dio
     BASE="XCS:DG1:IMB:02"
     IOC="XCS:R04:IOC:34"
     EVR="XCS:R04:EVR:34"
-elif [[ $1 == 'hfxdg2_ipm' ]]; then	#aka xcs ipm2
+elif [[ $1 == 'hfxdg2_ipm' ]]; then	#aka xrt ipm2
     IOC="IOC:HFX:DG2:BMMON"
     BASE='HFX:DG2:BMMON'
     EVR='HFX:DG2:BMMON:EVR'
