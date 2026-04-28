@@ -2,31 +2,31 @@
 A repository of scripts, configuration useful for the PCDS team
 
 ## Creating a new release
-1. Create a GitHub release using the "Releases" feature on the right hand side
-2. Change directory to the release area
-3. Run the release clone command
-4. Update latest-released
-5. Update latest, if needed
-
+1. Create a GitHub release using the "Releases" feature on the right hand side of the GitHub UI
+   - You can select a new tag version and click "generate release notes"
+2. Log in to the lcls systems
+3. Change directory to the release area
 ```
-# Change directory
 cd /cds/group/pcds/engineering_tools
-# Make Release
-# Clone the source code into a new folder
-git clone https://github.com/pcdshub/engineering_tools.git R{tag}
-# Enter repository
-cd R{Tag}
-# checkout tag number
-git checkout tags/R{tag}
 ```
-
-## Updating latest
+4. Set your release version (replace the number below with yours)
 ```
-# Go to latest checkout
+REL=R3.3.3
+```
+5. Run the release `git clone` command
+```
+git clone -b "${REL}" --depth 1 https://github.com/pcdshub/engineering_tools.git "${REL}"
+```
+6. Update latest-released
+```
+ln -sfn "${REL}" latest-released
+```
+7. Update latest, if needed
+```
 cd engineering_tools
-# Pull latest from master branch
 git pull origin master
 ```
+
 
 ## The scripts
 
