@@ -1,20 +1,17 @@
 # engineering_tools
 A repository of scripts, configuration useful for the PCDS team
 
-## Push updates
-```
-git push -u origin master
-```
-
-## Add Tag
-```
-git tag -a R{tag} -m '{comment}'
-
-git push -u origin R{tag}
-```
-
 ## Creating a new release
+1. Create a GitHub release using the "Releases" feature on the right hand side
+2. Change directory to the release area
+3. Run the release clone command
+4. Update latest-released
+5. Update latest, if needed
+
 ```
+# Change directory
+cd /cds/group/pcds/engineering_tools
+# Make Release
 # Clone the source code into a new folder
 git clone https://github.com/pcdshub/engineering_tools.git R{tag}
 # Enter repository
@@ -912,7 +909,7 @@ usage: startami options<br/>
     </td>
 </tr>
 
-<tr>>
+<tr>
     <td>startami2</td>
     <td>
 usage: startami2 <command><br/>
