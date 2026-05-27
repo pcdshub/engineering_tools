@@ -67,14 +67,14 @@ fi
 
 # Default settings for qt
 # Avoid OpenGL-related crash for remote sessions
-# TODO: investigate whether this should be skipped for local desktop cpu
+# TODO: investigate whether this should be skipped for local desktop cpu/gpu
 export QT_XCB_GL_INTEGRATION=none
 
 # Default settings for pydm
 export PYDM_CONFIRM_QUIT=0
 export PYDM_DEFAULT_PROTOCOL=ca
 export PYDM_DESIGNER_ONLINE=1
-# TODO: remove this once pcdswidgets no longer needs it
+# TODO: remove hard-coded default stylesheet once pcdswidgets vacuum widgets no longer need it
 export PYDM_STYLESHEET="${EPICS_DEV}"/screens/pydm/vacuumscreens/styleSheet/masterStyleSheet.qss
 export PYDM_STYLESHEET_INCLUDE_DEFAULT=1
 
@@ -99,6 +99,7 @@ if ! command -v pathmunge >/dev/null 2>&1 ; then
     fi
 fi
 
+# Pick a backup at command runtime if EPICS_HOST_ARCH is never set
 _ctrlenv-arch() {
     if [ -z "${EPICS_HOST_ARCH}" ]; then
         local archstr
@@ -115,6 +116,7 @@ _ctrlenv-arch() {
     fi
 }
 
+# Add a ctrlenv bin to your path
 ctrlenv-pathmunge() {
     local target
     local arch
@@ -158,6 +160,7 @@ ctrlenv-pathmunge() {
 }
 
 
+# Activate a ctrlenv environment
 ctrlenv-activate() {
     local target
     local arch
