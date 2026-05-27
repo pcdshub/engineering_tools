@@ -1,8 +1,9 @@
 #!/bin/bash
 #
-# Source this script to set shared environment variables and gain access to two shell functions:
+# Source this script to set shared environment variables and gain access to three shell functions:
 # 1. ctrlenv-pathmunge: adds the bin from a bundle, environment, or application to your path at a specific version
 # 2. ctrlenv-activate: puts you into a released pixi environment (pixi shell)
+# 3. ctrlenv-versions: shows you which versions exist for an environment or application
 #
 # Defaults are:
 # - Always the latest release
@@ -45,6 +46,10 @@
 #
 # Activate a specific version of a specific environment
 # ctrlenv-activate lucid/v0.1.2
+#
+# Show which versions exist for an environment or application
+# ctrlenv-versions widgets
+# ctrlenv-versions pytmc
 #
 
 # Local path settings
@@ -196,5 +201,30 @@ ctrlenv-activate() {
         fi
     done
     echo "No matching env found for ctrlenv-activate $1" >&2
+    return 1
+}
+
+
+# Show which versions exist
+ctrlenv-versions() {
+    local target
+    if [ -z "$1" ]; then
+        target=base
+    else
+        target="$1"
+    fi
+    # Check envs first: allow omit ctrlenv- prefix
+    for tg in "$target" "ctrlenv-${target}"; do
+        if [ -d "${CTRLENV_ENVS}/${tg}" ]; then
+            ls "${CTRLENV_ENVS}/${tg}"
+            return 0
+        fi
+    done
+    # Check apps last
+    if [ -d "${CTRLENV_APPS}/${target}" ]; then
+        ls "${CTRLENV_APPS}/${target}"
+        return 0
+    fi
+    echo "No matching env or app found for ctrlenv-versions $1" >&2
     return 1
 }
