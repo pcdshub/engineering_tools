@@ -52,6 +52,8 @@ PYPS_SITE_TOP="${PYPS_SITE_TOP:-/cds/group/pcds/pyps}"
 CTRLENV_BUNDLE_TOP="${CTRLENV_BUNDLE_TOP:-"${PYPS_SITE_TOP}"/bundles}"
 CTRLENV_ENVS="${PYPS_SITE_TOP}"/pixi
 CTRLENV_APPS="${PYPS_SITE_TOP}"/apps
+EPICS_SETUP=/cds/group/pcds/setup
+EPICS_DEV=/cds/group/pcds/epics-dev
 
 # Pixi settings depending on whether you have a local mount to use
 if [ -d /u1/"${USER}" ]; then
@@ -73,12 +75,29 @@ export PYDM_CONFIRM_QUIT=0
 export PYDM_DEFAULT_PROTOCOL=ca
 export PYDM_DESIGNER_ONLINE=1
 # TODO: remove this once pcdswidgets no longer needs it
-export PYDM_STYLESHEET=/cds/group/pcds/epics-dev/screens/pydm/vacuumscreens/styleSheet/masterStyleSheet.qss
+export PYDM_STYLESHEET="${EPICS_DEV}"/screens/pydm/vacuumscreens/styleSheet/masterStyleSheet.qss
 export PYDM_STYLESHEET_INCLUDE_DEFAULT=1
 
 # Default settings for our apps
 export HAPPI_CFG="${CTRLENV_APPS}/hutch-python/device_config/happi.cfg"
 
+# Make sure we have pathmunge command
+if ! command -v pathmunge >/dev/null 2>&1 ; then
+    # Use site-local version if available
+    if [ -f "${EPICS_SETUP}"/pathmunge.sh ]; then
+        source "${EPICS_SETUP}"/pathmunge.sh
+    else
+        # Provide simplest version as a backup
+        pathmunge () {
+            case ":${PATH}:" in
+                *:"$1":*)
+                    ;;
+                *)
+                    PATH=$1:$PATH
+            esac
+        }
+    fi
+fi
 
 _ctrlenv-arch() {
     if [ -z "${EPICS_HOST_ARCH}" ]; then
@@ -95,7 +114,6 @@ _ctrlenv-arch() {
         echo "${EPICS_HOST_ARCH}"
     fi
 }
-
 
 ctrlenv-pathmunge() {
     local target
