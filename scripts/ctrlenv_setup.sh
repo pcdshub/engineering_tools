@@ -137,10 +137,14 @@ ctrlenv-pathmunge() {
             if [ -d "${CTRLENV_ENVS}/${tg}/bin/${arch}" ]; then
                 pathmunge "${CTRLENV_ENVS}/${tg}/bin/${arch}"
                 return 0
-            else
-            # Wasn't a version- pick latest
+            elif [ -d "${CTRLENV_ENVS}/${tg}/latest-released/bin/${arch}" ]; then
+                # Wasn't a version- pick latest
                 pathmunge "${CTRLENV_ENVS}/${tg}/latest-released/bin/${arch}"
                 return 0
+            else
+                # Error state: let's try to be a little bit helpful
+                echo "Found matching env series ${CTRLENV_ENVS}/${tg} but missing one of arch or version match or no latest-released" >&2
+                return 1
             fi
         fi
     done
@@ -149,10 +153,14 @@ ctrlenv-pathmunge() {
         if [ -d "${CTRLENV_APPS}/${target}/bin/${arch}" ]; then
             pathmunge "${CTRLENV_APPS}/${target}/bin/${arch}"
             return 0
-        else
-        # Wasn't a version- pick latest
+        elif [ -d "${CTRLENV_APPS}/${target}/latest-released/bin/${arch}" ]; then
+            # Wasn't a version- pick latest
             pathmunge "${CTRLENV_APPS}/${target}/latest-released/bin/${arch}"
             return 0
+        else
+            # Error state: let's try to be a little bit helpful
+            echo "Found matching apps series ${CTRLENV_APPS}/${target} but missing one of arch or version match or no latest-released" >&2
+            return 1
         fi
     fi
     echo "No matching bundle, env, or app found for ctrlenv-pathmunge $1" >&2
@@ -176,10 +184,14 @@ ctrlenv-activate() {
             if [ -d "${CTRLENV_ENVS}/${tg}/bin/${arch}" ]; then
                 pixi shell --manifest-path "${CTRLENV_ENVS}/${tg}/src/${arch}"
                 return $?
-            else
-            # Wasn't a version- pick latest
+            elif [ -d "${CTRLENV_ENVS}/${tg}/latest-released/src/${arch}" ]; then
+                # Wasn't a version- pick latest
                 pixi shell --manifest-path "${CTRLENV_ENVS}/${tg}/latest-released/src/${arch}"
                 return $?
+            else
+                # Error state: let's try to be a little bit helpful
+                echo "Found matching env series ${CTRLENV_ENVS}/${tg} but missing one of arch or version match or no latest-released" >&2
+                return 1
             fi
         fi
     done
