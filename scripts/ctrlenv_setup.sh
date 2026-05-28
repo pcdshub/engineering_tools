@@ -24,10 +24,10 @@
 # ctrlenv-pathmunge 2026/05/26_00
 #
 # Put the default released environment bin on your path:
-# ctrlenv-pathmunge base
+# ctrlenv-pathmunge ctrlenv-base
 #
 # Put a specific released environment bin at a specific version on your path
-# ctrlenv-pathmunge lucid/v0.1.2
+# ctrlenv-pathmunge ctrlenv-lucid/v0.1.2
 #
 # Put a latest version of an app on your path
 # ctrlenv-pathmunge pytmc
@@ -36,7 +36,7 @@
 # ctrlenv-pathmunge pytmc/v2.20.0
 #
 # Show which versions exist for an environment or application
-# ctrlenv-versions widgets
+# ctrlenv-versions ctrlenv-widgets
 # ctrlenv-versions pytmc
 #
 
@@ -119,51 +119,26 @@ ctrlenv-pathmunge() {
         target="$1"
     fi
     arch="$(_ctrlenv-arch)"
-    # Check bundle first: exact match only
-    if [ -d "${CTRLENV_BUNDLE_TOP}/${target}" ]; then
-        pathmunge "${CTRLENV_BUNDLE_TOP}/${target}/bin/${arch}"
-        return 0
-    fi
-    # Check envs second: allow omit ctrlenv- prefix
-    for tg in "${target}" "ctrlenv-${target}"; do
-        if [ -d "${CTRLENV_ENVS}/${tg}" ]; then
-            if [ -d "${CTRLENV_ENVS}/${tg}/bin/${arch}" ]; then
-                pathmunge "${CTRLENV_ENVS}/${tg}/bin/${arch}"
+    for target_dir in "${CTRLENV_BUNDLE_TOP}" "${CTRLENV_ENVS}" "${CTRLENV_APPS}"; do
+        if [ -d "${target_dir}/${target}" ]; then
+            if [ -d "${target_dir}/${target}/bin/${arch}" ]; then
+                pathmunge "${target_dir}/${target}/bin/${arch}"
                 return 0
-            elif [ -d "${CTRLENV_ENVS}/${tg}/latest-released/bin/${arch}" ]; then
-                # Wasn't a version- pick latest
-                pathmunge "${CTRLENV_ENVS}/${tg}/latest-released/bin/${arch}"
+            elif [ -d "${target_dir}/${target}/latest-released/bin/${arch}" ]; then
+                pathmunge "${target_dir}/${target}/latest-released/bin/${arch}"
                 return 0
             else
                 # Error state: let's try to be a little bit helpful
-                echo "Found matching env series ${CTRLENV_ENVS}/${tg} but missing arch, version, or latest-released" >&2
+                echo "Found matching area ${target_dir}/${target} but missing ${arch}, version, or latest-released" >&2
                 echo "Available versions are:" >&2
                 ctrlenv-versions "$1" >&2
                 return 1
             fi
         fi
     done
-    # Check apps last
-    if [ -d "${CTRLENV_APPS}/${target}" ]; then
-        if [ -d "${CTRLENV_APPS}/${target}/bin/${arch}" ]; then
-            pathmunge "${CTRLENV_APPS}/${target}/bin/${arch}"
-            return 0
-        elif [ -d "${CTRLENV_APPS}/${target}/latest-released/bin/${arch}" ]; then
-            # Wasn't a version- pick latest
-            pathmunge "${CTRLENV_APPS}/${target}/latest-released/bin/${arch}"
-            return 0
-        else
-            # Error state: let's try to be a little bit helpful
-            echo "Found matching apps series ${CTRLENV_APPS}/${target} but missing arch, version, or latest-released" >&2
-            echo "Available versions are:" >&2
-            ctrlenv-versions "$1" >&2
-            return 1
-        fi
-    fi
-    echo "No matching path or version found for ctrlenv-pathmunge $1" >&2
+    echo "No matching path or version found for ctrlenv-pathmunge $target" >&2
     return 1
 }
-
 
 # Show which versions exist
 ctrlenv-versions() {
@@ -173,18 +148,12 @@ ctrlenv-versions() {
     else
         target="$1"
     fi
-    # Check envs first: allow omit ctrlenv- prefix
-    for tg in "${target}" "ctrlenv-${target}"; do
-        if [ -d "${CTRLENV_ENVS}/${tg}" ]; then
-            ls -1 "${CTRLENV_ENVS}/${tg}"
+    for target_dir in "${CTRLENV_ENVS}" "${CTRLENV_APPS}"; do
+        if [ -d "${target_dir}/${target}" ]; then
+            ls -1 "${target_dir}/${target}"
             return 0
         fi
     done
-    # Check apps last
-    if [ -d "${CTRLENV_APPS}/${target}" ]; then
-        ls -1 "${CTRLENV_APPS}/${target}"
-        return 0
-    fi
-    echo "No matching path or version found for ctrlenv-versions $1" >&2
+    echo "No matching env or app found for ctrlenv-versions ${target}" >&2
     return 1
 }
