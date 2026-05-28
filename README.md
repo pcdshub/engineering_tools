@@ -112,7 +112,7 @@ usage:   source ctrlenv_setup.sh<br/>
     Some examples for subcommands:</br>
     ctrlenv-pathmunge latest-released</br>
     ctrlenv-pathmunge 2026/05/26_00</br>
-    ctrlenv-pathmunge widgets/v0.1.1</br>
+    ctrlenv-pathmunge ctrlenv-widgets/v0.1.1</br>
     ctrlenv-pathmunge pytmc</br>
     ctrlenv-versions pytmc</br>
     </td>

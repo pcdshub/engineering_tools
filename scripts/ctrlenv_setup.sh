@@ -7,7 +7,6 @@
 # Defaults are:
 # - Always the latest release
 # - If unspecified, the latest bundle release is assumed
-# - base is the default environment
 #
 # Example usage:
 # First, source this script
@@ -24,7 +23,7 @@
 # ctrlenv-pathmunge 2026/05/26_00
 #
 # Put the default released environment bin on your path:
-# ctrlenv-pathmunge ctrlenv-base
+# ctrlenv-pathmunge ctrlenv-widgets
 #
 # Put a specific released environment bin at a specific version on your path
 # ctrlenv-pathmunge ctrlenv-lucid/v0.1.2
