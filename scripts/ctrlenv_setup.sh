@@ -137,7 +137,7 @@ ctrlenv-pathmunge() {
         return 0
     fi
     # Check envs second: allow omit ctrlenv- prefix
-    for tg in "$target" "ctrlenv-${target}"; do
+    for tg in "${target}" "ctrlenv-${target}"; do
         if [ -d "${CTRLENV_ENVS}/${tg}" ]; then
             if [ -d "${CTRLENV_ENVS}/${tg}/bin/${arch}" ]; then
                 pathmunge "${CTRLENV_ENVS}/${tg}/bin/${arch}"
@@ -148,7 +148,9 @@ ctrlenv-pathmunge() {
                 return 0
             else
                 # Error state: let's try to be a little bit helpful
-                echo "Found matching env series ${CTRLENV_ENVS}/${tg} but missing one of arch or version match or no latest-released" >&2
+                echo "Found matching env series ${CTRLENV_ENVS}/${tg} but missing arch, version, or latest-released" >&2
+                echo "Available versions are:" >&2
+                ctrlenv-versions "$1" >&2
                 return 1
             fi
         fi
@@ -164,11 +166,13 @@ ctrlenv-pathmunge() {
             return 0
         else
             # Error state: let's try to be a little bit helpful
-            echo "Found matching apps series ${CTRLENV_APPS}/${target} but missing one of arch or version match or no latest-released" >&2
+            echo "Found matching apps series ${CTRLENV_APPS}/${target} but missing arch, version, or latest-released" >&2
+            echo "Available versions are:" >&2
+            ctrlenv-versions "$1" >&2
             return 1
         fi
     fi
-    echo "No matching bundle, env, or app found for ctrlenv-pathmunge $1" >&2
+    echo "No matching path or version found for ctrlenv-pathmunge $1" >&2
     return 1
 }
 
@@ -184,7 +188,7 @@ ctrlenv-activate() {
     fi
     arch="$(_ctrlenv-arch)"
     # For envs allow omit ctrlenv- prefix
-    for tg in "$target" "ctrlenv-${target}"; do
+    for tg in "${target}" "ctrlenv-${target}"; do
         if [ -d "${CTRLENV_ENVS}/${tg}" ]; then
             if [ -d "${CTRLENV_ENVS}/${tg}/bin/${arch}" ]; then
                 pixi shell --manifest-path "${CTRLENV_ENVS}/${tg}/src/${arch}"
@@ -195,12 +199,14 @@ ctrlenv-activate() {
                 return $?
             else
                 # Error state: let's try to be a little bit helpful
-                echo "Found matching env series ${CTRLENV_ENVS}/${tg} but missing one of arch or version match or no latest-released" >&2
+                echo "Found matching env series ${CTRLENV_ENVS}/${tg} but missing arch, version, or latest-released" >&2
+                echo "Available versions are:" >&2
+                ctrlenv-versions "$1" >&2
                 return 1
             fi
         fi
     done
-    echo "No matching env found for ctrlenv-activate $1" >&2
+    echo "No matching path or version found for ctrlenv-activate $1" >&2
     return 1
 }
 
@@ -214,17 +220,17 @@ ctrlenv-versions() {
         target="$1"
     fi
     # Check envs first: allow omit ctrlenv- prefix
-    for tg in "$target" "ctrlenv-${target}"; do
+    for tg in "${target}" "ctrlenv-${target}"; do
         if [ -d "${CTRLENV_ENVS}/${tg}" ]; then
-            ls "${CTRLENV_ENVS}/${tg}"
+            ls -1 "${CTRLENV_ENVS}/${tg}"
             return 0
         fi
     done
     # Check apps last
     if [ -d "${CTRLENV_APPS}/${target}" ]; then
-        ls "${CTRLENV_APPS}/${target}"
+        ls -1 "${CTRLENV_APPS}/${target}"
         return 0
     fi
-    echo "No matching env or app found for ctrlenv-versions $1" >&2
+    echo "No matching path or version found for ctrlenv-versions $1" >&2
     return 1
 }
