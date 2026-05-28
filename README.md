@@ -103,6 +103,22 @@ Usage:   /reg/g/pcds/engineering_tools/latest/scripts/check_host HOSTNAME<br/>
 </tr>
 
 <tr>
+    <td>ctrlenv_setup.sh</td>
+    <td>
+usage:   source ctrlenv_setup.sh<br/>
+    <br/>
+    Set environment variables and add commands for using ctrlenv python tools.</br>
+    </br>
+    Some examples for subcommands:</br>
+    ctrlenv-pathmunge latest-released</br>
+    ctrlenv-pathmunge 2026/05/26_00</br>
+    ctrlenv-pathmunge ctrlenv-widgets/v0.1.1</br>
+    ctrlenv-pathmunge pytmc</br>
+    ctrlenv-versions pytmc</br>
+    </td>
+</tr>
+
+<tr>
     <td>configdb_readxtc</td>
     <td>
 usage: configdb_readxtc options<br/>
