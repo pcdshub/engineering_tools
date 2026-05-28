@@ -1,9 +1,8 @@
 #!/bin/bash
 #
-# Source this script to set shared environment variables and gain access to three shell functions:
+# Source this script to set shared environment variables and gain access to two shell functions:
 # 1. ctrlenv-pathmunge: adds the bin from a bundle, environment, or application to your path at a specific version
-# 2. ctrlenv-activate: puts you into a released pixi environment (pixi shell)
-# 3. ctrlenv-versions: shows you which versions exist for an environment or application
+# 2. ctrlenv-versions: shows you which versions exist for an environment or application
 #
 # Defaults are:
 # - Always the latest release
@@ -35,17 +34,6 @@
 #
 # Put a specific version of an app on your path
 # ctrlenv-pathmunge pytmc/v2.20.0
-#
-# Activate the default environment
-# ctrlenv-activate
-# or
-# ctrlenv-activate base
-#
-# Activate the latest version of a specific environment
-# ctrlenv-activate widgets
-#
-# Activate a specific version of a specific environment
-# ctrlenv-activate lucid/v0.1.2
 #
 # Show which versions exist for an environment or application
 # ctrlenv-versions widgets
@@ -173,40 +161,6 @@ ctrlenv-pathmunge() {
         fi
     fi
     echo "No matching path or version found for ctrlenv-pathmunge $1" >&2
-    return 1
-}
-
-
-# Activate a ctrlenv environment
-ctrlenv-activate() {
-    local target
-    local arch
-    if [ -z "$1" ]; then
-        target=base
-    else
-        target="$1"
-    fi
-    arch="$(_ctrlenv-arch)"
-    # For envs allow omit ctrlenv- prefix
-    for tg in "${target}" "ctrlenv-${target}"; do
-        if [ -d "${CTRLENV_ENVS}/${tg}" ]; then
-            if [ -d "${CTRLENV_ENVS}/${tg}/bin/${arch}" ]; then
-                pixi shell --manifest-path "${CTRLENV_ENVS}/${tg}/src/${arch}"
-                return $?
-            elif [ -d "${CTRLENV_ENVS}/${tg}/latest-released/src/${arch}" ]; then
-                # Wasn't a version- pick latest
-                pixi shell --manifest-path "${CTRLENV_ENVS}/${tg}/latest-released/src/${arch}"
-                return $?
-            else
-                # Error state: let's try to be a little bit helpful
-                echo "Found matching env series ${CTRLENV_ENVS}/${tg} but missing arch, version, or latest-released" >&2
-                echo "Available versions are:" >&2
-                ctrlenv-versions "$1" >&2
-                return 1
-            fi
-        fi
-    done
-    echo "No matching path or version found for ctrlenv-activate $1" >&2
     return 1
 }
 

@@ -114,7 +114,6 @@ usage:   source ctrlenv_setup.sh<br/>
     ctrlenv-pathmunge 2026/05/26_00</br>
     ctrlenv-pathmunge widgets/v0.1.1</br>
     ctrlenv-pathmunge pytmc</br>
-    ctrlenv-activate widgets</br>
     ctrlenv-versions pytmc</br>
     </td>
 </tr>
