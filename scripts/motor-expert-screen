@@ -90,22 +90,22 @@ elif [ "${rtyp}" == 'mmca' ]; then # MMC-100 axis
     edm -x -eolc -m "MOTOR=$PREFIX" mmc_main.edl > /dev/null 2>&1 &
 elif [ "${rtyp}" == 'motor' ]; then
     if caget "$PREFIX:PN" > /dev/null 2>&1; then
-	edm -x -eolc -m "MOTOR=$PREFIX" pcds_motionScreens/motor-control.edl &
+      edm -x -eolc -m "MOTOR=$PREFIX" pcds_motionScreens/motor-control.edl &
     else
-	# smaracts have "motor" rtyp, so we catch them with the PREFIX or with smaract specific pvs
-	if [[ $PREFIX == *"MCS2"* || $(caget "$PREFIX:PTYPE_RBV" > /dev/null 2>&1) -eq 0 ]]; then
-            enc=$(caget "$PREFIX".UEIP)
-            if [[ $enc == *"Yes"* ]]; then
-		edm -x -eolc -m "MOTOR=$PREFIX" mcs2_main.edl > /dev/null 2>&1 &
-            else
-		edm -x -eolc -m "MOTOR=$PREFIX" mcs2_openloop.edl > /dev/null 2>&1 &
-            fi
-	else
-	    # shellcheck disable=SC2164
-            cd /reg/neh/home/klg/epics/ioc/common/aerotech/current/motorScreens
-            #cd /reg/neh/home4/mcbrowne/trunk2/ioc/common/aerotech/current/motorScreens
-            edm -x -eolc -m "MOTOR=${PREFIX}" ens_main.edl >& /dev/null &
-	fi
+	    # smaracts have "motor" rtyp, so we catch them with the PREFIX or with smaract specific pvs
+      if [[ $PREFIX == *"MCS2"* ]] || caget "$PREFIX:PTYPE_RBV" > /dev/null 2>&1; then
+        enc=$(caget "$PREFIX".UEIP)
+        if [[ $enc == *"Yes"* ]]; then
+          edm -x -eolc -m "MOTOR=$PREFIX" mcs2_main.edl > /dev/null 2>&1 &
+        else
+          edm -x -eolc -m "MOTOR=$PREFIX" mcs2_openloop.edl > /dev/null 2>&1 &
+        fi
+      else
+        # shellcheck disable=SC2164
+        cd /reg/neh/home/klg/epics/ioc/common/aerotech/current/motorScreens
+        #cd /reg/neh/home4/mcbrowne/trunk2/ioc/common/aerotech/current/motorScreens
+        edm -x -eolc -m "MOTOR=${PREFIX}" ens_main.edl >& /dev/null &
+      fi
     fi
 else
     edm -x -eolc -m "MOTOR=$PREFIX" ims_main.edl > /dev/null 2>&1 &
