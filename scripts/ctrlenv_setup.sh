@@ -121,6 +121,23 @@ _ctrlenv-arch() {
     fi
 }
 
+# Workaround for epics-base installs in pixi env breaking central install
+# We did something similar in pcds_conda, but put it in each env instead of centrally
+# Without this, basic epics utilities break and EPICS_HOST_ARCH is set to
+# standard values like linux-x86_64 instead of SLAC disambiguations like rhel9-x86_64,
+# which interferes with _ctrlenv-arch and other things
+_reset_to_central_epics() {
+    local setup_script
+    setup_script="${SETUP_SITE_TOP:=/cds/group/pcds/setup}"/epicsenv-cur.sh
+    if [ -f "${setup_script}" ]; then
+        source "${setup_script}"
+        return 0
+    else
+        echo "Failed to reactivate central EPICS: cannot find ${setup_script}" >&2
+        return 1
+    fi
+}
+
 # Add a ctrlenv bin to your path
 ctrlenv-pathmunge() {
     local target
@@ -142,7 +159,6 @@ ctrlenv-pathmunge() {
             else
                 # Error state: let's try to be a little bit helpful
                 echo "Found matching area ${target_dir}/${target} but missing ${arch}, version, or latest-released" >&2
-                echo "Available versions are:" >&2
                 ctrlenv-versions "$1" >&2
                 return 1
             fi
@@ -156,28 +172,42 @@ ctrlenv-pathmunge() {
 ctrlenv-activate() {
     local target
     local arch
+    local has_central_epics
+    local did_source
     if [ -z "$1" ]; then
         target=ctrlenv-base
     else
         target="$1"
     fi
     arch="$(_ctrlenv-arch)"
+    if command -v caget >/dev/null 2>&1; then
+        has_central_epics=1
+    else
+        has_central_epics=0
+    fi
+    did_source=0
     if [ -d "${CTRLENV_ENVS}/${target}" ]; then
         if [ -d "${CTRLENV_ENVS}/${target}/src/${arch}" ]; then
             source "${CTRLENV_ENVS}/${target}/src/${arch}/.pixi/ctrlenv_activate"
-            return $?
+            did_source=1
         elif [ -d "${CTRLENV_ENVS}/${target}/latest-released/src/${arch}" ]; then
             source "${CTRLENV_ENVS}/${target}/latest-released/src/${arch}/.pixi/ctrlenv_activate"
-            return $?
+            did_source=1
         else
             # Error state: let's try to be a little bit helpful
-            echo "Found matching env ${CTRLENV_ENVS}/${target} but missing arch, version, or latest-released" >&2
-            echo "Available versions are:" >&2
+            echo "Found matching env ${CTRLENV_ENVS}/${target} but missing ${arch}, version, or latest-released" >&2
             ctrlenv-versions "$1" >&2
             return 1
         fi
     fi
-    echo "No matching path or version found for ctrlenv-activate $target" >&2
+    if [ "${did_source}" -eq 1 ]; then
+        if [ "${has_central_epics}" -eq 1 ]; then
+            _reset_to_central_epics
+            return $?
+        fi
+        return 0
+    fi
+    echo "No matching env found for ctrlenv-activate $target" >&2
     return 1
 }
 
@@ -191,6 +221,7 @@ ctrlenv-versions() {
     fi
     for target_dir in "${CTRLENV_ENVS}" "${CTRLENV_APPS}"; do
         if [ -d "${target_dir}/${target}" ]; then
+            echo "Showing versions for ${target}, deployed at ${target_dir}/${target}" >&2
             ls -1 "${target_dir}/${target}"
             return 0
         fi
