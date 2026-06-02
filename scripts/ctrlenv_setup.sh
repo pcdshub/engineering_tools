@@ -187,10 +187,10 @@ ctrlenv-activate() {
     fi
     did_source=0
     if [ -d "${CTRLENV_ENVS}/${target}" ]; then
-        if [ -d "${CTRLENV_ENVS}/${target}/src/${arch}" ]; then
+        if [ -f "${CTRLENV_ENVS}/${target}/src/${arch}/.pixi/ctrlenv_activate" ]; then
             source "${CTRLENV_ENVS}/${target}/src/${arch}/.pixi/ctrlenv_activate"
             did_source=1
-        elif [ -d "${CTRLENV_ENVS}/${target}/latest-released/src/${arch}" ]; then
+        elif [ -f "${CTRLENV_ENVS}/${target}/latest-released/src/${arch}/.pixi/ctrlenv_activate" ]; then
             source "${CTRLENV_ENVS}/${target}/latest-released/src/${arch}/.pixi/ctrlenv_activate"
             did_source=1
         else
