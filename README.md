@@ -108,14 +108,49 @@ Usage:   /reg/g/pcds/engineering_tools/latest/scripts/check_host HOSTNAME<br/>
 usage:   source ctrlenv_setup.sh<br/>
     <br/>
     Set environment variables and add commands for using ctrlenv python tools.</br>
+    There are three subcommands that become available after sourcing:</br>
+    <ul>
+    <li>ctrlenv-pathmunge: adds a bundle, environment export bin, or application to your path.</li>
+    <li>ctrlenv-activate: activates a python environment.</li>
+    <li>ctrlenv-versions: shows which versions exist for an app or environment.</li>
+    </ul>
     </br>
-    Some examples for subcommands:</br>
-    ctrlenv-pathmunge latest-released</br>
-    ctrlenv-pathmunge 2026/05/26_00</br>
-    ctrlenv-pathmunge ctrlenv-widgets/v0.1.1</br>
-    ctrlenv-pathmunge pytmc</br>
-    ctrlenv-activate ctrlenv-lucid</br>
-    ctrlenv-versions pytmc</br>
+    Some definitions:</br>
+    <ul>
+    <li>A bundle is a grouping of tools from many environments</li>
+    <li>
+    An environment is a specific python interpretter with specific libraries installed.
+    In our system, these also include exported executables that are included in bundles.
+    </li>
+    <li>
+    An application is any tool that can be executed from the path.
+    These are also exported to be included in bundles.
+    </li>
+    </ul>
+    </br>
+    Suggested .bashrc setup for general use:</br>
+    <pre><code>source /cds/group/pcds/engineering_tools/latest-released/scripts/ctrlenv_setup.sh</br>ctrlenv-pathmunge</code></pre>
+    Suggested usage inside a script for running an application:</br>
+    <pre><code>source /cds/group/pcds/engineering_tools/pick_version/scripts/ctrlenv_setup.sh</br>ctrlenv-pathmunge app_or_env_name/version</br>some_app some_args</code></pre>
+    Suggested usage inside a script to invoke python:</br>
+    <pre><code>source /cds/group/pcds/engineering_tools/pick_version/scripts/ctrlenv_setup.sh</br>ctrlenv-activate env_name/version</br>python something.py</code></pre>
+    Examples for the subcommands:</br>
+    <ul>
+    <li>ctrlenv-pathmunge</li>
+    <ul><li>Note: with no args, ctrlenv-pathmunge targets the latest bundle</li></ul>
+    <li>ctrlenv-pathmunge latest-released</li>
+    <li>ctrlenv-pathmunge 2026/05/26_00</li>
+    <li>ctrlenv-pathmunge ctrlenv-widgets/v0.1.1</li>
+    <li>ctrlenv-pathmunge pytmc</li>
+    <li>ctrlenv-activate</li>
+    <ul><li>Note: with no args, ctrlenv-activate targets the latest ctrlenv-base</li></ul>
+    <li>ctrlenv-activate ctrlenv-lucid</li>
+    <li>ctrlenv-activate ctrlenv-widgets/v0.2.0</li>
+    <li>ctrlenv-version</li>
+    <ul><li>Note: with no args, ctrlenv-activate targets the ctrlenv-base</li></ul>
+    <li>ctrlenv-versions pytmc</li>
+    <li>ctrlenv-versions ctrlenv-widgets</li>
+    </ul>
     </td>
 </tr>
 
