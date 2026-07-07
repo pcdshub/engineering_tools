@@ -2,8 +2,9 @@
 #
 # Source this script to set shared environment variables and gain access to three shell functions:
 # 1. ctrlenv-pathmunge: adds the bin from a bundle, environment, or application to your path at a specific version
-# 2. ctrlenv-activate: puts you into a released pixi environment (pixi shell-hook)
-# 3. ctrlenv-versions: shows you which versions exist for an environment or application
+# 2. ctrlenv-activate: activates a released pixi environment in the current shell (useful for scripts)
+# 3. ctrlenv-shell: activates a released pixi environment in an exitable subshell (useful for interactive use)
+# 4. ctrlenv-versions: shows you which versions exist for an environment or application
 #
 # Defaults are:
 # - Always the latest release
@@ -39,13 +40,16 @@
 # Activate the default environment
 # ctrlenv-activate
 # or
-# ctrlenv-activate base
+# ctrlenv-activate ctrlenv-base
 #
 # Activate the latest version of a specific environment
-# ctrlenv-activate widgets
+# ctrlenv-activate ctrlenv-widgets
 #
 # Activate a specific version of a specific environment
-# ctrlenv-activate lucid/v0.1.2
+# ctrlenv-activate ctrlenv-lucid/v0.1.2
+#
+# Any invocation of ctrlenv-activate also works with ctrlenv-shell
+# ctrlenv-shell ctrlenv-widgets
 #
 # Show which versions exist for an environment or application
 # ctrlenv-versions ctrlenv-widgets
@@ -209,6 +213,15 @@ ctrlenv-activate() {
     fi
     echo "No matching env found for ctrlenv-activate $target" >&2
     return 1
+}
+
+# Enter an exitable shell with an environment.
+# Useful for exploring the pixi environments interactively.
+# Simply "exit" to exit the shell and deactivate the env.
+# Do not use this in a shell script- it will interrupt your script with a prompt.
+# This is functionally similar to the "pixi shell" command, but doesn't require pixi on the path.
+ctrlenv-shell() {
+    $SHELL -ic "ctrlenv-activate $*; exec $SHELL -i"
 }
 
 # Show which versions exist
