@@ -108,10 +108,11 @@ Usage:   /reg/g/pcds/engineering_tools/latest/scripts/check_host HOSTNAME<br/>
 usage:   source ctrlenv_setup.sh<br/>
     <br/>
     Set environment variables and add commands for using ctrlenv python tools.</br>
-    There are three subcommands that become available after sourcing:</br>
+    There are four subcommands that become available after sourcing:</br>
     <ul>
     <li>ctrlenv-pathmunge: adds a bundle, environment export bin, or application to your path.</li>
-    <li>ctrlenv-activate: activates a python environment.</li>
+    <li>ctrlenv-activate: activates a python environment in the current shell (useful for scripts).</li>
+    <li>ctrlenv-shell: activates a python environment in an exitable subshell (useful for interactive use).</li>
     <li>ctrlenv-versions: shows which versions exist for an app or environment.</li>
     </ul>
     </br>
@@ -146,6 +147,7 @@ usage:   source ctrlenv_setup.sh<br/>
     <ul><li>Note: with no args, ctrlenv-activate targets the latest ctrlenv-base</li></ul>
     <li>ctrlenv-activate ctrlenv-lucid</li>
     <li>ctrlenv-activate ctrlenv-widgets/v0.2.0</li>
+    <li>ctrlenv-shell ctrlenv-widgets/v0.2.0</li>
     <li>ctrlenv-version</li>
     <ul><li>Note: with no args, ctrlenv-activate targets the ctrlenv-base</li></ul>
     <li>ctrlenv-versions pytmc</li>
