@@ -39,11 +39,11 @@ if [ "${rtyp}" == 'xps8p' ]; then
     title='Newport XPS Positioner'
 elif [ "${rtyp}" == 'ims' ]; then
     title='IMS Motor Control -- Main'
-elif [ "${rtyp}" == 'motor' ]; then
+elif [[ "${rtyp}" == 'motor' ]] || [[ "${rtyp}" == 'tcmotor' ]]; then
     # Check to see if this is a Beckhoff axis
     #   caget will return exit code 0 if :PLC:nErrorId_RBV exists,
     #   we set isbeckhoff based on this.
-    if caget "${PREFIX}:PLC:nErrorId_RBV" > /dev/null 2>&1; then
+    if [[ "${rtyp}" == 'tcmotor' ]] || caget "${PREFIX}:PLC:nErrorId_RBV" > /dev/null 2>&1; then
         title="Typhos Suite - ${PREFIX}"
         isbeckhoff=true;
     else
