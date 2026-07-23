@@ -62,6 +62,7 @@ CTRLENV_BUNDLE_TOP="${CTRLENV_BUNDLE_TOP:-"${PYPS_SITE_TOP}"/bundles}"
 CTRLENV_ENVS="${PYPS_SITE_TOP}"/pixi
 CTRLENV_APPS="${PYPS_SITE_TOP}"/apps
 EPICS_SETUP=/cds/group/pcds/setup
+EPICS_PROD=/cds/group/pcds/epics
 EPICS_DEV=/cds/group/pcds/epics-dev
 
 # Pixi settings depending on whether you have a local mount to use
@@ -86,6 +87,7 @@ export PYDM_DESIGNER_ONLINE=1
 # TODO: remove hard-coded default stylesheet once pcdswidgets vacuum widgets no longer need it
 export PYDM_STYLESHEET="${EPICS_DEV}"/screens/pydm/vacuumscreens/styleSheet/masterStyleSheet.qss
 export PYDM_STYLESHEET_INCLUDE_DEFAULT=1
+export PYDM_DISPLAYS_PATH="${EPICS_PROD}"/screens/pydm:"${EPICS_DEV}"/screens/pydm
 
 # Default settings for our apps
 export HAPPI_CFG="${CTRLENV_APPS}/hutch-python/device_config/happi.cfg"
