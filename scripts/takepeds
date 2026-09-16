@@ -23,8 +23,8 @@ SIT_ENV_DIR="/cds/group/psdm/sw"
 
 HUTCH=$(get_info --gethutch)
 if [[ "$(daqutils isdaqmgr)" = "true" ]]; then
-    echo "This is an LCLS-II experiment"
-    SIT_ENV_DIR='/cds/group/pcds/dist/pds/'$HUTCH'/scripts/'
+    echo "This is a LCLS-II DAQ"
+    SIT_ENV_DIR="/sdf/home/${HUTCH:0:1}/${HUTCH}opr/daq/scripts"
     source "$SIT_ENV_DIR"/setup_env.sh
     if [[ ${HUTCH} =~ 'ued' ]]; then
         epixquad_pedestal_scan --record 1 --detname epixquad1kfps_0 --hutch "${HUTCH}"
@@ -38,7 +38,7 @@ if [[ "$(daqutils isdaqmgr)" = "true" ]]; then
     fi
     status=$?
 else
-    echo "This is an LCLS-I experiment"
+    echo "This is a LCLS-I DAQ"
     SIT_ENV_DIR=$SIT_ENV_DIR'/conda1/'
     DAQ_RELEASE=/cds/group/pcds/dist/pds/current
 
