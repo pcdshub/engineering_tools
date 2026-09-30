@@ -29,12 +29,12 @@ if [[ "$(daqutils isdaqmgr)" = "true" ]]; then
     if [[ ${HUTCH} =~ 'ued' ]]; then
         epixquad_pedestal_scan --record 1 --detname epixquad1kfps_0 --hutch "${HUTCH}"
     elif [[ ${HUTCH} =~ 'mfx' ]]; then
-        jungfrau_pedestal_scan --record 1 --hutch "${HUTCH}" -p 0 -g 1 -v -t 10000 -C drp-srcf-cmp014
+        jungfrau_pedestal_scan --record 1 --hutch "${HUTCH}" -g 1 -v -t 10000 --cnf /sdf/home/m/mfxopr/daq/scripts/mfx.py
     elif [[ ${HUTCH} =~ 'rix' ]]; then
         echo "Running LCLS2 RIX specific pedestal acquisition..."
         timed_run --duration="60" --config="/cds/group/pcds/dist/pds/rix/scripts/rix.py" --record
     elif [[ ${HUTCH} =~ 'xpp' ]]; then
-        jungfrau_pedestal_scan --record 1 --hutch "${HUTCH}" --detname jungfrau1M -C drp-srcf-mon008 --nprocs 1
+        jungfrau_pedestal_scan --record 1 --hutch xpp --detname jungfrau1M --nprocs 1 --cnf /sdf/home/x/xppopr/daq/scripts/xpp_main.py
     fi
     status=$?
 else
