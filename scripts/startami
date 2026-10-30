@@ -66,8 +66,10 @@ fi
 
 
 DAQHOST=$(wheredaq)
+# rhel7 or rhel9 compatible ami
+ARCH="$(uname -m)-rhel$(rpm -E %rhel)"
 ami_base_path=$(grep ami_base_path /reg/g/pcds/dist/pds/"$HUTCH"/scripts/"$CONFIG" | grep -v '#' | grep -v 'ami_base_path+'  | awk 'BEGIN { FS = "=" }; { print $2}' | sed s/\'//g)
-ami_path=$ami_base_path$(grep ami_GUI_path /reg/g/pcds/dist/pds/"$HUTCH"/scripts/"$CONFIG" | grep -v 'ami_path+' | grep -v '#' | awk 'BEGIN { FS = "= " }; { print $2}' | sed s/ami_base_path+// | sed s/\'//g)
+ami_path=$ami_base_path$(grep ami_GUI_path /reg/g/pcds/dist/pds/"$HUTCH"/scripts/"$CONFIG" | grep -v 'ami_path+' | grep -v '#' | awk 'BEGIN { FS = "= " }; { print $2}' | sed s/ami_base_path+// | sed s/\'//g | sed "s/+arch+/$ARCH/")
 
 proxy_cds=$(/reg/g/pcds/dist/pds/"$HUTCH"/current/tools/procmgr/procmgr status /reg/g/pcds/dist/pds/"$HUTCH"/scripts/"$CONFIG" | grep ami_proxy | awk '{print $1}' | sed s/'-fez'/''/g)
 
