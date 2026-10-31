@@ -319,9 +319,9 @@ def find_parent_ioc(file: str, path: str) -> str:
     Parameters
     ----------
     file : str, optional
-        DESCRIPTION. The default is None.
+        Child IOC's filename. The default is None.
     path : str, optional
-        DESCRIPTION. The default is None.
+        Path to the IOC. The default is None.
 
     Returns
     -------
@@ -337,8 +337,23 @@ def find_parent_ioc(file: str, path: str) -> str:
     return parent_ioc_release.rsplit('=', maxsplit=1)[-1]
 
 
-def _cell(value, max_width: int = 50) -> str:
-    """Formats a table cell; lists as [a, b], long values clipped with ..."""
+def format_cell(value: any, max_width: int = 50) -> str:
+    """
+    Formats a table cell; lists as [a, b], long values are truncated with ...
+
+
+    Parameters
+    ----------
+    value : any
+        The cell value/text. Coerced to ``str``
+    max_width : int, optional
+        Max width of the printed cell, by default 50
+
+    Returns
+    -------
+    str
+        The text to print in the cell
+    """
     text = f'[{", ".join(value)}]' if isinstance(value, list) else str(value)
     return text if len(text) <= max_width else text[:max_width - 3] + '...'
 
@@ -348,8 +363,15 @@ def print_table(iocs: list[IOCProc], cols: list[str]):
     Prints the IOCProc attributes in `cols` as a right-aligned table with a
     row index. When writing to a terminal, lines are truncated to its width;
     piped output is left whole so nothing is lost for grep and friends.
+
+    Parameters
+    ----------
+    iocs : list[IOCProc]
+        List of IOCs in dataclass
+    cols : list[str]
+        Columns to print in the pseudo data-frame
     """
-    cells = [[str(i)] + [_cell(getattr(ioc, c)) for c in cols]
+    cells = [[str(i)] + [format_cell(getattr(ioc, c)) for c in cols]
              for i, ioc in enumerate(iocs)]
     heads = [''] + cols
     widths = [max(len(h), *(len(row[i]) for row in cells))
