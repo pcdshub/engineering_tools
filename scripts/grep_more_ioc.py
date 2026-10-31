@@ -17,7 +17,6 @@ from dataclasses import fields
 from shutil import get_terminal_size
 
 from constants import VALID_HUTCH, Fore, Style
-from pandas import DataFrame, option_context, set_option
 
 from iocmanager import config as imgr_config
 from iocmanager.config import IOCProc
@@ -26,10 +25,9 @@ from iocmanager.epics_paths import get_parent
 ###############################################################################
 # %% Global settings
 ###############################################################################
-# Change max rows displayed to prevent truncating the dataframe
-# We'll assume 1000 rows as an upper limit
-
-set_option("display.max_rows", 1000)
+# Columns of the IOC table, in display order. 'hutch' is only shown for 'all'
+COLUMNS = ['hutch', 'name', 'path', 'parent', 'host', 'port', 'history',
+           'alias', 'disable']
 
 # Parent lookups are NFS-latency bound, (un)surprisingly. Cold calls can be long
 # but are sped up by a little bit of parallelization
@@ -339,14 +337,30 @@ def find_parent_ioc(file: str, path: str) -> str:
     return parent_ioc_release.rsplit('=', maxsplit=1)[-1]
 
 
-def print_frame2term(dataframe: DataFrame = None,):
-    """Wrapper for displaying the dataframe to proper terminal size"""
-    with option_context('display.max_rows', None,
-                        'display.max_columns', None,
-                        'display.width',
-                        get_terminal_size(fallback=(120, 50))[0],
-                        ):
-        print(dataframe)
+def _cell(value, max_width: int = 50) -> str:
+    """Formats a table cell; lists as [a, b], long values clipped with ..."""
+    text = f'[{", ".join(value)}]' if isinstance(value, list) else str(value)
+    return text if len(text) <= max_width else text[:max_width - 3] + '...'
+
+
+def print_table(iocs: list[IOCProc], cols: list[str]):
+    """
+    Prints the IOCProc attributes in `cols` as a right-aligned table with a
+    row index. When writing to a terminal, lines are truncated to its width;
+    piped output is left whole so nothing is lost for grep and friends.
+    """
+    cells = [[str(i)] + [_cell(getattr(ioc, c)) for c in cols]
+             for i, ioc in enumerate(iocs)]
+    heads = [''] + cols
+    widths = [max(len(h), *(len(row[i]) for row in cells))
+              for i, h in enumerate(heads)]
+    limit = get_terminal_size().columns if sys.stdout.isatty() else None
+    for row in [heads] + cells:
+        line = row[0].ljust(widths[0]) + ''.join(
+            '  ' + val.rjust(w) for val, w in zip(row[1:], widths[1:]))
+        if limit and len(line) > limit:
+            line = line[:limit - 3] + '...'
+        print(line)
 
 ###############################################################################
 # %% Arg Parser
@@ -362,7 +376,7 @@ def build_parser():
         prog='grep_more_ioc',
         formatter_class=argparse.RawTextHelpFormatter,
         description='Transforms grep_ioc output to json object'
-                    + ' and prints in pandas.DataFrame',
+                    + ' and prints as a table',
         epilog='For more information on subcommands, use: '
                'grep_more_ioc . all [subcommand] --help')
     # main command arguments
@@ -475,34 +489,27 @@ def main():
         print(f'{Fore.RED}No IOCs were found.\nExiting . . .{Style.RESET_ALL}')
         sys.exit()
 
-    # create the dataframe after fixing the json format
-    df = DataFrame(data)
-
-    # add the hutch column if searching all hutches
-    if args.hutch == 'all':
-        df.insert(0, 'hutch', [ioc.hutch for ioc in data])
-
-    # filter out extraneous data
-    cols = ['hutch', 'name', 'path', 'parent', 'host', 'port', 'history', 'alias', 'disable']
-    df = df.filter(cols, axis=1)
-
-    # check for the ignore_disabled flag
+    # filter out disabled IOCs if requested
     if args.ignore_disabled is True:
-        df = df[~df.disable].reset_index(drop=True)
+        data = [ioc for ioc in data if not ioc.disable]
+
+    # only show the hutch column if searching all hutches
+    cols = [c for c in COLUMNS if c != 'hutch' or args.hutch == 'all']
+    names_paths = [(ioc.name, ioc.path) for ioc in data]
 
 # --------------------------------------------------------------------------- #
 # %%% print
 # --------------------------------------------------------------------------- #
-    # print the dataframe
+    # print the table
     if hasattr(args, 'print'):
         if not args.release:
-            df.pop('parent')
+            cols.remove('parent')
 
         if not args.no_dataframe:
-            print_frame2term(df)
+            print_table(data, cols)
 
         if args.skip_comments:
-            for ioc, d in df.loc[:, ['name', 'path']].values:
+            for ioc, d in names_paths:
                 # fixes dirs if ioc_manager truncates the path due to
                 # common ioc dir path
                 target_dir = fix_dir(d)
@@ -515,7 +522,7 @@ def main():
         if args.print_dirs:
             print(f'{Fore.LIGHTBLUE_EX}\nDumping directories:\n'
                   + Style.RESET_ALL)
-            for f, d in df.loc[:, ['id', 'path']].values:
+            for f, d in names_paths:
                 search_result = find_parent_ioc(f, d)
                 d = fix_dir(d)
                 # check for cases where child IOC.cfg DNE
@@ -535,31 +542,27 @@ def main():
         if args.print_history is True:
             print(f'{Fore.LIGHTMAGENTA_EX}\nDumping histories:\n'
                   + Style.RESET_ALL)
-            if 'history' in df.columns:
-                for f, h in df.loc[:, ['name', 'history']].values:
-                    print(f'{Fore.LIGHTYELLOW_EX}{f}{Style.RESET_ALL}'
-                          + '\nhistory:\n\t'
-                          + '\n\t'.join(h))
-            else:
-                print(f'{Fore.LIGHTRED_EX}No histories found in captured IOCs.'
-                      + Style.RESET_ALL)
+            for ioc in data:
+                print(f'{Fore.LIGHTYELLOW_EX}{ioc.name}{Style.RESET_ALL}'
+                      + '\nhistory:\n\t'
+                      + '\n\t'.join(ioc.history))
 
         if args.list:
-            print('\n'.join(df[args.list].astype(str).to_list()))
+            print('\n'.join(str(getattr(ioc, args.list)) for ioc in data))
 
 # --------------------------------------------------------------------------- #
 # %%% search
 # --------------------------------------------------------------------------- #
     # do a local grep on each file in their corresponding directory
     if hasattr(args, 'search'):
-        # optionally print the dataframe
+        # optionally print the table
         if not args.only_search:
-            print_frame2term(df)
+            print_table(data, cols)
         check_search = []
         _color = Fore.LIGHTRED_EX
         if args.no_color:
             _color = None
-        for ioc, d in df.loc[:, ['name', 'path']].values:
+        for ioc, d in names_paths:
             target_dir = fix_dir(d)
             # Search for pattern after moving into the directory
             if args.search is not None:
