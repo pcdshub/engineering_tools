@@ -483,7 +483,7 @@ def main():
         df.insert(0, 'hutch', [ioc.hutch for ioc in data])
 
     # filter out extraneous data
-    cols = ['hutch', 'name', 'dir', 'parent', 'host', 'port', 'history', 'alias', 'disable']
+    cols = ['hutch', 'name', 'path', 'parent', 'host', 'port', 'history', 'alias', 'disable']
     df = df.filter(cols, axis=1)
 
     # check for the ignore_disabled flag
@@ -515,7 +515,7 @@ def main():
         if args.print_dirs:
             print(f'{Fore.LIGHTBLUE_EX}\nDumping directories:\n'
                   + Style.RESET_ALL)
-            for f, d in df.loc[:, ['id', 'dir']].values:
+            for f, d in df.loc[:, ['id', 'path']].values:
                 search_result = find_parent_ioc(f, d)
                 d = fix_dir(d)
                 # check for cases where child IOC.cfg DNE
