@@ -18,6 +18,6 @@ if [[ ($1 == "--help") || ($1 == "-h") ]]; then
     exit 0
 fi
 
-result=$(curl -s "http://pscaa01.slac.stanford.edu:17665/mgmt/bpl/resumeArchivingPV?pv=$1")
+result=$(curl -s "http://psctlws01.pcdsn:8329/mgmt/bpl/resumeArchivingPV?pv=$1")
 formatted_result=$(echo "$result" | cut -d'{' -f2 | cut -d '}' -f1 | tr ',' '\n')
 printf "\n%s\n" "$formatted_result"

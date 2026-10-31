@@ -43,7 +43,7 @@ def main():
     ]
 
     pv = args.pv
-    request_str = "http://pscaa01.slac.stanford.edu:17665/mgmt/bpl/getPVDetails?pv={}".format(pv)
+    request_str = "http://psctlws01.pcdsn:8329/mgmt/bpl/getPVDetails?pv={}".format(pv)
     resp = requests.get(request_str)
     if args.json:
         # Had to use .text and json library rather than .json() to get

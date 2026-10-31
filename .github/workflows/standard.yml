@@ -14,7 +14,7 @@ jobs:
     outputs:
       PROJECT_FILES: ${{ steps.changed_files.outputs.PROJECT_FILES }}
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       with:
         fetch-depth: 0
         submodules: 'recursive'
@@ -48,6 +48,6 @@ jobs:
     needs:
       - get_changed_files
     name: 'pre-commit checks'
-    uses: pcdshub/pcds-ci-helpers/.github/workflows/pre-commit.yml@master
+    uses: pcdshub/pcds-ci-helpers/.github/workflows/pre-commit.yml@52a413e9d77c09f9e7617c3a75fc19a7d6cf4e11
     with:
       args: "--files ${{ needs.get_changed_files.outputs.PROJECT_FILES }}"
