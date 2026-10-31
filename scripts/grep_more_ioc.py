@@ -11,14 +11,17 @@ import glob as gb
 import os.path
 import re
 import sys
+from concurrent.futures import ThreadPoolExecutor
+from contextlib import contextmanager
 from dataclasses import fields
 from shutil import get_terminal_size
 
-from colorama import Fore, Style
-from constants import VALID_HUTCH
+from constants import VALID_HUTCH, Fore, Style
+from pandas import DataFrame, option_context, set_option
+
 from iocmanager import config as imgr_config
 from iocmanager.config import IOCProc
-from pandas import DataFrame, option_context, set_option
+from iocmanager.epics_paths import get_parent
 
 ###############################################################################
 # %% Global settings
@@ -27,6 +30,11 @@ from pandas import DataFrame, option_context, set_option
 # We'll assume 1000 rows as an upper limit
 
 set_option("display.max_rows", 1000)
+
+# Parent lookups are NFS-latency bound, (un)surprisingly. Cold calls can be long
+# but are sped up by a little bit of parallelization
+# 2x speed up cost at 4 works, negligible when tested with more
+PARENT_WORKERS = 4
 
 ###############################################################################
 # %% Functions
@@ -90,23 +98,49 @@ def search_file(*, file: str, output: list = None,
         return prefix + prefix.join(output)
 
 
-def search_procmgr(*, config: str, patt: str = None, output: list = None,
-                   hutch: str = None) -> list[IOCProc]:
+@contextmanager
+def parents_deferred():
     """
-    Load an iocmanager `cfg` and search for the regex `patt` across each
-    IOCProc's fields. Will append the results to an `output` list if it
-    is provided.
+    Stops IOCProc from looking up its `parent` while it is constructed.
 
-    Returns a list of IOCProc instances
+    The lookup probes the NFS release directories one IOC at a time, which
+    is on the 10 s time scale for all hutches. The `parent` is left empty
+    and we just fill it in later with `resolve_parents`.
+    """
+    original = imgr_config.get_parent
+    imgr_config.get_parent = lambda *args, **kwargs: ''
+    try:
+        yield
+    finally:
+        imgr_config.get_parent = original
+
+
+def resolve_parents(procs: list[IOCProc]) -> None:
+    """
+    Fill in `parent` for each IOCProc, looking them up concurrently.
+    """
+    def _lookup(proc: IOCProc) -> str:
+        try:
+            return get_parent(proc.path, proc.name)
+        except Exception:
+            return ''  # same fallback as IOCProc.__post_init__
+
+    with ThreadPoolExecutor(PARENT_WORKERS) as pool:
+        for proc, parent in zip(procs, pool.map(_lookup, procs)):
+            proc.parent = parent
+
+
+def load_procs(*, config: str, hutch: str = None) -> list[IOCProc]:
+    """
+    Load an iocmanager `cfg` and return its IOCProc instances.
+
+    Must be called inside `parents_deferred()` to skip the slow `parent`
+    lookup; use `resolve_parents` to fill it in afterwards.
 
     Parameters
     ----------
     config : str
         path to the iocmanager.cfg of interest
-    patt : str, optional
-        Regex pattern to search in fields, by default None
-    output : list, optional
-        An existing output list to append results to, by default None
     hutch : str, optional
         hutch identifier code to add as an attr to each IOCProc found,
         by default None
@@ -114,31 +148,41 @@ def search_procmgr(*, config: str, patt: str = None, output: list = None,
     Returns
     -------
     list[IOCProc]
-        list of IOCProc found by the search.
+        every IOCProc defined in the cfg.
     """
-    # Some initialization
-    if output is None:
-        output = []
     # First open the iocmanager.cfg, if it exists
     if not (os.path.exists(config) and ('iocmanager.cfg' in config)):
         print(f'{config} does not exist or is otherwise invalid.')
-        return ''
+        return []
 
-    pmgr = imgr_config.read_config(config)
+    procs = list(imgr_config.read_config(config).procs.values())
+    if hutch:
+        for proc in procs:
+            proc.hutch = hutch
+    return procs
 
+
+def filter_procs(procs: list[IOCProc], patt: str) -> list[IOCProc]:
+    """
+    Return the IOCProcs whose fields, joined together, match the regex `patt`.
+    This mimicks `grep`ing the iocmanager.cfg itself and allows for some lazy
+    searching and filtering.
+
+    Parameters
+    ----------
+    procs : list[IOCProc]
+    patt : str
+
+    Returns
+    -------
+    list[IOCProc]
+    """
     _patt = re.compile(patt)
     # walk the dataclass fields for the IOCProc
     props = fields(IOCProc)
-    for proc in pmgr.procs.values():
-        field_str = ''
-        for field in props:
-            field_str += str(getattr(proc, field.name))
-        if _patt.search(field_str):
-            if hutch:
-                proc.hutch = hutch
-            output.append(proc)
-
-    return output
+    return [proc for proc in procs
+            if _patt.search(''.join(str(getattr(proc, f.name))
+                                    for f in props))]
 
 
 def print_skip_comments(file: str):
@@ -220,14 +264,14 @@ def find_ioc(hutch: str = None, patt: str = None,
     if patt is None:
         print('No regex pattern supplied')
         raise ValueError
-    # initialize output list
-    result = []
-    # iterate and capture results.
-    for cfg in path:
-        _hutch = cfg.rsplit(r'/', maxsplit=2)[-2]
-        output = search_procmgr(config=cfg, patt=patt, hutch=_hutch)
-        result.extend(output)
-    # Flatten the results
+    # load every hutch first, then resolve all the parents in one pool
+    procs = []
+    with parents_deferred():
+        for cfg in path:
+            _hutch = cfg.rsplit(r'/', maxsplit=2)[-2]
+            procs.extend(load_procs(config=cfg, hutch=_hutch))
+    resolve_parents(procs)
+    result = filter_procs(procs, patt)
     if len(result) == 0:
         print(f'{Fore.RED}No results found for {Style.RESET_ALL}{patt}'
               + f'{Fore.RED} in{Style.RESET_ALL} '
