@@ -8,24 +8,31 @@ A tool for enhancing the grep_ioc CLI tool for ECS-Delivery team
 
 import argparse
 import glob as gb
-import json
 import os.path
 import re
 import sys
+from concurrent.futures import ThreadPoolExecutor
+from contextlib import contextmanager
+from dataclasses import fields
 from shutil import get_terminal_size
-from typing import Optional
 
-import pandas as pd
-from colorama import Fore, Style
-from constants import DEF_IMGR_KEYS, VALID_HUTCH
+from constants import VALID_HUTCH, Fore, Style
+
+from iocmanager import config as imgr_config
+from iocmanager.config import IOCProc
+from iocmanager.epics_paths import get_parent
 
 ###############################################################################
 # %% Global settings
 ###############################################################################
-# Change max rows displayed to prevent truncating the dataframe
-# We'll assume 1000 rows as an upper limit
+# Columns of the IOC table, in display order. 'hutch' is only shown for 'all'
+COLUMNS = ['hutch', 'name', 'path', 'parent', 'host', 'port', 'history',
+           'alias', 'disable']
 
-pd.set_option("display.max_rows", 1000)
+# Parent lookups are NFS-latency bound, (un)surprisingly. Cold calls can be long
+# but are sped up by a little bit of parallelization
+# 2x speed up cost at 4 works, negligible when tested with more
+PARENT_WORKERS = 4
 
 ###############################################################################
 # %% Functions
@@ -89,52 +96,91 @@ def search_file(*, file: str, output: list = None,
         return prefix + prefix.join(output)
 
 
-def search_procmgr(*, file: str, patt: str = None, output: list = None,
-                   prefix: str = '') -> str:
+@contextmanager
+def parents_deferred():
     """
-    Very similar to search_file, except it is to be used exclusively with
-    iocmanager.cfg files. Grabs the procmgr_cfg lists and searches the
-    regex 'patt' there. Can prepend text with 'prefix' and/or append
-    the results in 'output'.
+    Stops IOCProc from looking up its `parent` while it is constructed.
+
+    The lookup probes the NFS release directories one IOC at a time, which
+    is on the 10 s time scale for all hutches. The `parent` is left empty
+    and we just fill it in later with `resolve_parents`.
+    """
+    original = imgr_config.get_parent
+    imgr_config.get_parent = lambda *args, **kwargs: ''
+    try:
+        yield
+    finally:
+        imgr_config.get_parent = original
+
+
+def resolve_parents(procs: list[IOCProc]) -> None:
+    """
+    Fill in `parent` for each IOCProc, looking them up concurrently.
+    """
+    def _lookup(proc: IOCProc) -> str:
+        try:
+            return get_parent(proc.path, proc.name)
+        except Exception:
+            return ''  # same fallback as IOCProc.__post_init__
+
+    with ThreadPoolExecutor(PARENT_WORKERS) as pool:
+        for proc, parent in zip(procs, pool.map(_lookup, procs)):
+            proc.parent = parent
+
+
+def load_procs(*, config: str, hutch: str = None) -> list[IOCProc]:
+    """
+    Load an iocmanager `cfg` and return its IOCProc instances.
+
+    Must be called inside `parents_deferred()` to skip the slow `parent`
+    lookup; use `resolve_parents` to fill it in afterwards.
 
     Parameters
     ----------
-    file : str
-        The iocmanager.cfg file to search.
-    patt : str, optional
-        Regex pattern to search with. The default is None.
-    output : list, optional
-        A list to append the results to. The default is None.
-    prefix : str, optional
-        A prefix to add to the start of each result. The default is ''.
+    config : str
+        path to the iocmanager.cfg of interest
+    hutch : str, optional
+        hutch identifier code to add as an attr to each IOCProc found,
+        by default None
 
     Returns
     -------
-    str
-        A list[str] that is flattened back into a single body with the prefix
-        prepended. Each result is separated by 'prefix' and '\n'.
-
+    list[IOCProc]
+        every IOCProc defined in the cfg.
     """
-    # Some initialization
-    if output is None:
-        output = []
-    _patt = r'{.*' + patt + r'.*}'
     # First open the iocmanager.cfg, if it exists
-    if not (os.path.exists(file) and ('iocmanager.cfg' in file)):
-        print(f'{file} does not exist or is otherwise invalid.')
-        return ''
-    with open(file, 'r', encoding='utf-8') as _f:
-        raw_text = _f.read()
-    # then only grab the procmgr_cfg for the search
-    pmgr_key = r'procmgr_config = [\n '
-    pmgr = raw_text[(raw_text.find(pmgr_key)+len(pmgr_key)):-3]
-    # get rid of those pesty inline breaks within the JSOB obj
-    pmgr = pmgr.replace(',\n ', ',').replace('},{', '},\n{')
-    # now let we'll finally search through the IOCs and insert into output
-    output.extend(re.findall(_patt, pmgr))
-    # now return the searches with the prefix prepended and the necessary
-    # line break for later JSONification
-    return prefix + prefix.join([s + '\n' for s in output])
+    if not (os.path.exists(config) and ('iocmanager.cfg' in config)):
+        print(f'{config} does not exist or is otherwise invalid.')
+        return []
+
+    procs = list(imgr_config.read_config(config).procs.values())
+    if hutch:
+        for proc in procs:
+            proc.hutch = hutch
+    return procs
+
+
+def filter_procs(procs: list[IOCProc], patt: str) -> list[IOCProc]:
+    """
+    Return the IOCProcs whose fields, joined together, match the regex `patt`.
+    This mimicks `grep`ing the iocmanager.cfg itself and allows for some lazy
+    searching and filtering.
+
+    Parameters
+    ----------
+    procs : list[IOCProc]
+    patt : str
+
+    Returns
+    -------
+    list[IOCProc]
+    """
+    _patt = re.compile(patt)
+    # walk the dataclass fields for the IOCProc
+    props = fields(IOCProc)
+    return [proc for proc in procs
+            if _patt.search(''.join(str(getattr(proc, f.name))
+                                    for f in props))]
 
 
 def print_skip_comments(file: str):
@@ -174,66 +220,8 @@ def clean_ansi(text: str = None) -> str:
     return ansi_escape.sub('', text)
 
 
-def try_json_loads(text: Optional[str] = None) -> Optional[str]:
-    """
-    Try/except wrapper for debugging bad pseudo-json strings.
-    """
-    try:
-        return json.loads(text)
-    except Exception as e:
-        print(f'JSON Error:\t {e}\n'
-              + 'Cannot decode the following string:\n' + text)
-
-
-def fix_json(raw_data: str, keys: list[str] = None) -> list[str]:
-    """
-    Fixes JSON format of find_ioc/grep_ioc output.
-
-    Parameters
-    ----------
-    raw_data: str
-        Str output generated by find_ioc/grep_ioc, which is pseudo-JSON.
-    keys: list[str]
-        A list of valid keys to use for scraping the IOC.cfg file.
-    Returns
-    -------
-    list[str]
-        The list of str ready for JSON loading
-    """
-    if keys is None:
-        # default regex for catching iocmanager keys
-        valid_keys = re.compile(r'|'.join([key + r'(?=\s?:\s?)'
-                                           for key in DEF_IMGR_KEYS]))
-        # additional expression for correctly catcing unquoted digits
-        valid_digits = re.compile(r'|'.join([r'(?<=\"' + key + r'\":\s)\d+'
-                                            for key in DEF_IMGR_KEYS]))
-    else:
-        valid_keys = re.compile(r'|'.join([key + r'(?=\s?:\s?)'
-                                           for key in keys]))
-        valid_digits = re.compile(r'|'.join([r'(?<=\"' + key + r'\":\s)\d+'
-                                            for key in keys]))
-    # clean empty rows and white space
-    _temp = raw_data.replace(' ', '').strip()
-    # capture and fix the keys not properly formatted to str
-    _temp = re.sub(valid_keys, r"'\g<0>'", raw_data)
-    # capture boolean tokens and fix them for json format
-    _temp = re.sub("True", "true", _temp)
-    _temp = re.sub("False", "false", _temp)
-    # then capture and fix digits not formatted to str, but only
-    # if they are the value to a valid key
-    _temp = re.sub(valid_digits, r"'\g<0>'", _temp)
-    # then properly convert to list of json obj
-    result = (_temp
-              .replace('\'', '\"')
-              .replace('},', '}')
-              .replace(' {', '{')
-              .strip()
-              .split('\n'))
-    return result
-
-
 def find_ioc(hutch: str = None, patt: str = None,
-             valid_hutch: list[str] = VALID_HUTCH) -> list[dict]:
+             valid_hutch: list[str] = VALID_HUTCH) -> list[IOCProc]:
     """
     A pythonic grep_ioc for gathering IOC details from the cfg file
 
@@ -255,8 +243,8 @@ def find_ioc(hutch: str = None, patt: str = None,
 
     Returns
     -------
-    list[dict]
-        List of dictionaries generated by the JSON loading
+    list[IOCProc]
+        List of IOCProc found in the procmanagers.
 
     """
     # check hutches
@@ -274,37 +262,21 @@ def find_ioc(hutch: str = None, patt: str = None,
     if patt is None:
         print('No regex pattern supplied')
         raise ValueError
-    # initialize output list
-    result = []
-    # iterate and capture results.
-    for _file in path:
-        prefix = ''
-        if len(path) != 1:
-            prefix = _file+':'
-        output = search_procmgr(file=_file, patt=patt, prefix=prefix)
-        if output != prefix:
-            result.append(output)
-    # reconstruct the list of str
-    _temp = ''.join(result)
-    if len(_temp) == 0:
+    # load every hutch first, then resolve all the parents in one pool
+    procs = []
+    with parents_deferred():
+        for cfg in path:
+            _hutch = cfg.rsplit(r'/', maxsplit=2)[-2]
+            procs.extend(load_procs(config=cfg, hutch=_hutch))
+    resolve_parents(procs)
+    result = filter_procs(procs, patt)
+    if len(result) == 0:
         print(f'{Fore.RED}No results found for {Style.RESET_ALL}{patt}'
               + f'{Fore.RED} in{Style.RESET_ALL} '
               + f'{hutch}')
         return None
-    # capture the hutch from the cfg path if hutch = all
-    if hutch == 'all':
-        hutch_cfgs = re.findall(r'/.*cfg\:', _temp)
-        hutch_cfgs = [''.join(re.findall(r'(?<=/)\w+(?=/ioc)', s))
-                      for s in hutch_cfgs]
-    # strip the file information
-    _temp = re.sub(r'.*cfg\:', '', _temp)
-    # now convert back to json and load
-    output = [try_json_loads(s) for s in fix_json(_temp)]
-    # and add the hutches back into the dicts if searching across all cfgs
-    if hutch == 'all':
-        for _i, _d in enumerate(output):
-            _d['hutch'] = hutch_cfgs[_i]
-    return output
+
+    return result
 
 
 def fix_dir(dir_path: str) -> str:
@@ -347,9 +319,9 @@ def find_parent_ioc(file: str, path: str) -> str:
     Parameters
     ----------
     file : str, optional
-        DESCRIPTION. The default is None.
+        Child IOC's filename. The default is None.
     path : str, optional
-        DESCRIPTION. The default is None.
+        Path to the IOC. The default is None.
 
     Returns
     -------
@@ -365,14 +337,66 @@ def find_parent_ioc(file: str, path: str) -> str:
     return parent_ioc_release.rsplit('=', maxsplit=1)[-1]
 
 
-def print_frame2term(dataframe: pd.DataFrame = None,):
-    """Wrapper for displaying the dataframe to proper terminal size"""
-    with pd.option_context('display.max_rows', None,
-                           'display.max_columns', None,
-                           'display.width',
-                           get_terminal_size(fallback=(120, 50))[0],
-                           ):
-        print(dataframe)
+def format_cell(value: any, max_width: int = 50) -> str:
+    """
+    Formats a table cell; lists as [a, b], long values are truncated with ...
+
+
+    Parameters
+    ----------
+    value : any
+        The cell value/text. Coerced to ``str``
+    max_width : int, optional
+        Max width of the printed cell, by default 50
+
+    Returns
+    -------
+    str
+        The text to print in the cell
+    """
+    text = f'[{", ".join(value)}]' if isinstance(value, list) else str(value)
+    return text if len(text) <= max_width else text[:max_width - 3] + '...'
+
+
+def print_table(iocs: list[IOCProc], cols: list[str]):
+    """
+    Prints the IOCProc attributes in `cols` as a right-aligned table with a
+    row index. When writing to a terminal, columns that do not fit its width
+    are printed as further blocks below, like pandas does (every block but
+    the last ends its lines with a backslash). Piped output is a single block
+    so nothing is split for grep and friends.
+
+    Parameters
+    ----------
+    iocs : list[IOCProc]
+        List of IOCs in dataclass
+    cols : list[str]
+        Columns to print in the pseudo data-frame
+    """
+    cells = [[str(i)] + [format_cell(getattr(ioc, c)) for c in cols]
+             for i, ioc in enumerate(iocs)]
+    heads = [''] + cols
+    widths = [max([len(h)] + [len(row[i]) for row in cells])
+              for i, h in enumerate(heads)]
+    limit = get_terminal_size().columns if sys.stdout.isatty() else None
+
+    # pack the columns into blocks, leaving room for the ' \' marker
+    blocks, used = [[]], widths[0]
+    for i in range(1, len(heads)):
+        if limit and blocks[-1] and used + 2 + widths[i] > limit - 2:
+            blocks.append([])
+            used = widths[0]
+        blocks[-1].append(i)
+        used += 2 + widths[i]
+
+    for n, block in enumerate(blocks):
+        if n:
+            print()
+        for r, row in enumerate([heads] + cells):
+            line = row[0].ljust(widths[0]) + ''.join(
+                '  ' + row[i].rjust(widths[i]) for i in block)
+            more = n < len(blocks) - 1 and r == 0
+            print(line + (' \\' if more else ''))
 
 ###############################################################################
 # %% Arg Parser
@@ -388,7 +412,7 @@ def build_parser():
         prog='grep_more_ioc',
         formatter_class=argparse.RawTextHelpFormatter,
         description='Transforms grep_ioc output to json object'
-                    + ' and prints in pandas.DataFrame',
+                    + ' and prints as a table',
         epilog='For more information on subcommands, use: '
                'grep_more_ioc . all [subcommand] --help')
     # main command arguments
@@ -427,7 +451,8 @@ def build_parser():
     print_frame.add_argument('-l', '--list', type=str,
                              metavar='KEY',
                              help='List the column from the dataframe.'
-                             + ' Acceptable keys are: [id, host, port, dir, history]')
+                             + ' Acceptable keys are: '
+                             + '[hutch, name, parent, host, port, disable]')
 
     print_frame.add_argument('-n', '--no_dataframe',
                              action='store_true', default=False,
@@ -500,72 +525,27 @@ def main():
         print(f'{Fore.RED}No IOCs were found.\nExiting . . .{Style.RESET_ALL}')
         sys.exit()
 
-    # create the dataframe after fixing the json format
-    df = pd.json_normalize(data)
-
-    # reorder the dataframe if searching all hutches
-    if args.hutch == 'all':
-        df.insert(0, 'hutch', df.pop('hutch'))
-
-    # pad the disable column based on the grep_ioc output
-    if 'disable' not in df.columns:
-        df['disable'] = df.index.size*[False]
-    # handle stupid pandas 3.0 future warnings early
-    with pd.option_context('future.no_silent_downcasting', True):
-        if 'disable' in df.columns:
-            df['disable'] = (df['disable'].infer_objects().fillna(False))
-
-    # Fill the NaN with empty strings for rarely used keys
-    # handle stupid pandas 3.0 future warnings early
-    with pd.option_context('future.no_silent_downcasting', True):
-        for _col in df.columns:
-            if _col not in ['delay']:
-                df[_col] = df[_col].infer_objects().fillna('')
-            else:
-                df[_col] = df[_col].infer_objects().fillna(0)
-
-    # check for the ignore_disabled flag
+    # filter out disabled IOCs if requested
     if args.ignore_disabled is True:
-        df = df[~df.disable].reset_index(drop=True)
+        data = [ioc for ioc in data if not ioc.disable]
+
+    # only show the hutch column if searching all hutches
+    cols = [c for c in COLUMNS if c != 'hutch' or args.hutch == 'all']
+    names_paths = [(ioc.name, ioc.path) for ioc in data]
 
 # --------------------------------------------------------------------------- #
 # %%% print
 # --------------------------------------------------------------------------- #
-    # print the dataframe
+    # print the table
     if hasattr(args, 'print'):
-        if args.release is True:
-            # intialize list for adding a new column
-            output_list = []
-            # iterate through ioc and directory pairs
-            for f, d in df.loc[:, ['id', 'dir']].values:
-                search_result = find_parent_ioc(f, d)
-                # catch parent IOCs running out of dev
-                if 'epics-dev' in search_result:
-                    output_str = search_result
-                # abbreviate path for standard IOC releases
-                elif 'common' in search_result:
-                    output_str = (search_result
-                                  .rsplit(r'common/', maxsplit=1)[-1])
-                # check for children living in parent's dir
-                elif '$$UP(PATH)' in search_result:
-                    output_str = d.rsplit(r'/children', maxsplit=1)[0]
-                # else use the full path that's found
-                else:
-                    output_str = search_result
-                # add it to the list
-                output_list.append(output_str)
-            # Then, finally, add the column to the dataframe
-            df['Release Version'] = output_list
-            # put it next to the child dirs
-            df.insert(df.columns.tolist().index('dir')+1,
-                      'Release Version',
-                      df.pop('Release Version'))
+        if not args.release:
+            cols.remove('parent')
 
         if not args.no_dataframe:
-            print_frame2term(df)
+            print_table(data, cols)
 
-        if args.skip_comments is True:
-            for ioc, d in df.loc[:, ['id', 'dir']].values:
+        if args.skip_comments:
+            for ioc, d in names_paths:
                 # fixes dirs if ioc_manager truncates the path due to
                 # common ioc dir path
                 target_dir = fix_dir(d)
@@ -575,10 +555,10 @@ def main():
                 # prints the contents of the file while ignoring comments
                 print_skip_comments(file=f'{target_dir}{ioc}.cfg')
 
-        if args.print_dirs is True:
+        if args.print_dirs:
             print(f'{Fore.LIGHTBLUE_EX}\nDumping directories:\n'
                   + Style.RESET_ALL)
-            for f, d in df.loc[:, ['id', 'dir']].values:
+            for f, d in names_paths:
                 search_result = find_parent_ioc(f, d)
                 d = fix_dir(d)
                 # check for cases where child IOC.cfg DNE
@@ -598,31 +578,27 @@ def main():
         if args.print_history is True:
             print(f'{Fore.LIGHTMAGENTA_EX}\nDumping histories:\n'
                   + Style.RESET_ALL)
-            if 'history' in df.columns:
-                for f, h in df.loc[:, ['id', 'history']].values:
-                    print(f'{Fore.LIGHTYELLOW_EX}{f}{Style.RESET_ALL}'
-                          + '\nhistory:\n\t'
-                          + '\n\t'.join(h))
-            else:
-                print(f'{Fore.LIGHTRED_EX}No histories found in captured IOCs.'
-                      + Style.RESET_ALL)
+            for ioc in data:
+                print(f'{Fore.LIGHTYELLOW_EX}{ioc.name}{Style.RESET_ALL}'
+                      + '\nhistory:\n\t'
+                      + '\n\t'.join(ioc.history))
 
         if args.list:
-            print('\n'.join(df[args.list].astype(str).to_list()))
+            print('\n'.join(str(getattr(ioc, args.list)) for ioc in data))
 
 # --------------------------------------------------------------------------- #
 # %%% search
 # --------------------------------------------------------------------------- #
     # do a local grep on each file in their corresponding directory
     if hasattr(args, 'search'):
-        # optionally print the dataframe
+        # optionally print the table
         if not args.only_search:
-            print_frame2term(df)
+            print_table(data, cols)
         check_search = []
         _color = Fore.LIGHTRED_EX
         if args.no_color:
             _color = None
-        for ioc, d in df.loc[:, ['id', 'dir']].values:
+        for ioc, d in names_paths:
             target_dir = fix_dir(d)
             # Search for pattern after moving into the directory
             if args.search is not None:
