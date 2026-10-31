@@ -361,8 +361,10 @@ def format_cell(value: any, max_width: int = 50) -> str:
 def print_table(iocs: list[IOCProc], cols: list[str]):
     """
     Prints the IOCProc attributes in `cols` as a right-aligned table with a
-    row index. When writing to a terminal, lines are truncated to its width;
-    piped output is left whole so nothing is lost for grep and friends.
+    row index. When writing to a terminal, columns that do not fit its width
+    are printed as further blocks below, like pandas does (every block but
+    the last ends its lines with a backslash). Piped output is a single block
+    so nothing is split for grep and friends.
 
     Parameters
     ----------
@@ -374,15 +376,27 @@ def print_table(iocs: list[IOCProc], cols: list[str]):
     cells = [[str(i)] + [format_cell(getattr(ioc, c)) for c in cols]
              for i, ioc in enumerate(iocs)]
     heads = [''] + cols
-    widths = [max(len(h), *(len(row[i]) for row in cells))
+    widths = [max([len(h)] + [len(row[i]) for row in cells])
               for i, h in enumerate(heads)]
     limit = get_terminal_size().columns if sys.stdout.isatty() else None
-    for row in [heads] + cells:
-        line = row[0].ljust(widths[0]) + ''.join(
-            '  ' + val.rjust(w) for val, w in zip(row[1:], widths[1:]))
-        if limit and len(line) > limit:
-            line = line[:limit - 3] + '...'
-        print(line)
+
+    # pack the columns into blocks, leaving room for the ' \' marker
+    blocks, used = [[]], widths[0]
+    for i in range(1, len(heads)):
+        if limit and blocks[-1] and used + 2 + widths[i] > limit - 2:
+            blocks.append([])
+            used = widths[0]
+        blocks[-1].append(i)
+        used += 2 + widths[i]
+
+    for n, block in enumerate(blocks):
+        if n:
+            print()
+        for r, row in enumerate([heads] + cells):
+            line = row[0].ljust(widths[0]) + ''.join(
+                '  ' + row[i].rjust(widths[i]) for i in block)
+            more = n < len(blocks) - 1 and r == 0
+            print(line + (' \\' if more else ''))
 
 ###############################################################################
 # %% Arg Parser
