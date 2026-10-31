@@ -1,35 +1,32 @@
 # engineering_tools
 A repository of scripts, configuration useful for the PCDS team
 
-## Push updates
-```
-git push -u origin master
-```
-
-## Add Tag
-```
-git tag -a R{tag} -m '{comment}'
-
-git push -u origin R{tag}
-```
-
 ## Creating a new release
+1. Create a GitHub release using the "Releases" feature on the right hand side of the GitHub UI
+   - You can select a new tag version and click "generate release notes"
+2. Log in to the lcls systems
+3. Change directory to the release area
 ```
-# Clone the source code into a new folder
-git clone https://github.com/pcdshub/engineering_tools.git R{tag}
-# Enter repository
-cd R{Tag}
-# checkout tag number
-git checkout tags/R{tag}
+cd /cds/group/pcds/engineering_tools
 ```
-
-## Updating latest
+4. Set your release version (replace the number below with yours)
 ```
-# Go to latest checkout
+REL=R3.3.3
+```
+5. Run the release `git clone` command
+```
+git clone -b "${REL}" --depth 1 https://github.com/pcdshub/engineering_tools.git "${REL}"
+```
+6. Update latest-released
+```
+ln -sfn "${REL}" latest-released
+```
+7. Update latest, if needed
+```
 cd engineering_tools
-# Pull latest from master branch
 git pull origin master
 ```
+
 
 ## The scripts
 
@@ -102,6 +99,60 @@ usage: /reg/g/pcds/engineering_tools/latest/scripts/camViewer options<br/>
 Usage:   /reg/g/pcds/engineering_tools/latest/scripts/check_host HOSTNAME<br/>
     <br/>
     Display host info and run some checks.</br>
+    </td>
+</tr>
+
+<tr>
+    <td>ctrlenv_setup.sh</td>
+    <td>
+usage:   source ctrlenv_setup.sh<br/>
+    <br/>
+    Set environment variables and add commands for using ctrlenv python tools.</br>
+    There are four subcommands that become available after sourcing:</br>
+    <ul>
+    <li>ctrlenv-pathmunge: adds a bundle, environment export bin, or application to your path.</li>
+    <li>ctrlenv-activate: activates a python environment in the current shell (useful for scripts).</li>
+    <li>ctrlenv-shell: activates a python environment in an exitable subshell (useful for interactive use).</li>
+    <li>ctrlenv-versions: shows which versions exist for an app or environment.</li>
+    </ul>
+    </br>
+    Some definitions:</br>
+    <ul>
+    <li>A bundle is a grouping of tools from many environments</li>
+    <li>
+    An environment is a specific python interpretter with specific libraries installed.
+    In our system, these also include exported executables that are included in bundles.
+    </li>
+    <li>
+    An application is any tool that can be executed from the path.
+    These are also exported to be included in bundles.
+    </li>
+    </ul>
+    </br>
+    Suggested .bashrc setup for general use:</br>
+    <pre><code>source /cds/group/pcds/engineering_tools/latest-released/scripts/ctrlenv_setup.sh</br>ctrlenv-pathmunge</code></pre>
+    Suggested usage inside a script for running an application:</br>
+    <pre><code>source /cds/group/pcds/engineering_tools/pick_version/scripts/ctrlenv_setup.sh</br>ctrlenv-pathmunge app_or_env_name/version</br>some_app some_args</code></pre>
+    Suggested usage inside a script to invoke python:</br>
+    <pre><code>source /cds/group/pcds/engineering_tools/pick_version/scripts/ctrlenv_setup.sh</br>ctrlenv-activate env_name/version</br>python something.py</code></pre>
+    Examples for the subcommands:</br>
+    <ul>
+    <li>ctrlenv-pathmunge</li>
+    <ul><li>Note: with no args, ctrlenv-pathmunge targets the latest bundle</li></ul>
+    <li>ctrlenv-pathmunge latest-released</li>
+    <li>ctrlenv-pathmunge 2026/05/26_00</li>
+    <li>ctrlenv-pathmunge ctrlenv-widgets/v0.1.1</li>
+    <li>ctrlenv-pathmunge pytmc</li>
+    <li>ctrlenv-activate</li>
+    <ul><li>Note: with no args, ctrlenv-activate targets the latest ctrlenv-base</li></ul>
+    <li>ctrlenv-activate ctrlenv-lucid</li>
+    <li>ctrlenv-activate ctrlenv-widgets/v0.2.0</li>
+    <li>ctrlenv-shell ctrlenv-widgets/v0.2.0</li>
+    <li>ctrlenv-version</li>
+    <ul><li>Note: with no args, ctrlenv-activate targets the ctrlenv-base</li></ul>
+    <li>ctrlenv-versions pytmc</li>
+    <li>ctrlenv-versions ctrlenv-widgets</li>
+    </ul>
     </td>
 </tr>
 
@@ -912,7 +963,7 @@ usage: startami options<br/>
     </td>
 </tr>
 
-<tr>>
+<tr>
     <td>startami2</td>
     <td>
 usage: startami2 <command><br/>
@@ -982,6 +1033,14 @@ Optional arguments:<br/>
     <td>
     Usage: set_gem_timing [SC or NC]
     </td>
+</tr>
+
+<tr>
+   <td>evrserialnum</td>
+   <td>
+Displays the EEROM serial numbers of any SLAC evr/tprs in the machine.<br/>
+<b>This script must be run as root!</b>
+   </td>
 </tr>
 
 </table>

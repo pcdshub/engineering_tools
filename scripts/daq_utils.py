@@ -100,7 +100,7 @@ class DaqManager:
 
         self.user = self.hutch + "opr"
         self.sbman = SbatchManager(self.user)
-        self.scripts_dir = f"/reg/g/pcds/dist/pds/{self.hutch}/scripts"
+        self.scripts_dir = f"/sdf/home/{self.hutch[0]}/{self.hutch}opr/daq/scripts"
         if cnf is None:
             self.cnf_file = f"{self.hutch}.py"
         else:

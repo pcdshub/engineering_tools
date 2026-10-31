@@ -1,0 +1,114 @@
+#!/bin/bash
+
+DIR=$(readlink -f "$(dirname "${BASH_SOURCE[0]}")")
+PATH=$DIR:$PATH
+
+usage()
+{
+cat << EOF
+usage: $0 [options]
+
+start the viewer for controls cameras
+
+OPTIONS:
+
+-c|--cam <cam name> : camera name as in camera list or gige #
+-m|--main           : bring up the edm screen
+-r|--reboot         : reboot the IOC
+-l|--list           : print list of cameras
+-e|--enable         : enable camera ioc
+-d|--disable        : disable camera ioc
+-a|--acquire        : start acquiring images
+-s|--stop           : stop acquiring images
+-n|--nudge          : cycles acquistion (first stops then starts)
+EOF
+}
+
+POSITIONAL=()
+NEED_SSH=1
+while [[ $# -gt 0 ]]
+do
+    key="$1"
+    case $key in
+        -h|--help)
+            usage
+            exit
+            ;;
+        -l|--list)
+            POSITIONAL+=("$1")
+	    NEED_SSH=0
+            shift
+            ;;
+        -c|--cam)
+            POSITIONAL+=("--cam $2")
+            shift 2
+            ;;
+        -m|--main)
+            POSITIONAL+=("$1")
+	    NEED_SSH=0
+            shift
+            ;;
+        -r|--reboot)
+            POSITIONAL+=("$1")
+	    NEED_SSH=0
+            shift
+            ;;
+        -e|--enable)
+            POSITIONAL+=("$1")
+	    NEED_SSH=0
+            shift
+            ;;
+        -d|--disable)
+            POSITIONAL+=("$1")
+	    NEED_SSH=0
+            shift
+            ;;
+        -a|--acquire)
+            POSITIONAL+=("$1")
+	    NEED_SSH=0
+            shift
+            ;;
+        -s|--stop)
+            POSITIONAL+=("$1")
+	    NEED_SSH=0
+            shift
+            ;;
+        -n|--nudge)
+            POSITIONAL+=("$1")
+	    NEED_SSH=0
+            shift
+            ;;
+        ?)
+            usage
+            break
+            ;;
+        --)
+            shift
+            break
+            ;;
+        *)
+            echo "Internal Error"
+            exit 1
+            ;;
+        esac
+done
+set -- "${POSITIONAL[@]}"
+
+
+current_host="$(hostname)"
+if [[ "$current_host" != "lfe-console" && 
+	    "$current_host" != "xbdo-control" && 
+	    -z "$IS_REMOTE_SSH" && 
+            "$NEED_SSH" -eq 1 ]]; then
+
+    echo "Not in SSH, connecting to lfe-console..." >&2
+    ssh -t lfe-console "IS_REMOTE_SSH=1 $DIR/camViewer $* ; bash "
+    #ssh -t lfe-console "IS_REMOTE_SSH=1 nohup $DIR/camViewer $@ 1>&2 | tee nohup.out &"
+    #ssh -t lfe-console "IS_REMOTE_SSH=1 nohup $DIR/camViewer $@ "
+    exit_status=$?
+    echo "SSH exit status: $exit_status" >&2
+    exit $exit_status
+else
+    "$DIR"/camViewer -H lfe $*
+fi
+

@@ -1,0 +1,18 @@
+#!/bin/bash
+
+if [[ $EUID -ne 0 ]]; then
+    echo "$0 must be run as root!"
+    exit 1
+fi
+
+VENDOR_IDS="1a4a:2010 1a4a:2011"
+
+for venid in $VENDOR_IDS; do
+    text="$(lspci -vvv -d "${venid}" | grep 'Device Serial Number')"
+    while IFS= read -r line; do
+        serialnum="${line##* }";
+        if [ -n "${serialnum}" ]; then
+            echo "${serialnum}"
+        fi
+    done <<< "${text}"
+done
