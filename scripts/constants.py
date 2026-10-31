@@ -24,3 +24,21 @@ VALID_HUTCH = ['all'] + [s.rsplit(r'/', maxsplit=2)[-2] for s in VALID_HUTCH]
 DEF_IMGR_KEYS = ['procmgr_config', 'hosts', 'dir', 'id', 'cmd',
                  'flags', 'port', 'host', 'disable', 'history',
                  'delay', 'alias', 'hard']
+
+###############################################################################
+# %% Classes
+###############################################################################
+
+
+class Fore:
+    """ANSI foreground colors (the subset of colorama.Fore used here)"""
+    RED = '\033[31m'
+    LIGHTRED_EX = '\033[91m'
+    LIGHTGREEN_EX = '\033[92m'
+    LIGHTYELLOW_EX = '\033[93m'
+    LIGHTBLUE_EX = '\033[94m'
+    LIGHTMAGENTA_EX = '\033[95m'
+
+
+class Style:
+    RESET_ALL = '\033[0m'
