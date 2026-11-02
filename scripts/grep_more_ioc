@@ -5,6 +5,7 @@ THIS_DIR="$(dirname "$(realpath "${BASH_SOURCE[0]}")")"
 
 export PYTHONPATH=${PYPS_ROOT}/apps/iocmanager/R3.0.3
 
-PYTHON="/reg/g/pcds/pyps/pixi/ctrlenv-base/v0.1.1/src/rhel9-x86_64/.pixi/envs/default/bin/python"
+source "${THIS_DIR}/ctrlenv_setup.sh"
+ctrlenv-activate ctrlenv-base/v0.1.1
 
-$PYTHON "${THIS_DIR}/grep_more_ioc.py" "$@"
+python "${THIS_DIR}/grep_more_ioc.py" "$@"
