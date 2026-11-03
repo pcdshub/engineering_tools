@@ -17,7 +17,6 @@ from dataclasses import fields
 from shutil import get_terminal_size
 
 from constants import VALID_HUTCH, Fore, Style
-
 from iocmanager import config as imgr_config
 from iocmanager.config import IOCProc
 from iocmanager.epics_paths import get_parent
