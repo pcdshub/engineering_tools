@@ -10,8 +10,8 @@ xcsIpm='decmono ipmmono diomono pim3 pim3m ipm3 pim4 ipm4 snddio ipm5 pim5 ipmgo
 xppIpm='diomono decmono ipm2 ipm3 pim3 diodeU'
 cxiIpm='pim3m dg2ipm dg3ipm usrdio'
 mfxIpm='dg1ipm dg2ipm usrdio'
-mecIpm='ipm1 ipm2 ipm3 hxm_pim pim2 pim3 tc1_imb1 usr_imb1 usr_imb2 las_imb1 las_imb2 usr_dio'
-lfeIpm='hfxdg2_ipm pim3m'
+mecIpm='ipm1 ipm2 ipm3 hxm_pim pim2 pim3 tc1_imb1 usr_imb1 usr_imb2 las_imb1 las_imb2 usr_dio xrt_hrm'
+lfeIpm='hfxdg2_ipm pim3m xrt_hrm'
 
 ipmList()
 {
@@ -50,6 +50,11 @@ elif [[ $1 == 'hxxdg1_ipm' ]]; then		#aka xrt ipm1
     BASE='HXX:DG1:BMMON'
     EVR='HXX:DG1:BMMON:EVR'
     WAVE8='hxxipm'
+elif [[ $1 == 'xrt_hrm' ]]; then		# MEC HRM 
+    IOC="IOC:XRT:HRM:DG:01"
+    BASE='XRT:HRM:DG:01'
+    EVR='XRT:WAVE8:01'
+    WAVE8='xrt_hrm'
 elif [[ $1 == 'um6_dio' ]]; then		#aka xrt yag1 dio
     BASE="XCS:DG1:IMB:02"
     IOC="XCS:R04:IOC:34"
