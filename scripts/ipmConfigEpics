@@ -13,9 +13,6 @@ mfxIpm='dg1ipm dg2ipm usrdio'
 mecIpm='ipm1 ipm2 ipm3 hxm_pim pim2 pim3 tc1_imb1 usr_imb1 usr_imb2 las_imb1 las_imb2 usr_dio xrt_hrm'
 lfeIpm='hfxdg2_ipm pim3m xrt_hrm'
 
-WAVE8_PROJECT='/cds/group/pcds/epics-dev/baljamal/forks/tools/ipm_config'
-
-
 usage()
 {
     cat << EOF
@@ -479,7 +476,6 @@ ipmGUI()
 
         # Use a subshell so the directory change stays local to the launch.
         (
-            cd "$WAVE8_PROJECT" || exit 1
             pixi run wave8 "${wave8_args[@]}"
         )
 
