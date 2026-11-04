@@ -470,14 +470,11 @@ ipmGUI()
             return 1
         fi
 
-        printf 'Launching: pixi run wave8'
+        printf 'Launching: wave8'
         printf ' %q' "${wave8_args[@]}"
         printf '\n'
 
-        # Use a subshell so the directory change stays local to the launch.
-        (
-            pixi run wave8 "${wave8_args[@]}"
-        )
+        wave8 "${wave8_args[@]}"
 
     else
         # Existing IPIMB launch behavior.
