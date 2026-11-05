@@ -30,16 +30,18 @@ OPTIONS:
 EOF
 }
 
-
 get_hutch()
 {
     local detected
+    local supported='xcs, xpp, cxi, mfx, mec, lfe'
 
     if [[ -n "${HUTCH:-}" ]]; then
         detected="$HUTCH"
     else
         if ! detected=$(get_info --gethutch); then
             echo "Error: Could not determine hutch using get_info." >&2
+            printf 'Use -H to select a hutch. Supported hutches: %s\n' \
+                "$supported" >&2
             return 1
         fi
     fi
@@ -51,13 +53,14 @@ get_hutch()
             HUTCH=${hutch^^}
             ;;
         *)
-            printf "Error: Unknown or unsupported hutch '%s'. Use -H to select a hutch.\n" \
+            printf "Error: Unknown or unsupported hutch '%s'.\n" \
                 "$detected" >&2
+            printf 'Use -H to select a hutch. Supported hutches: %s\n' \
+                "$supported" >&2
             return 1
             ;;
     esac
 }
-
 
 ipmList()
 {
