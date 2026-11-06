@@ -20,9 +20,8 @@ def d_spacing(reflection):
     if reflection not in REFLECTIONS:
         raise ValueError("Reflection must be '111', '113', or '333'.")
 
-    h, k, l = REFLECTIONS[reflection]
-    return SI_LATTICE_ANGSTROM / math.sqrt(h*h + k*k + l*l)
-
+    H, K, L = REFLECTIONS[reflection]
+    return SI_LATTICE_ANGSTROM / math.sqrt(H*H + K*K + L*L)
 
 def angle_to_energy(angle_deg, reflection="111"):
     """Convert Bragg angle in degrees to energy in keV."""
