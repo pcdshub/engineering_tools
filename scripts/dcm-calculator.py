@@ -23,6 +23,7 @@ def d_spacing(reflection):
     H, K, L = REFLECTIONS[reflection]
     return SI_LATTICE_ANGSTROM / math.sqrt(H*H + K*K + L*L)
 
+
 def angle_to_energy(angle_deg, reflection="111"):
     """Convert Bragg angle in degrees to energy in keV."""
     if not math.isfinite(angle_deg) or not 0 < angle_deg <= 90:
