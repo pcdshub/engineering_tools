@@ -15,8 +15,8 @@ fi
 
 HUTCH=$(get_hutch_name)
 if [ "$(daqutils isdaqmgr)" = "true" ]; then
-    daqutils --cnf "${HUTCH}"_ami.py stopdaq "$@"
-    exit 0
+    daqutils --ami stopdaq
+    exit
 fi
 DAQHOST=$(wheredaq)
 RESCNT=$(echo "$DAQHOST" |wc| awk '{print $2}')
