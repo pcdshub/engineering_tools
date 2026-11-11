@@ -1043,4 +1043,10 @@ Displays the EEROM serial numbers of any SLAC evr/tprs in the machine.<br/>
    </td>
 </tr>
 
+<tr>
+   <td>dcm-calculator</td>
+   <td>
+ CLI based tool to convert silicon DCM Bragg angle (degrees) <-> photon energy (keV).
+   </td>
+</tr>
 </table>
