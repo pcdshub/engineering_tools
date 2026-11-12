@@ -188,6 +188,13 @@ Waits for the LCLS-I daq windows to load, then exits.
 </tr>
 
 <tr>
+   <td>dcm-calculator</td>
+   <td>
+ CLI based tool to convert silicon DCM Bragg angle (degrees) <-> photon energy (keV).
+   </td>
+</tr>
+
+<tr>
     <td>detector_totals.py</td>
     <td>
 Generates a report for the detector group. Reports contains the number of events per detector type gathered from all experiments in a run period.
@@ -1042,5 +1049,4 @@ Displays the EEROM serial numbers of any SLAC evr/tprs in the machine.<br/>
 <b>This script must be run as root!</b>
    </td>
 </tr>
-
 </table>
