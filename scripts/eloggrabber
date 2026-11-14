@@ -15,7 +15,9 @@ OPTIONS:
 EOF
 }
 
-source /reg/g/psdm/sw/conda2/manage/bin/psconda.sh ""
+HERE="$(realpath "$(dirname "${BASH_SOURCE[0]}")")"
+source "${HERE}"/ctrlenv_setup.sh
+ctrlenv-activate ctrlenv-bluesky/v0.3.0
 export PYTHONPATH=/reg/g/psdm/web/ws/prod/apps/LogBookClient:${PYTHONPATH}
 export PATH=/reg/g/psdm/web/ws/prod/apps/LogBookClient/LogBookClient:${PATH}
 
