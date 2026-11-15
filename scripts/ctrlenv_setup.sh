@@ -132,7 +132,19 @@ _reset_to_central_epics() {
     local setup_script
     setup_script="${SETUP_SITE_TOP:=/cds/group/pcds/setup}"/epicsenv-cur.sh
     if [ -f "${setup_script}" ]; then
+        # Ignore user's set -e, need to treat this as one command
+        local has_errexit
+        has_errexit=0
+        if set -o | grep errexit | grep on >/dev/null; then
+            set +e
+            has_errexit=1
+        fi
+        # Various subcommands in here can randomly fail
         source "${setup_script}"
+        # Put it back if needed
+        if [[ $has_errexit -eq 1 ]]; then
+            set -e
+        fi
         return 0
     else
         echo "Failed to reactivate central EPICS: cannot find ${setup_script}" >&2
