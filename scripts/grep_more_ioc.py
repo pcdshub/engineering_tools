@@ -159,7 +159,8 @@ def load_procs(*, config: str, hutch: str = None) -> list[IOCProc]:
     return procs
 
 
-def filter_procs(procs: list[IOCProc], patt: str) -> list[IOCProc]:
+def filter_procs(procs: list[IOCProc], patt: str,
+                 all_fields: bool = False) -> list[IOCProc]:
     """
     Return the IOCProcs whose fields, joined together, match the regex `patt`.
     This mimicks `grep`ing the iocmanager.cfg itself and allows for some lazy
@@ -169,6 +170,7 @@ def filter_procs(procs: list[IOCProc], patt: str) -> list[IOCProc]:
     ----------
     procs : list[IOCProc]
     patt : str
+    all_fields: bool, Default is False
 
     Returns
     -------
@@ -179,12 +181,15 @@ def filter_procs(procs: list[IOCProc], patt: str) -> list[IOCProc]:
     props = fields(IOCProc)
     # Ignore things like cmd, history, hard, etc. which give annoying false positives
     search_props = ['name', 'port', 'host', 'path', 'alias', 'parent']
+    # But you can opt in if you enjoy chaos.
+    if all_fields:
+        search_props = [field.name for field in props]
 
     return [proc for proc in procs
             # deliberate delimiter to avoid weird field collision
-            if _patt.search(','.join(str(getattr(proc, f.name))
-                                     for f in props
-                                     if f.name in search_props))]
+            if _patt.search(','.join(str(getattr(proc, field.name))
+                                     for field in props
+                                     if field.name in search_props))]
 
 
 def print_skip_comments(file: str):
@@ -225,6 +230,7 @@ def clean_ansi(text: str = None) -> str:
 
 
 def find_ioc(hutch: str = None, patt: str = None,
+             all_fields: bool = False,
              valid_hutch: list[str] = VALID_HUTCH) -> list[IOCProc]:
     """
     Search for an IOC using its IOCProc fields. Can match against
@@ -234,6 +240,8 @@ def find_ioc(hutch: str = None, patt: str = None,
     Due to IOCProc structure, fields are always in this order:
     ['name, port, host, path, alias, parent']
     Excluded fields: ['disable', 'history', 'cmd', 'delay', 'hard']
+
+    Search all fields by passing the ``all`` flag.
 
     Parameters
     ----------
@@ -279,7 +287,7 @@ def find_ioc(hutch: str = None, patt: str = None,
             _hutch = cfg.rsplit(r'/', maxsplit=2)[-2]
             procs.extend(load_procs(config=cfg, hutch=_hutch))
     resolve_parents(procs)
-    result = filter_procs(procs, patt)
+    result = filter_procs(procs, patt, all_fields)
     if len(result) == 0:
         print(f'{Fore.RED}No results found for {Style.RESET_ALL}{patt}'
               + f'{Fore.RED} in{Style.RESET_ALL} '
@@ -439,6 +447,13 @@ def build_parser():
                         default=False,
                         help='Flag for excluding based'
                         + ' on the "disabled" state.')
+    parser.add_argument('-a', '--all_fields',
+                        action='store_true',
+                        default=False,
+                        help='Flag for enabling search pattern to span'
+                        + ' all IOCProc fields in this order:\n'
+                        + ', '.join([field.name
+                                     for field in fields(IOCProc)]))
     # subparsers
     subparsers = parser.add_subparsers(
         help='Required subcommands after capturing IOC information:')
@@ -528,7 +543,7 @@ def main():
     parser = build_parser()
     args = parser.parse_args()
     # read grep_ioc output
-    data = find_ioc(args.hutch, args.patt)
+    data = find_ioc(hutch=args.hutch, patt=args.patt, all_fields=args.all_fields)
 
     # exit if grep_ioc finds nothing
     if (data is None or len(data) == 0):
