@@ -177,9 +177,14 @@ def filter_procs(procs: list[IOCProc], patt: str) -> list[IOCProc]:
     _patt = re.compile(patt)
     # walk the dataclass fields for the IOCProc
     props = fields(IOCProc)
+    # Ignore things like cmd, history, hard, etc. which give annoying false positives
+    search_props = ['name', 'port', 'host', 'path', 'alias', 'parent']
+
     return [proc for proc in procs
-            if _patt.search(''.join(str(getattr(proc, f.name))
-                                    for f in props))]
+            # deliberate delimiter to avoid weird field collision
+            if _patt.search(','.join(str(getattr(proc, f.name))
+                                     for f in props
+                                     if f.name in search_props))]
 
 
 def print_skip_comments(file: str):
@@ -222,7 +227,13 @@ def clean_ansi(text: str = None) -> str:
 def find_ioc(hutch: str = None, patt: str = None,
              valid_hutch: list[str] = VALID_HUTCH) -> list[IOCProc]:
     """
-    A pythonic grep_ioc for gathering IOC details from the cfg file
+    Search for an IOC using its IOCProc fields. Can match against
+    multiple fields if they are valid. For search purposes, these
+    fields are delimitted by ``,``.
+
+    Due to IOCProc structure, fields are always in this order:
+    ['name, port, host, path, alias, parent']
+    Excluded fields: ['disable', 'history', 'cmd', 'delay', 'hard']
 
     Parameters
     ----------
