@@ -3,50 +3,22 @@
 #
 # Do not use non-standard python.
 ####################################################
-import errno
 import getpass
 import os
-import socket
 import subprocess
 import time
 from subprocess import PIPE
 
-DAQMGR_HUTCHES = ["tmo", "rix", "txi", "xpp", "ued", "mfx"]
-LOCALHOST = socket.gethostname()
-SLURM_PARTITION = "drpq"
-SLURM_JOBNAME = "submit_daq"
-SLURM_SCRIPT = "submit_daq.sh"
-SLURM_OUTPUT = "slurm_daq.log"
+DAQMGR_HUTCHES = ["tmo", "rix", "txi", "xpp", "mfx", "ued"]
 MAX_RETRIES = 10
-
-
-def silentremove(filename):
-    try:
-        os.remove(filename)
-    except OSError as e:
-        if e.errno != errno.ENOENT:  # errno.ENOENT = no such file or directory
-            raise
+# The daq and analysis setup scripts refuse to load over each other, so each
+# daqmgr call has to source the one matching its cnf.
+ENV_DAQ = "setup_env_daq.sh"
+ENV_ANA = "setup_env_ana.sh"
 
 
 def call_subprocess(*args):
     return str(subprocess.check_output(args, stderr=PIPE).strip(), "utf-8")
-
-
-def call_sbatch(cmd, nodelist, scripts_dir):
-    sb_script = "#!/bin/bash\n"
-    sb_script += f"#SBATCH --partition={SLURM_PARTITION}" + "\n"
-    sb_script += f"#SBATCH --job-name={SLURM_JOBNAME}" + "\n"
-    sb_script += f"#SBATCH --nodelist={nodelist}" + "\n"
-    sb_script += f"#SBATCH --output={os.path.join(scripts_dir, SLURM_OUTPUT)}" + "\n"
-    sb_script += "#SBATCH --ntasks=1\n"
-    sb_script += "unset PYTHONPATH\n"
-    sb_script += "unset LD_LIBRARY_PATH\n"
-    sb_script += cmd
-    slurm_script = os.path.join(scripts_dir, SLURM_SCRIPT)
-    with open(slurm_script, "w") as f:
-        f.write(sb_script)
-    call_subprocess("sbatch", slurm_script)
-    silentremove(slurm_script)
 
 
 class SbatchManager:
@@ -92,7 +64,20 @@ class SbatchManager:
 
 
 class DaqManager:
-    def __init__(self, verbose=False, cnf=None):
+    def __init__(self, verbose=False, daq=False, ami=False, daq_cnf=None, ami_cnf=None):
+        """Manage the daq for the hutch this machine belongs to.
+
+        The daq is two halves with separate conda environments: the daq
+        proper, from <hutch>_daq.py with setup_env_daq.sh, and ami, from
+        <hutch>_ami.py with setup_env_ana.sh. Both live in the operator's
+        daq/scripts directory.
+
+        daq, ami: which component to act on. Naming neither acts on both, which
+            is what an operator running restartdaq with no arguments expects as the
+            default behavior.
+        daq_cnf, ami_cnf: replace a component's default cnf file. Relative to the 
+            operator's daq/scripts directory.
+        """
         self.verbose = verbose
         self.hutch = call_subprocess("get_info", "--gethutch")
         if len(self.hutch) != 3:
@@ -101,10 +86,24 @@ class DaqManager:
         self.user = self.hutch + "opr"
         self.sbman = SbatchManager(self.user)
         self.scripts_dir = f"/sdf/home/{self.hutch[0]}/{self.hutch}opr/daq/scripts"
-        if cnf is None:
-            self.cnf_file = f"{self.hutch}.py"
-        else:
-            self.cnf_file = cnf
+        # Naming neither component means both.
+        self.daq = daq or not ami
+        self.ami = ami or not daq
+        self.daq_cnf = daq_cnf or f"{self.hutch}_daq.py"
+        self.ami_cnf = ami_cnf or f"{self.hutch}_ami.py"
+
+    def vprint(self, msg):
+        if self.verbose:
+            print(msg)
+
+    def release_of(self, path):
+        """The release a setup script symlink resolves to.
+
+        Worth reporting: the setup_env_*.sh links are maintained by hand, so
+        the one named for a component is not necessarily the release the hutch
+        is actually using.
+        """
+        return os.path.basename(os.path.dirname(os.path.realpath(path)))
 
     def isdaqmgr(self, quiet=False):
         if self.hutch in DAQMGR_HUTCHES:
@@ -132,7 +131,7 @@ class DaqManager:
                         time.sleep(1)
                 else:
                     print(
-                        f"the DAQ did not stop properly (DAQ HOST: {daq_host}), exit now and try again or call your POC or the DAQ phone"
+                        f"The DAQ did not stop properly (DAQ HOST: {daq_host}), exit now and try again or call your POC or the DAQ phone"
                     )
 
     def wheredaq(self, quiet=False):
@@ -153,48 +152,81 @@ class DaqManager:
                 print(f"DAQ is running on {daq_host}")
         return daq_host
 
-    def calldaq(self, subcmd, daq_host=None):
-        prog = "daqmgr"
-        cmd = f"pushd {self.scripts_dir}" + " > /dev/null;"
-        cmd += f'source {os.path.join(self.scripts_dir, "setup_env.sh")}' + ";"
-        cmd += (
-            f"WHEREPROG=$(which {prog})"
-            "; set -x; "
-            f"$WHEREPROG {subcmd} {os.path.join(self.scripts_dir, self.cnf_file)}"
-            "; { set +x; } 2>/dev/null;"
-        )
-        cmd += "popd > /dev/null;"
+    def calldaq(self, subcmd, cnf_file, env_script, wait=True):
+        """Run daqmgr here, in the environment that goes with this cnf.
 
-        if subcmd == "restart":
-            query_daq_host = self.wheredaq()
-        else:
-            query_daq_host = self.wheredaq(quiet=True)
+        daqmgr always runs on the machine the command was typed on. The cnf
+        says where the daq processes go; the only thing daqmgr's own host
+        decides is where the cnf entries without a host of their own land
+        (daqstat, control_gui, ami-client), and those are monitors that render
+        to $DISPLAY anyway.
+        """
+        setup = os.path.join(self.scripts_dir, env_script)
+        cnf_path = os.path.join(self.scripts_dir, cnf_file)
+        # Checked rather than chained with ';': if the setup script refuses to
+        # load, daqmgr must not run from whatever is already on PATH.
+        cmd = f"cd {self.scripts_dir} || exit 1; "
+        cmd += f"source {setup} || exit 1; "
+        cmd += f"daqmgr {subcmd} {cnf_path}"
 
-        if daq_host is None:
-            daq_host = query_daq_host
-            if daq_host is None:
-                daq_host = LOCALHOST
+        self.vprint(f"  loading env {env_script} ({self.release_of(setup)})")
+        self.vprint(f"  daqmgr {subcmd} {cnf_file}")
 
-        if daq_host == LOCALHOST:
-            ret = subprocess.run(cmd, stdout=PIPE, shell=True)
-            print(ret.stdout.decode())
-        else:
-            call_sbatch(cmd, daq_host, self.scripts_dir)
+        # bash, not sh: the setup scripts use [[ ]] and return.
+        ret = subprocess.run(["bash", "-c", cmd])
+        self.vprint(f"  daqmgr {subcmd} exited {ret.returncode}")
 
-        self.waitfor(subcmd)
+        if wait:
+            # waitfor reports its own retries, and only acts on a stop.
+            self.waitfor(subcmd)
 
     def stopdaq(self):
         """Stop the running daq for the current user.
         Note that daq host is determined by querying slurm job status.
         """
-        self.calldaq("stop")
+        if self.ami:
+            self.calldaq("stop", self.ami_cnf, ENV_ANA, wait=False)
+        if self.daq:
+            self.calldaq("stop", self.daq_cnf, ENV_DAQ)
 
-    def restartdaq(self, daq_host):
+    def restartdaq(self):
+        # A restart sources both setup scripts, and each refuses to load over
+        # the other. Caught up front because of the asymmetry: a leaked
+        # ENV_TYPE=ana lets the ami stop succeed and then fails the daq
+        # restart, leaving ami stopped and the daq untouched.
+        self.vprint(f"hutch {self.hutch}, expecting account {self.user}")
+        self.vprint(f"scripts dir {self.scripts_dir}")
+
+        env_type = os.environ.get("ENV_TYPE")
+        self.vprint(f"checking shell env: ENV_TYPE={env_type or '(unset)'}")
+        if env_type:
+            kind = "An analysis" if env_type == "ana" else "A DAQ"
+            print(
+                f"{kind} env is already loaded in this shell, "
+                "please run from a fresh terminal"
+            )
+            return
+
         if not self.isvaliduser():
             print("Please run the DAQ from the operator account!")
             return
+        self.vprint(f"running as {getpass.getuser()}, ok")
 
+        self.wheredaq()
         st = time.monotonic()
-        self.calldaq("restart", daq_host=daq_host)
+        if self.daq and self.ami:
+            # ami-meb lives in the daq cnf and writes the shmem segment the
+            # ami nodes read, so the readers stop before the writer is
+            # replaced and start again after it.
+            print("Restarting both DAQ and AMI.")
+            self.calldaq("stop", self.ami_cnf, ENV_ANA, wait=False)
+            self.calldaq("restart", self.daq_cnf, ENV_DAQ)
+            self.calldaq("start", self.ami_cnf, ENV_ANA, wait=False)
+        elif self.daq:
+            print("Restarting DAQ only.")
+            self.calldaq("restart", self.daq_cnf, ENV_DAQ)
+        elif self.ami:
+            print("Restarting AMI only.")
+            self.calldaq("restart", self.ami_cnf, ENV_ANA, wait=False)
         en = time.monotonic()
         print(f"took {en-st:.4f}s. for starting the DAQ")  # noqa: E231
