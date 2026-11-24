@@ -75,7 +75,7 @@ class DaqManager:
         daq, ami: which component to act on. Naming neither acts on both, which
             is what an operator running restartdaq with no arguments expects as the
             default behavior.
-        daq_cnf, ami_cnf: replace a component's default cnf file. Relative to the 
+        daq_cnf, ami_cnf: replace a component's default cnf file. Relative to the
             operator's daq/scripts directory.
         """
         self.verbose = verbose
@@ -219,9 +219,8 @@ class DaqManager:
             # ami nodes read, so the readers stop before the writer is
             # replaced and start again after it.
             print("Restarting both DAQ and AMI.")
-            self.calldaq("stop", self.ami_cnf, ENV_ANA, wait=False)
-            self.calldaq("restart", self.daq_cnf, ENV_DAQ)
-            self.calldaq("start", self.ami_cnf, ENV_ANA, wait=False)
+            self.calldaq("restart", self.daq_cnf, ENV_DAQ, wait=False)
+            self.calldaq("restart", self.ami_cnf, ENV_ANA, wait=False)
         elif self.daq:
             print("Restarting DAQ only.")
             self.calldaq("restart", self.daq_cnf, ENV_DAQ)
