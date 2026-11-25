@@ -23,7 +23,7 @@ fi
 if [[ -z $2 ]]; then
     HUTCH="all"
 else
-    for hutchname in "xpp" "xcs" "cxi" "mfx" "mec" "tmo" "rix" "xrt" "aux" "det" "fee" "hpl" "icl" "las" "lfe" "kfe" "tst" "thz" "txi" "all"; do
+    for hutchname in "xpp" "xcs" "cxi" "mfx" "mec" "tmo" "rix" "xrt" "aux" "det" "fee" "hpl" "icl" "las" "lfe" "kfe" "tst" "thz" "txi" "ued" "all"; do
         if [[ "${2}" == "$hutchname" ]]; then
             HUTCH=$hutchname
         fi
